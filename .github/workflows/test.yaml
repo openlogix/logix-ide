@@ -21,9 +21,17 @@ concurrency:
 
 jobs:
   test:
-    # macOS on Apple Silicon: the only platform implemented so far.
-    # Add linux and windows here when those platforms are implemented.
-    runs-on: macos-latest
+    name: test (${{ matrix.os }})
+    # macOS on Apple Silicon: the only platform implemented so far, on the
+    # macOS versions GitHub offers (all arm64; macos-14 is retired on
+    # 2026-11-02). macos-latest is macos-26 for now; it's listed so a new
+    # macOS release gets tested as soon as GitHub switches to it. Add linux
+    # and windows here when those platforms are implemented.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26, macos-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
 
     steps:

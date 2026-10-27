@@ -102,7 +102,7 @@ Run from the repo root unless noted. On the dev Mac, Rust comes from Homebrew's 
 | Install JS deps | `npm install` |
 | Clean everything | `scripts/clean.sh` (removes `ui/dist/`, `src-tauri/target/`, `src-tauri/gen/schemas/`, `node_modules/` and `~/.logix/`; `scripts/run.sh` reinstalls the JS packages, as it does whenever `package-lock.json` is newer than the last install) |
 | Run the app (dev, hot reload) | `scripts/run.sh` (the standard way; sets the Rust `PATH`, then runs `npm run tauri dev`) |
-| **All checks and tests** | `scripts/test.sh` (UI type check, unit tests, production build and end-to-end tests, then Rust format check, lint and tests; stops at the first failure). Run before committing. CI runs the same script: `.github/workflows/test.yaml` (macOS runner; on push, pull request, manual run, and daily at 00:00 UTC). It may later be replaced by Invoke tasks. |
+| **All checks and tests** | `scripts/test.sh` (UI type check, unit tests, production build and end-to-end tests, then Rust format check, lint and tests; stops at the first failure). Run before committing. CI runs the same script: `.github/workflows/test.yaml` (macos-15, macos-26 and macos-latest runners, Apple Silicon; on push, pull request, manual run, and daily at 00:00 UTC). It may later be replaced by Invoke tasks. |
 | Type-check UI (TS + Svelte) | `npm run check` |
 | Build UI only | `npm run build` |
 | UI end-to-end tests (Playwright) | `npm run test:e2e` (one test: `npx playwright test -g "Auto Format"`). First time on a machine: `npx playwright install webkit`. |
