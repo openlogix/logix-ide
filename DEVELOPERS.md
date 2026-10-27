@@ -166,8 +166,8 @@ it from the public code (see [`.github/workflows`](.github/workflows)):
 
 - **test.yaml**: runs `scripts/test.sh` on every push and pull request, and daily.
 - **build-pre-release.yaml**: builds the installer, scans it for viruses
-  and publishes it as a dated pre-release, on every push to `main`
-  (except docs-only changes), daily, and on demand.
+  and publishes it as a dated pre-release, on every push to `main`, daily,
+  and on demand.
 - **publish-docs.yaml**: publishes the documentation site, on every push to
   `main`, daily, and on demand.
 

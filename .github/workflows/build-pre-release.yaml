@@ -4,8 +4,7 @@
 # release with that tag is never touched (the run fails instead). Only the
 # newest pre-releases are kept (about 5).
 #
-# Runs on every push to main (except docs-only changes), daily, and
-# manually. A newer run cancels a running one: only the latest commit's
+# Runs on every push to main, daily, and manually. A newer run cancels a running one: only the latest commit's
 # build matters.
 #
 # The steps use this repo's actions in .github/actions (tested by
@@ -15,13 +14,9 @@
 name: build-pre-release
 
 on:
-  # Every commit to main. Docs and notes don't change the app.
+  # Every commit to main.
   push:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "mkdocs.yml"
-      - "**/*.md"
 
   # Daily at UTC midnight, to minimize the risk of overstepping manual
   # builds of the same date.
