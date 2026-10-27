@@ -99,9 +99,14 @@ jobs:
         run: scripts/test.sh
 
       # Builds the release app and wraps it in a .dmg (the bundle settings,
-      # including the ad-hoc signature, are in src-tauri/tauri.conf.json).
+      # including the ad-hoc signature and the .dmg window layout, are in
+      # src-tauri/tauri.conf.json). Tauri skips the Finder step that lays out
+      # the .dmg window (icon size and positions, hiding .VolumeIcon.icns)
+      # when CI is set; TAURI_BUNDLER_DMG_IGNORE_CI turns it back on.
       - name: Build Logix.app and the .dmg
         working-directory: _repo
+        env:
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
         run: npm run tauri -- build --bundles dmg
 
       - name: Collect the .dmg
@@ -115,8 +120,9 @@ jobs:
           cp "${dmgs[0]}" "logix-darwin-arm64-${PACKAGE_TAG}.dmg"
           ls -al *.dmg
 
-      # Checks what users get: the .dmg is sound, it has the app and the
-      # Applications shortcut, and the app has a valid (ad-hoc) signature
+      # Checks what users get: the .dmg is sound, it has the app, the
+      # Applications shortcut and the Finder layout (.DS_Store), and the app
+      # has a valid (ad-hoc) signature
       # (an unsigned app is reported as "damaged" when downloaded). Tauri
       # deletes the separate Logix.app after making the .dmg, so the app is
       # checked inside the mounted .dmg.
@@ -129,6 +135,7 @@ jobs:
           trap 'hdiutil detach "$mnt" -force || true' EXIT
           ls -al "$mnt"
           test -L "$mnt/Applications"
+          test -f "$mnt/.DS_Store"
           app="$mnt/Logix.app"
           codesign --verify --deep --strict --verbose=2 "$app"
           codesign --display --verbose=2 "$app" 2>&1 | tee codesign.txt
