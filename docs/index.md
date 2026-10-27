@@ -31,5 +31,6 @@ planned.
 
 ## Next steps
 
+- [A tour of Logix](tour.md): what's on the screen and how it all fits together.
 - [Install Logix](installing.md)
 - [Quick start](quick-start.md): from a new project to a blinking LED.
