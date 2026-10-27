@@ -44,7 +44,7 @@ inside another project.
 
 - **New project**: **File > New** (++cmd+n++) starts from the selected board's
   basic example (blinky). To start from scratch instead, open the board's
-  **BareMinimum** (see below).
+  **Bare Minimum** (see below).
 - **New file**: the **+** at the end of the tabs, or **File > New File…**
   (++shift+cmd+n++). Double-click a tab to rename it; right-click it to
   rename or delete it. These changes, like edits, are saved when you save
@@ -82,7 +82,7 @@ The boards are grouped by FPGA type in the same way.
 
 ![The Examples window: boards on the left, the selected board's examples on the right](images/examples.png)
 
-Every board's list starts with **BareMinimum**, as in the Arduino IDE: the
+Every board's list starts with **Bare Minimum**, as in the Arduino IDE: the
 board's pins (from its basic example) and a design that does nothing yet.
 Its outputs are set to 0 so that it builds; replace that with your design.
 

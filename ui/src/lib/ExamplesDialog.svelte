@@ -60,7 +60,7 @@
   );
   /**
    * The clicked entry, or else the board's only example from Apio if it has
-   * just one (or BareMinimum if it has none).
+   * just one (or Bare Minimum if it has none).
    */
   const selectedExample = $derived.by(() => {
     const clicked = group?.examples.find((e) => key(e) === selectedKey);

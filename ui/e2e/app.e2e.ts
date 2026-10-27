@@ -172,7 +172,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await expect(page.getByRole("option").first()).toHaveText(/Alhambra II/);
 });
 
-test("opens a board's BareMinimum from the examples", async ({ page }) => {
+test("opens a board's Bare Minimum from the examples", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
   await page.evaluate(() =>
@@ -194,13 +194,13 @@ test("opens a board's BareMinimum from the examples", async ({ page }) => {
   await expect(boards.getByRole("button", { name: /^Alchitry Au \(/ })).toHaveCount(0);
   await boards.getByRole("button", { name: /Xilinx/ }).click();
   await expect(boards.getByRole("button", { name: /^Alchitry Au \(/ })).toBeVisible();
-  await dialog.getByRole("button", { name: /BareMinimum/ }).click();
+  await dialog.getByRole("button", { name: /Bare Minimum/ }).click();
   await dialog.getByRole("button", { name: "Open" }).click();
   await expect(dialog).toBeHidden();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
   await expect(page.locator(".cm-content")).toContainText("assign led = 0;");
-  await expect(status(page)).toHaveText("Opened example BareMinimum.");
+  await expect(status(page)).toHaveText("Opened example Bare Minimum.");
   await expect(page.locator(".spinner")).toHaveCount(0);
 });
 

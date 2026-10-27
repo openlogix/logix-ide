@@ -236,7 +236,7 @@ export const backend = {
     invoke<ExampleList>("get_examples"),
 
   /**
-   * A board's BareMinimum (Examples): its pins and a design that does
+   * A board's Bare Minimum (Examples): its pins and a design that does
    * nothing yet, as a new, unsaved project.
    */
   openBareMinimum: (board: string): Promise<ProjectDoc> =>

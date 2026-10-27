@@ -2,18 +2,18 @@ import type { Board, Example } from "./backend";
 
 /**
  * Every board's first entry, as Arduino's File > Examples > 01.Basics >
- * BareMinimum: the board's pins and a design that does nothing yet.
+ * Bare Minimum: the board's pins and a design that does nothing yet.
  */
-export const BARE_MINIMUM = "BareMinimum";
+export const BARE_MINIMUM = "Bare Minimum";
 
-/** An entry in the Examples dialog: one of Apio's examples, or BareMinimum. */
+/** An entry in the Examples dialog: one of Apio's examples, or Bare Minimum. */
 export interface ExampleEntry extends Example {
   bare?: boolean;
 }
 
 export interface BoardGroup {
   board: Board;
-  /** BareMinimum (if it matches the search) first, then Apio's examples. */
+  /** Bare Minimum (if it matches the search) first, then Apio's examples. */
   examples: ExampleEntry[];
   /** How many of Apio's examples the board has. */
   count: number;
@@ -21,7 +21,7 @@ export interface BoardGroup {
 
 /**
  * Examples a board's pins are taken from, for new projects and
- * BareMinimum. Keep in sync with `STARTER_EXAMPLES` in `catalog.rs`.
+ * Bare Minimum. Keep in sync with `STARTER_EXAMPLES` in `catalog.rs`.
  */
 const STARTER_EXAMPLES = ["blinky", "ledon"];
 
@@ -38,7 +38,7 @@ function bareMinimum(board: string, examples: Example[]): ExampleEntry {
 }
 
 /**
- * Groups examples by board (in board order). Every board has BareMinimum
+ * Groups examples by board (in board order). Every board has Bare Minimum
  * first. With a search query, a board matches by name or id and then
  * shows all its entries; otherwise only its matching entries are shown.
  */

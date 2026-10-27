@@ -22,7 +22,7 @@ const summary = (q: string) =>
   );
 
 describe("groupExamples", () => {
-  it("lists all boards in board order, each with BareMinimum first", () => {
+  it("lists all boards in board order, each with Bare Minimum first", () => {
     expect(summary("")).toEqual([
       "alhambra-ii:BM,blinky,ledon",
       "icebreaker:BM,pll",
@@ -36,7 +36,7 @@ describe("groupExamples", () => {
     expect(counts).toEqual([2, 1, 0, 1]);
   });
 
-  it("says when BareMinimum has no pins", () => {
+  it("says when Bare Minimum has no pins", () => {
     const [alhambra, icebreaker] = groupExamples(boards, examples, "");
     expect(alhambra.examples[0].bare).toBe(true);
     expect(alhambra.examples[0].description).toContain("board's pins");
@@ -47,7 +47,7 @@ describe("groupExamples", () => {
     expect(summary("alhambra")).toEqual(["alhambra-ii:BM,blinky,ledon"]);
   });
 
-  it("finds BareMinimum by name", () => {
+  it("finds Bare Minimum by name", () => {
     expect(summary("minimum")).toEqual([
       "alhambra-ii:BM",
       "icebreaker:BM",

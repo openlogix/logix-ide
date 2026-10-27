@@ -33,7 +33,7 @@ click **Retry**.
 
 A design needs a pin file (e.g. `pinout.pcf`) that tells which FPGA pins
 connect to what on the board. Start a new project with the board selected
-(**File > New**), or open the board's **BareMinimum** or another of its
+(**File > New**), or open the board's **Bare Minimum** or another of its
 examples (**File > Examples…**), and use its pin file.
 
 A few boards have no examples to take the pins from. For those, add a pin
