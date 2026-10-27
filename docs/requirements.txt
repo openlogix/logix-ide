@@ -1,0 +1,3 @@
+# Tools to build the documentation site (see mkdocs.yml). Same theme
+# version as the Apio docs.
+mkdocs-material==9.6.14

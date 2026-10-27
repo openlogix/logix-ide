@@ -1,0 +1,6 @@
+/* Screenshots: a light frame so they stand out from the page. */
+.md-typeset img {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}

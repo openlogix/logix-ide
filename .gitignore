@@ -1,0 +1,13 @@
+node_modules/
+ui/dist/
+src-tauri/target/
+src-tauri/gen/schemas/
+.DS_Store
+ui/test-results/
+ui/playwright-report/
+_site/
+.venv-docs/
+
+# Personal files, kept only locally.
+/TODO.txt
+/.run.sh

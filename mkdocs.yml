@@ -1,0 +1,62 @@
+# The Logix user documentation, published to GitHub Pages by
+# .github/workflows/publish-docs.yaml. Pages are in docs/.
+site_name: Logix
+site_description: '"The Arduino experience, for FPGAs." A simple IDE for FPGAs, powered by Apio.'
+# Shown at the bottom of every page.
+copyright: Logix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.
+site_url: https://zapta.github.io/logix/
+repo_url: https://github.com/zapta/logix
+repo_name: zapta/logix
+edit_uri: edit/main/docs/
+
+# The generated site (not committed).
+site_dir: _site
+
+# Build tool requirements, not a page.
+exclude_docs: |
+  requirements.txt
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.footer
+    - content.code.copy
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.keys
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Installing: installing.md
+  - Quick start: quick-start.md
+  - Using Logix: using-logix.md
+  - Testbenches and simulation: testbenches.md
+  - Troubleshooting: troubleshooting.md

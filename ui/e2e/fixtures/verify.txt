@@ -1,0 +1,43 @@
+[2m$ apio lint[0m
+[33mActive env options [APIO_HOME].[0m
+Using env [38;5;36mdefault[0m ([38;5;36malhambra-ii[0m)
+------------------------------------------------------------------------------------------------------------------------
+Setting shell vars.
+params.apio_env_params.verilator_extra_options=[]
+Creating verilator config file.
+verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DAPIO_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I"~/.logix/apio/home/packages/oss-cad-suite/share/yosys/ice40" _build/default/hardware.vlt "~/.logix/apio/home/packages/oss-cad-suite/share/yosys/ice40/cells_sim.v" main.v main_tb.v
+============================================= [[32mSUCCESS[0m] Took 0.32 seconds ==============================================
+[2m$ apio build[0m
+[33mActive env options [APIO_HOME].[0m
+Using env [38;5;36mdefault[0m ([38;5;36malhambra-ii[0m)
+------------------------------------------------------------------------------------------------------------------------
+Setting shell vars.
+yosys -p "synth_ice40 -top main -json _build/default/hardware.json " -q -DSYNTHESIZE main.v
+nextpnr-ice40 --hx8k --package tq144:4k --json _build/default/hardware.json --asc _build/default/hardware.asc --report _build/default/hardware.pnr --pcf pinout.pcf -q
+icepack _build/default/hardware.asc _build/default/hardware.bin
+============================================= [[32mSUCCESS[0m] Took 1.32 seconds ==============================================
+[2m$ apio report[0m
+[33mActive env options [APIO_HOME].[0m
+Using env [38;5;36mdefault[0m ([38;5;36malhambra-ii[0m)
+------------------------------------------------------------------------------------------------------------------------
+Setting shell vars.
+Formatting pnr report.
+
+Used FPGA Resource                             
+[2m┌───────────────┬────────┬──────────┬─────────┐[0m
+[2m│[0m  RESOURCE     [2m│[0m  USED  [2m│[0m   TOTAL  [2m│[0m  USED%  [2m│[0m
+[2m├───────────────┼────────┼──────────┼─────────┤[0m
+[2m│[0m[35m  [0m[35mICESTORM_LC[0m[35m  [0m[2m│[0m[35m  [0m[35m  27[0m[35m  [0m[2m│[0m[35m  [0m[35m  7680[0m[35m  [0m[2m│[0m[35m  [0m[35m   0%[0m[35m  [0m[2m│[0m
+[2m│[0m[35m  [0m[35mSB_GB      [0m[35m  [0m[2m│[0m[35m  [0m[35m   1[0m[35m  [0m[2m│[0m[35m  [0m[35m     8[0m[35m  [0m[2m│[0m[35m  [0m[35m  12%[0m[35m  [0m[2m│[0m
+[2m│[0m[35m  [0m[35mSB_IO      [0m[35m  [0m[2m│[0m[35m  [0m[35m   2[0m[35m  [0m[2m│[0m[35m  [0m[35m   107[0m[35m  [0m[2m│[0m[35m  [0m[35m   1%[0m[35m  [0m[2m│[0m
+[2m└───────────────┴────────┴──────────┴─────────┘[0m
+
+Clock Information                
+[2m┌───────────┬───────────────────┐[0m
+[2m│[0m  CLOCK    [2m│[0m  MAX SPEED [Mhz]  [2m│[0m
+[2m├───────────┼───────────────────┤[0m
+[2m│[0m  sys_clk  [2m│[0m[35m  [0m[35m         194.36[0m[35m  [0m[2m│[0m
+[2m└───────────┴───────────────────┘[0m
+
+[33mUse '--verbose' for additional details.[0m
+============================================= [[32mSUCCESS[0m] Took 0.24 seconds ==============================================

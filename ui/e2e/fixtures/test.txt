@@ -1,0 +1,12 @@
+[2m$ apio test[0m
+[33mActive env options [APIO_HOME].[0m
+Using env [38;5;36mdefault[0m ([38;5;36malhambra-ii[0m)
+------------------------------------------------------------------------------------------------------------------------
+Setting shell vars.
+
+[35mTestbench main_tb.v[0m
+iverilog -g2012 -o _build/default/main_tb.out -DAPIO_SIM=0 -DNO_ICE40_DEFAULT_ASSIGNMENTS -I"~/.logix/apio/home/packages/oss-cad-suite/share/yosys/ice40" "~/.logix/apio/home/packages/oss-cad-suite/share/yosys/ice40/cells_sim.v" main.v main_tb.v
+vvp _build/default/main_tb.out -dumpfile=_build/default/main_tb.vcd
+VCD info: dumpfile _build/default/main_tb.vcd opened for output.
+[32mmain_tb.v:6: $finish called at 100000 (1ps)[0m
+============================================= [[32mSUCCESS[0m] Took 0.35 seconds ==============================================

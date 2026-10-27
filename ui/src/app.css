@@ -1,0 +1,72 @@
+/* Colors. The theme comes from Settings: `data-theme` on the root element
+   is "light", "dark" or "system" (follow the OS). */
+:root {
+  --accent: #00878f;
+  --accent-strong: #005c5f;
+  --toolbar-bg: #00878f;
+  --toolbar-fg: #ffffff;
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #6b7280;
+  --border: #d0d7de;
+  --console-bg: #1e1e1e;
+  --console-fg: #d4d4d4;
+  --banner-bg: #e6f4f5;
+  --tabs-bg: #f3f4f6;
+  --status-ok-bg: #e3f4e6;
+  --status-ok-fg: #1e6b34;
+  --error-mark: #d32f2f;
+  --warning-mark: #e0a100;
+  --banner-error-bg: #c62828;
+  --banner-error-fg: #ffffff;
+  /* Settings > Editor font size. */
+  --editor-font-size: 13px;
+  color-scheme: light;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+/* Dark colors: for the "dark" theme, and for "system" when the OS is dark.
+   (The two rules must stay identical.) */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --toolbar-bg: #17262b;
+  --toolbar-fg: #e6edf3;
+  --bg: #1b1f23;
+  --fg: #e6edf3;
+  --muted: #9aa4ae;
+  --border: #30363d;
+  --console-bg: #101316;
+  --banner-bg: #16323a;
+  --tabs-bg: #15181b;
+  --status-ok-bg: #173a24;
+  --status-ok-fg: #9be3b0;
+  --banner-error-bg: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --toolbar-bg: #17262b;
+    --toolbar-fg: #e6edf3;
+    --bg: #1b1f23;
+    --fg: #e6edf3;
+    --muted: #9aa4ae;
+    --border: #30363d;
+    --console-bg: #101316;
+    --banner-bg: #16323a;
+    --tabs-bg: #15181b;
+    --status-ok-bg: #173a24;
+    --status-ok-fg: #9be3b0;
+    --banner-error-bg: #b3261e;
+  }
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+}

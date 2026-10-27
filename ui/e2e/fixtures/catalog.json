@@ -1,0 +1,1282 @@
+{
+ "boards": [
+  {
+   "id": "alchitry-au",
+   "description": "Alchitry Au (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "alchitry-au-plus",
+   "description": "Alchitry Au+ (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "alchitry-cu",
+   "description": "Alchitry Cu Development Board",
+   "arch": "ice40"
+  },
+  {
+   "id": "alhambra-ii",
+   "description": "Alhambra II",
+   "arch": "ice40"
+  },
+  {
+   "id": "alinx-ax7035",
+   "description": "Alinx ARTIX-7 AX7035",
+   "arch": "xilinx"
+  },
+  {
+   "id": "arice1",
+   "description": "ARiCE v1",
+   "arch": "ice40"
+  },
+  {
+   "id": "arty-a7-100t",
+   "description": "Arty A7-100T (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "arty-a7-35t",
+   "description": "Arty A7-35T (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "arty-s7-25",
+   "description": "Arty S7-25 (Xilinx, Spartan7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "arty-s7-50",
+   "description": "Arty S7-50 (Xilinx, Spartan7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "azukar2",
+   "description": "AZUKAR v2",
+   "arch": "ice40"
+  },
+  {
+   "id": "basys3",
+   "description": "Basys3 (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "blackice",
+   "description": "BlackIce",
+   "arch": "ice40"
+  },
+  {
+   "id": "blackice-ii",
+   "description": "BlackIce II",
+   "arch": "ice40"
+  },
+  {
+   "id": "blackice-mx",
+   "description": "BlackIce MX",
+   "arch": "ice40"
+  },
+  {
+   "id": "brs-100-gw1nr9",
+   "description": "BrisbaneSilicon 9k",
+   "arch": "gowin"
+  },
+  {
+   "id": "epm11",
+   "description": "BrisbaneSilicon EPM11",
+   "arch": "gowin"
+  },
+  {
+   "id": "butterstick-r10-2g-85k",
+   "description": "butterstick r1.0 DFU",
+   "arch": "ecp5"
+  },
+  {
+   "id": "butterstick-r10-2g-85k-ft2232h",
+   "description": "butterstick r1.0 FT2232H",
+   "arch": "ecp5"
+  },
+  {
+   "id": "butterstick-r10-2g-85k-ft232h",
+   "description": "butterstick r1.0 FT232H",
+   "arch": "ecp5"
+  },
+  {
+   "id": "cmod-a7-35t",
+   "description": "Cmod A7-35T (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "colorlight-i9plus",
+   "description": "Colorlight i9+ (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "colorlight-5a-75b-v61",
+   "description": "ColorLight-5A-75B-V61",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-5a-75b-v7",
+   "description": "ColorLight-5A-75B-V7",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-5a-75b-v8",
+   "description": "ColorLight-5A-75B-V8",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-5a-75e-v6",
+   "description": "ColorLight-5A-75E-V6",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-5a-75e-v71-ft2232h",
+   "description": "ColorLight-5A-75E-V71",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-5a-75e-v71-ft232h",
+   "description": "ColorLight-5A-75E-V71",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-5a-75e-v71-usb-blaster",
+   "description": "ColorLight-5A-75E-V71",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-i5-v7-0",
+   "description": "ColorLight-i5",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-i5-v7-0-ram",
+   "description": "ColorLight-i5 (RAM)",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-i9-v7-2-cmsis-dap",
+   "description": "ColorLight-i9",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-i9-v7-2-ft2232h",
+   "description": "ColorLight-i9",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-i9-v7-2-ft232h",
+   "description": "ColorLight-i9",
+   "arch": "ecp5"
+  },
+  {
+   "id": "colorlight-i9-v7-2-usb-blaster",
+   "description": "ColorLight-i9",
+   "arch": "ecp5"
+  },
+  {
+   "id": "cynthion-r1-4",
+   "description": "Cynthion r1.4",
+   "arch": "ecp5"
+  },
+  {
+   "id": "versa",
+   "description": "ECP5 Versa",
+   "arch": "ecp5"
+  },
+  {
+   "id": "ecp5-evaluation-board",
+   "description": "ECP5-Evaluation-Board",
+   "arch": "ecp5"
+  },
+  {
+   "id": "ecp5-mini-12",
+   "description": "ECP5-Mini-12",
+   "arch": "ecp5"
+  },
+  {
+   "id": "ecp5-mini-25",
+   "description": "ECP5-Mini-12",
+   "arch": "ecp5"
+  },
+  {
+   "id": "edu-ciaa-fpga",
+   "description": "EDU-CIAA-FPGA",
+   "arch": "ice40"
+  },
+  {
+   "id": "fleafpga-ohm-ft2232h",
+   "description": "FleaFPGA-Ohm_(FT2232H)",
+   "arch": "ecp5"
+  },
+  {
+   "id": "fleafpga-ohm-ft232h",
+   "description": "FleaFPGA-Ohm_(FT232H)",
+   "arch": "ecp5"
+  },
+  {
+   "id": "fleafpga-ohm-usb-blaster",
+   "description": "FleaFPGA-Ohm_(USB-Blaster)",
+   "arch": "ecp5"
+  },
+  {
+   "id": "fomu",
+   "description": "Fomu",
+   "arch": "ice40"
+  },
+  {
+   "id": "fpga101",
+   "description": "FPGA 101 - Workshop Badge",
+   "arch": "ice40"
+  },
+  {
+   "id": "ice40-up5k",
+   "description": "iCE40 UltraPlus Breakout",
+   "arch": "ice40"
+  },
+  {
+   "id": "ice40-hx8k",
+   "description": "iCE40-HX8K Breakout Board",
+   "arch": "ice40"
+  },
+  {
+   "id": "ice40-hx1k-evb",
+   "description": "ICE40HX1K-EVB",
+   "arch": "ice40"
+  },
+  {
+   "id": "ice40-hx8k-evb",
+   "description": "iCE40HX8K-EVB",
+   "arch": "ice40"
+  },
+  {
+   "id": "iceblink40-hx1k",
+   "description": "iCEblink40-HX1K Eval Kit",
+   "arch": "ice40"
+  },
+  {
+   "id": "icebreaker",
+   "description": "iCEBreaker",
+   "arch": "ice40"
+  },
+  {
+   "id": "icebreaker-bitsy0",
+   "description": "iCEBreaker bitsy",
+   "arch": "ice40"
+  },
+  {
+   "id": "icebreaker-bitsy1",
+   "description": "iCEBreaker bitsy",
+   "arch": "ice40"
+  },
+  {
+   "id": "icefun",
+   "description": "iceFUN",
+   "arch": "ice40"
+  },
+  {
+   "id": "icenode",
+   "description": "ICENode",
+   "arch": "ice40"
+  },
+  {
+   "id": "icepi-zero",
+   "description": "Icepi Zero",
+   "arch": "ecp5"
+  },
+  {
+   "id": "icestick",
+   "description": "iCEstick Eval Kit",
+   "arch": "ice40"
+  },
+  {
+   "id": "icesugar-pro",
+   "description": "Icesugar Pro",
+   "arch": "ecp5"
+  },
+  {
+   "id": "icesugar-pro-ram",
+   "description": "Icesugar Pro (RAM)",
+   "arch": "ecp5"
+  },
+  {
+   "id": "icesugar-1-5",
+   "description": "iCESugar v1.5",
+   "arch": "ice40"
+  },
+  {
+   "id": "icesugar-nano",
+   "description": "iCESugar-nano",
+   "arch": "ice40"
+  },
+  {
+   "id": "icewerx",
+   "description": "iceWerx",
+   "arch": "ice40"
+  },
+  {
+   "id": "icezum",
+   "description": "Icezum Alhambra",
+   "arch": "ice40"
+  },
+  {
+   "id": "kefir",
+   "description": "Kéfir I iCE40-HX4K",
+   "arch": "ice40"
+  },
+  {
+   "id": "microphase-a7-lite",
+   "description": "MicroPhase A7-Lite (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "mimas-a7",
+   "description": "Mimas A7 (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "mimas-ecp5-mini",
+   "description": "Mimas ECP5 Mini",
+   "arch": "ecp5"
+  },
+  {
+   "id": "nexys-a7-100t",
+   "description": "Nexys A7-100T / Nexys 4 DDR (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "nexys-a7-50t",
+   "description": "Nexys A7-50T (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "odt-icyblue-feather",
+   "description": "ODT_IcyBlue_Feather",
+   "arch": "ice40"
+  },
+  {
+   "id": "ok-ice40pro",
+   "description": "OK-iCE40Pro",
+   "arch": "ice40"
+  },
+  {
+   "id": "orangecrab-r02-25f",
+   "description": "OrangeCrab r0.2 25K",
+   "arch": "ecp5"
+  },
+  {
+   "id": "orangecrab-r02-85f",
+   "description": "OrangeCrab r0.2 85K",
+   "arch": "ecp5"
+  },
+  {
+   "id": "pi-sicle",
+   "description": "Pi-sicle",
+   "arch": "ice40"
+  },
+  {
+   "id": "pico-ice",
+   "description": "pico-ice",
+   "arch": "ice40"
+  },
+  {
+   "id": "pynq-z1",
+   "description": "Pynq-Z1 (Xilinx, Zynq7 PL)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "pynq-z2",
+   "description": "Pynq-Z2 (Xilinx, Zynq7 PL)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "qmtech-xc7a100t-ft2232h",
+   "description": "QMTECH XC7A100T core board (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "sipeed-tang-nano",
+   "description": "Sipeed Tang Nano",
+   "arch": "gowin"
+  },
+  {
+   "id": "sipeed-tang-nano-1k",
+   "description": "Sipeed Tang Nano 1k",
+   "arch": "gowin"
+  },
+  {
+   "id": "sipeed-tang-nano-20k",
+   "description": "Sipeed Tang Nano 20k",
+   "arch": "gowin"
+  },
+  {
+   "id": "sipeed-tang-nano-4k",
+   "description": "Sipeed Tang Nano 4k",
+   "arch": "gowin"
+  },
+  {
+   "id": "sipeed-tang-nano-9k",
+   "description": "Sipeed Tang Nano 9k",
+   "arch": "gowin"
+  },
+  {
+   "id": "sipeed-tang-primer-20k",
+   "description": "Sipeed Tang Primer 20k",
+   "arch": "gowin"
+  },
+  {
+   "id": "soan-papdi",
+   "description": "Soan-Papdi",
+   "arch": "ice40"
+  },
+  {
+   "id": "soan-papdi-mini",
+   "description": "Soan-Papdi-Mini",
+   "arch": "ice40"
+  },
+  {
+   "id": "go-board",
+   "description": "The Go Board",
+   "arch": "ice40"
+  },
+  {
+   "id": "thetamachines-eth4k",
+   "description": "Theta Machines ETH4K",
+   "arch": "ice40"
+  },
+  {
+   "id": "tinyfpga-b2",
+   "description": "TinyFPGA B2",
+   "arch": "ice40"
+  },
+  {
+   "id": "tinyfpga-bx",
+   "description": "TinyFPGA BX",
+   "arch": "ice40"
+  },
+  {
+   "id": "tinyfpga-ex-rev1",
+   "description": "TinyFPGA EX rev 1",
+   "arch": "ecp5"
+  },
+  {
+   "id": "tinyfpga-ex-rev2",
+   "description": "TinyFPGA EX rev 2",
+   "arch": "ecp5"
+  },
+  {
+   "id": "ulx3s-12f",
+   "description": "ULX3S 12K",
+   "arch": "ecp5"
+  },
+  {
+   "id": "ulx3s-25f",
+   "description": "ULX3S 25K",
+   "arch": "ecp5"
+  },
+  {
+   "id": "ulx3s-45f",
+   "description": "ULX3S 45K",
+   "arch": "ecp5"
+  },
+  {
+   "id": "ulx3s-85f",
+   "description": "ULX3S 85K",
+   "arch": "ecp5"
+  },
+  {
+   "id": "upduino",
+   "description": "UPDuino v1.0",
+   "arch": "ice40"
+  },
+  {
+   "id": "upduino2",
+   "description": "UPDuino v2.0",
+   "arch": "ice40"
+  },
+  {
+   "id": "upduino21",
+   "description": "UPduino v2.1",
+   "arch": "ice40"
+  },
+  {
+   "id": "upduino3",
+   "description": "UPduino v3.0",
+   "arch": "ice40"
+  },
+  {
+   "id": "upduino31",
+   "description": "UPduino v3.1",
+   "arch": "ice40"
+  },
+  {
+   "id": "vsdsquadron-fm",
+   "description": "VSDSquadron FPGA Mini",
+   "arch": "ice40"
+  },
+  {
+   "id": "zedboard",
+   "description": "ZedBoard (Xilinx, Zynq7 PL)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "zxtres",
+   "description": "ZXTRES (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "zxtres-plus",
+   "description": "ZXTRES+ (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "zxtres-plus-plus",
+   "description": "ZXTRES++ (Xilinx, Artix7)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "zybo-z7-10",
+   "description": "Zybo Z7-10 (Xilinx, Zynq7 PL)",
+   "arch": "xilinx"
+  },
+  {
+   "id": "zybo-z7-20",
+   "description": "Zybo Z7-20 (Xilinx, Zynq7 PL)",
+   "arch": "xilinx"
+  }
+ ],
+ "examples": [
+  {
+   "board": "alchitry-au",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "alchitry-au-plus",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "alchitry-cu",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "alhambra-ii",
+   "name": "area-test",
+   "description": "Uses most of the FPGA's resources"
+  },
+  {
+   "board": "alhambra-ii",
+   "name": "blinky",
+   "description": "Blinking led"
+  },
+  {
+   "board": "alhambra-ii",
+   "name": "ledon",
+   "description": "Turns on an LED"
+  },
+  {
+   "board": "alhambra-ii",
+   "name": "pll",
+   "description": "Blinks an LED with a 48MHz PLL clock"
+  },
+  {
+   "board": "alhambra-ii",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "arty-a7-100t",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "arty-a7-35t",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "arty-a7-35t",
+   "name": "pll",
+   "description": "Blinks an LED with a 200MHz PLL clock"
+  },
+  {
+   "board": "arty-s7-25",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "arty-s7-50",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "azukar2",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "basys3",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "basys3",
+   "name": "ledon",
+   "description": "Turns on one LED"
+  },
+  {
+   "board": "blackice",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "blackice-ii",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "brs-100-gw1nr9",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "brs-100-gw1nr9",
+   "name": "running-leds",
+   "description": "Running lights on the 6 LEDs"
+  },
+  {
+   "board": "butterstick-r10-2g-85k",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "butterstick-r10-2g-85k-ft2232h",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "butterstick-r10-2g-85k-ft232h",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "cmod-a7-35t",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "colorlight-5a-75b-v61",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-5a-75b-v7",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-5a-75b-v8",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "colorlight-5a-75b-v8",
+   "name": "ledon",
+   "description": "Turns on the LED"
+  },
+  {
+   "board": "colorlight-5a-75b-v8",
+   "name": "ledon-sv",
+   "description": "Turns on the LED"
+  },
+  {
+   "board": "colorlight-5a-75b-v8",
+   "name": "pll",
+   "description": "Blinks an LED with a 120MHz PLL clock"
+  },
+  {
+   "board": "colorlight-5a-75e-v6",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-5a-75e-v71-ft2232h",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "colorlight-5a-75e-v71-ft2232h",
+   "name": "ledon",
+   "description": "Turns on the LED"
+  },
+  {
+   "board": "colorlight-5a-75e-v71-ft232h",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "colorlight-5a-75e-v71-usb-blaster",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "colorlight-i5-v7-0",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-i5-v7-0-ram",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-i9-v7-2-cmsis-dap",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-i9-v7-2-ft2232h",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-i9-v7-2-ft232h",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-i9-v7-2-usb-blaster",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "colorlight-i9plus",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "cynthion-r1-4",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ecp5-evaluation-board",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "edu-ciaa-fpga",
+   "name": "and-gate-sv",
+   "description": "An AND gate, in SystemVerilog"
+  },
+  {
+   "board": "edu-ciaa-fpga",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "edu-ciaa-fpga",
+   "name": "led-green",
+   "description": "Turns on the green LED"
+  },
+  {
+   "board": "edu-ciaa-fpga",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "epm11",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "fleafpga-ohm-ft2232h",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "fleafpga-ohm-ft232h",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "fleafpga-ohm-usb-blaster",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "fomu",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "fomu",
+   "name": "rgb-led",
+   "description": "Cycles the RGB LED through its colors"
+  },
+  {
+   "board": "fpga101",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "go-board",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "go-board",
+   "name": "leds",
+   "description": "Turns on all the LEDs"
+  },
+  {
+   "board": "go-board",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "ice40-hx1k-evb",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "ice40-hx1k-evb",
+   "name": "leds",
+   "description": "Buttons turn on the LEDs"
+  },
+  {
+   "board": "ice40-hx8k",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "ice40-hx8k",
+   "name": "leds",
+   "description": "Turns on all the LEDs"
+  },
+  {
+   "board": "ice40-hx8k-evb",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "ice40-hx8k-evb",
+   "name": "leds",
+   "description": "Buttons turn on the LEDs"
+  },
+  {
+   "board": "ice40-up5k",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ice40-up5k",
+   "name": "led-green",
+   "description": "Turns the RGB LED green"
+  },
+  {
+   "board": "ice40-up5k",
+   "name": "rgb-led",
+   "description": "Cycles the RGB LED through its colors"
+  },
+  {
+   "board": "ice40-up5k",
+   "name": "switches",
+   "description": "Switches set the RGB LED colors"
+  },
+  {
+   "board": "iceblink40-hx1k",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "icebreaker",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icebreaker",
+   "name": "buttons",
+   "description": "Buttons control the LEDs"
+  },
+  {
+   "board": "icebreaker",
+   "name": "led-green",
+   "description": "Turns on the green LED"
+  },
+  {
+   "board": "icebreaker-bitsy0",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "icebreaker-bitsy1",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "icefun",
+   "name": "blinky",
+   "description": "Blinks two LEDs of the LED matrix"
+  },
+  {
+   "board": "icefun",
+   "name": "led-matrix",
+   "description": "LED matrix module"
+  },
+  {
+   "board": "icepi-zero",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icestick",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "icestick",
+   "name": "leds",
+   "description": "Turns on all the LEDs"
+  },
+  {
+   "board": "icestick",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "icesugar-1-5",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icesugar-1-5",
+   "name": "rgb-led",
+   "description": "Cycles the RGB LED through its colors"
+  },
+  {
+   "board": "icesugar-nano",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "icesugar-pro",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icesugar-pro",
+   "name": "pll",
+   "description": "Blinks an LED with a 120MHz PLL clock"
+  },
+  {
+   "board": "icesugar-pro-ram",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icewerx",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icewerx",
+   "name": "ledon",
+   "description": "Turns on the red LED"
+  },
+  {
+   "board": "icezum",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icezum",
+   "name": "frere-jacques",
+   "description": "Frère Jacques in two voices"
+  },
+  {
+   "board": "icezum",
+   "name": "leds",
+   "description": "Turns on all the LEDs"
+  },
+  {
+   "board": "icezum",
+   "name": "marcha-imperial",
+   "description": "Project template for the icezum board"
+  },
+  {
+   "board": "icezum",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "icezum",
+   "name": "wire",
+   "description": "An LED follows a header pin"
+  },
+  {
+   "board": "kefir",
+   "name": "leds",
+   "description": "Turns on all the LEDs"
+  },
+  {
+   "board": "kefir",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "microphase-a7-lite",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "mimas-a7",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "mimas-ecp5-mini",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "nexys-a7-100t",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "nexys-a7-50t",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "odt-icyblue-feather",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "ok-ice40pro",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "orangecrab-r02-25f",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "orangecrab-r02-85f",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "pico-ice",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "pynq-z1",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "pynq-z2",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "qmtech-xc7a100t-ft2232h",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "sipeed-tang-nano",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "sipeed-tang-nano-1k",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "sipeed-tang-nano-1k",
+   "name": "rgb-led",
+   "description": "Rotates the colors of the RGB LED"
+  },
+  {
+   "board": "sipeed-tang-nano-20k",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "sipeed-tang-nano-20k",
+   "name": "pll",
+   "description": "Blinks an LED with a 180MHz PLL clock"
+  },
+  {
+   "board": "sipeed-tang-nano-4k",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "sipeed-tang-nano-9k",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "sipeed-tang-nano-9k",
+   "name": "blinky-sv",
+   "description": "Blinks an LED, in SystemVerilog"
+  },
+  {
+   "board": "sipeed-tang-nano-9k",
+   "name": "pll",
+   "description": "Blinks an LED with a 75MHz PLL clock"
+  },
+  {
+   "board": "soan-papdi",
+   "name": "blinky",
+   "description": "Blinking LED (untested)"
+  },
+  {
+   "board": "tinyfpga-b2",
+   "name": "blinky",
+   "description": "Blinks an LED wired to pin 13"
+  },
+  {
+   "board": "tinyfpga-b2",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "tinyfpga-bx",
+   "name": "blink-sos",
+   "description": "Flashes SOS in Morse code"
+  },
+  {
+   "board": "tinyfpga-bx",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "tinyfpga-bx",
+   "name": "clock-divider",
+   "description": "Clock divider with two phases outputs"
+  },
+  {
+   "board": "tinyfpga-bx",
+   "name": "template",
+   "description": "Project template"
+  },
+  {
+   "board": "ulx3s-12f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-12f",
+   "name": "ledon",
+   "description": "Turns on one LED"
+  },
+  {
+   "board": "ulx3s-25f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-45f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-45f",
+   "name": "button-counter",
+   "description": "LEDs show a counter and a button"
+  },
+  {
+   "board": "ulx3s-85f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-85f",
+   "name": "button-counter",
+   "description": "LEDs show a counter and a button"
+  },
+  {
+   "board": "upduino",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "upduino2",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "upduino21",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "upduino3",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "upduino31",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "upduino31",
+   "name": "rgb-led",
+   "description": "Cycles the RGB LED through its colors"
+  },
+  {
+   "board": "versa",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "vsdsquadron-fm",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "zedboard",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "zxtres",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "zxtres-plus",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "zxtres-plus-plus",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "zybo-z7-10",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "zybo-z7-20",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  }
+ ],
+ "hidden": 18
+}

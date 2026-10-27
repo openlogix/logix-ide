@@ -1,0 +1,24 @@
+[2m$ apio lint[0m
+[33mActive env options [APIO_HOME].[0m
+Using env [38;5;36mdefault[0m ([38;5;36malhambra-ii[0m)
+------------------------------------------------------------------------------------------------------------------------
+Setting shell vars.
+params.apio_env_params.verilator_extra_options=[]
+verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DAPIO_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I"~/.logix/apio/home/packages/oss-cad-suite/share/yosys/ice40" _build/default/hardware.vlt "~/.logix/apio/home/packages/oss-cad-suite/share/yosys/ice40/cells_sim.v" main.v main_tb.v
+[31m%Error: main.v:8:1: syntax error, unexpected endmodule, expecting ',' or ';'[0m
+    8 | endmodule
+      | ^~~~~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=5.053 for more assistance.
+[31m%Error: Cannot continue[0m
+        ... This fatal error may be caused by the earlier error(s); resolve those first.
+scons: *** [_build/default/hardware] Error 1
+============================================== [[31mERROR[0m] Took 0.26 seconds ===============================================
+[2m$ apio build[0m
+[33mActive env options [APIO_HOME].[0m
+Using env [38;5;36mdefault[0m ([38;5;36malhambra-ii[0m)
+------------------------------------------------------------------------------------------------------------------------
+Setting shell vars.
+yosys -p "synth_ice40 -top main -json _build/default/hardware.json " -q -DSYNTHESIZE main.v
+[31mmain.v:8: ERROR: syntax error, unexpected TOK_ENDMODULE[0m
+scons: *** [_build/default/hardware.json] Error 1
+============================================== [[31mERROR[0m] Took 0.27 seconds ===============================================

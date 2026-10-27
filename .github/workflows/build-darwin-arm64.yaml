@@ -1,0 +1,142 @@
+# Builds the Logix macOS (Apple Silicon) installer: a .dmg with Logix.app.
+# Called by build-pre-release.yaml, which passes BUILD-INFO.json as the
+# 'build-info' artifact.
+
+name: build-darwin-arm64
+
+on:
+  workflow_call:
+
+env:
+  # These are set later from BUILD-INFO.json.
+  REPO: ""
+  REPO_COMMIT: ""
+  PACKAGE_TAG: ""
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # For this repo's actions (.github/actions). The commit to build is
+      # checked out separately below.
+      - name: Checkout this repo
+        uses: actions/checkout@v7
+
+      - name: Check required platform
+        uses: ./.github/actions/check-platform
+        with:
+          os: darwin
+          arch: arm64
+
+      - name: Download BUILD-INFO.json artifact from main job
+        uses: actions/download-artifact@v8
+        with:
+          name: build-info
+          path: _artifacts
+
+      - name: Move build info
+        run: |
+          find _artifacts
+          mv _artifacts/BUILD-INFO.json .
+
+      - name: Add platform info to build info json file
+        uses: ./.github/actions/write-to-json-file
+        with:
+          json-file: BUILD-INFO.json
+          key: target-platform
+          value: darwin-arm64
+
+      - name: Format build info json file
+        uses: ./.github/actions/format-json-file
+        with:
+          json-file: BUILD-INFO.json
+
+      - name: Set env vars from JSON
+        uses: ./.github/actions/set-env-from-json
+        with:
+          json-file: BUILD-INFO.json
+          mappings: >-
+            REPO         repo
+            REPO_COMMIT  repo-commit
+            PACKAGE_TAG  package-tag
+
+      # Into a subdirectory, not to step on BUILD-INFO.json.
+      - name: Checkout the commit to build
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.REPO }}
+          ref: ${{ env.REPO_COMMIT }}
+          path: _repo
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install JS dependencies
+        working-directory: _repo
+        run: npm ci
+
+      # For the end-to-end UI tests in scripts/test.sh.
+      - name: Install the Playwright WebKit browser
+        working-directory: _repo
+        run: npx playwright install webkit
+
+      # Don't publish a build that fails its own checks.
+      - name: Run checks and tests
+        working-directory: _repo
+        run: scripts/test.sh
+
+      # Builds the release app and wraps it in a .dmg (the bundle settings,
+      # including the ad-hoc signature, are in src-tauri/tauri.conf.json).
+      - name: Build Logix.app and the .dmg
+        working-directory: _repo
+        run: npm run tauri -- build --bundles dmg
+
+      - name: Collect the .dmg
+        run: |
+          find _repo/src-tauri/target/release/bundle -maxdepth 2
+          dmgs=(_repo/src-tauri/target/release/bundle/dmg/*.dmg)
+          if [[ ${#dmgs[@]} -ne 1 || ! -f "${dmgs[0]}" ]]; then
+            echo "Error: expected exactly one .dmg, found: ${dmgs[*]}"
+            exit 1
+          fi
+          cp "${dmgs[0]}" "logix-darwin-arm64-${PACKAGE_TAG}.dmg"
+          ls -al *.dmg
+
+      # Checks what users get: the .dmg is sound, it has the app and the
+      # Applications shortcut, and the app has a valid (ad-hoc) signature
+      # (an unsigned app is reported as "damaged" when downloaded). Tauri
+      # deletes the separate Logix.app after making the .dmg, so the app is
+      # checked inside the mounted .dmg.
+      - name: Verify the .dmg and the app signature
+        run: |
+          dmg="logix-darwin-arm64-${PACKAGE_TAG}.dmg"
+          hdiutil verify "$dmg"
+          mnt="$(mktemp -d)"
+          hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt"
+          trap 'hdiutil detach "$mnt" -force || true' EXIT
+          ls -al "$mnt"
+          test -L "$mnt/Applications"
+          app="$mnt/Logix.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          codesign --display --verbose=2 "$app" 2>&1 | tee codesign.txt
+          grep -q "Signature=adhoc" codesign.txt
+
+      - name: Export the .dmg as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          if-no-files-found: error
+          name: logix-darwin-arm64
+          path: logix-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg

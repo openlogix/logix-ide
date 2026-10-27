@@ -1,0 +1,39 @@
+[package]
+name = "logix"
+version = "0.1.0"
+description = "\"The Arduino experience, for FPGAs\": a simple IDE for FPGAs, powered by Apio"
+edition = "2021"
+license = "CC0-1.0"
+
+[lib]
+name = "logix_lib"
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+# Reads the pinned Apio release from package.json (build.rs).
+serde_json = "1"
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+dirs = "6"
+flate2 = "1"
+tar = "0.4"
+futures-util = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "sync", "time"] }
+tauri-plugin-dialog = "2"
+regex = "1"
+tokio-util = "0.7"
+
+# macOS only: bringing GTKWave's window to the front (platform.rs).
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", features = ["NSApplication", "NSResponder", "NSRunningApplication", "NSWorkspace"] }
+objc2-foundation = { version = "0.3", features = ["NSArray", "NSString", "NSURL"] }
+
+[dev-dependencies]
+tempfile = "3"
