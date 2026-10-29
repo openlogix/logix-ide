@@ -186,6 +186,10 @@ These are the house rules for changes, whether you prompt Claude or not:
 - **Keep `CLAUDE.md` and the docs in sync** with every change: a new
   feature, menu item, shortcut or message updates the matching page, and a
   new decision goes into `CLAUDE.md` with its reason.
+- **Pull requests are rules or prompts**, ideally: a change to `CLAUDE.md`
+  or the prompt to run, rather than hand-written code, so the code can be
+  generated from it. If a pull request includes code, it also updates
+  `CLAUDE.md` to explain it, and its description gives the prompts used.
 - **Commits are made by the developer**, after reviewing the change and
   running `scripts/test.sh`. Claude doesn't commit unless asked.
 - **Keep Logix simple**, like the Arduino IDE: ease of use for beginners

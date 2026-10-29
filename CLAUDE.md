@@ -9,6 +9,7 @@ The checked-in Claude content (this file, and any `.claude/` files added later) 
 - **Detailed enough, not too detailed.** Record what and why: requirements, decisions with their reasons, contracts between parts (commands and events, file formats, names, paths, pinned versions), verified facts about external tools (Apio, Tauri, GitHub), conventions, and the non-obvious lessons (workarounds, "why not X"). Leave out what follows from these or from standard docs, such as line-by-line code. Test: if an agent regenerating the repo would likely get it wrong without a sentence, keep the sentence; otherwise leave it out.
 - **Same commit.** Every change to behavior, workflows, scripts or decisions updates this file in the same commit. Remove what no longer holds.
 - **No personal info.** Nothing that identifies or locates a person: no names, emails, machine-specific paths, account details or private notes. Use placeholders (e.g. `/Users/you`).
+- **Pull requests are rules or prompts.** Ideally a pull request changes this file (a requirement, rule or decision with its reason), or gives the prompt to run, rather than hand-written code; the code is then generated from it. A pull request that does include code must also include the change to this file that explains it, since code this file doesn't account for would be lost when the repo is regenerated. Its description gives the prompt(s) used. When working on a code-only contribution, first turn it into the rule it implies and add that here.
 
 ## Project goal
 
