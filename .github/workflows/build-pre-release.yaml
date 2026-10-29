@@ -214,12 +214,12 @@ jobs:
         run: |
           cat > RELEASE-BODY.txt <<EOF
 
-          **Logix: "The Arduino experience, for FPGAs."**
+          **Logix IDE: "The Arduino experience, for FPGAs."**
 
           [Website](https://www.openlogix.org/ide/) ·
           [Documentation](https://openlogix.github.io/logix-ide/)
 
-          ### Installing Logix on macOS (Apple Silicon)
+          ### Installing Logix IDE on macOS (Apple Silicon)
 
           1. Download \`logix-darwin-arm64-${PACKAGE_TAG}.dmg\` (below) to your
              **Downloads** folder.
@@ -228,13 +228,13 @@ jobs:
              \`\`\`
              xattr -c ~/Downloads/logix-darwin-arm64-${PACKAGE_TAG}.dmg
              \`\`\`
-          3. Double-click the \`.dmg\` file and drag **Logix** into the
+          3. Double-click the \`.dmg\` file and drag **Logix IDE** into the
              **Applications** folder.
-          4. Open Logix from Applications. On its first start, Logix downloads
+          4. Open Logix IDE from Applications. On its first start, Logix downloads
              the FPGA tools it needs. This may take a few minutes; later
              starts are quick.
 
-          To uninstall, drag Logix from Applications to the Trash. You can
+          To uninstall, drag Logix IDE from Applications to the Trash. You can
           also delete the \`~/.logix\` folder, which holds the FPGA tools
           Logix downloaded and its settings. Your projects aren't in it.
 

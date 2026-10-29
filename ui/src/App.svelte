@@ -1453,7 +1453,7 @@
     <main class="editor">
       {#if welcome}
         <div class="welcome">
-          <h2>Welcome to Logix</h2>
+          <h2>Welcome to Logix IDE</h2>
           <p class="motto">"The Arduino experience, for FPGAs"</p>
           {#if setupError}
             <p>

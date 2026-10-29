@@ -134,7 +134,7 @@ opens the folder with Logix's log, to attach to a report (see
 
 ## Settings
 
-**Logix > Settings…** (++cmd+comma++):
+**Logix IDE > Settings…** (++cmd+comma++):
 
 ![The Settings window](images/settings.png)
 

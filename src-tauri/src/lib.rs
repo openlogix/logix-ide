@@ -59,7 +59,7 @@ pub fn run() {
         .setup(|app| {
             let info = app.package_info();
             logging::init(&format!(
-                "Logix {} ({}), Apio {}",
+                "Logix IDE {} ({}), Apio {}",
                 info.version,
                 platform::current().map_or("unknown platform".into(), |p| format!("{p:?}")),
                 apio::APIO_RELEASE_TAG

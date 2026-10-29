@@ -182,7 +182,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
 
 export const backend: typeof Real.backend = {
   appInfo: async () => ({
-    name: "Logix",
+    name: "Logix IDE",
     version: packageJson.version,
     platform: "macos-arm64",
     platformSupported: true,

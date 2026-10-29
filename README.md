@@ -1,4 +1,4 @@
-# Logix
+# Logix IDE
 
 [![Build](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml)
 [![Tests](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml)
@@ -48,7 +48,7 @@ source FPGA tools, and it downloads everything it needs by itself.
 ![A simulation's signals in GTKWave](docs/images/gtkwave.png)
 <sub>GTKWave screenshot from the [Apio](https://github.com/FPGAwars/apio) project.</sub>
 
-## Install Logix
+## Install Logix IDE
 
 Logix runs on **Macs with Apple Silicon** (M1 or newer) for now. Windows and
 Linux are planned.
@@ -64,9 +64,9 @@ Linux are planned.
    xattr -c ~/Downloads/logix-darwin-arm64-<date>.dmg
    ```
 
-3. Double-click the `.dmg` file and drag **Logix** into your
+3. Double-click the `.dmg` file and drag **Logix IDE** into your
    **Applications** folder.
-4. Open Logix. The first time, it downloads the FPGA tools it needs. This
+4. Open Logix IDE. The first time, it downloads the FPGA tools it needs. This
    takes a few minutes and needs an internet connection. After that, Logix
    starts quickly and works offline too.
 

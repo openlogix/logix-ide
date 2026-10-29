@@ -1,6 +1,6 @@
 # The Logix user documentation, published to GitHub Pages by
 # .github/workflows/publish-docs.yaml. Pages are in docs/.
-site_name: Logix
+site_name: Logix IDE
 site_description: '"The Arduino experience, for FPGAs." A simple IDE for FPGAs, powered by Apio.'
 # Shown at the bottom of every page.
 copyright: Logix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.

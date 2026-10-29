@@ -83,17 +83,17 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             .accelerator(accel)
             .build(app)
     };
-    let quit = item(QUIT, "Quit Logix", "CmdOrCtrl+Q")?;
+    let quit = item(QUIT, "Quit Logix IDE", "CmdOrCtrl+Q")?;
     let settings_item = item(SETTINGS, "Settings…", "CmdOrCtrl+,")?;
     let about = AboutMetadata {
-        name: Some("Logix".into()),
+        name: Some("Logix IDE".into()),
         version: Some(app.package_info().version.to_string()),
         comments: Some(format!(
             "\"The Arduino experience, for FPGAs.\"\nPowered by Apio (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
             crate::apio::APIO_RELEASE_TAG
         )),
         copyright: Some("Licensed under the Apache License 2.0.".into()),
-        website: Some("https://github.com/openlogix/logix-ide".into()),
+        website: Some("https://www.openlogix.org/ide/".into()),
         ..Default::default()
     };
     // macOS puts Quit in the application menu; others in File.
@@ -192,7 +192,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
 
     let mut menu = MenuBuilder::new(app);
     if mac {
-        let app_menu = SubmenuBuilder::new(app, "Logix")
+        let app_menu = SubmenuBuilder::new(app, "Logix IDE")
             .about(Some(about.clone()))
             .separator()
             .item(&settings_item)

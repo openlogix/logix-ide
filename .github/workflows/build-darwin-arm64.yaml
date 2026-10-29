@@ -1,4 +1,4 @@
-# Builds the Logix macOS (Apple Silicon) installer: a .dmg with Logix.app.
+# Builds the Logix macOS (Apple Silicon) installer: a .dmg with Logix IDE.app.
 # Called by build-pre-release.yaml, which passes BUILD-INFO.json as the
 # 'build-info' artifact.
 
@@ -103,7 +103,7 @@ jobs:
       # src-tauri/tauri.conf.json). Tauri skips the Finder step that lays out
       # the .dmg window (icon size and positions, hiding .VolumeIcon.icns)
       # when CI is set; TAURI_BUNDLER_DMG_IGNORE_CI turns it back on.
-      - name: Build Logix.app and the .dmg
+      - name: Build Logix IDE.app and the .dmg
         working-directory: _repo
         env:
           TAURI_BUNDLER_DMG_IGNORE_CI: "true"
@@ -124,7 +124,7 @@ jobs:
       # Applications shortcut and the Finder layout (.DS_Store), and the app
       # has a valid (ad-hoc) signature
       # (an unsigned app is reported as "damaged" when downloaded). Tauri
-      # deletes the separate Logix.app after making the .dmg, so the app is
+      # deletes the separate Logix IDE.app after making the .dmg, so the app is
       # checked inside the mounted .dmg.
       - name: Verify the .dmg and the app signature
         run: |
@@ -136,7 +136,7 @@ jobs:
           ls -al "$mnt"
           test -L "$mnt/Applications"
           test -f "$mnt/.DS_Store"
-          app="$mnt/Logix.app"
+          app="$mnt/Logix IDE.app"
           codesign --verify --deep --strict --verbose=2 "$app"
           codesign --display --verbose=2 "$app" 2>&1 | tee codesign.txt
           grep -q "Signature=adhoc" codesign.txt

@@ -9,7 +9,7 @@ downloaded `.dmg`, run in Terminal (with your file's name):
 xattr -c ~/Downloads/logix-darwin-arm64-<date>.dmg
 ```
 
-Then open it and drag Logix to **Applications** again. See
+Then open it and drag Logix IDE to **Applications** again. See
 [Installing](installing.md).
 
 ## The FPGA tools don't install

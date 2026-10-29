@@ -1,8 +1,8 @@
-# Logix
+# Logix IDE
 
 **"The Arduino experience, for FPGAs."**
 
-Logix is a simple IDE for FPGAs, in the spirit of the Arduino IDE. Write your
+Logix IDE (Logix for short) is a simple IDE for FPGAs, in the spirit of the Arduino IDE. Write your
 design in Verilog, click **Verify** to check it and **Upload** to program your
 board.
 

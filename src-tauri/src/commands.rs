@@ -983,10 +983,10 @@ pub fn set_document_state(
 ) {
     state.dirty.store(dirty, Ordering::SeqCst);
     let marker = if dirty { "● " } else { "" };
-    // As in the Arduino IDE: e.g. "blinky | Logix 0.1.0", or
-    // "● blinky | Logix 0.1.0" with unsaved changes.
+    // As in the Arduino IDE: e.g. "blinky | Logix IDE 0.1.0", or
+    // "● blinky | Logix IDE 0.1.0" with unsaved changes.
     let version = &window.app_handle().package_info().version;
-    let _ = window.set_title(&format!("{marker}{name} | Logix {version}"));
+    let _ = window.set_title(&format!("{marker}{name} | Logix IDE {version}"));
 }
 
 /// Shows the output pane's right-click menu (see `menu::show_output_menu`).

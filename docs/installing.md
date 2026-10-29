@@ -1,4 +1,4 @@
-# Installing Logix
+# Installing Logix IDE
 
 Logix needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
 
@@ -15,9 +15,9 @@ Logix needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
     xattr -c ~/Downloads/logix-darwin-arm64-<date>.dmg
     ```
 
-3. Double-click the `.dmg` file and drag **Logix** into the **Applications**
+3. Double-click the `.dmg` file and drag **Logix IDE** into the **Applications**
    folder.
-4. Open Logix from **Applications**.
+4. Open Logix IDE from **Applications**.
 
 ## The first start
 
@@ -40,5 +40,5 @@ You can choose another projects folder in **Settings** (++cmd+comma++).
 
 ## Uninstalling
 
-Drag Logix from **Applications** to the Trash. To also remove the FPGA tools
+Drag Logix IDE from **Applications** to the Trash. To also remove the FPGA tools
 and settings, delete the `~/.logix` folder. Your projects stay where they are.

@@ -50,8 +50,8 @@ func draw() {
             in: NSRect(x: 0, y: height - top - h, width: width, height: h),
             withAttributes: attrs)
     }
-    text("Install Logix", size: 22, weight: .semibold, color: NSColor(white: 0.15, alpha: 1), top: 32)
-    text("Drag the Logix icon onto the Applications folder.", size: 15, weight: .regular,
+    text("Install Logix IDE", size: 22, weight: .semibold, color: NSColor(white: 0.15, alpha: 1), top: 32)
+    text("Drag the Logix IDE icon onto the Applications folder.", size: 15, weight: .regular,
          color: NSColor(white: 0.3, alpha: 1), top: 290)
 }
 
