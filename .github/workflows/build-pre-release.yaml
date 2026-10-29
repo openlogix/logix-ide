@@ -216,6 +216,9 @@ jobs:
 
           **Logix: "The Arduino experience, for FPGAs."**
 
+          [Website](https://www.openlogix.org/ide/) ·
+          [Documentation](https://openlogix.github.io/logix-ide/)
+
           ### Installing Logix on macOS (Apple Silicon)
 
           1. Download \`logix-darwin-arm64-${PACKAGE_TAG}.dmg\` (below) to your

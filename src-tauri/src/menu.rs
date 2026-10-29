@@ -60,6 +60,7 @@ const HELP_LINKS: &[Option<(&str, &str)>] = &[
         "https://fpgawars.github.io/apio/docs/",
     )),
     None,
+    Some(("Logix Website", "https://www.openlogix.org/ide/")),
     Some(("Logix on GitHub", "https://github.com/openlogix/logix-ide")),
     Some((
         "Report a Problem",

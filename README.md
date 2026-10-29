@@ -6,6 +6,8 @@
 
 **"The Arduino experience, for FPGAs."**
 
+[Website](https://www.openlogix.org/ide/) · [Documentation](https://openlogix.github.io/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases)
+
 Logix is a simple, friendly app for programming FPGAs. If you've used the
 Arduino IDE, you already know how it works: write your design, click
 **Verify** to check it, and click **Upload** to put it on your board. No

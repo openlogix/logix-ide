@@ -18,6 +18,9 @@ exclude_docs: |
 
 theme:
   name: material
+  # The Logix IDE icon from the Open Logix brand (openlogix.github.io docs/brand/ide.svg).
+  logo: assets/logix-ide.svg
+  favicon: assets/logix-ide.svg
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -36,6 +39,17 @@ theme:
   features:
     - navigation.footer
     - content.code.copy
+
+# The header logo links to the product page; the footer links back to it and the org.
+extra:
+  homepage: https://www.openlogix.org/ide/
+  social:
+    - icon: material/web
+      link: https://www.openlogix.org/ide/
+      name: Logix IDE website
+    - icon: fontawesome/brands/github
+      link: https://github.com/openlogix/logix-ide
+      name: Logix on GitHub
 
 extra_css:
   - stylesheets/extra.css
