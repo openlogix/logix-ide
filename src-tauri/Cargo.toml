@@ -3,7 +3,7 @@ name = "logix"
 version = "0.1.0"
 description = "\"The Arduino experience, for FPGAs\": a simple IDE for FPGAs, powered by Apio"
 edition = "2021"
-license = "CC0-1.0"
+license = "Apache-2.0"
 
 [lib]
 name = "logix_lib"

@@ -198,4 +198,4 @@ Things deliberately postponed. Revisit them when the related feature is worked o
 
 - Working app name: **Logix**, bundle identifier `io.github.zapta.logix`.
 - Default branch: `main` (use it as the base for PRs). It was renamed from `develop`.
-- License: CC0 1.0 Universal.
+- License: Apache License 2.0 (`LICENSE`; `license` in `src-tauri/Cargo.toml`, the About box in `menu.rs`, README and `DEVELOPERS.md`).

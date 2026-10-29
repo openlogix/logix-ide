@@ -91,7 +91,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             "\"The Arduino experience, for FPGAs.\"\nPowered by Apio (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
             crate::apio::APIO_RELEASE_TAG
         )),
-        copyright: Some("Released into the public domain (CC0 1.0).".into()),
+        copyright: Some("Licensed under the Apache License 2.0.".into()),
         website: Some("https://github.com/zapta/logix".into()),
         ..Default::default()
     };

@@ -196,5 +196,4 @@ These are the house rules for changes, whether you prompt Claude or not:
 
 ## License
 
-Logix is released into the public domain under
-[CC0 1.0 Universal](LICENSE).
+Logix is licensed under the [Apache License 2.0](LICENSE).
