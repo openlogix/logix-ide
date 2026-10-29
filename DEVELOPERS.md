@@ -15,10 +15,10 @@ So the code isn't meant to be read or edited by people, much like the
 machine code a compiler makes from a high-level language. The "source" that
 matters is:
 
-- **What Logix should do and why:** [`CLAUDE.md`](CLAUDE.md). It holds the
+- **What Logix should do and why:** the **AI spec**, [`CLAUDE.md`](CLAUDE.md). It holds the
   goals, requirements, architecture, design decisions and open items, and
   Claude reads it at the start of every session. When the design changes,
-  `CLAUDE.md` is updated with it. It's meant to be complete enough that an
+  the AI spec is updated with it. It's meant to be complete enough that an
   AI agent could regenerate the whole repo from it (code, tests, workflows,
   scripts and docs), and it never holds personal information.
 - **What Logix must keep doing:** the tests (`scripts/test.sh`). They are how a
@@ -29,7 +29,7 @@ To change Logix, describe the change to Claude Code in this repository: what
 you want, not how to code it. Then try it with `scripts/run.sh` and check that
 `scripts/test.sh` passes. Editing the code by hand works too, but the next prompt
 may change it again without knowing why it was edited; it's better to put
-the reason in `CLAUDE.md` or in the prompt.
+the reason in the AI spec or in the prompt.
 
 ## Setting up a development machine
 
@@ -183,13 +183,13 @@ Pages.
 
 These are the house rules for changes, whether you prompt Claude or not:
 
-- **Keep `CLAUDE.md` and the docs in sync** with every change: a new
+- **Keep the AI spec and the docs in sync** with every change: a new
   feature, menu item, shortcut or message updates the matching page, and a
-  new decision goes into `CLAUDE.md` with its reason.
-- **Pull requests are rules or prompts**, ideally: a change to `CLAUDE.md`
+  new decision goes into the AI spec with its reason.
+- **Pull requests are rules or prompts**, ideally: a change to the AI spec
   or the prompt to run, rather than hand-written code, so the code can be
   generated from it. If a pull request includes code, it also updates
-  `CLAUDE.md` to explain it, and its description gives the prompts used.
+  the AI spec to explain it, and its description gives the prompts used.
 - **Commits are made by the developer**, after reviewing the change and
   running `scripts/test.sh`. Claude doesn't commit unless asked.
 - **Keep Logix simple**, like the Arduino IDE: ease of use for beginners

@@ -2,14 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## This file is the source
+## The AI spec is the source
 
-The checked-in Claude content (this file, and any `.claude/` files added later) is the real source of the repo. A capable AI agent should be able to regenerate everything else from it, with equivalent behavior: the app, tests, GitHub workflows and actions, scripts, packaging config and docs.
+The **AI spec** is this file plus any files it points to (e.g. `.claude/` files added later). It is the real source of the repo. A capable AI agent should be able to regenerate everything else from it, with equivalent behavior: the app, tests, GitHub workflows and actions, scripts, packaging config and docs.
 
 - **Detailed enough, not too detailed.** Record what and why: requirements, decisions with their reasons, contracts between parts (commands and events, file formats, names, paths, pinned versions), verified facts about external tools (Apio, Tauri, GitHub), conventions, and the non-obvious lessons (workarounds, "why not X"). Leave out what follows from these or from standard docs, such as line-by-line code. Test: if an agent regenerating the repo would likely get it wrong without a sentence, keep the sentence; otherwise leave it out.
-- **Same commit.** Every change to behavior, workflows, scripts or decisions updates this file in the same commit. Remove what no longer holds.
+- **Same commit.** Every change to behavior, workflows, scripts or decisions updates the AI spec in the same commit. Remove what no longer holds.
 - **No personal info.** Nothing that identifies or locates a person: no names, emails, machine-specific paths, account details or private notes. Use placeholders (e.g. `/Users/you`).
-- **Pull requests are rules or prompts.** Ideally a pull request changes this file (a requirement, rule or decision with its reason), or gives the prompt to run, rather than hand-written code; the code is then generated from it. A pull request that does include code must also include the change to this file that explains it, since code this file doesn't account for would be lost when the repo is regenerated. Its description gives the prompt(s) used. When working on a code-only contribution, first turn it into the rule it implies and add that here.
+- **Pull requests are rules or prompts.** Ideally a pull request changes the AI spec (a requirement, rule or decision with its reason), or gives the prompt to run, rather than hand-written code; the code is then generated from it. A pull request that does include code must also include the AI spec change that explains it, since code the AI spec doesn't account for would be lost when the repo is regenerated. Its description gives the prompt(s) used. When working on a code-only contribution, first turn it into the rule it implies and add that to the AI spec.
 
 ## Project goal
 
