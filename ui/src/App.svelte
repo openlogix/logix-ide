@@ -1284,7 +1284,7 @@
     checking: "Checking FPGA tools…",
     downloadingApio: "Downloading Apio…",
     installingPackages:
-      "Installing FPGA tools. The first run can take several minutes…",
+      "Installing FPGA tools. The first run can take a few minutes…",
     ready: "",
   };
 </script>

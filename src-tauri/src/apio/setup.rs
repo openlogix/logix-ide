@@ -117,7 +117,7 @@ where
     emit(SetupEvent::Stage {
         stage: SetupStage::InstallingPackages,
     });
-    log("Checking FPGA tools (the first run can take several minutes)...".into());
+    log("Checking FPGA tools (the first run can take a few minutes)...".into());
     // Not `apio packages install`: that always needs a fresh online config
     // and fails offline. `apio api get-system` also installs missing
     // packages, but falls back to Apio's cached config when offline, so the

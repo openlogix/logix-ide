@@ -192,7 +192,7 @@ export const backend: typeof Real.backend = {
     onEvent({ kind: "stage", stage: "checking" });
     onEvent({
       kind: "log",
-      line: "Checking FPGA tools (the first run can take several minutes)...",
+      line: "Checking FPGA tools (the first run can take a few minutes)...",
     });
     await pause(50);
     onEvent({ kind: "stage", stage: "ready" });

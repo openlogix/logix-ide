@@ -228,7 +228,7 @@ jobs:
           3. Double-click the \`.dmg\` file and drag **Logix** into the
              **Applications** folder.
           4. Open Logix from Applications. On its first start, Logix downloads
-             the FPGA tools it needs. This may take several minutes; later
+             the FPGA tools it needs. This may take a few minutes; later
              starts are quick.
 
           To uninstall, drag Logix from Applications to the Trash. You can
