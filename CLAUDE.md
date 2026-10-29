@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## This file is the source
+
+The checked-in Claude content (this file, and any `.claude/` files added later) is the real source of the repo. A capable AI agent should be able to regenerate everything else from it, with equivalent behavior: the app, tests, GitHub workflows and actions, scripts, packaging config and docs.
+
+- **Detailed enough, not too detailed.** Record what and why: requirements, decisions with their reasons, contracts between parts (commands and events, file formats, names, paths, pinned versions), verified facts about external tools (Apio, Tauri, GitHub), conventions, and the non-obvious lessons (workarounds, "why not X"). Leave out what follows from these or from standard docs, such as line-by-line code. Test: if an agent regenerating the repo would likely get it wrong without a sentence, keep the sentence; otherwise leave it out.
+- **Same commit.** Every change to behavior, workflows, scripts or decisions updates this file in the same commit. Remove what no longer holds.
+- **No personal info.** Nothing that identifies or locates a person: no names, emails, machine-specific paths, account details or private notes. Use placeholders (e.g. `/Users/you`).
+
 ## Project goal
 
 **Motto: "The Arduino experience, for FPGAs."** Use it, in quotes, wherever Logix describes itself: the docs (site description and home page), the About box, the release notes, package descriptions, and any new place like that (e.g. a README or app store text).

@@ -18,7 +18,9 @@ matters is:
 - **What Logix should do and why:** [`CLAUDE.md`](CLAUDE.md). It holds the
   goals, requirements, architecture, design decisions and open items, and
   Claude reads it at the start of every session. When the design changes,
-  `CLAUDE.md` is updated with it.
+  `CLAUDE.md` is updated with it. It's meant to be complete enough that an
+  AI agent could regenerate the whole repo from it (code, tests, workflows,
+  scripts and docs), and it never holds personal information.
 - **What Logix must keep doing:** the tests (`scripts/test.sh`). They are how a
   change is checked, rather than by reading the code.
 - **What users see:** the user documentation in [`docs/`](docs/).
