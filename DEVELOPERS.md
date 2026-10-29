@@ -54,7 +54,7 @@ Logix supports so far.
 3. **The code:**
 
    ```
-   git clone https://github.com/zapta/logic-ide.git
+   git clone https://github.com/openlogix/logix-ide.git
    cd logix
    ```
 

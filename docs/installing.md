@@ -5,7 +5,7 @@ Logix needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
 ## Download and install
 
 1. Download the latest `logix-darwin-arm64-<date>.dmg` from the
-   [releases page](https://github.com/zapta/logic-ide/releases) to your
+   [releases page](https://github.com/openlogix/logix-ide/releases) to your
    **Downloads** folder.
 2. Open **Terminal** and run this command, with the file name you downloaded.
    Logix isn't signed with an Apple Developer ID yet, and this tells macOS to

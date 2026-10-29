@@ -187,7 +187,7 @@ Things deliberately postponed. Revisit them when the related feature is worked o
 
 ## User documentation
 
-- **Where**: `docs/*.md` with `mkdocs.yml` (MkDocs Material, pinned in `docs/requirements.txt` to the Apio docs' version), published to GitHub Pages at https://zapta.github.io/logic-ide/ by `.github/workflows/publish-docs.yaml` on every push to `main`, daily at 00:00 UTC, and manually (one deployment at a time; queued runs are replaced by the newest, a running one isn't cancelled). The build uses `--strict`, so broken links fail it.
+- **Where**: `docs/*.md` with `mkdocs.yml` (MkDocs Material, pinned in `docs/requirements.txt` to the Apio docs' version), published to GitHub Pages at https://openlogix.github.io/logix-ide/ by `.github/workflows/publish-docs.yaml` on every push to `main`, daily at 00:00 UTC, and manually (one deployment at a time; queued runs are replaced by the newest, a running one isn't cancelled). The build uses `--strict`, so broken links fail it.
 - **Keep it in sync**: when a user-visible feature, menu item, shortcut or message changes, update the matching page (`using-logix.md` has the keyboard shortcuts table; `tour.md`, the new-user overview, has the toolbar table and blinky's code). The pages are deliberately short and beginner-oriented; they describe Logix, not Apio. The Help menu links to them (`HELP_LINKS` in `menu.rs`).
 - **Screenshots** (`docs/images/*.png`) come from the real UI with the fake backend: `npm run docs:screenshots` runs `ui/e2e/docs.shots.ts` (config `ui/playwright.docs.config.ts`, 1100x640 at 2x, light theme) and overwrites the images. Rerun it after visible UI changes, look at the images, and commit them. Exception: `gtkwave.png` (used by the README and `testbenches.md`) is a real GTKWave window, copied from Apio's repo (`media/sim-gtkwave.png`); the script doesn't make or touch it. The fake backend replays real Apio output and catalogs from `ui/e2e/fixtures/` (see its README), so the screenshots and e2e tests show what Logix really shows. Recapture the fixtures when Apio's output changes noticeably.
 - **Preview locally** (optional; needs Python): `python3 -m venv .venv-docs && .venv-docs/bin/pip install -r docs/requirements.txt && .venv-docs/bin/mkdocs serve`, then open http://127.0.0.1:8000.
@@ -196,6 +196,6 @@ Things deliberately postponed. Revisit them when the related feature is worked o
 
 - `DEVELOPERS.md` explains to people how the project is developed (by prompting Claude Code; the code isn't meant for hand editing), how to set up a dev machine, the everyday tasks and the working conventions. Keep it in sync when setup, scripts or conventions change.
 
-- Working app name: **Logix**, bundle identifier `io.github.zapta.logix`.
+- Working app name: **Logix**, bundle identifier `io.github.openlogix.logix`.
 - Default branch: `main` (use it as the base for PRs). It was renamed from `develop`.
 - License: Apache License 2.0 (`LICENSE`; `license` in `src-tauri/Cargo.toml`, the About box in `menu.rs`, README and `DEVELOPERS.md`).

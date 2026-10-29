@@ -4,9 +4,9 @@ site_name: Logix
 site_description: '"The Arduino experience, for FPGAs." A simple IDE for FPGAs, powered by Apio.'
 # Shown at the bottom of every page.
 copyright: Logix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.
-site_url: https://zapta.github.io/logic-ide/
-repo_url: https://github.com/zapta/logic-ide
-repo_name: zapta/logic-ide
+site_url: https://openlogix.github.io/logix-ide/
+repo_url: https://github.com/openlogix/logix-ide
+repo_name: openlogix/logix-ide
 edit_uri: edit/main/docs/
 
 # The generated site (not committed).

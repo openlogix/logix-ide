@@ -1,8 +1,8 @@
 # Logix
 
-[![Build](https://github.com/zapta/logic-ide/actions/workflows/build-pre-release.yaml/badge.svg?branch=main)](https://github.com/zapta/logic-ide/actions/workflows/build-pre-release.yaml)
-[![Tests](https://github.com/zapta/logic-ide/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/zapta/logic-ide/actions/workflows/test.yaml)
-[![Docs](https://github.com/zapta/logic-ide/actions/workflows/publish-docs.yaml/badge.svg?branch=main)](https://github.com/zapta/logic-ide/actions/workflows/publish-docs.yaml)
+[![Build](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml)
+[![Tests](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml)
+[![Docs](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml)
 
 **"The Arduino experience, for FPGAs."**
 
@@ -52,7 +52,7 @@ Logix runs on **Macs with Apple Silicon** (M1 or newer) for now. Windows and
 Linux are planned.
 
 1. Download the latest `logix-darwin-arm64-<date>.dmg` from the
-   [releases page](https://github.com/zapta/logic-ide/releases) to your
+   [releases page](https://github.com/openlogix/logix-ide/releases) to your
    **Downloads** folder.
 2. Open **Terminal** and run this command, using the name of the file you
    downloaded. Logix isn't signed by Apple yet, and this tells your Mac it's
@@ -111,27 +111,27 @@ security setting on your Mac.
 5. Now make it your own: change the blinking speed, save with ⌘S, and upload
    again.
 
-The [Quick start](https://zapta.github.io/logic-ide/quick-start/) guide walks
+The [Quick start](https://openlogix.github.io/logix-ide/quick-start/) guide walks
 through these steps with pictures.
 
 ## Learn more
 
-The [Logix documentation](https://zapta.github.io/logic-ide/) covers everything,
+The [Logix documentation](https://openlogix.github.io/logix-ide/) covers everything,
 in short, beginner-friendly pages:
 
-- [Installing](https://zapta.github.io/logic-ide/installing/)
-- [Quick start](https://zapta.github.io/logic-ide/quick-start/)
-- [Using Logix](https://zapta.github.io/logic-ide/using-logix/)
-- [Testbenches and simulation](https://zapta.github.io/logic-ide/testbenches/)
-- [Troubleshooting](https://zapta.github.io/logic-ide/troubleshooting/)
+- [Installing](https://openlogix.github.io/logix-ide/installing/)
+- [Quick start](https://openlogix.github.io/logix-ide/quick-start/)
+- [Using Logix](https://openlogix.github.io/logix-ide/using-logix/)
+- [Testbenches and simulation](https://openlogix.github.io/logix-ide/testbenches/)
+- [Troubleshooting](https://openlogix.github.io/logix-ide/troubleshooting/)
 
 You can also open these pages from Logix's **Help** menu.
 
 ## Need help or found a problem?
 
-Check [Troubleshooting](https://zapta.github.io/logic-ide/troubleshooting/)
+Check [Troubleshooting](https://openlogix.github.io/logix-ide/troubleshooting/)
 first. If you're still stuck, choose **Help > Report a Problem** in Logix, or
-[open an issue on GitHub](https://github.com/zapta/logic-ide/issues/new). It
+[open an issue on GitHub](https://github.com/openlogix/logix-ide/issues/new). It
 helps a lot to attach Logix's log: **Help > Show Log Folder**, then drag
 `logix.log` into your report.
 
