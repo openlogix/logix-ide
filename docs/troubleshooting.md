@@ -66,7 +66,7 @@ the tools again.
 ## Still stuck?
 
 Please report a problem with **Help > Report a Problem**, or
-[on GitHub](https://github.com/zapta/logix/issues/new). Include what you did
+[on GitHub](https://github.com/zapta/logic-ide/issues/new). Include what you did
 and what Logix showed (the output area has the details), and attach the
 Logix log: **Help > Show Log Folder** opens the folder in Finder; drag
 `logix.log` into the report. Logix keeps the logs of its last 5 runs

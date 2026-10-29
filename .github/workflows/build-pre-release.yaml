@@ -68,7 +68,7 @@ jobs:
           release-tag: ${{ env.RELEASE_TAG }}
           just-check: true
 
-      # The repo name is normalized to lowercase, e.g. zapta/logix.
+      # The repo name is normalized to lowercase, e.g. zapta/logic-ide.
       - name: Get repo info
         uses: ./.github/actions/get-repo-info
         with:

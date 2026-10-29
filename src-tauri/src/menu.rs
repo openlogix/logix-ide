@@ -39,19 +39,19 @@ const HELP_PREFIX: &str = "help:";
 
 /// Help menu: (label, web page). `None` marks a separator.
 const HELP_LINKS: &[Option<(&str, &str)>] = &[
-    Some(("Logix Documentation", "https://zapta.github.io/logix/")),
-    Some(("Quick Start", "https://zapta.github.io/logix/quick-start/")),
+    Some(("Logix Documentation", "https://zapta.github.io/logic-ide/")),
+    Some(("Quick Start", "https://zapta.github.io/logic-ide/quick-start/")),
     Some((
         "Testbenches and Simulation",
-        "https://zapta.github.io/logix/testbenches/",
+        "https://zapta.github.io/logic-ide/testbenches/",
     )),
     Some((
         "Troubleshooting",
-        "https://zapta.github.io/logix/troubleshooting/",
+        "https://zapta.github.io/logic-ide/troubleshooting/",
     )),
     Some((
         "Keyboard Shortcuts",
-        "https://zapta.github.io/logix/using-logix/#keyboard-shortcuts",
+        "https://zapta.github.io/logic-ide/using-logix/#keyboard-shortcuts",
     )),
     None,
     // For going further: Logix uses Apio, and its docs cover the tools.
@@ -60,11 +60,11 @@ const HELP_LINKS: &[Option<(&str, &str)>] = &[
         "https://fpgawars.github.io/apio/docs/",
     )),
     None,
-    Some(("Logix on GitHub", "https://github.com/zapta/logix")),
+    Some(("Logix on GitHub", "https://github.com/zapta/logic-ide")),
     Some((
         "Report a Problem",
         // A new issue whose text asks for the log (see SHOW_LOGS).
-        "https://github.com/zapta/logix/issues/new?body=What%20happened%2C%20and%20what%20did%20you%20expect%3F%0A%0A%0ALogix%20log%3A%20in%20Logix%2C%20choose%20Help%20%3E%20Show%20Log%20Folder%20and%20drag%20logix.log%20here.%0A",
+        "https://github.com/zapta/logic-ide/issues/new?body=What%20happened%2C%20and%20what%20did%20you%20expect%3F%0A%0A%0ALogix%20log%3A%20in%20Logix%2C%20choose%20Help%20%3E%20Show%20Log%20Folder%20and%20drag%20logix.log%20here.%0A",
     )),
 ];
 pub const STOP: &str = "stop";
@@ -92,7 +92,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             crate::apio::APIO_RELEASE_TAG
         )),
         copyright: Some("Licensed under the Apache License 2.0.".into()),
-        website: Some("https://github.com/zapta/logix".into()),
+        website: Some("https://github.com/zapta/logic-ide".into()),
         ..Default::default()
     };
     // macOS puts Quit in the application menu; others in File.

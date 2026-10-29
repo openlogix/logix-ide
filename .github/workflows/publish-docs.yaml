@@ -1,5 +1,5 @@
 # Builds the user documentation (mkdocs.yml, docs/) and publishes it to
-# GitHub Pages: https://zapta.github.io/logix/
+# GitHub Pages: https://zapta.github.io/logic-ide/
 #
 # Runs on every push to main, daily (to catch breakage from GitHub or
 # MkDocs changes even when nothing changes here), and manually.
