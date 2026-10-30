@@ -269,7 +269,7 @@ Things deliberately postponed. Revisit them when the related feature is worked o
 - **USB drivers and permissions** (Windows, Linux): boards often need a driver (Windows) or udev rules (Linux) before Upload can see them. The requirements call for guided setup inside the IDE using `apio drivers`; build it on top of Tools > Connected Devices when those platforms are added.
 - **Stop on Windows**: `platform::stop_process_tree` only stops Apio itself on non-Unix systems; on Windows, use a job object so the tools Apio started stop too (marked `TODO(revisit)`).
 - **Notarization**: macOS builds are ad-hoc signed, so users must run an `xattr` command on the downloaded `.dmg`. Signing with an Apple Developer ID and notarizing (secrets in GitHub only) removes that step.
-- **Logix Engine**: Logix IDE will move from calling Apio directly to the org's Logix Engine (an MCP backend for building, testing, simulating and programming FPGAs; repo `openlogix/logix-engine`) once it's ready. Until then the product page says it's built on Apio. The "one Apio adapter" rule keeps that move to one module.
+- **Logix Engine**: Logix IDE will move from calling Apio directly to the org's Logix Engine (an MCP backend for building, testing and simulating FPGA designs and programming boards; repo `openlogix/logix-engine`) once it's ready. Until then the product page says it's built on Apio. The "one Apio adapter" rule keeps that move to one module.
 - **Pending Apio requests**: [apio#1184](https://github.com/FPGAwars/apio/issues/1184) (event stream) and [apio#1185](https://github.com/FPGAwars/apio/issues/1185) (offline-tolerant package install); see "Apio facts".
 
 ## User documentation
