@@ -23,13 +23,8 @@ jobs:
         shell: bash
 
     steps:
-      # For this repo's actions (.github/actions). The commit to build is
-      # checked out separately below.
-      - name: Checkout this repo
-        uses: actions/checkout@v7
-
       - name: Check required platform
-        uses: ./.github/actions/check-platform
+        uses: openlogix/.github/actions/check-platform@v1
         with:
           os: darwin
           arch: arm64
@@ -46,19 +41,19 @@ jobs:
           mv _artifacts/BUILD-INFO.json .
 
       - name: Add platform info to build info json file
-        uses: ./.github/actions/write-to-json-file
+        uses: openlogix/.github/actions/write-to-json-file@v1
         with:
           json-file: BUILD-INFO.json
           key: target-platform
           value: darwin-arm64
 
       - name: Format build info json file
-        uses: ./.github/actions/format-json-file
+        uses: openlogix/.github/actions/format-json-file@v1
         with:
           json-file: BUILD-INFO.json
 
       - name: Set env vars from JSON
-        uses: ./.github/actions/set-env-from-json
+        uses: openlogix/.github/actions/set-env-from-json@v1
         with:
           json-file: BUILD-INFO.json
           mappings: >-
