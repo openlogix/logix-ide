@@ -34,7 +34,7 @@ A minimalist, Arduino-IDE-like desktop IDE for FPGAs. Users write **Verilog** (i
   - Linux: prefer formats that work out of the box (AppImage); `.deb` dependencies must resolve automatically through the package manager.
   - Board USB drivers / permissions (Windows drivers, Linux udev rules) are set up from inside the IDE with guided steps, using Apio's driver support where it exists, not as a manual pre-install step.
 - **Apio boards**: users choose a target board from the boards Apio supports.
-- **Apio examples**: users can browse and open the examples Apio ships, as the Arduino IDE does with its examples.
+- **Apio examples**: users can browse and open the examples Apio ships, as the Arduino IDE does with its examples. **Decided for the move to Logix Engine:** the IDE then keeps its own project model and its own examples in that model, with no Apio (the engine has no project model or examples; see the website repo's `CLAUDE.md`). Until the move, Apio's examples stay.
 - **Core workflow (initial scope)**: edit Verilog → synthesize (`apio build`) → program the board (`apio upload`).
 - **Later scope**: write testbenches and run them with `apio sim` and `apio test`. Design so these fit in without restructuring.
 
