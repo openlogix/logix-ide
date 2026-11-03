@@ -10,7 +10,7 @@
     | "open"
     | "example"
     | "folder"
-    | "pin";
+    | "chip";
 
   let { name, size = 18 }: { name: IconName; size?: number } = $props();
 </script>
@@ -60,10 +60,16 @@
     <!-- Open book -->
     <path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z" />
     <path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z" />
-  {:else if name === "pin"}
-    <!-- Push pin: a pin file -->
-    <path d="M9 3h6l-1 6 3 3H7l3-3z" />
-    <line x1="12" y1="12" x2="12" y2="21" />
+  {:else if name === "chip"}
+    <!-- A chip with pins on both sides: a pin file (not a push pin, which
+         reads as "pin this tab") -->
+    <rect x="7" y="4" width="10" height="16" rx="1.5" />
+    <line x1="3" y1="8" x2="7" y2="8" />
+    <line x1="3" y1="12" x2="7" y2="12" />
+    <line x1="3" y1="16" x2="7" y2="16" />
+    <line x1="17" y1="8" x2="21" y2="8" />
+    <line x1="17" y1="12" x2="21" y2="12" />
+    <line x1="17" y1="16" x2="21" y2="16" />
   {:else if name === "folder"}
     <!-- Closed folder -->
     <path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

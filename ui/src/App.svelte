@@ -1651,7 +1651,7 @@
                 {#if fileRole(f.name, mainFile(project)) === "testbench"}<span
                     class="tab-icon"><Icon name="test" size={12} /></span
                   >{:else if fileRole(f.name, mainFile(project)) === "pins"}<span
-                    class="tab-icon"><Icon name="pin" size={12} /></span
+                    class="tab-icon"><Icon name="chip" size={12} /></span
                   >{/if}{f.name}{#if isFileDirty(project, f)}<span
                     class="dot"
                     title="Unsaved changes">●</span
