@@ -117,10 +117,14 @@ test("connected devices", async ({ page }) => {
 test("toolbar icons", async ({ page }) => {
   // The toolbar buttons as small images for the docs text (icon-<name>.png),
   // taken from the real UI so they always match it: no toolbar color around
-  // the round buttons, and Stop shown as when something runs.
+  // the round buttons, which get the toolbar's regular teal (the darker
+  // one is for contrast on the teal toolbar; the docs page is white), and
+  // Stop shown as when something runs.
   await startWithBoard(page);
   await page.addStyleTag({
-    content: ".toolbar { background: transparent !important; }",
+    content:
+      ".toolbar { background: transparent !important; }" +
+      ".toolbar button { background: var(--toolbar-bg) !important; }",
   });
   const buttons: [string, RegExp][] = [
     ["verify", /^Verify/],
