@@ -1995,7 +1995,7 @@
     color: var(--muted);
   }
   .recents {
-    margin-top: var(--welcome-gap);
+    margin-top: 40px;
     width: 492px;
     max-width: 100%;
     text-align: left;
