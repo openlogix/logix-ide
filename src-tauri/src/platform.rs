@@ -121,6 +121,12 @@ impl Platform {
     }
 }
 
+/// Moves a file or folder to the system's Trash (recoverable), e.g. a
+/// project replaced by Save As.
+pub fn move_to_trash(path: &Path) -> Result<()> {
+    trash::delete(path).with_context(|| format!("can't move {} to the Trash", path.display()))
+}
+
 /// Process ids of the running GUI apps whose name or executable contains
 /// `name` (any case). Must be called on the main thread (see
 /// `AppHandle::run_on_main_thread`); elsewhere, and on other platforms for

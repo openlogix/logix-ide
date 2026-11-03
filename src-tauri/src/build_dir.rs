@@ -229,7 +229,6 @@ mod tests {
             ("main.v", "on disk"),
             ("rom.hex", "00"),
             ("apio.ini", "old"),
-            ("logix.json", "{}"),
             ("logix-ide.toml", "board = \"b\""),
             (".hidden", "x"),
         ] {
@@ -252,7 +251,6 @@ mod tests {
         );
         assert_eq!(std::fs::read_to_string(root.join("rom.hex")).unwrap(), "00");
         assert!(!root.join("apio.ini").exists());
-        assert!(!root.join("logix.json").exists());
         assert!(!root.join("logix-ide.toml").exists());
         assert!(!root.join(".hidden").exists());
         assert!(!root.join("_build").exists());
@@ -268,7 +266,6 @@ mod tests {
             ("data/old.v", "module old; endmodule"),
             ("data/pins.pcf", "set_io a 1"),
             ("copy/logix-ide.toml", ""),
-            ("old/logix.json", "{}"),
             ("copy/main.v", "module main; endmodule"),
             ("copy/notes.txt", "hi"),
         ] {
@@ -292,7 +289,6 @@ mod tests {
         assert!(root.join("data/rom.hex").exists());
         assert!(root.join("data/old.v").exists());
         assert!(!root.join("copy").exists());
-        assert!(!root.join("old").exists());
     }
 
     #[test]

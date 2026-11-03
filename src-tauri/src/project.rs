@@ -8,8 +8,6 @@
 //! - optionally anything else (subfolders, docs, images), kept as is;
 //! - `logix-ide.toml`: the project's settings, such as its board (TOML, so
 //!   it can hold comments; Logix keeps them when it updates a value).
-//!   Projects saved before used `logix.json`, which is still read and is
-//!   replaced on the next save.
 //!
 //! The UI holds the files in memory. Creating, renaming and deleting files
 //! take effect on save, like text edits.
@@ -24,8 +22,6 @@ pub const MAIN_FILE: &str = "main.v";
 /// Accepted main file names, in order of preference.
 pub const MAIN_FILES: &[&str] = &["main.v", "main.sv"];
 pub const SETTINGS_FILE: &str = "logix-ide.toml";
-/// The project file's earlier name and format (JSON), still read.
-pub const OLD_SETTINGS_FILE: &str = "logix.json";
 
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
 /// and headers, and the pin constraint formats used by Apio's boards.
@@ -34,15 +30,14 @@ pub const EDITABLE_EXTENSIONS: &[&str] = &[
 ];
 
 /// Names that belong to the IDE or the build, never project files.
-pub(crate) const RESERVED_NAMES: &[&str] =
-    &[SETTINGS_FILE, OLD_SETTINGS_FILE, "apio.ini", "_build"];
+pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "apio.ini", "_build"];
 
 /// The first lines of a new project file.
 const SETTINGS_HEADER: &str = "# Logix IDE project settings.\n";
 
 /// Whether `dir` is a Logix project folder (it has a project file).
 pub fn is_project_dir(dir: &Path) -> bool {
-    dir.join(SETTINGS_FILE).is_file() || dir.join(OLD_SETTINGS_FILE).is_file()
+    dir.join(SETTINGS_FILE).is_file()
 }
 
 /// One source file of a project (a top-level file in the folder).
@@ -229,13 +224,7 @@ pub fn save(
     if is_new {
         text.insert_str(0, SETTINGS_HEADER);
     }
-    write_atomic(&path, text.as_bytes())?;
-    // Replaced by the TOML file.
-    let old = dir.join(OLD_SETTINGS_FILE);
-    if old.is_file() {
-        std::fs::remove_file(&old).with_context(|| format!("can't delete {}", old.display()))?;
-    }
-    Ok(())
+    write_atomic(&path, text.as_bytes())
 }
 
 /// Creates a new project folder `target` ("Save As") with `files`. If
@@ -280,6 +269,38 @@ pub fn create(
         copy_project_contents(source, target, &skip, CopyMode::All)?;
     }
     save(target, files, &[], board)
+}
+
+/// Checks that Save As may replace the existing `target`, which the user
+/// agreed to in the save dialog (the caller moves it to the Trash first).
+/// Only a Logix project or an empty folder is replaced, so a mistyped name
+/// can't throw away other files, and never the project being saved
+/// (`source`) or a folder containing it.
+pub fn check_replace(target: &Path, source: Option<&Path>) -> Result<()> {
+    let name = project_name(target);
+    if !target.is_dir() {
+        bail!("\"{name}\" there is a file, not a project. Choose another name.");
+    }
+    let real = |p: &Path| p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+    if let Some(source) = source {
+        if real(source).starts_with(real(target)) {
+            bail!(
+                "Can't replace \"{name}\": it holds the project you're saving. \
+                 Choose another name."
+            );
+        }
+    }
+    let empty = std::fs::read_dir(target)
+        .with_context(|| format!("can't read {}", target.display()))?
+        .flatten()
+        .all(|e| e.file_name().to_string_lossy().starts_with('.'));
+    if !empty && !is_project_dir(target) {
+        bail!(
+            "The folder \"{name}\" isn't a Logix project, so Logix won't replace it. \
+             Choose another name."
+        );
+    }
+    Ok(())
 }
 
 /// The Logix project folder (one with a project file) that contains
@@ -351,29 +372,16 @@ pub(crate) fn check_files(files: &[ProjectFile]) -> Result<()> {
     Ok(())
 }
 
-/// The project file, or else the board from an old `logix.json` in a new
-/// TOML document, or else an empty one.
+/// The project file, or an empty one if there's none yet.
 fn read_settings(dir: &Path) -> Result<toml_edit::DocumentMut> {
     let path = dir.join(SETTINGS_FILE);
-    if path.exists() {
-        let text = std::fs::read_to_string(&path)
-            .with_context(|| format!("can't read {}", path.display()))?;
-        return text
-            .parse()
-            .with_context(|| format!("{} isn't valid TOML", path.display()));
+    if !path.exists() {
+        return Ok(toml_edit::DocumentMut::new());
     }
-    let mut settings = toml_edit::DocumentMut::new();
-    let old = dir.join(OLD_SETTINGS_FILE);
-    if old.exists() {
-        let bytes = std::fs::read(&old).with_context(|| format!("can't read {}", old.display()))?;
-        let json: serde_json::Value = serde_json::from_slice(&bytes)
-            .with_context(|| format!("{} is damaged", old.display()))?;
-        // The board was the only setting it held.
-        if let Some(board) = json["board"].as_str() {
-            settings["board"] = toml_edit::value(board);
-        }
-    }
-    Ok(settings)
+    let text =
+        std::fs::read_to_string(&path).with_context(|| format!("can't read {}", path.display()))?;
+    text.parse()
+        .with_context(|| format!("{} isn't valid TOML", path.display()))
 }
 
 /// Writes via a temporary file and rename, so a crash never leaves a
@@ -613,15 +621,29 @@ mod tests {
     }
 
     #[test]
-    fn reads_an_old_logix_json_and_replaces_it_on_save() {
+    fn replaces_only_projects_and_empty_folders() {
         let tmp = tempfile::tempdir().unwrap();
-        write(tmp.path(), MAIN_FILE, "x");
-        write(tmp.path(), OLD_SETTINGS_FILE, r#"{"board":"icezum"}"#);
-        assert!(is_project_dir(tmp.path()));
-        assert_eq!(load(tmp.path()).unwrap().board.as_deref(), Some("icezum"));
-        save(tmp.path(), &[file("main.v", "y")], &[], Some("icezum")).unwrap();
-        assert!(!tmp.path().join(OLD_SETTINGS_FILE).exists());
-        assert_eq!(load(tmp.path()).unwrap().board.as_deref(), Some("icezum"));
+        let project = tmp.path().join("blinky");
+        let files = [file("main.v", "module main; endmodule")];
+        create(&project, None, &files, &[], Some("b")).unwrap();
+        assert!(check_replace(&project, None).is_ok());
+        let empty = tmp.path().join("empty");
+        std::fs::create_dir(&empty).unwrap();
+        write(&empty, ".DS_Store", "x");
+        assert!(check_replace(&empty, None).is_ok());
+        let other = tmp.path().join("Documents");
+        std::fs::create_dir(&other).unwrap();
+        write(&other, "letter.txt", "hi");
+        assert!(check_replace(&other, None).is_err());
+        write(tmp.path(), "file.v", "x");
+        assert!(check_replace(&tmp.path().join("file.v"), None).is_err());
+        // Never the project being saved, or a folder that holds it.
+        assert!(check_replace(&project, Some(&project)).is_err());
+        let parent = tmp.path().join("work");
+        create(&parent, None, &files, &[], None).unwrap();
+        let inner = parent.join("data");
+        std::fs::create_dir(&inner).unwrap();
+        assert!(check_replace(&parent, Some(&inner)).is_err());
     }
 
     #[test]
@@ -655,7 +677,7 @@ mod tests {
             ("pinout.pcf", "pins"),
             ("removed.v", "r"),
             ("apio.ini", "ini"),
-            ("logix.json", "{}"),
+            ("logix-ide.toml", "# mine\nboard = \"x\"\n"),
             (".DS_Store", "x"),
             ("_build/hardware.bin", "bin"),
             ("docs/readme.txt", "doc"),

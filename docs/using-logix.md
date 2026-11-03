@@ -54,6 +54,8 @@ inside another project.
   Logix reopens the last project when it starts; otherwise it starts a new
   project for the last board you chose (the **Alhambra II** the first
   time).
+  **Save As…** over an existing project replaces it; the old one goes to
+  the Trash.
 - **Show Project Folder**: **Project > Show Project Folder**
   (++option+cmd+k++) opens the folder in Finder.
 

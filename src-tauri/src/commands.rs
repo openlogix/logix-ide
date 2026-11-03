@@ -900,6 +900,15 @@ pub async fn save_project_as_dialog(
         .context("Couldn't use that location.")?;
     let target = project::normalize_new_project_path(&target);
     let created = blocking(move || {
+        // The save dialog already asked whether to replace it.
+        if target.exists() {
+            project::check_replace(&target, source_dir.as_deref().map(Path::new))?;
+            platform::move_to_trash(&target).context("Couldn't replace the old project.")?;
+            crate::log!(
+                "Moved {} to the Trash (replaced by Save As)",
+                target.display()
+            );
+        }
         project::create(
             &target,
             source_dir.as_deref().map(Path::new),

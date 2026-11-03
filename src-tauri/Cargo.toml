@@ -32,6 +32,7 @@ tokio-util = "0.7"
 rmcp = { version = "3.8", features = ["client", "transport-async-rw"] }
 include_dir = "0.7"
 toml_edit = "0.25.17"
+trash = "5.2.9"
 
 # macOS only: bringing GTKWave's window to the front (platform.rs).
 [target.'cfg(target_os = "macos")'.dependencies]
