@@ -97,8 +97,11 @@ pub struct MenuState {
     /// A project is open (not the start screen).
     pub project: bool,
     /// The open tab is Verilog or SystemVerilog (.v .sv .vh .svh): Auto
-    /// Format and Comment/Uncomment. Pin files have neither.
+    /// Format. Pin files have no formatter.
     pub verilog: bool,
+    /// The open tab has line comments: Verilog (`//`) or a pin file (`#`,
+    /// or `//` for .cst): Comment/Uncomment.
+    pub comment: bool,
     /// Go to Definition can answer: a Verilog tab and live checking running.
     pub definition: bool,
     /// The project has testbenches (Run Tests).
@@ -114,7 +117,8 @@ pub fn is_enabled(id: &str, state: &MenuState) -> bool {
         return false;
     }
     match id {
-        AUTO_FORMAT | TOGGLE_COMMENT => state.verilog,
+        AUTO_FORMAT => state.verilog,
+        TOGGLE_COMMENT => state.comment,
         GO_TO_DEFINITION => state.definition,
         RUN_TESTS => state.testbenches,
         SIMULATE => state.simulate,
@@ -473,9 +477,18 @@ mod tests {
         ] {
             assert!(!is_enabled(id, &pins), "{id}");
         }
+        // A pin file has line comments, but no formatter.
+        let pin_file = MenuState {
+            project: true,
+            comment: true,
+            ..Default::default()
+        };
+        assert!(is_enabled(TOGGLE_COMMENT, &pin_file));
+        assert!(!is_enabled(AUTO_FORMAT, &pin_file));
         let all = MenuState {
             project: true,
             verilog: true,
+            comment: true,
             definition: true,
             testbenches: true,
             simulate: true,

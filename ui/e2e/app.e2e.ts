@@ -324,6 +324,7 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
   expect(await editorMenu()).toEqual({
     project: true,
     verilog: true,
+    comment: true,
     definition: false,
     testbenches: true,
     simulate: true,
@@ -347,9 +348,21 @@ test("file commands are enabled only where they work", async ({ page }) => {
   await expect.poll(menuState).toMatchObject({ verilog: true, testbenches: true, simulate: true });
   await expect(runTests).toBeEnabled();
   await expect(simulate).toBeEnabled();
-  // A pin file: no Auto Format or Comment/Uncomment.
+  // A pin file: Comment/Uncomment with its own line comment, but no Auto
+  // Format.
   await tab(page, "pinout.pcf").click();
-  await expect.poll(menuState).toMatchObject({ verilog: false, definition: false });
+  await expect.poll(menuState).toMatchObject({
+    verilog: false,
+    comment: true,
+    definition: false,
+  });
+  const first = page.locator(".cm-line").first();
+  const before = (await first.textContent()) ?? "";
+  await first.click();
+  await menu(page, "toggle-comment");
+  await expect(first).toHaveText(`# ${before}`);
+  await menu(page, "toggle-comment");
+  await expect(first).toHaveText(before);
   // A new project has no testbench: no Run Tests or Simulate.
   await menu(page, "new");
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
@@ -365,6 +378,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
   await expect.poll(menuState).toEqual({
     project: false,
     verilog: false,
+    comment: false,
     definition: false,
     testbenches: false,
     simulate: false,

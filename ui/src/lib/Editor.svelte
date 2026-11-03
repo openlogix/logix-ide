@@ -16,6 +16,7 @@
     type Diagnostic as LintDiagnostic,
   } from "@codemirror/lint";
   import type { Diagnostic } from "./backend";
+  import { pinLanguage } from "./pinFiles";
   import {
     selectAll as cmSelectAll,
     toggleComment as cmToggleComment,
@@ -71,7 +72,7 @@
       extensions: [
         basicSetup,
         lintGutter(),
-        isVerilog(file) ? verilogLanguage : [],
+        isVerilog(file) ? verilogLanguage : (pinLanguage(file) ?? []),
         indentUnit.of("  "),
         themeSlot.of(currentTheme()),
         lspSlot.of(lspExtension(file)),

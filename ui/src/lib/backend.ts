@@ -189,8 +189,10 @@ export interface ExampleList {
 export interface MenuState {
   /** A project is open (not the start screen). */
   project: boolean;
-  /** The open tab is Verilog: Auto Format, Comment/Uncomment. */
+  /** The open tab is Verilog: Auto Format. */
   verilog: boolean;
+  /** The open tab has line comments (Verilog or a pin file): Comment/Uncomment. */
+  comment: boolean;
   /** Go to Definition can answer (a Verilog tab, live checking running). */
   definition: boolean;
   /** The project has testbenches (Run Tests). */

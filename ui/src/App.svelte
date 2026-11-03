@@ -27,6 +27,7 @@
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
   import { deviceSummaryLines, isBoardNotFound } from "./lib/devices";
   import Icon from "./lib/Icon.svelte";
+  import { pinCommentToken } from "./lib/pinFiles";
   import {
     addFile,
     buildKey,
@@ -873,13 +874,16 @@
   );
 
   /**
-   * What the menus can act on now: file commands only in Verilog tabs (pin
-   * files have no formatter or comment syntax in the editor), Run Tests
-   * with testbenches, Simulate with one to run.
+   * What the menus can act on now: Auto Format only in Verilog tabs (pin
+   * files have no formatter), Comment/Uncomment in Verilog and pin files
+   * (each with its line comment), Run Tests with testbenches, Simulate
+   * with one to run.
    */
   const menuState = $derived<MenuState>({
     project: project !== null,
     verilog: project !== null && isHdlSource(activeFile),
+    comment:
+      project !== null && (isHdlSource(activeFile) || pinCommentToken(activeFile) !== null),
     definition: project !== null && lsp !== null && isHdlSource(activeFile),
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && simulationTestbench(project) !== null,

@@ -13,6 +13,9 @@
 - **Right-click** in the editor for **Go to Definition** (jump to where the
   name you clicked is defined), Cut, Copy, Paste, **Comment/Uncomment** and
   Auto Format. The same items are in the **Edit** and **Tools** menus.
+  **Comment/Uncomment** (++cmd+slash++) also works in pin files, with their
+  own comment mark (`#`, or `//` in `.cst` files); Auto Format is for
+  Verilog files only.
 - **Status bar**: while Logix is busy (checking the tools, verifying,
   uploading, opening an example…), a spinning circle and what it's doing.
   When it's done, the result, e.g. "Build succeeded…", or **Ready.**
