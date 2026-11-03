@@ -94,6 +94,19 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   await expect(start).toBeVisible();
   await expect(start.getByRole("button", { name: "counter" })).toBeVisible();
   await expect(output(page)).toContainText(/Closed the project\.\s*Ready\./);
+  // File > Open Recent > Clear Menu empties the start screen's list too.
+  await page.evaluate(() => {
+    (window as unknown as { __fake: { recents: string[] } }).__fake.recents = [];
+  });
+  await menu(page, "recents-changed");
+  await expect(start.getByText("Recent projects")).toHaveCount(0);
+  await page.evaluate(() => {
+    (window as unknown as { __fake: { recents: string[] } }).__fake.recents = [
+      "/Users/you/Documents/Logix/counter",
+    ];
+  });
+  await menu(page, "recents-changed");
+  await expect(start.getByRole("button", { name: "counter" })).toBeVisible();
   // The board can still be changed; it's used for the next project.
   await pickBoard(page, "iCEBreaker");
   await expect(boardButton(page)).toHaveText(/iCEBreaker/);

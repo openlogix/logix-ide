@@ -836,13 +836,16 @@
     else backend.setDocumentState("", false);
   });
 
+  /** Reloads the start screen's recent projects. */
+  function loadRecents() {
+    backend
+      .recentProjects()
+      .then((r) => (recents = r))
+      .catch(() => {});
+  }
+
   $effect(() => {
-    if (project === null) {
-      backend
-        .recentProjects()
-        .then((r) => (recents = r))
-        .catch(() => {});
-    }
+    if (project === null) loadRecents();
   });
 
   function showFileError(e: unknown) {
@@ -1195,6 +1198,10 @@
       consoleLines = [];
       return;
     }
+    if (id === "recents-changed") {
+      loadRecents();
+      return;
+    }
     const actions: Record<
       Exclude<
         MenuId,
@@ -1214,6 +1221,7 @@
         | "select-all"
         | "output-select-all"
         | "clear-output"
+        | "recents-changed"
       >,
       () => Promise<unknown>
     > = {
@@ -1912,7 +1920,7 @@
     align-items: center;
     /* Top-aligned, so the space above the title equals the space between
        it and the cards (--welcome-gap) at any window height. */
-    --welcome-gap: 40px;
+    --welcome-gap: 56px;
     justify-content: flex-start;
     padding: var(--welcome-gap) 24px 24px;
     text-align: center;

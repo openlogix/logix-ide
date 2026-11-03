@@ -37,6 +37,9 @@ pub const SELECT_ALL: &str = "select-all";
 /// The output pane's right-click menu.
 pub const OUTPUT_SELECT_ALL: &str = "output-select-all";
 pub const CLEAR_OUTPUT: &str = "clear-output";
+/// Sent to the UI (as a `menu` event) when File > Open Recent > Clear Menu
+/// emptied the list, so the start screen reloads its recent projects.
+pub const RECENTS_CHANGED: &str = "recents-changed";
 /// Help menu items are "help:<index into HELP_LINKS>".
 const HELP_PREFIX: &str = "help:";
 
@@ -285,6 +288,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
                 let _ = settings::clear_recent(&path);
             }
             refresh(app);
+            let _ = app.emit("menu", RECENTS_CHANGED);
         }
         _ if id.starts_with(HELP_PREFIX) => {
             let url = id[HELP_PREFIX.len()..]

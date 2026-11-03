@@ -209,7 +209,9 @@ export type MenuId =
   | "toggle-comment"
   | "select-all"
   | "output-select-all"
-  | "clear-output";
+  | "clear-output"
+  // Not a menu item: the recent projects list changed (Clear Menu).
+  | "recents-changed";
 
 export const backend = {
   appInfo: (): Promise<AppInfo> => invoke<AppInfo>("app_info"),
