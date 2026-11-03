@@ -34,6 +34,8 @@ pub struct Settings {
     pub live_checking: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hover_info: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub show_output: Option<ShowOutput>,
     /// Unknown settings (e.g. from a newer version) are kept.
     #[serde(flatten)]
     extra: serde_json::Map<String, serde_json::Value>,
@@ -46,6 +48,19 @@ pub enum Theme {
     System,
     Light,
     Dark,
+}
+
+/// When the output (console) comes back by itself if it's hidden.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ShowOutput {
+    /// When Verify, Upload, Run Tests or Simulate starts, and on errors
+    /// (the default, as in the Arduino IDE).
+    OnCommand,
+    /// Only when a command fails.
+    OnError,
+    /// Never: only by hand (Show, View > Toggle Output, dragging).
+    Never,
 }
 
 /// The preferences as the Settings dialog shows them, defaults filled in.
@@ -66,6 +81,8 @@ pub struct Preferences {
     /// Whether hovering over a name shows info about it (when live
     /// checking is on).
     pub hover_info: bool,
+    /// When the hidden output comes back by itself.
+    pub show_output: ShowOutput,
 }
 
 pub const DEFAULT_FONT_SIZE: u32 = 13;
@@ -86,6 +103,7 @@ impl Settings {
             lint_on_verify: self.lint_on_verify.unwrap_or(true),
             live_checking: self.live_checking.unwrap_or(true),
             hover_info: self.hover_info.unwrap_or(false),
+            show_output: self.show_output.unwrap_or(ShowOutput::OnCommand),
         }
     }
 
@@ -122,6 +140,8 @@ impl Settings {
         self.lint_on_verify = (!prefs.lint_on_verify).then_some(false);
         self.live_checking = (!prefs.live_checking).then_some(false);
         self.hover_info = prefs.hover_info.then_some(true);
+        self.show_output =
+            (prefs.show_output != ShowOutput::OnCommand).then_some(prefs.show_output);
         Ok(())
     }
 }
@@ -265,6 +285,7 @@ mod tests {
             (13, None, Theme::System, true)
         );
         assert_eq!((p.live_checking, p.hover_info), (true, false));
+        assert_eq!(p.show_output, ShowOutput::OnCommand);
 
         let changed = Preferences {
             projects_dir: PathBuf::from("/Users/a/fpga"),
@@ -274,13 +295,17 @@ mod tests {
             lint_on_verify: false,
             live_checking: false,
             hover_info: true,
+            show_output: ShowOutput::OnError,
         };
         s.set_preferences(&changed, default_dir).unwrap();
         assert_eq!(s.preferences(default_dir), changed);
+        let json = serde_json::to_value(&s).unwrap();
+        assert_eq!(json["showOutput"], "onError");
 
         // Back to the defaults: nothing is stored.
         s.set_preferences(&p, default_dir).unwrap();
         assert!(s.projects_dir.is_none() && s.editor_font_size.is_none() && s.theme.is_none());
+        assert!(s.show_output.is_none());
     }
 
     #[test]

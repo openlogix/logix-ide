@@ -1,3 +1,5 @@
+import type { ShowOutput } from "./backend";
+
 /** Smallest console and editor heights (px) the divider allows. */
 export const MIN_CONSOLE_HEIGHT = 60;
 export const MIN_EDITOR_HEIGHT = 80;
@@ -29,4 +31,14 @@ export function clampConsoleHeight(
     areaHeight - dividerHeight - MIN_EDITOR_HEIGHT,
   );
   return Math.round(Math.min(max, Math.max(MIN_CONSOLE_HEIGHT, requested)));
+}
+
+/**
+ * Whether the hidden output comes back by itself: when a command starts
+ * (Verify, Upload, Run Tests, Simulate), or when something fails, per the
+ * "Show the output" setting.
+ */
+export function outputComesBack(when: ShowOutput, reason: "command" | "error"): boolean {
+  if (when === "never") return false;
+  return reason === "error" || when === "onCommand";
 }

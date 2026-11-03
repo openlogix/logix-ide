@@ -90,6 +90,7 @@ let preferences: Real.Preferences = {
   lintOnVerify: true,
   liveChecking: true,
   hoverInfo: false,
+  showOutput: "onCommand",
 };
 
 const handlers: {

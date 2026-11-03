@@ -179,7 +179,15 @@ export interface Preferences {
   liveChecking: boolean;
   /** Whether hovering over a name shows info (when liveChecking). */
   hoverInfo: boolean;
+  /** When the hidden output comes back by itself. */
+  showOutput: ShowOutput;
 }
+
+/**
+ * When the hidden output comes back by itself: when a command starts (and
+ * on errors), only when one fails, or never (only by hand).
+ */
+export type ShowOutput = "onCommand" | "onError" | "never";
 
 export interface ExampleList {
   examples: Example[];

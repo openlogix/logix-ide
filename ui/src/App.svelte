@@ -67,6 +67,7 @@
     clampConsoleHeight,
     DEFAULT_CONSOLE_HEIGHT,
     dragHidesConsole,
+    outputComesBack,
   } from "./lib/layout";
 
   const MAX_CONSOLE_LINES = 5000;
@@ -169,9 +170,14 @@
     }
   }
 
-  /** Shows the output, e.g. when a build starts or something fails. */
-  function showOutput() {
-    setConsoleVisible(true);
+  /**
+   * Shows the hidden output by itself when a command starts or something
+   * fails, as the "Show the output" setting says.
+   */
+  function showOutput(reason: "command" | "error") {
+    if (outputComesBack(prefs?.showOutput ?? "onCommand", reason)) {
+      setConsoleVisible(true);
+    }
   }
 
   // Keep the split valid when the window (or banner) changes size.
@@ -277,7 +283,7 @@
       const err = toUserError(e);
       setupError = err.message;
       log(`Error: ${err.details}`);
-      showOutput();
+      showOutput("error");
     }
   }
 
@@ -570,7 +576,7 @@
       // Old markers in this file no longer match its lines.
       const others = shownDiagnostics.filter((d) => d.file !== file);
       if (!result.ok || result.text === null) {
-        showOutput();
+        showOutput("error");
         showDiagnostics([...others, ...result.diagnostics]);
         const first = firstLocated(result.diagnostics);
         const why = first ?? result.diagnostics[0];
@@ -792,7 +798,7 @@
     taskStep = null;
     status = { text: runningText(task), kind: "info" };
     consoleLines = [];
-    showOutput();
+    showOutput("command");
     const which = testbench ? ` (${testbench})` : "";
     log(`${VERB[task]} ${p.name}${which} for ${boardName(board)}…`);
     try {
@@ -825,6 +831,7 @@
         diagram = { svg: outcome.graphSvg, module: testbench ?? "main" };
       }
       showDiagnostics(outcome.diagnostics);
+      if (!outcome.ok && !outcome.cancelled) showOutput("error");
       status = {
         text: outcomeText(task, outcome),
         kind: outcome.ok ? "ok" : outcome.cancelled ? "info" : "error",
@@ -841,6 +848,7 @@
       const err = toUserError(e);
       status = { text: err.message, kind: "error" };
       log(`Error: ${err.details}`);
+      showOutput("error");
     } finally {
       running = null;
       taskStep = null;

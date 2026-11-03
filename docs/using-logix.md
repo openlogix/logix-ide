@@ -27,8 +27,9 @@
   links to that line. Select text in it and copy it as usual, or
   right-click for **Copy**, **Select All** and **Clear Output**. Drag the bar above it to resize it. To hide it, drag
   the bar all the way down, click **Hide**, or use **View > Toggle Output**;
-  it comes back with **Show**, by dragging the bar up, and when
-  you Verify, Upload, Run Tests or Simulate.
+  it comes back with **Show**, by dragging the bar up, and by default when
+  you Verify, Upload, Run Tests or Simulate (see **Show the output** in
+  Settings).
 
 ## Projects
 
@@ -155,6 +156,9 @@ opens the folder with Logix's log, to attach to a report (see
 - **Editor font size**.
 - **Interface scale**: make everything bigger or smaller.
 - **Theme**: System, Light or Dark.
+- **Show the output**: when the hidden output comes back by itself: **When
+  a command starts** (Verify, Upload, Run Tests or Simulate; the default),
+  **Only on errors**, or **Never automatically**.
 - **Show lint warnings on Verify**: turn off to skip the lint step.
 - **Check code while typing**: underline syntax errors as you type. On by
   default.

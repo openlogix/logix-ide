@@ -4,6 +4,7 @@ import {
   COLLAPSE_CONSOLE_HEIGHT,
   dragHidesConsole,
   MIN_CONSOLE_HEIGHT,
+  outputComesBack,
   MIN_EDITOR_HEIGHT,
 } from "./layout";
 
@@ -31,5 +32,16 @@ describe("dragHidesConsole", () => {
   it("keeps it at the minimum height above that", () => {
     expect(dragHidesConsole(COLLAPSE_CONSOLE_HEIGHT)).toBe(false);
     expect(dragHidesConsole(MIN_CONSOLE_HEIGHT)).toBe(false);
+  });
+});
+
+describe("outputComesBack", () => {
+  it("follows the Show the output setting", () => {
+    expect(outputComesBack("onCommand", "command")).toBe(true);
+    expect(outputComesBack("onCommand", "error")).toBe(true);
+    expect(outputComesBack("onError", "command")).toBe(false);
+    expect(outputComesBack("onError", "error")).toBe(true);
+    expect(outputComesBack("never", "command")).toBe(false);
+    expect(outputComesBack("never", "error")).toBe(false);
   });
 });

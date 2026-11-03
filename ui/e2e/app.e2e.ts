@@ -451,6 +451,28 @@ test("the output can be hidden and comes back for a build", async ({ page }) => 
   await expect(status(page)).toContainText("Build succeeded");
 });
 
+test("the output comes back only on errors if the setting says so", async ({ page }) => {
+  await start(page);
+  await menu(page, "settings");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await expect(dialog.getByLabel("Show the output:")).toHaveValue("onCommand");
+  await dialog.getByLabel("Show the output:").selectOption("onError");
+  await dialog.getByRole("button", { name: "OK" }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole("button", { name: /Hide/ }).click();
+  await expect(output(page)).toBeHidden();
+  // A build that succeeds leaves it hidden...
+  await page.getByTitle(/^Verify/).click();
+  await expect(status(page)).toContainText("Build succeeded");
+  await expect(output(page)).toBeHidden();
+  // ...and one that fails brings it back.
+  await typeAtStart(page, "oops\n");
+  await page.getByTitle(/^Verify/).click();
+  await expect(status(page)).toContainText("Build failed");
+  await expect(output(page)).toBeVisible();
+});
+
 test("dragging the divider to the bottom hides the output", async ({ page }) => {
   await start(page);
   const divider = page.locator(".divider");

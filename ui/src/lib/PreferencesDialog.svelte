@@ -4,7 +4,7 @@
   OK.
 -->
 <script lang="ts">
-  import type { Preferences, Theme } from "./backend";
+  import type { Preferences, ShowOutput, Theme } from "./backend";
 
   let {
     initial,
@@ -36,6 +36,8 @@
   let liveChecking = $state(initial.liveChecking);
   // svelte-ignore state_referenced_locally
   let hoverInfo = $state(initial.hoverInfo);
+  // svelte-ignore state_referenced_locally
+  let showOutput = $state<ShowOutput>(initial.showOutput);
 
   let error = $state<string | null>(null);
   let saving = $state(false);
@@ -55,6 +57,7 @@
       lintOnVerify,
       liveChecking,
       hoverInfo,
+      showOutput,
     });
     saving = false;
     if (!error) onClose();
@@ -139,6 +142,15 @@
           <option value="system">System</option>
           <option value="light">Light</option>
           <option value="dark">Dark</option>
+        </select>
+      </div>
+
+      <label for="pref-show-output">Show the output:</label>
+      <div class="control">
+        <select id="pref-show-output" bind:value={showOutput}>
+          <option value="onCommand">When a command starts</option>
+          <option value="onError">Only on errors</option>
+          <option value="never">Never automatically</option>
         </select>
       </div>
 
