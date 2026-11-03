@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDoc } from "./backend";
 import {
+  fileRole,
+  roleTooltip,
   addFile,
   copySource,
   deleteFile,
@@ -161,5 +163,22 @@ describe("projectModules", () => {
       ],
     });
     expect(projectModules(p)).toEqual(["main", "alu", "counter"]);
+  });
+});
+
+describe("file roles", () => {
+  it("tells what each file is for", () => {
+    expect(fileRole("main.v", "main.v")).toBe("main");
+    expect(fileRole("main.sv", "main.sv")).toBe("main");
+    expect(fileRole("uart.v", "main.v")).toBe("design");
+    expect(fileRole("defs.vh", "main.v")).toBe("include");
+    expect(fileRole("main_tb.v", "main.v")).toBe("testbench");
+    expect(fileRole("uart_tb.sv", "main.v")).toBe("testbench");
+    expect(fileRole("pinout.pcf", "main.v")).toBe("pins");
+    expect(fileRole("Pins.LPF", "main.v")).toBe("pins");
+  });
+  it("explains the roles in the tooltips", () => {
+    expect(roleTooltip("main")).toBe("Main file: the design's top module, named main.");
+    expect(roleTooltip("testbench")).toMatch(/^Testbench: .* Double-click to rename/);
   });
 });

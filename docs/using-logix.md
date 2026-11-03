@@ -5,7 +5,9 @@
 - **Toolbar**: **Verify** ![](images/icon-verify.png){ .toolbar-icon }, **Upload** ![](images/icon-upload.png){ .toolbar-icon },
   **Run Tests** ![](images/icon-test.png){ .toolbar-icon }, **Simulate** ![](images/icon-simulate.png){ .toolbar-icon },
   **Stop** ![](images/icon-stop.png){ .toolbar-icon }, and the board list.
-- **Tabs**: one per file of the project. A dot marks unsaved changes.
+- **Tabs**: one per file of the project. A dot marks unsaved changes. A
+  flask marks testbenches and a pin marks the pin file; hover over a tab to
+  see what its file is for.
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
   Other problems, such as a name that isn't declared, are found by Verify

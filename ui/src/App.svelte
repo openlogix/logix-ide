@@ -33,6 +33,8 @@
     buildKey,
     copySource,
     deleteFile,
+    fileRole,
+    roleTooltip,
     filesForSave,
     findFile,
     fromDoc,
@@ -1641,14 +1643,16 @@
                 class:active={f.name === activeFile}
                 class:has-error={fileProblems.get(f.name) === "error"}
                 class:has-warning={fileProblems.get(f.name) === "warning"}
-                title={f.name === mainFile(project)
-                  ? "The main file (top module 'main')"
-                  : "Double-click to rename; right-click for more"}
+                title={roleTooltip(fileRole(f.name, mainFile(project)))}
                 onclick={() => selectFile(f.name)}
                 ondblclick={() => startRename(f.name)}
                 oncontextmenu={(e) => openTabMenu(e, f.name)}
               >
-                {f.name}{#if isFileDirty(project, f)}<span
+                {#if fileRole(f.name, mainFile(project)) === "testbench"}<span
+                    class="tab-icon"><Icon name="test" size={12} /></span
+                  >{:else if fileRole(f.name, mainFile(project)) === "pins"}<span
+                    class="tab-icon"><Icon name="pin" size={12} /></span
+                  >{/if}{f.name}{#if isFileDirty(project, f)}<span
                     class="dot"
                     title="Unsaved changes">●</span
                   >{/if}
@@ -1895,6 +1899,13 @@
     font-size: 13px;
     cursor: pointer;
     white-space: nowrap;
+  }
+  /* A testbench's flask (as Run Tests) or a pin file's pin, in the text color. */
+  .tab-icon {
+    display: inline-flex;
+    vertical-align: -1px;
+    margin-right: 5px;
+    opacity: 0.8;
   }
   .tab.active {
     background: var(--bg);
