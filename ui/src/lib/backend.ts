@@ -312,6 +312,9 @@ export const backend = {
   setLastBoard: (board: string): Promise<void> =>
     invoke<void>("set_last_board", { board }),
 
+  /** Forgets the last project, so the next start shows the start screen. */
+  closeProject: (): Promise<void> => invoke<void>("close_project"),
+
   /** Asks for a project folder and loads it. Null if cancelled. */
   openProjectDialog: (): Promise<ProjectDoc | null> =>
     invoke<ProjectDoc | null>("open_project_dialog"),

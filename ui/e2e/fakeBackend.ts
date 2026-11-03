@@ -292,6 +292,7 @@ export const backend: typeof Real.backend = {
   lastBoard: async () => "alhambra-ii",
   recentProjects: async () => fake.recents,
   setLastBoard: async () => {},
+  closeProject: async () => {},
   openProjectDialog: async () => null,
   saveProject: async () => {},
 

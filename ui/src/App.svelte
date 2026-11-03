@@ -1005,6 +1005,7 @@
     fileProblems = new Map();
     fileError = null;
     cancelNaming();
+    await backend.closeProject();
     finish("Closed the project.");
   }
 
@@ -1300,7 +1301,7 @@
     return () => unlisten.forEach((p) => p.then((stop) => stop()));
   });
 
-  /** Starts with the last project, or a new one if there's none. */
+  /** Starts with the last project, or the start screen if there's none. */
   async function openStartupProject() {
     try {
       const doc = await backend.openLastProject();
@@ -1311,7 +1312,7 @@
       }
     } catch (e) {
       // E.g. the folder was moved or deleted; start fresh instead.
-      log(`${toUserError(e).details} Starting a new project.`);
+      log(`${toUserError(e).details} Showing the start screen.`);
     }
     // No project: the start screen.
   }

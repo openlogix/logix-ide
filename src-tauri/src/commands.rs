@@ -791,6 +791,17 @@ pub fn set_last_board(board: String) {
     }
 }
 
+/// File > Close Project: the next start shows the start screen instead of
+/// reopening the closed project. Best effort.
+#[tauri::command]
+pub fn close_project() {
+    if let Ok(path) = settings_path() {
+        if let Err(e) = settings::clear_last_project(&path) {
+            crate::log!("Can't save settings: {e:#}");
+        }
+    }
+}
+
 /// Asks the user for a project folder and loads it. `None` if cancelled.
 #[tauri::command]
 pub async fn open_project_dialog(app: AppHandle) -> Result<Option<ProjectDoc>, UserError> {

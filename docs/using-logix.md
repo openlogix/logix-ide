@@ -53,10 +53,10 @@ inside another project.
   the project.
 - **Open, close and save**: **File > Open Project…**, **Open Recent**,
   **Close Project** (++cmd+w++), **Save Project**, **Save Project As…**.
-  Logix reopens the last project when it starts. With no project open, the
-  start screen offers a new project, an example (**Start with Blinky** for
-  the selected board) and your recent projects; the board in the toolbar is
-  the one new projects use.
+  Logix reopens the last project when it starts, unless you closed it.
+  With no project open, the start screen offers a new project, an example
+  (**Start with Blinky** for the selected board) and your recent projects;
+  the board in the toolbar is the one new projects use.
   **Save As…** over an existing project replaces it; the old one goes to
   the Trash.
 - **Show Project Folder**: **Project > Show Project Folder**

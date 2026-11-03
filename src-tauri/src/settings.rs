@@ -171,6 +171,14 @@ pub fn forget_project(path: &Path, dir: &Path) -> Result<()> {
     save(path, &settings)
 }
 
+/// Forgets the last project (File > Close Project), so the next start shows
+/// the start screen. The recent projects stay.
+pub fn clear_last_project(path: &Path) -> Result<()> {
+    let mut settings = load(path);
+    settings.last_project = None;
+    save(path, &settings)
+}
+
 /// Empties the recent projects list.
 pub fn clear_recent(path: &Path) -> Result<()> {
     let mut settings = load(path);
@@ -235,6 +243,12 @@ mod tests {
         let s = load(&path);
         assert!(!s.recent_projects.contains(&PathBuf::from("/p/5")));
         assert_eq!(s.last_project, None);
+
+        remember_project(&path, Path::new("/p/6")).unwrap();
+        clear_last_project(&path).unwrap();
+        let s = load(&path);
+        assert_eq!(s.last_project, None);
+        assert_eq!(s.recent_projects[0], Path::new("/p/6"));
 
         clear_recent(&path).unwrap();
         assert!(load(&path).recent_projects.is_empty());

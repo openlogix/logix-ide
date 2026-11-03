@@ -112,6 +112,7 @@ pub fn run() {
             commands::open_example,
             commands::open_bare_minimum,
             commands::open_last_project,
+            commands::close_project,
             commands::new_project,
             commands::set_last_board,
             commands::last_board,
