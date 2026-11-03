@@ -2,11 +2,14 @@ mod apio;
 mod bare;
 mod build_dir;
 mod commands;
+mod download;
+mod engine;
 pub mod logging;
 mod menu;
 mod platform;
 mod project;
 mod settings;
+mod setup_events;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -18,6 +21,9 @@ pub struct AppState {
     /// Set once Apio setup has succeeded. The lock also keeps two setup
     /// runs from overlapping (e.g. after a UI reload during development).
     apio: tokio::sync::Mutex<Option<apio::Apio>>,
+    /// The running Logix Engine, set once its setup has succeeded (after
+    /// Apio's). Dropping it stops the engine.
+    engine: tokio::sync::Mutex<Option<engine::Engine>>,
     /// Held while a build or upload runs, so only one runs at a time.
     task: tokio::sync::Mutex<()>,
     /// Stops the running build, upload, test or simulation (Stop button).
@@ -59,10 +65,11 @@ pub fn run() {
         .setup(|app| {
             let info = app.package_info();
             logging::init(&format!(
-                "Logix IDE {} ({}), Apio {}",
+                "Logix IDE {} ({}), Apio {}, Logix Engine {}",
                 info.version,
                 platform::current().map_or("unknown platform".into(), |p| format!("{p:?}")),
-                apio::APIO_RELEASE_TAG
+                apio::APIO_RELEASE_TAG,
+                engine::ENGINE_RELEASE_TAG
             ));
             install_panic_logging();
             if let Some(window) = app.get_webview_window("main") {

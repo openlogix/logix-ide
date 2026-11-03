@@ -7,7 +7,9 @@
   "type": "module",
   "appConstants": {
     "apioCliReleaseRepo": "fpgawars/apio",
-    "apioCliReleaseTag": "2026-10-22"
+    "apioCliReleaseTag": "2026-10-22",
+    "engineReleaseRepo": "openlogix/logix-engine",
+    "engineReleaseTag": "2026-11-03"
   },
   "scripts": {
     "dev": "vite --config ui/vite.config.ts",

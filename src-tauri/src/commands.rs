@@ -12,8 +12,10 @@ use tauri_plugin_dialog::{
     DialogExt, MessageDialogButtons, MessageDialogKind, MessageDialogResult,
 };
 
-use crate::apio::{self, SetupEvent, SetupStage};
+use crate::apio;
+use crate::engine;
 use crate::project::{self, ProjectFile};
+use crate::setup_events::{SetupEvent, SetupStage};
 use crate::{bare, build_dir, platform, settings, AppState, Catalog};
 
 /// An error for the UI: `message` is short plain language for the user,
@@ -77,6 +79,27 @@ pub async fn setup_apio(
             }
             Err(e) => {
                 crate::log!("Apio setup failed: {e:#}");
+                return Err(e.into());
+            }
+        }
+    }
+    drop(apio_slot);
+    // Then the engine. Verify and the other actions still use Apio; the
+    // move to the engine happens step by step.
+    let mut engine_slot = state.engine.lock().await;
+    if engine_slot.is_none() {
+        let channel = on_event.clone();
+        let result = engine::run_setup(move |event| {
+            let _ = channel.send(event);
+        })
+        .await;
+        match result {
+            Ok(ready) => {
+                crate::log!("Engine setup ready");
+                *engine_slot = Some(ready);
+            }
+            Err(e) => {
+                crate::log!("Engine setup failed: {e:#}");
                 return Err(e.into());
             }
         }

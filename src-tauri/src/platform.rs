@@ -62,6 +62,24 @@ impl Platform {
         }
     }
 
+    /// The platform id Logix Engine uses in its package names and reports
+    /// in `get_engine_info`.
+    pub fn engine_platform_id(self) -> &'static str {
+        match self {
+            Platform::MacosArm64 => "darwin-arm64",
+            Platform::LinuxX86_64 => "linux-x86-64",
+            Platform::WindowsX86_64 => "windows-x86-64",
+        }
+    }
+
+    /// Name of the engine executable inside its package.
+    pub fn engine_exe_name(self) -> &'static str {
+        match self {
+            Platform::WindowsX86_64 => "logix-engine.exe",
+            _ => "logix-engine",
+        }
+    }
+
     /// Whether the menu bar has an application menu (with About and Quit),
     /// as on macOS. Elsewhere Quit goes in the File menu.
     pub fn has_app_menu(self) -> bool {
@@ -111,7 +129,7 @@ impl Platform {
         }
     }
 
-    /// Makes a freshly unpacked Apio bundle runnable.
+    /// Makes a freshly unpacked Apio bundle or engine package runnable.
     pub fn prepare_unpacked_bundle(self, bundle_dir: &Path, exe: &Path) -> Result<()> {
         match self {
             Platform::MacosArm64 => {
@@ -287,6 +305,22 @@ mod tests {
         assert_eq!(
             from_os_arch("windows", "x86_64"),
             Some(Platform::WindowsX86_64)
+        );
+    }
+
+    #[test]
+    fn names_engine_packages_like_the_engine() {
+        // The engine's `platform` in get_engine_info and its package names.
+        assert_eq!(Platform::MacosArm64.engine_platform_id(), "darwin-arm64");
+        assert_eq!(Platform::LinuxX86_64.engine_platform_id(), "linux-x86-64");
+        assert_eq!(
+            Platform::WindowsX86_64.engine_platform_id(),
+            "windows-x86-64"
+        );
+        assert_eq!(Platform::MacosArm64.engine_exe_name(), "logix-engine");
+        assert_eq!(
+            Platform::WindowsX86_64.engine_exe_name(),
+            "logix-engine.exe"
         );
     }
 

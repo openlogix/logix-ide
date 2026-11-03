@@ -2,13 +2,11 @@
 //! Apio's GitHub releases, the same way the Apio VS Code extension does.
 
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context, Result};
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use tokio::io::AsyncWriteExt;
 
+use crate::download::{remove_dir_if_exists, unpack_tgz};
 use crate::platform::Platform;
 
 /// Written next to the installed executable; records which release URL the
@@ -54,45 +52,6 @@ pub fn is_installed(bundle_dir: &Path, exe_name: &str, url: &str) -> bool {
         .is_some_and(|m| m.url == url)
 }
 
-/// Downloads `url` to `dest`, reporting `(bytes_received, total_if_known)`.
-pub async fn download<F>(url: &str, dest: &Path, mut progress: F) -> Result<()>
-where
-    F: FnMut(u64, Option<u64>),
-{
-    let client = reqwest::Client::builder()
-        .user_agent(concat!("logix-ide/", env!("CARGO_PKG_VERSION")))
-        .connect_timeout(Duration::from_secs(30))
-        .read_timeout(Duration::from_secs(60))
-        .build()?;
-    let resp = client
-        .get(url)
-        .send()
-        .await
-        .context("can't connect to the download server (check the internet connection)")?
-        .error_for_status()
-        .context("the download server returned an error")?;
-    let total = resp.content_length();
-    let mut file = tokio::fs::File::create(dest)
-        .await
-        .with_context(|| format!("can't create {}", dest.display()))?;
-    let mut stream = resp.bytes_stream();
-    let mut received = 0u64;
-    let mut last_report = Instant::now();
-    progress(0, total);
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.context("the download was interrupted")?;
-        file.write_all(&chunk).await?;
-        received += chunk.len() as u64;
-        if last_report.elapsed() >= Duration::from_millis(100) {
-            progress(received, total);
-            last_report = Instant::now();
-        }
-    }
-    file.flush().await?;
-    progress(received, total);
-    Ok(())
-}
-
 /// Unpacks a downloaded bundle archive and installs it as `bundle_dir`,
 /// replacing any previous install. Blocking; run off the async runtime.
 pub fn install(
@@ -108,10 +67,7 @@ pub fn install(
 
     match spec.ext {
         "tgz" => {
-            let file = std::fs::File::open(archive)?;
-            tar::Archive::new(flate2::read::GzDecoder::new(file))
-                .unpack(&extract_dir)
-                .context("the downloaded Apio file is damaged")?;
+            unpack_tgz(archive, &extract_dir).context("the downloaded Apio file is damaged")?
         }
         other => bail!("unpacking .{other} files is not supported yet"),
     }
@@ -143,16 +99,10 @@ pub fn install(
     Ok(exe)
 }
 
-fn remove_dir_if_exists(dir: &Path) -> Result<()> {
-    if dir.exists() {
-        std::fs::remove_dir_all(dir).with_context(|| format!("can't remove {}", dir.display()))?;
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::download::make_tgz;
 
     #[test]
     fn builds_release_url() {
@@ -165,21 +115,6 @@ mod tests {
         assert_eq!(spec.ext, "tgz");
         let win = bundle_spec(Platform::WindowsX86_64, "fpgawars/apio", "2026-10-22");
         assert_eq!(win.file_name, "apio-cli-windows-amd64-20261022-bundle.zip");
-    }
-
-    /// Writes a .tgz containing the given (path, contents) entries.
-    fn make_tgz(path: &Path, entries: &[(&str, &[u8])]) {
-        let file = std::fs::File::create(path).unwrap();
-        let gz = flate2::write::GzEncoder::new(file, flate2::Compression::fast());
-        let mut builder = tar::Builder::new(gz);
-        for (name, data) in entries {
-            let mut header = tar::Header::new_gnu();
-            header.set_size(data.len() as u64);
-            header.set_mode(0o644);
-            header.set_cksum();
-            builder.append_data(&mut header, name, *data).unwrap();
-        }
-        builder.into_inner().unwrap().finish().unwrap();
     }
 
     #[cfg(target_os = "macos")]

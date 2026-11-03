@@ -169,9 +169,18 @@
     null,
   );
 
+  /** The engine's package install: current phase and its percentage. */
+  let installStep = $state<{ message: string; percent: number | null } | null>(
+    null,
+  );
+
   const ready = $derived(stage === "ready");
   const downloadFraction = $derived(
-    download ? progressFraction(download.received, download.total) : null,
+    download
+      ? progressFraction(download.received, download.total)
+      : installStep?.percent != null
+        ? installStep.percent / 100
+        : null,
   );
 
   /** Output lines not yet sent to the log file (sent in batches). */
@@ -210,13 +219,21 @@
     switch (event.kind) {
       case "stage":
         stage = event.stage;
-        if (event.stage !== "downloadingApio") download = null;
+        if (
+          event.stage !== "downloadingApio" &&
+          event.stage !== "downloadingEngine"
+        )
+          download = null;
+        if (event.stage !== "installingEnginePackages") installStep = null;
         // A long first-run install: give the user a project meanwhile.
         if (event.stage !== "checking" && event.stage !== "ready")
           ensureProject();
         break;
       case "download":
         download = { received: event.received, total: event.total };
+        break;
+      case "progress":
+        installStep = { message: event.message, percent: event.percent };
         break;
       case "log":
         log(event.line);
@@ -1285,6 +1302,9 @@
     downloadingApio: "Downloading Apio…",
     installingPackages:
       "Installing FPGA tools. The first run can take a few minutes…",
+    downloadingEngine: "Downloading Logix Engine…",
+    installingEnginePackages:
+      "Installing FPGA tools for Logix Engine. The first run can take a few minutes…",
     ready: "",
   };
 </script>
@@ -1442,6 +1462,11 @@
         {#if download}
           {formatBytes(download.received)}{download.total
             ? ` of ${formatBytes(download.total)}`
+            : ""}
+        {/if}
+        {#if installStep?.message}
+          {installStep.message}{installStep.percent != null
+            ? ` ${installStep.percent}%`
             : ""}
         {/if}
       </span>

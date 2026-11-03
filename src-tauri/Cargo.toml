@@ -28,6 +28,8 @@ tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt",
 tauri-plugin-dialog = "2"
 regex = "1"
 tokio-util = "0.7"
+# MCP client for Logix Engine (engine/), the same crate the engine uses.
+rmcp = { version = "3.8", features = ["client", "transport-child-process"] }
 
 # macOS only: bringing GTKWave's window to the front (platform.rs).
 [target.'cfg(target_os = "macos")'.dependencies]

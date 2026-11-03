@@ -26,7 +26,7 @@ pub use devices::Devices;
 pub use diagnostics::Diagnostic;
 pub use language_server::LanguageServer;
 pub use process::{quietly, strip_ansi};
-pub use setup::{run_setup, SetupEvent, SetupStage};
+pub use setup::run_setup;
 pub use task::{Task, TaskOutcome};
 
 /// The Apio release the IDE uses: pinned in package.json (`appConstants`,

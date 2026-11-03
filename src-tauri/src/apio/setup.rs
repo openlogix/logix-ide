@@ -3,11 +3,11 @@
 //! fine once they are installed).
 
 use anyhow::{anyhow, Context, Result};
-use serde::Serialize;
 
 use super::{bundle, validate_apio_home, Apio, Layout};
 use super::{APIO_RELEASE_REPO, APIO_RELEASE_TAG, DEV_APIO_BIN_ENV};
 use crate::platform;
+use crate::setup_events::{SetupEvent, SetupStage};
 
 // User-facing messages. Errors are wrapped with these at each step, so the
 // outermost message is plain language and the full chain (shown in the
@@ -19,28 +19,6 @@ const MSG_PREPARE: &str = "Couldn't prepare the folder for the FPGA tools.";
 const MSG_START: &str = "Couldn't start Apio.";
 const MSG_PACKAGES: &str =
     "Couldn't install the FPGA tools. Check your internet connection, then click Retry.";
-
-#[derive(Debug, Clone, Copy, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum SetupStage {
-    Checking,
-    DownloadingApio,
-    InstallingPackages,
-    Ready,
-}
-
-/// Progress reported to the UI while setting up.
-#[derive(Debug, Clone, Serialize)]
-#[serde(
-    tag = "kind",
-    rename_all = "camelCase",
-    rename_all_fields = "camelCase"
-)]
-pub enum SetupEvent {
-    Stage { stage: SetupStage },
-    Download { received: u64, total: Option<u64> },
-    Log { line: String },
-}
 
 /// Makes Apio ready to use. `emit` receives progress events. Doesn't emit
 /// `Ready`; the caller does once it has stored the result.
@@ -85,7 +63,7 @@ where
                     .context(MSG_PREPARE)?;
                 let archive = tmp_dir.join(&spec.file_name);
                 let emit_dl = emit.clone();
-                bundle::download(&spec.url, &archive, |received, total| {
+                crate::download::download(&spec.url, &archive, |received, total| {
                     emit_dl(SetupEvent::Download { received, total })
                 })
                 .await

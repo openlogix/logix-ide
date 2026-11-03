@@ -38,12 +38,19 @@ export type SetupStage =
   | "checking"
   | "downloadingApio"
   | "installingPackages"
+  | "downloadingEngine"
+  | "installingEnginePackages"
   | "ready";
 
-/** Progress events sent while setting up Apio (see `SetupEvent` in Rust). */
+/**
+ * Progress events sent while setting up Apio, then Logix Engine (see
+ * `SetupEvent` in Rust). `progress` is the engine's package install: the
+ * current phase (e.g. "Installing oss-cad-suite") and its percentage.
+ */
 export type SetupEvent =
   | { kind: "stage"; stage: SetupStage }
   | { kind: "download"; received: number; total: number | null }
+  | { kind: "progress"; message: string; percent: number | null }
   | { kind: "log"; line: string };
 
 export interface ProjectFile {
