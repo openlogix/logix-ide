@@ -320,14 +320,55 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
     page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.editorMenu);
   const menu = (id: string) =>
     page.evaluate((id) => (window as unknown as { __fake: Fake }).__fake.menu(id), id);
-  // The fake has no live checker, so Go to Definition is off.
-  expect(await editorMenu()).toEqual({ canGoToDefinition: false });
+  // In main.v; the fake has no live checker, so Go to Definition is off.
+  expect(await editorMenu()).toEqual({
+    project: true,
+    verilog: true,
+    definition: false,
+    testbenches: true,
+    simulate: true,
+  });
   const first = page.locator(".cm-line").first();
   const before = (await first.textContent()) ?? "";
   await menu("toggle-comment");
   await expect(first).toHaveText(`// ${before}`);
   await menu("toggle-comment");
   await expect(first).toHaveText(before);
+});
+
+test("file commands are enabled only where they work", async ({ page }) => {
+  await start(page);
+  type Fake = { menuState: Record<string, boolean> | null };
+  const menuState = () =>
+    page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.menuState);
+  const runTests = page.getByTitle(/^Run tests/);
+  const simulate = page.getByTitle(/^Simulate/);
+  // Blinky: main.v open, one testbench.
+  await expect.poll(menuState).toMatchObject({ verilog: true, testbenches: true, simulate: true });
+  await expect(runTests).toBeEnabled();
+  await expect(simulate).toBeEnabled();
+  // A pin file: no Auto Format or Comment/Uncomment.
+  await tab(page, "pinout.pcf").click();
+  await expect.poll(menuState).toMatchObject({ verilog: false, definition: false });
+  // A new project has no testbench: no Run Tests or Simulate.
+  await menu(page, "new");
+  await expect(tab(page, "main_tb.v")).toHaveCount(0);
+  await expect.poll(menuState).toMatchObject({
+    verilog: true,
+    testbenches: false,
+    simulate: false,
+  });
+  await expect(runTests).toBeDisabled();
+  await expect(simulate).toBeDisabled();
+  // No project: nothing that needs one.
+  await menu(page, "close-project");
+  await expect.poll(menuState).toEqual({
+    project: false,
+    verilog: false,
+    definition: false,
+    testbenches: false,
+    simulate: false,
+  });
 });
 
 test("the output can be selected, copied and cleared", async ({ page }) => {

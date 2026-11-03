@@ -37,9 +37,9 @@ pub struct AppState {
     catalog: tokio::sync::Mutex<Option<Catalog>>,
     /// Whether the open project has unsaved changes (reported by the UI).
     dirty: AtomicBool,
-    /// Whether a project is open (reported by the UI); the menu items that
-    /// need one are greyed out otherwise (`menu::NEEDS_PROJECT`).
-    project_open: AtomicBool,
+    /// What the menu items can act on now (reported by the UI); the others
+    /// are greyed out (`menu::is_enabled`).
+    menu_state: std::sync::Mutex<menu::MenuState>,
     /// Set when the UI has already dealt with unsaved changes, so the next
     /// close request goes through.
     force_close: AtomicBool,
@@ -103,6 +103,7 @@ pub fn run() {
             commands::lsp_send,
             commands::lsp_stop,
             commands::show_editor_menu,
+            commands::set_menu_state,
             commands::show_output_menu,
             commands::log_output,
             commands::get_preferences,

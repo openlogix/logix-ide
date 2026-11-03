@@ -31,11 +31,8 @@
     projectDir = null,
   }: {
     onChange: (file: string, text: string) => void;
-    /**
-     * Right-click in the text, after the cursor moved there. `canGoToDefinition`
-     * is whether the live checker can look up the name there.
-     */
-    onContextMenu?: (canGoToDefinition: boolean) => void;
+    /** Right-click in the text, after the cursor moved there. */
+    onContextMenu?: () => void;
     /** Dark colors (from the theme in Settings). */
     dark?: boolean;
     /** The language server client (live errors), once it's running. */
@@ -260,7 +257,7 @@
     );
     if (pos !== null && !inSelection) view.dispatch({ selection: { anchor: pos } });
     view.focus();
-    onContextMenu(lsp !== null && shown !== null && isVerilog(shown));
+    onContextMenu();
   }
 
   // Connect the documents to the language server when it starts, or when

@@ -185,6 +185,20 @@ export interface ExampleList {
   hidden: number;
 }
 
+/** What the menu items can act on now (`MenuState` in `menu.rs`). */
+export interface MenuState {
+  /** A project is open (not the start screen). */
+  project: boolean;
+  /** The open tab is Verilog: Auto Format, Comment/Uncomment. */
+  verilog: boolean;
+  /** Go to Definition can answer (a Verilog tab, live checking running). */
+  definition: boolean;
+  /** The project has testbenches (Run Tests). */
+  testbenches: boolean;
+  /** There's a testbench to simulate (Simulate). */
+  simulate: boolean;
+}
+
 /** Ids of native menu items the UI handles (see `menu.rs`). */
 export type MenuId =
   | "new"
@@ -451,8 +465,15 @@ export const backend = {
    */
   showOutputMenu: (): Promise<void> => invoke<void>("show_output_menu"),
 
-  showEditorMenu: (canGoToDefinition: boolean): Promise<void> =>
-    invoke<void>("show_editor_menu", { canGoToDefinition }),
+  /** Shows the editor's right-click menu, its items as in `setMenuState`. */
+  showEditorMenu: (): Promise<void> => invoke<void>("show_editor_menu"),
+
+  /**
+   * What the menu items can act on now; the others are greyed out, in the
+   * menu bar and the editor's right-click menu.
+   */
+  setMenuState: (menu: MenuState): Promise<void> =>
+    invoke<void>("set_menu_state", { menu }),
 
   /** Native menu items (New, Open, Save, Save As). */
   onMenu: (handler: (id: MenuId) => void): Promise<UnlistenFn> =>

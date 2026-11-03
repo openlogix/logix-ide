@@ -11,6 +11,7 @@
     type Diagnostic,
     type Preferences,
     type MenuId,
+    type MenuState,
     type ProjectDoc,
     type Task,
     type SetupEvent,
@@ -871,6 +872,23 @@
     ready && project !== null && running === null && activity === null,
   );
 
+  /**
+   * What the menus can act on now: file commands only in Verilog tabs (pin
+   * files have no formatter or comment syntax in the editor), Run Tests
+   * with testbenches, Simulate with one to run.
+   */
+  const menuState = $derived<MenuState>({
+    project: project !== null,
+    verilog: project !== null && isHdlSource(activeFile),
+    definition: project !== null && lsp !== null && isHdlSource(activeFile),
+    testbenches: project !== null && testbenches(project).length > 0,
+    simulate: project !== null && simulationTestbench(project) !== null,
+  });
+
+  $effect(() => {
+    backend.setMenuState(menuState);
+  });
+
   $effect(() => {
     // An empty name: no project, the title is just "Logix IDE".
     if (project) backend.setDocumentState(project.name, dirty);
@@ -1484,13 +1502,13 @@
     <button
       title="Run tests (⇧⌘T): run the testbenches"
       class:busy={running === "test"}
-      disabled={!canRun}
+      disabled={!canRun || !menuState.testbenches}
       onclick={() => runTask("test")}><Icon name="test" /></button
     >
     <button
       title="Simulate (⌥⌘T): run the open testbench and show its signals in GTKWave"
       class:busy={running === "simulate"}
-      disabled={!canRun}
+      disabled={!canRun || !menuState.simulate}
       onclick={() => runTask("simulate")}><Icon name="simulate" /></button
     >
     <button
@@ -1648,7 +1666,7 @@
         <Editor
           bind:this={editor}
           onChange={onEdit}
-          onContextMenu={(canGoTo) => backend.showEditorMenu(canGoTo)}
+          onContextMenu={() => backend.showEditorMenu()}
           {dark}
           {lsp}
           projectDir={project?.dir ?? null}

@@ -87,6 +87,40 @@ pub const NEEDS_PROJECT: &[&str] = &[
     SHOW_FOLDER,
     AUTO_FORMAT,
 ];
+
+/// What the menu items can act on now, reported by the UI
+/// (`set_menu_state`). Items that can't be used are greyed out, shortcuts
+/// included, in the menu bar and the editor's right-click menu.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MenuState {
+    /// A project is open (not the start screen).
+    pub project: bool,
+    /// The open tab is Verilog or SystemVerilog (.v .sv .vh .svh): Auto
+    /// Format and Comment/Uncomment. Pin files have neither.
+    pub verilog: bool,
+    /// Go to Definition can answer: a Verilog tab and live checking running.
+    pub definition: bool,
+    /// The project has testbenches (Run Tests).
+    pub testbenches: bool,
+    /// There's a testbench to simulate: the open tab is one, or the project
+    /// has exactly one (Simulate).
+    pub simulate: bool,
+}
+
+/// Whether the item `id` can be used in `state`.
+pub fn is_enabled(id: &str, state: &MenuState) -> bool {
+    if NEEDS_PROJECT.contains(&id) && !state.project {
+        return false;
+    }
+    match id {
+        AUTO_FORMAT | TOGGLE_COMMENT => state.verilog,
+        GO_TO_DEFINITION => state.definition,
+        RUN_TESTS => state.testbenches,
+        SIMULATE => state.simulate,
+        _ => true,
+    }
+}
 /// Open Recent items are "recent:<index into the recent projects>".
 const RECENT_PREFIX: &str = "recent:";
 const CLEAR_RECENT: &str = "clear-recent";
@@ -96,13 +130,14 @@ const CLOSE: &str = "close";
 const QUIT: &str = "quit";
 
 pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
-    let project_open = app
+    let state = app
         .try_state::<crate::AppState>()
-        .is_some_and(|s| s.project_open.load(std::sync::atomic::Ordering::SeqCst));
+        .map(|s| s.menu_state.lock().unwrap().clone())
+        .unwrap_or_default();
     let item = |id: &str, text: &str, accel: &str| {
         MenuItemBuilder::with_id(id, text)
             .accelerator(accel)
-            .enabled(project_open || !NEEDS_PROJECT.contains(&id))
+            .enabled(is_enabled(id, &state))
             .build(app)
     };
     let quit = item(QUIT, "Quit Logix IDE", "CmdOrCtrl+Q")?;
@@ -320,34 +355,24 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
 /// as from the Edit menu. Go to Definition needs live checking.
 pub fn show_editor_menu<R: Runtime>(
     window: &WebviewWindow<R>,
-    can_go_to_definition: bool,
+    state: &MenuState,
 ) -> tauri::Result<()> {
-    let item = |id: &str, text: &str, accel: &str, enabled: bool| {
+    let item = |id: &str, text: &str, accel: &str| {
         MenuItemBuilder::with_id(id, text)
             .accelerator(accel)
-            .enabled(enabled)
+            .enabled(is_enabled(id, state))
             .build(window)
     };
     let menu = MenuBuilder::new(window)
-        .item(&item(
-            GO_TO_DEFINITION,
-            "Go to Definition",
-            "F12",
-            can_go_to_definition,
-        )?)
+        .item(&item(GO_TO_DEFINITION, "Go to Definition", "F12")?)
         .separator()
         .cut()
         .copy()
         .paste()
         .select_all()
         .separator()
-        .item(&item(
-            TOGGLE_COMMENT,
-            "Comment/Uncomment",
-            "CmdOrCtrl+/",
-            true,
-        )?)
-        .item(&item(AUTO_FORMAT, "Auto Format", "CmdOrCtrl+T", true)?)
+        .item(&item(TOGGLE_COMMENT, "Comment/Uncomment", "CmdOrCtrl+/")?)
+        .item(&item(AUTO_FORMAT, "Auto Format", "CmdOrCtrl+T")?)
         .build()?;
     menu.popup(window.as_ref().window())
 }
@@ -423,5 +448,52 @@ mod tests {
             recent_labels(&dirs),
             ["blinky — Logix", "blinky — work", "counter"]
         );
+    }
+
+    #[test]
+    fn items_follow_the_menu_state() {
+        let none = MenuState::default();
+        assert!(!is_enabled(SAVE, &none));
+        assert!(is_enabled(OPEN, &none));
+        assert!(is_enabled(SETTINGS, &none));
+        // A pin file open in a project without testbenches.
+        let pins = MenuState {
+            project: true,
+            ..Default::default()
+        };
+        for id in [SAVE, VERIFY, UPLOAD, SHOW_DIAGRAM, NEW_FILE] {
+            assert!(is_enabled(id, &pins), "{id}");
+        }
+        for id in [
+            AUTO_FORMAT,
+            TOGGLE_COMMENT,
+            GO_TO_DEFINITION,
+            RUN_TESTS,
+            SIMULATE,
+        ] {
+            assert!(!is_enabled(id, &pins), "{id}");
+        }
+        let all = MenuState {
+            project: true,
+            verilog: true,
+            definition: true,
+            testbenches: true,
+            simulate: true,
+        };
+        for id in [
+            AUTO_FORMAT,
+            TOGGLE_COMMENT,
+            GO_TO_DEFINITION,
+            RUN_TESTS,
+            SIMULATE,
+        ] {
+            assert!(is_enabled(id, &all), "{id}");
+        }
+        // Nothing works without a project, whatever else is set.
+        let stale = MenuState {
+            project: false,
+            ..all
+        };
+        assert!(!is_enabled(AUTO_FORMAT, &stale));
     }
 }

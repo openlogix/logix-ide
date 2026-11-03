@@ -108,8 +108,10 @@ const fake = {
     .filter(Boolean),
   /** Boards reported as plugged in (`connectedBoards`). */
   connected: [] as Real.ConnectedBoard[],
-  /** The editor's right-click menu shown last (its Go to Definition state). */
-  editorMenu: null as { canGoToDefinition: boolean } | null,
+  /** The menu state the UI reported last (`setMenuState`). */
+  menuState: null as Real.MenuState | null,
+  /** The menu state when the editor's right-click menu was shown last. */
+  editorMenu: null as Real.MenuState | null,
   /** How often the output pane's right-click menu was shown. */
   outputMenu: 0,
   /** Ends a setup held at the engine's package install (`/?engineSetup`). */
@@ -373,8 +375,11 @@ export const backend: typeof Real.backend = {
   showOutputMenu: async () => {
     fake.outputMenu += 1;
   },
-  showEditorMenu: async (canGoToDefinition: boolean) => {
-    fake.editorMenu = { canGoToDefinition };
+  showEditorMenu: async () => {
+    fake.editorMenu = fake.menuState && { ...fake.menuState };
+  },
+  setMenuState: async (menu) => {
+    fake.menuState = menu;
   },
 
   onMenu: async (handler) => {

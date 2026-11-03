@@ -1010,12 +1010,6 @@ pub fn set_document_state(
     dirty: bool,
 ) {
     state.dirty.store(dirty, Ordering::SeqCst);
-    // The project-only menu items follow whether a project is open; the
-    // menu is rebuilt only when that changes.
-    let open = !name.is_empty();
-    if state.project_open.swap(open, Ordering::SeqCst) != open {
-        crate::menu::refresh(window.app_handle());
-    }
     let marker = if dirty { "● " } else { "" };
     // As in the Arduino IDE: e.g. "blinky | Logix IDE 0.1.0", or
     // "● blinky | Logix IDE 0.1.0" with unsaved changes.
@@ -1036,15 +1030,31 @@ pub fn show_output_menu(window: tauri::WebviewWindow) -> Result<(), UserError> {
     Ok(())
 }
 
-/// Shows the editor's right-click menu (see `menu::show_editor_menu`).
+/// Shows the editor's right-click menu (see `menu::show_editor_menu`),
+/// with the items the menu state allows.
 #[tauri::command]
 pub fn show_editor_menu(
     window: tauri::WebviewWindow,
-    can_go_to_definition: bool,
+    state: State<'_, AppState>,
 ) -> Result<(), UserError> {
-    crate::menu::show_editor_menu(&window, can_go_to_definition)
-        .context("Can't show the editor menu")?;
+    let menu_state = state.menu_state.lock().unwrap().clone();
+    crate::menu::show_editor_menu(&window, &menu_state).context("Can't show the editor menu")?;
     Ok(())
+}
+
+/// What the menu items can act on now (see `menu::MenuState`). The menu bar
+/// is rebuilt only when it changes.
+#[tauri::command]
+pub fn set_menu_state(app: AppHandle, state: State<'_, AppState>, menu: crate::menu::MenuState) {
+    let changed = {
+        let mut current = state.menu_state.lock().unwrap();
+        let changed = *current != menu;
+        *current = menu;
+        changed
+    };
+    if changed {
+        crate::menu::refresh(&app);
+    }
 }
 
 /// Appends lines the output pane showed to the log file (see `logging.rs`).
