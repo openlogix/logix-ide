@@ -1,13 +1,13 @@
-// Turns Apio's build report into a short status bar summary, e.g. "0.4% of
-// logic cells, max clock 194.4 MHz". (The full tables come from
-// `apio report` in the console.) Apio names resources per FPGA family; this
+// Turns the build report into a short status bar summary, e.g. "0.4% of
+// logic cells, max clock 194.4 MHz", and console lines, as Arduino's
+// "Sketch uses ...". The toolchain names resources per FPGA family; this
 // maps the main ones to plain names.
 import type { BuildReport } from "./backend";
 
 interface Kind {
   /** Plain name, plural. */
   label: string;
-  /** Apio's names for it (their counts are added up). */
+  /** The toolchain's names for it (their counts are added up). */
   names: string[];
 }
 
@@ -60,7 +60,7 @@ export function usages(report: BuildReport): Usage[] {
   const byName = new Map(report.resources.map((r) => [r.name, r]));
   const kinds = KINDS[report.arch];
   if (!kinds) {
-    // Unknown family: Apio's own names, for what's used.
+    // Unknown family: the toolchain's own names, for what's used.
     return report.resources
       .filter((r) => r.used > 0)
       .map((r) => ({ label: r.name, used: r.used, available: r.available }));
@@ -105,4 +105,24 @@ export function reportSummary(report: BuildReport): string {
     parts.push(`max clock ${mhz(slowest)}`);
   }
   return parts.join(", ");
+}
+
+/**
+ * Console lines after a build, e.g. "The design uses 27 of 7680 logic
+ * cells (0.4%)." and "Maximum clock speed: 194.4 MHz (sys_clk).".
+ */
+export function reportLines(report: BuildReport): string[] {
+  const lines = usages(report).map(
+    (u) =>
+      `The design uses ${u.used} of ${u.available} ${u.label} (${percent(u.used, u.available)}).`,
+  );
+  for (const c of report.clocks) {
+    lines.push(`Maximum clock speed: ${mhz(c.fmaxMhz)} (${clockName(c.name)}).`);
+  }
+  return lines;
+}
+
+/** nextpnr's clock net name without its suffix, e.g. "sys_clk" for "sys_clk$SB_IO_IN_$glb_clk". */
+function clockName(name: string): string {
+  return name.split("$")[0] || name;
 }

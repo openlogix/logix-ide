@@ -10,19 +10,6 @@ use serde_json::Value;
 
 use super::{args, Apio};
 
-/// A board the IDE can target.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Board {
-    /// Apio's board id, e.g. "alhambra-ii".
-    pub id: String,
-    /// Human-readable name, e.g. "Alhambra II (Lattice, iCE40)".
-    pub description: String,
-    /// The FPGA architecture, e.g. "ice40", "ecp5", "gowin", "xilinx"
-    /// (empty if Apio doesn't say), for grouping the board list.
-    pub arch: String,
-}
-
 /// The examples Logix can open, and how many others were hidden.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,11 +29,6 @@ pub struct Example {
 }
 
 impl Apio {
-    /// All boards, sorted by description.
-    pub async fn boards(&self) -> Result<Vec<Board>> {
-        parse_boards(&self.api_json("get-boards", None).await?)
-    }
-
     /// The examples Logix supports (see `example_is_supported`), sorted by
     /// board then name.
     pub async fn examples(&self) -> Result<ExampleList> {
@@ -268,31 +250,6 @@ fn ini_is_supported(text: &str, board: &str) -> bool {
     envs == 1
 }
 
-fn parse_boards(json: &Value) -> Result<Vec<Board>> {
-    let map = json
-        .get("boards")
-        .and_then(Value::as_object)
-        .context("unexpected board list from Apio")?;
-    let mut boards: Vec<Board> = map
-        .iter()
-        .map(|(id, info)| Board {
-            id: id.clone(),
-            description: info
-                .get("description")
-                .and_then(Value::as_str)
-                .unwrap_or(id)
-                .to_string(),
-            arch: info
-                .pointer("/fpga/definition/arch")
-                .and_then(Value::as_str)
-                .unwrap_or("")
-                .to_string(),
-        })
-        .collect();
-    boards.sort_by_key(|b| b.description.to_lowercase());
-    Ok(boards)
-}
-
 fn parse_examples(json: &Value) -> Result<Vec<Example>> {
     let map = json
         .get("examples")
@@ -325,22 +282,6 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn parses_and_sorts_boards() {
-        let json = json!({"boards": {
-            "zz-board": {"description": "Alpha Board", "fpga": {}},
-            "aa-board": {"description": "beta board",
-                         "fpga": {"definition": {"arch": "ice40"}}},
-            "no-desc": {}
-        }});
-        let boards = parse_boards(&json).unwrap();
-        let ids: Vec<_> = boards.iter().map(|b| b.id.as_str()).collect();
-        assert_eq!(ids, ["zz-board", "aa-board", "no-desc"]);
-        assert_eq!(boards[2].description, "no-desc");
-        let archs: Vec<_> = boards.iter().map(|b| b.arch.as_str()).collect();
-        assert_eq!(archs, ["", "ice40", ""]);
-    }
-
-    #[test]
     fn parses_examples() {
         let json = json!({"examples": {
             "b2": {"blinky": {"description": "Blinks an LED"}},
@@ -357,7 +298,6 @@ mod tests {
 
     #[test]
     fn rejects_bad_json() {
-        assert!(parse_boards(&json!({"x": 1})).is_err());
         assert!(parse_examples(&json!([])).is_err());
     }
 

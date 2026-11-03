@@ -59,6 +59,7 @@
     runningText,
     testbenchLines,
   } from "./lib/tasks";
+  import { reportLines } from "./lib/buildReport";
   import { clampConsoleHeight, DEFAULT_CONSOLE_HEIGHT } from "./lib/layout";
 
   const MAX_CONSOLE_LINES = 5000;
@@ -429,6 +430,10 @@
   // ---- Verify (build) and upload ----
 
   let running = $state<Task | null>(null);
+  /** The running task's current phase, e.g. "Writing flash" at 42%. */
+  let taskStep = $state<{ message: string; percent: number | null } | null>(
+    null,
+  );
   let status = $state<{ text: string; kind: "info" | "ok" | "error" } | null>(
     null,
   );
@@ -763,6 +768,7 @@
     }
     fileError = null;
     running = task;
+    taskStep = null;
     status = { text: runningText(task), kind: "info" };
     consoleLines = [];
     showOutput();
@@ -777,15 +783,20 @@
         p.dir,
         filesForSave(p),
         board,
-        (line) => log(line),
+        (event) => {
+          if (event.kind === "line") log(event.line);
+          else taskStep = { message: event.message, percent: event.percent };
+        },
       );
+      taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
       if (task === "test") log("", ...testbenchLines(outcome));
+      if (outcome.ok && outcome.report) log("", ...reportLines(outcome.report));
       if (
         task === "upload" &&
         !outcome.ok &&
         !outcome.cancelled &&
-        outcome.diagnostics.some((d) => isBoardNotFound(d.message))
+        isBoardNotFound(outcome)
       ) {
         await logConnectedDevices();
       }
@@ -811,6 +822,7 @@
       log(`Error: ${err.details}`);
     } finally {
       running = null;
+      taskStep = null;
     }
   }
 
@@ -1590,7 +1602,16 @@
           <span class="spinner" aria-label="Busy"></span>
         {/if}
         <span class="status-text" role="status">{statusText}</span>
-        {#if settingUp && !activity && !running}
+        {#if running && taskStep && !activity}
+          <span class="setup-detail"
+            >{taskStep.message}{taskStep.percent != null
+              ? ` ${taskStep.percent}%`
+              : ""}</span
+          >
+          {#if taskStep.percent != null}
+            <progress value={taskStep.percent / 100} max="1"></progress>
+          {/if}
+        {:else if settingUp && !activity && !running}
           {#if setupDetail}
             <span class="setup-detail">{setupDetail}</span>
           {/if}

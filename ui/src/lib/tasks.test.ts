@@ -16,11 +16,11 @@ const warn = (file: string, line: number): Diagnostic => ({
 
 describe("outcomeText", () => {
   it("reports success with time and warnings", () => {
-    expect(outcomeText("build", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1.62 })).toBe(
+    expect(outcomeText("build", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1.62, action: null })).toBe(
       "Build succeeded in 1.6 s.",
     );
     expect(
-      outcomeText("build", { ok: true, diagnostics: [warn("a.pcf", 3)], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 2 }),
+      outcomeText("build", { ok: true, diagnostics: [warn("a.pcf", 3)], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 2, action: null }),
     ).toBe("Build succeeded in 2.0 s, 1 warning.");
   });
 
@@ -31,17 +31,19 @@ describe("outcomeText", () => {
         diagnostics: [warn("pinout.pcf", 6), err("main.v", 25, "syntax error")],
         report: null, cancelled: false, graphSvg: null, testbenches: [],
         seconds: 0.4,
+        action: null,
       }),
     ).toBe("Build failed: main.v:25: syntax error");
     expect(
       outcomeText("upload", {
         ok: false,
-        diagnostics: [err(null, null, "No matching USB device.")],
+        diagnostics: [err(null, null, "No Alhambra II is connected. Connect the Alhambra II by USB, then retry.")],
         report: null, cancelled: false, graphSvg: null, testbenches: [],
         seconds: 1,
+        action: "connect_board",
       }),
-    ).toMatch(/^Upload failed: Logix couldn't find the board/);
-    expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1 })).toBe(
+    ).toBe("Upload failed: No Alhambra II is connected. Connect the Alhambra II by USB, then retry.");
+    expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1, action: null })).toBe(
       "Upload failed. See the output below.",
     );
   });
@@ -67,7 +69,7 @@ describe("test results", () => {
   ];
   it("summarizes passing tests", () => {
     expect(
-      outcomeText("test", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [benches[0]], seconds: 4.3 }),
+      outcomeText("test", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [benches[0]], seconds: 4.3, action: null }),
     ).toBe("Tests passed (1 testbench) in 4.3 s.");
   });
   it("names the first failure", () => {
@@ -77,17 +79,18 @@ describe("test results", () => {
         diagnostics: [err("alu_tb.v", 52, "Assertion failed: expected 'h01, actual 'h00")],
         report: null, cancelled: false, graphSvg: null, testbenches: benches,
         seconds: 1,
+        action: null,
       }),
     ).toBe("Test failed: alu_tb.v:52: Assertion failed: expected 'h01, actual 'h00");
   });
   it("lists each testbench", () => {
     expect(
-      testbenchLines({ ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: benches, seconds: 1 }),
+      testbenchLines({ ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: benches, seconds: 1, action: null }),
     ).toEqual(["✓ main_tb.v passed", "✗ alu_tb.v failed"]);
   });
   it("mentions GTKWave after simulating", () => {
     expect(
-      outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 0.3 }),
+      outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 0.3, action: null }),
     ).toBe("Simulation done in 0.3 s. GTKWave shows the signals.");
   });
 });
@@ -106,6 +109,7 @@ describe("build report in the status", () => {
           clocks: [{ name: "sys_clk", fmaxMhz: 194.36 }],
         },
         seconds: 2.4,
+        action: null,
       }),
     ).toBe("Build succeeded in 2.4 s. Uses 0.4% of logic cells, max clock 194.4 MHz.");
   });
@@ -121,6 +125,7 @@ describe("friendly messages", () => {
         report: null,
         cancelled: false, graphSvg: null,
         seconds: 0.2,
+        action: null,
       }),
     ).toMatch(/^Build failed: The project has no pin file/);
   });
@@ -136,23 +141,25 @@ describe("stopped tasks", () => {
         report: null,
         cancelled: true, graphSvg: null,
         seconds: 3,
+        action: null,
       }),
     ).toBe("Upload stopped.");
   });
 });
 
-describe("board not found", () => {
+describe("no pin file", () => {
   it("explains it in plain words", () => {
     expect(
-      outcomeText("upload", {
+      outcomeText("build", {
         ok: false,
-        diagnostics: [err(null, null, "No matching USB device.")],
+        diagnostics: [err(null, null, "No constraint file (pin file) for the board.")],
         testbenches: [],
         report: null,
         cancelled: false,
         graphSvg: null,
-        seconds: 1,
+        seconds: 0.1,
+        action: null,
       }),
-    ).toMatch(/^Upload failed: Logix couldn't find the board on USB/);
+    ).toMatch(/^Build failed: The project has no pin file/);
   });
 });

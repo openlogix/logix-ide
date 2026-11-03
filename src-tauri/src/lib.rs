@@ -6,6 +6,7 @@ mod download;
 mod engine;
 pub mod logging;
 mod menu;
+mod outcome;
 mod platform;
 mod project;
 mod settings;
@@ -23,7 +24,7 @@ pub struct AppState {
     apio: tokio::sync::Mutex<Option<apio::Apio>>,
     /// The running Logix Engine, set once its setup has succeeded (after
     /// Apio's). Dropping it stops the engine.
-    engine: tokio::sync::Mutex<Option<engine::Engine>>,
+    engine: tokio::sync::Mutex<Option<std::sync::Arc<engine::Engine>>>,
     /// Held while a build or upload runs, so only one runs at a time.
     task: tokio::sync::Mutex<()>,
     /// Stops the running build, upload, test or simulation (Stop button).
@@ -32,7 +33,8 @@ pub struct AppState {
     format: tokio::sync::Mutex<()>,
     /// The Verilog language server, while running (live errors).
     lsp: tokio::sync::Mutex<Option<apio::LanguageServer>>,
-    /// Board and example lists, fetched from Apio once per run.
+    /// Board and example lists, fetched once per run (boards from the
+    /// engine, examples from Apio).
     catalog: tokio::sync::Mutex<Option<Catalog>>,
     /// Whether the open project has unsaved changes (reported by the UI).
     dirty: AtomicBool,
@@ -43,7 +45,7 @@ pub struct AppState {
 
 #[derive(Clone)]
 struct Catalog {
-    boards: Vec<apio::Board>,
+    boards: Vec<engine::Board>,
     examples: apio::ExampleList,
     usb_rules: Vec<apio::UsbRule>,
 }

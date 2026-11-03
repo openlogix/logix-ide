@@ -1,4 +1,5 @@
-//! Running a build or upload in a prepared project folder.
+//! Running a build, upload, test, simulation or diagram with Apio in a
+//! prepared project folder.
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -6,62 +7,35 @@ use std::time::Instant;
 
 use std::sync::LazyLock;
 
+use super::diagnostics::parse_line;
+use super::process::strip_ansi;
+use super::{args, Apio};
+use crate::outcome::{dedup, Diagnostic, Task, TaskOutcome, TestbenchResult};
 use anyhow::{Context, Result};
 use regex::Regex;
-use serde::{Deserialize, Serialize};
-
-use super::diagnostics::{parse_line, Diagnostic};
-use super::process::strip_ansi;
-use super::report::BuildReport;
-use super::{args, Apio};
 use tokio_util::sync::CancellationToken;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Task {
-    /// `apio build`: synthesize, place and route.
-    Build,
-    /// `apio upload`: build if needed, then program the board.
-    Upload,
-    /// `apio test [testbench]`: run one or all testbenches.
-    Test,
-    /// `apio sim <testbench> --detach`: simulate and open GTKWave.
-    Simulate,
-    /// `apio graph --no-viewer [-t module]`: draw the design as an SVG.
-    Graph,
-}
-
-impl Task {
-    /// `target` is the testbench for `Test`/`Simulate`, or the module to
-    /// draw for `Graph`.
-    fn args(self, target: Option<&str>) -> Vec<String> {
-        let mut args: Vec<String> = match self {
-            Task::Build => vec!["build".into()],
-            Task::Upload => vec!["upload".into()],
-            Task::Test => vec!["test".into()],
-            Task::Simulate => vec!["sim".into()],
-            Task::Graph => vec!["graph".into(), "--no-viewer".into()],
-        };
-        if matches!(self, Task::Test | Task::Simulate) {
-            args.extend(target.map(str::to_owned));
-        }
-        if let (Task::Graph, Some(module)) = (self, target) {
-            args.extend(["-t".into(), module.to_owned()]);
-        }
-        if self == Task::Simulate {
-            // Return once GTKWave is up instead of waiting for it to close.
-            args.push("--detach".into());
-        }
-        args
+/// Apio's command line for `task`. `target` is the testbench for
+/// `Test`/`Simulate`, or the module to draw for `Graph`.
+fn task_args(task: Task, target: Option<&str>) -> Vec<String> {
+    let mut args: Vec<String> = match task {
+        Task::Build => vec!["build".into()],
+        Task::Upload => vec!["upload".into()],
+        Task::Test => vec!["test".into()],
+        Task::Simulate => vec!["sim".into()],
+        Task::Graph => vec!["graph".into(), "--no-viewer".into()],
+    };
+    if matches!(task, Task::Test | Task::Simulate) {
+        args.extend(target.map(str::to_owned));
     }
-}
-
-/// A testbench run by `apio test`.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TestbenchResult {
-    pub name: String,
-    pub passed: bool,
+    if let (Task::Graph, Some(module)) = (task, target) {
+        args.extend(["-t".into(), module.to_owned()]);
+    }
+    if task == Task::Simulate {
+        // Return once GTKWave is up instead of waiting for it to close.
+        args.push("--detach".into());
+    }
+    args
 }
 
 /// `apio test` prints `Testbench <file>` before running each testbench.
@@ -81,22 +55,6 @@ fn testbench_results(started: Vec<String>, ok: bool) -> Vec<TestbenchResult> {
             passed: ok || i < last,
         })
         .collect()
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TaskOutcome {
-    pub ok: bool,
-    pub diagnostics: Vec<Diagnostic>,
-    /// For `Test`: each testbench that ran, in order.
-    pub testbenches: Vec<TestbenchResult>,
-    /// For a successful `Build` or `Upload`: resource usage and clocks.
-    pub report: Option<BuildReport>,
-    /// Stopped by the user (the Stop button).
-    pub cancelled: bool,
-    /// For a successful `Graph`: the diagram as SVG.
-    pub graph_svg: Option<String>,
-    pub seconds: f64,
 }
 
 impl Apio {
@@ -161,7 +119,7 @@ impl Apio {
             && !cancel.is_cancelled()
             && self
                 .run_cancellable(
-                    &args(task.args(testbench)),
+                    &args(task_args(task, testbench)),
                     Some(dir),
                     handle_line.clone(),
                     cancel,
@@ -206,26 +164,9 @@ impl Apio {
             cancelled: cancel.is_cancelled(),
             graph_svg,
             seconds: started.elapsed().as_secs_f64(),
+            action: None,
         })
     }
-}
-
-/// Drops repeated reports of the same problem (e.g. lint and the build
-/// both flagging one line), keeping the first.
-fn dedup(diags: Vec<Diagnostic>) -> Vec<Diagnostic> {
-    let mut kept: Vec<Diagnostic> = Vec::new();
-    for d in diags {
-        let repeat = kept.iter().any(|k| {
-            k.severity == d.severity
-                && k.file == d.file
-                && k.line == d.line
-                && (d.file.is_some() || k.message == d.message)
-        });
-        if !repeat {
-            kept.push(d);
-        }
-    }
-    kept
 }
 
 /// The result of formatting one file.
@@ -268,24 +209,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn task_args() {
-        assert_eq!(Task::Build.args(Some("x_tb.v")), ["build"]);
-        assert_eq!(Task::Test.args(None), ["test"]);
-        assert_eq!(Task::Test.args(Some("main_tb.v")), ["test", "main_tb.v"]);
+    fn builds_task_args() {
+        assert_eq!(task_args(Task::Build, Some("x_tb.v")), ["build"]);
+        assert_eq!(task_args(Task::Test, None), ["test"]);
         assert_eq!(
-            Task::Simulate.args(Some("main_tb.v")),
+            task_args(Task::Test, Some("main_tb.v")),
+            ["test", "main_tb.v"]
+        );
+        assert_eq!(
+            task_args(Task::Simulate, Some("main_tb.v")),
             ["sim", "main_tb.v", "--detach"]
         );
-        assert_eq!(Task::Graph.args(None), ["graph", "--no-viewer"]);
+        assert_eq!(task_args(Task::Graph, None), ["graph", "--no-viewer"]);
         assert_eq!(
-            Task::Graph.args(Some("counter")),
+            task_args(Task::Graph, Some("counter")),
             ["graph", "--no-viewer", "-t", "counter"]
         );
     }
 
     #[test]
     fn dedups_repeated_problems() {
-        use super::super::diagnostics::Severity;
+        use crate::outcome::Severity;
         let d = |file: Option<&str>, line: Option<u32>, msg: &str| Diagnostic {
             severity: Severity::Error,
             file: file.map(Into::into),
@@ -366,7 +310,7 @@ esac
     #[cfg(unix)]
     #[tokio::test]
     async fn runs_tasks_against_a_fake_apio() {
-        use super::super::diagnostics::Severity;
+        use crate::outcome::Severity;
         use std::os::unix::fs::PermissionsExt;
 
         let tmp = tempfile::tempdir().unwrap();
@@ -553,7 +497,7 @@ esac
         println!("lint warning build: ok={} {:?}", w.ok, w.diagnostics);
         assert!(w.ok);
         assert!(w.diagnostics.iter().any(|d| {
-            d.severity == super::super::diagnostics::Severity::Warning
+            d.severity == crate::outcome::Severity::Warning
                 && d.file.as_deref() == Some("main.v")
                 && d.line.is_some()
         }));

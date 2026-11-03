@@ -1,0 +1,128 @@
+//! What a build, upload, test, simulation or diagram returns to the UI,
+//! and the events it streams while running. Shared by both adapters (Apio
+//! and Logix Engine), so the UI sees the same results from either.
+
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Task {
+    /// Verify: lint, synthesize, place and route.
+    Build,
+    /// Build, then program the board.
+    Upload,
+    /// Run one or all testbenches.
+    Test,
+    /// Simulate one testbench and open GTKWave.
+    Simulate,
+    /// Draw a module of the design as an SVG.
+    Graph,
+}
+
+/// A testbench that ran.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TestbenchResult {
+    pub name: String,
+    pub passed: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskOutcome {
+    pub ok: bool,
+    pub diagnostics: Vec<Diagnostic>,
+    /// For `Test`: each testbench that ran, in order.
+    pub testbenches: Vec<TestbenchResult>,
+    /// For a successful `Build` or `Upload`: resource usage and clocks.
+    pub report: Option<BuildReport>,
+    /// Stopped by the user (the Stop button).
+    pub cancelled: bool,
+    /// For a successful `Graph`: the diagram as SVG.
+    pub graph_svg: Option<String>,
+    pub seconds: f64,
+    /// The engine's suggested action when it failed, such as
+    /// `connect_board` (see the engine's tool API).
+    pub action: Option<String>,
+}
+
+/// Streamed to the UI while a task runs.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "camelCase",
+    rename_all_fields = "camelCase"
+)]
+pub enum TaskEvent {
+    /// A console line (may contain ANSI colors).
+    Line { line: String },
+    /// The current phase, such as "Placing and routing", and its
+    /// percentage when known (status bar).
+    Progress {
+        message: String,
+        percent: Option<u32>,
+    },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Severity {
+    Error,
+    Warning,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Diagnostic {
+    pub severity: Severity,
+    /// Project file name, if the message points into one.
+    pub file: Option<String>,
+    /// 1-based line, if known.
+    pub line: Option<u32>,
+    /// 1-based column, if known.
+    pub column: Option<u32>,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildReport {
+    /// FPGA family, e.g. "ice40", "ecp5", "gowin", "xilinx".
+    pub arch: String,
+    /// The FPGA's resources, with Apio's (family-specific) names.
+    pub resources: Vec<Resource>,
+    pub clocks: Vec<Clock>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Resource {
+    pub name: String,
+    pub used: u64,
+    pub available: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Clock {
+    pub name: String,
+    pub fmax_mhz: f64,
+}
+
+/// Drops repeated reports of the same problem (e.g. lint and the build
+/// both flagging one line), keeping the first.
+pub fn dedup(diags: Vec<Diagnostic>) -> Vec<Diagnostic> {
+    let mut kept: Vec<Diagnostic> = Vec::new();
+    for d in diags {
+        let repeat = kept.iter().any(|k| {
+            k.severity == d.severity
+                && k.file == d.file
+                && k.line == d.line
+                && (d.file.is_some() || k.message == d.message)
+        });
+        if !repeat {
+            kept.push(d);
+        }
+    }
+    kept
+}

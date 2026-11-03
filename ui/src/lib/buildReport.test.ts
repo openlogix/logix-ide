@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BuildReport } from "./backend";
-import { percent, reportSummary, usages } from "./buildReport";
+import { percent, reportLines, reportSummary, usages } from "./buildReport";
 
 const ice40: BuildReport = {
   arch: "ice40",
@@ -68,5 +68,17 @@ describe("build report", () => {
     expect(percent(1, 300)).toBe("0.3%");
     expect(percent(1, 3)).toBe("33%");
     expect(percent(1, 0)).toBe("?%");
+  });
+
+  it("gives console lines, as Arduino's \"Sketch uses ...\"", () => {
+    const report = {
+      ...ice40,
+      clocks: [{ name: "sys_clk$SB_IO_IN_$glb_clk", fmaxMhz: 194.36 }],
+    };
+    expect(reportLines(report)).toEqual([
+      "The design uses 27 of 7680 logic cells (0.4%).",
+      "The design uses 9 of 107 I/O pins (8%).",
+      "Maximum clock speed: 194.4 MHz (sys_clk).",
+    ]);
   });
 });

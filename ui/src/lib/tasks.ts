@@ -72,14 +72,8 @@ export function byFile(diags: Diagnostic[]): Map<string, Diagnostic[]> {
   return map;
 }
 
-/** Plain explanations for Apio messages beginners may not understand. */
+/** Plain explanations for messages beginners may not understand. */
 export function friendly(message: string): string {
-  if (/^No matching USB device/i.test(message)) {
-    return (
-      "Logix couldn't find the board on USB. Check that it's connected, " +
-      "then try again. Tools > Connected Devices shows what's connected."
-    );
-  }
   if (/^No constraint file/i.test(message)) {
     return (
       "The project has no pin file (e.g. pinout.pcf) for the board. " +

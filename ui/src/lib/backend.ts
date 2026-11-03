@@ -127,7 +127,14 @@ export interface TaskOutcome {
   /** For a successful "graph": the diagram as SVG. */
   graphSvg: string | null;
   seconds: number;
+  /** Logix Engine's suggested action when it failed, e.g. "connect_board". */
+  action: string | null;
 }
+
+/** Streamed while a task runs: console lines, and the current phase. */
+export type TaskEvent =
+  | { kind: "line"; line: string }
+  | { kind: "progress"; message: string; percent: number | null };
 
 /** The result of Auto Format. */
 export interface FormatResult {
@@ -270,10 +277,10 @@ export const backend = {
     projectDir: string | null,
     files: ProjectFile[],
     board: string,
-    onLine: (line: string) => void,
+    onEvent: (event: TaskEvent) => void,
   ): Promise<TaskOutcome> => {
-    const channel = new Channel<string>();
-    channel.onmessage = onLine;
+    const channel = new Channel<TaskEvent>();
+    channel.onmessage = onEvent;
     return invoke<TaskOutcome>("run_task", {
       task,
       testbench,
@@ -282,7 +289,7 @@ export const backend = {
       projectDir,
       files,
       board,
-      onLine: channel,
+      onEvent: channel,
     });
   },
 

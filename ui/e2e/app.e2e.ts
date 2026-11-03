@@ -63,19 +63,19 @@ test("shows the engine's package install progress", async ({ page }) => {
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
   await start(page);
-  await expect(output(page)).toContainText("146 examples available (18 hidden");
-  // Apio's 109 boards, grouped by FPGA architecture. Only the current
+  await expect(output(page)).toContainText("108 examples available (56 hidden");
+  // Logix Engine's 79 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
   await expect(page.locator(".group")).toHaveText([
-    /Lattice iCE40\s*42/,
-    /Lattice ECP5\s*36/,
+    /Lattice iCE40\s*22/,
+    /Lattice ECP5\s*26/,
     /Gowin\s*8/,
     /Xilinx\s*23/,
   ]);
-  await expect(page.getByRole("option")).toHaveCount(42);
+  await expect(page.getByRole("option")).toHaveCount(22);
   await page.getByRole("button", { name: /Gowin/ }).click();
-  await expect(page.getByRole("option")).toHaveCount(50);
+  await expect(page.getByRole("option")).toHaveCount(30);
   await page.getByRole("button", { name: /Lattice iCE40/ }).click();
   await expect(page.getByRole("option")).toHaveCount(8);
   await page.getByRole("combobox").fill("a");

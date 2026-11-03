@@ -1,4 +1,4 @@
-import type { Devices, UsbDevice } from "./backend";
+import type { Devices, TaskOutcome, UsbDevice } from "./backend";
 
 /** A device in plain words, e.g. "Alhambra II v1.0A (AlhambraBits, 0403:6010)". */
 export function usbLabel(d: UsbDevice): string {
@@ -7,9 +7,9 @@ export function usbLabel(d: UsbDevice): string {
   return `${name} (${details.join(", ")})`;
 }
 
-/** True if an Upload failure message means the board wasn't found on USB. */
-export function isBoardNotFound(message: string): boolean {
-  return /^No matching USB device/i.test(message);
+/** True if Upload failed because the board wasn't found on USB. */
+export function isBoardNotFound(outcome: TaskOutcome): boolean {
+  return outcome.action === "connect_board";
 }
 
 /** Console lines listing what's connected, with tips when nothing is. */

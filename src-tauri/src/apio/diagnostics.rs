@@ -4,28 +4,8 @@
 
 use std::sync::LazyLock;
 
+use crate::outcome::{Diagnostic, Severity};
 use regex::Regex;
-use serde::Serialize;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Severity {
-    Error,
-    Warning,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Diagnostic {
-    pub severity: Severity,
-    /// Project file name, if the message points into one.
-    pub file: Option<String>,
-    /// 1-based line, if known.
-    pub line: Option<u32>,
-    /// 1-based column, if known.
-    pub column: Option<u32>,
-    pub message: String,
-}
 
 /// `main.v:7: ERROR: syntax error` (yosys), `main.v:5.3-5.9: Warning: ...`,
 /// `main_tb.v:12: error: ...` (iverilog).

@@ -3,12 +3,11 @@
 //! are missing. Once they are installed, startup needs no network: the
 //! engine checks its packages locally.
 
-use std::sync::{Arc, Mutex};
-
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
 
-use super::client::{tool_error, Engine, Progress};
+use super::client::{tool_error, Engine, ProgressSink};
+use super::phase_sink;
 use super::{bundle, Layout, ENGINE_RELEASE_REPO, ENGINE_RELEASE_TAG};
 use crate::platform;
 use crate::setup_events::{SetupEvent, SetupStage};
@@ -127,31 +126,28 @@ fn missing_packages(info: &Value) -> Vec<String> {
 /// Turns the engine's progress into setup events: the phase message (kept
 /// until the next phase starts) with its percentage, and each new phase as
 /// a console line.
-fn progress_sink<F>(emit: F) -> Arc<dyn Fn(Progress) + Send + Sync>
+fn progress_sink<F>(emit: F) -> ProgressSink
 where
     F: Fn(SetupEvent) + Send + Sync + 'static,
 {
-    let message = Mutex::new(String::new());
-    Arc::new(move |p: Progress| {
-        let mut current = message.lock().unwrap();
-        if let Some(new) = p.message {
-            if *current != new {
-                emit(SetupEvent::Log {
-                    line: format!("{new}..."),
-                });
-                *current = new;
-            }
+    phase_sink(move |message, percent, new_phase| {
+        if new_phase {
+            emit(SetupEvent::Log {
+                line: format!("{message}..."),
+            });
         }
         emit(SetupEvent::Progress {
-            message: current.clone(),
-            percent: p.percent,
+            message: message.to_string(),
+            percent,
         });
     })
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::client::Progress;
     use super::*;
+    use std::sync::{Arc, Mutex};
 
     #[test]
     fn finds_missing_packages() {

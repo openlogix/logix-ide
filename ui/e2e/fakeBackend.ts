@@ -136,6 +136,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         cancelled: false,
         graphSvg: null,
         seconds: 0.5,
+        action: null,
       },
     };
   }
@@ -149,7 +150,11 @@ function buildOutcome(files: ProjectFile[], board: string): {
       message: "syntax error, unexpected identifier",
     };
     return {
-      lines: ["$ apio lint", "$ apio build", `main.v:${bad + 1}: ERROR: syntax error`],
+      lines: [
+        "\x1b[2m$ verilator_bin --lint-only --quiet main.v\x1b[0m",
+        "\x1b[2m$ yosys -q -p 'synth_ice40 -top main' -DSYNTHESIZE main.v\x1b[0m",
+        `\x1b[31mmain.v:${bad + 1}: ERROR: syntax error\x1b[0m`,
+      ],
       outcome: {
         ok: false,
         diagnostics: [diag],
@@ -158,6 +163,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         cancelled: false,
         graphSvg: null,
         seconds: 0.4,
+        action: null,
       },
     };
   }
@@ -179,6 +185,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
       cancelled: false,
         graphSvg: null,
       seconds: 1.2,
+      action: null,
     },
   };
 }
@@ -233,7 +240,8 @@ export const backend: typeof Real.backend = {
   }),
   openExample: async (board) => ({ ...starterDoc(board), starter: false, name: "blinky" }),
 
-  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, onLine) => {
+  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, onEvent) => {
+    const onLine = (line: string) => onEvent({ kind: "line", line });
     const { lines: buildLines, outcome } = buildOutcome(files, board);
     let lines = buildLines;
     if (outcome.ok && task === "test") {
@@ -246,9 +254,16 @@ export const backend: typeof Real.backend = {
       outcome.graphSvg = graphSvg;
       outcome.report = null;
     }
+    // Verify and Upload run on Logix Engine, which reports its phases.
+    const phases = task === "build" || task === "upload";
+    if (phases) onEvent({ kind: "progress", message: "Synthesizing", percent: null });
     for (const line of lines) {
       onLine(line);
       await pause(5);
+    }
+    if (phases && task === "upload" && outcome.ok) {
+      onEvent({ kind: "progress", message: "Writing flash", percent: 42 });
+      onLine("Programmed Alhambra II v1.0A.");
     }
     return outcome;
   },

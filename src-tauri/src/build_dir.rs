@@ -34,16 +34,30 @@ pub struct BuildInput<'a> {
 
 /// The project's pin constraint file, if it has one.
 pub fn constraint_file(files: &[ProjectFile]) -> Option<&str> {
-    files.iter().map(|f| f.name.as_str()).find(|name| {
-        Path::new(name)
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| {
-                CONSTRAINT_EXTENSIONS
-                    .iter()
-                    .any(|c| c.eq_ignore_ascii_case(e))
-            })
-    })
+    files
+        .iter()
+        .map(|f| f.name.as_str())
+        .find(|n| is_constraint_file(n))
+}
+
+/// The first pin constraint file among file names.
+#[cfg(test)]
+pub fn constraint_file_name(names: &[String]) -> Option<&str> {
+    names
+        .iter()
+        .map(String::as_str)
+        .find(|n| is_constraint_file(n))
+}
+
+fn is_constraint_file(name: &str) -> bool {
+    Path::new(name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| {
+            CONSTRAINT_EXTENSIONS
+                .iter()
+                .any(|c| c.eq_ignore_ascii_case(e))
+        })
 }
 
 /// The `apio.ini` Logix generates: the board and top module `main`.

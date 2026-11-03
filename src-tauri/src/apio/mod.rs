@@ -21,13 +21,11 @@ use anyhow::{bail, Result};
 use tokio_util::sync::CancellationToken;
 
 pub use board_match::{match_boards, ConnectedBoard, UsbRule};
-pub use catalog::{starter_example, Board, ExampleList, DEFAULT_BOARD};
+pub use catalog::{starter_example, ExampleList, DEFAULT_BOARD};
 pub use devices::Devices;
-pub use diagnostics::Diagnostic;
 pub use language_server::LanguageServer;
 pub use process::{quietly, strip_ansi};
 pub use setup::run_setup;
-pub use task::{Task, TaskOutcome};
 
 /// The Apio release the IDE uses: pinned in package.json (`appConstants`,
 /// as in the Apio VS Code extension) and passed in by build.rs. Change it

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deviceSummaryLines, isBoardNotFound, usbLabel } from "./devices";
+import type { TaskOutcome } from "./backend";
 
 const alhambra = {
   vid: "0403",
@@ -19,8 +20,12 @@ describe("devices", () => {
   });
 
   it("recognizes a board-not-found upload error", () => {
-    expect(isBoardNotFound("No matching USB device.")).toBe(true);
-    expect(isBoardNotFound("syntax error")).toBe(false);
+    const outcome = (action: string | null): TaskOutcome => ({
+      ok: false, diagnostics: [], testbenches: [], report: null,
+      cancelled: false, graphSvg: null, seconds: 1, action,
+    });
+    expect(isBoardNotFound(outcome("connect_board"))).toBe(true);
+    expect(isBoardNotFound(outcome(null))).toBe(false);
   });
 
   it("lists connected devices or gives tips", () => {

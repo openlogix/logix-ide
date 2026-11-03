@@ -47,10 +47,19 @@ mistakes, such as a name that isn't declared or a wrong type, are found when
 you click **Verify**. If nothing is underlined at all, check that **Check
 code while typing** is on in **Settings**.
 
+## My board isn't in the list
+
+Logix is moving to its own build engine, Logix Engine, which supports 79
+boards so far: iCE40, ECP5, Gowin and Xilinx boards that program with
+openFPGALoader or iceprog. More boards are added as their programmers are
+supported. A project for a board that isn't supported yet opens, but
+Verify and Upload ask you to choose another board.
+
 ## An example isn't in the list
 
 A few examples use features Logix doesn't support yet (such as files in
-subfolders, or several build setups), so they're not listed.
+subfolders, or several build setups), so they're not listed. Examples for boards
+Logix doesn't support yet aren't listed either (see above).
 
 ## A build or simulation doesn't finish
 

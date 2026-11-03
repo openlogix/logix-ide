@@ -4,35 +4,10 @@
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use serde::Serialize;
 use serde_json::Value;
 
 use super::Apio;
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BuildReport {
-    /// FPGA family, e.g. "ice40", "ecp5", "gowin", "xilinx".
-    pub arch: String,
-    /// The FPGA's resources, with Apio's (family-specific) names.
-    pub resources: Vec<Resource>,
-    pub clocks: Vec<Clock>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Resource {
-    pub name: String,
-    pub used: u64,
-    pub available: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Clock {
-    pub name: String,
-    pub fmax_mhz: f64,
-}
+use crate::outcome::{BuildReport, Clock, Resource};
 
 impl Apio {
     /// Reads the report of the last build in `dir` (silently).

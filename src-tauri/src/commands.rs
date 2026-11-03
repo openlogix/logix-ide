@@ -14,6 +14,7 @@ use tauri_plugin_dialog::{
 
 use crate::apio;
 use crate::engine;
+use crate::outcome;
 use crate::project::{self, ProjectFile};
 use crate::setup_events::{SetupEvent, SetupStage};
 use crate::{bare, build_dir, platform, settings, AppState, Catalog};
@@ -96,7 +97,7 @@ pub async fn setup_apio(
         match result {
             Ok(ready) => {
                 crate::log!("Engine setup ready");
-                *engine_slot = Some(ready);
+                *engine_slot = Some(std::sync::Arc::new(ready));
             }
             Err(e) => {
                 crate::log!("Engine setup failed: {e:#}");
@@ -176,21 +177,38 @@ fn try_ready_apio(state: &AppState) -> Option<apio::Apio> {
     state.apio.try_lock().ok()?.clone()
 }
 
-/// The board and example lists (fetched from Apio on first use).
+/// The running engine, or a user-facing error if setup hasn't finished.
+async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>, UserError> {
+    state
+        .engine
+        .lock()
+        .await
+        .clone()
+        .ok_or_else(|| anyhow!("The FPGA tools aren't ready yet.").into())
+}
+
+/// The board and example lists (fetched on first use): the engine's
+/// boards, and Apio's examples for those boards.
 async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
     let mut slot = state.catalog.lock().await;
     if let Some(c) = slot.as_ref() {
         return Ok(c.clone());
     }
     let apio = ready_apio(state).await?;
-    let boards = apio
-        .boards()
+    let engine = ready_engine(state).await?;
+    let boards = engine::boards(&engine)
         .await
         .context("Couldn't get the list of boards.")?;
-    let examples = apio
+    let mut examples = apio
         .examples()
         .await
         .context("Couldn't get the list of examples.")?;
+    // Examples for boards the engine doesn't support yet can't be built.
+    let total = examples.examples.len();
+    examples
+        .examples
+        .retain(|e| boards.iter().any(|b| b.id == e.board));
+    examples.hidden += total - examples.examples.len();
     let usb_rules = apio.usb_rules().await;
     let c = Catalog {
         boards,
@@ -202,7 +220,7 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
 }
 
 #[tauri::command]
-pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<apio::Board>, UserError> {
+pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<engine::Board>, UserError> {
     Ok(catalog(&state).await?.boards)
 }
 
@@ -261,26 +279,51 @@ async fn example_doc(
 pub async fn run_task(
     app: AppHandle,
     state: State<'_, AppState>,
-    task: apio::Task,
+    task: outcome::Task,
     testbench: Option<String>,
     key: String,
     source_dir: Option<String>,
     project_dir: Option<String>,
     files: Vec<ProjectFile>,
     board: String,
-    on_line: Channel<String>,
-) -> Result<apio::TaskOutcome, UserError> {
+    on_event: Channel<outcome::TaskEvent>,
+) -> Result<outcome::TaskOutcome, UserError> {
     let Ok(_running) = state.task.try_lock() else {
         return Err(anyhow!("A build or upload is already running.").into());
     };
+    // Verify and Upload run on the engine; the others still on Apio.
+    let on_engine = matches!(task, outcome::Task::Build | outcome::Task::Upload);
     let apio = ready_apio(&state).await?;
+    let engine = if on_engine {
+        Some(ready_engine(&state).await?)
+    } else {
+        None
+    };
+    let arch = if on_engine {
+        let boards = catalog(&state).await?.boards;
+        let Some(b) = boards.iter().find(|b| b.id == board) else {
+            return Err(anyhow!(
+                "Logix doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
+            )
+            .into());
+        };
+        b.arch.clone()
+    } else {
+        String::new()
+    };
+    let on_line = {
+        let channel = on_event.clone();
+        move |line: String| {
+            let _ = channel.send(outcome::TaskEvent::Line { line });
+        }
+    };
     let root = platform::current_implemented()?.data_dir()?.join("build");
     let names: Vec<String> = files.iter().map(|f| f.name.clone()).collect();
     // `testbench` is the testbench for Test/Simulate, or the module to draw
     // for Graph. It's passed to Apio as an argument, so only accept project
     // testbenches and plain Verilog module names.
     if let Some(target) = &testbench {
-        let ok = if task == apio::Task::Graph {
+        let ok = if task == outcome::Task::Graph {
             project::is_verilog_identifier(target)
         } else {
             project::is_testbench(target) && names.contains(target)
@@ -291,12 +334,13 @@ pub async fn run_task(
     }
     let constraint = build_dir::constraint_file(&files).map(str::to_owned);
     let log = on_line.clone();
+    let board_id = board.clone();
     let dir = blocking(move || {
         // Keep GTKWave layouts saved since the last run; preparing clears
         // the build folder.
         if let Some(project_dir) = &project_dir {
             for name in save_back_gtkw(&root, &key, Path::new(project_dir)) {
-                let _ = log.send(gtkw_saved_message(&name));
+                log(gtkw_saved_message(&name));
             }
         }
         let prepared = build_dir::prepare(
@@ -305,18 +349,18 @@ pub async fn run_task(
                 key: &key,
                 source_dir: source_dir.as_deref().map(Path::new),
                 files: &files,
-                board: &board,
+                board: &board_id,
             },
         )
         .context("Couldn't prepare the build.")?;
         if !prepared.left_out.is_empty() {
-            let _ = log.send(left_out_message(&prepared.left_out));
+            log(left_out_message(&prepared.left_out));
         }
         Ok::<_, anyhow::Error>(prepared.dir)
     })
     .await??;
     // GTKWave windows open before the simulation, to recognize the new one.
-    let gtkwave_before = if task == apio::Task::Simulate {
+    let gtkwave_before = if task == outcome::Task::Simulate {
         on_main_thread(&app, || platform::running_app_pids(GTKWAVE))
             .await
             .unwrap_or_default()
@@ -325,23 +369,39 @@ pub async fn run_task(
     };
     let cancel = tokio_util::sync::CancellationToken::new();
     *state.task_cancel.lock().unwrap() = Some(cancel.clone());
-    let result = apio
-        .run_task(
+    let result = if let Some(engine) = engine {
+        let input = engine::BuildInput {
+            board: &board,
+            arch: &arch,
+            source_folder: &dir,
+            files: &names,
+            constraint_file: constraint.as_deref(),
+            lint: lint_on_verify(),
+        };
+        let channel = on_event.clone();
+        let on_event = move |event| {
+            let _ = channel.send(event);
+        };
+        engine::run_task(&engine, task, &input, on_event, &cancel)
+            .await
+            .context("Couldn't run Logix Engine.")
+    } else {
+        apio.run_task(
             task,
             testbench.as_deref(),
             lint_on_verify(),
             &dir,
             names,
             constraint,
-            move |line| {
-                let _ = on_line.send(line);
-            },
+            on_line,
             &cancel,
         )
-        .await;
+        .await
+        .context("Couldn't run Apio.")
+    };
     *state.task_cancel.lock().unwrap() = None;
-    let outcome = result.context("Couldn't run Apio.")?;
-    if task == apio::Task::Simulate && outcome.ok {
+    let outcome = result?;
+    if task == outcome::Task::Simulate && outcome.ok {
         tauri::async_runtime::spawn(bring_gtkwave_to_front(app, gtkwave_before));
     }
     Ok(outcome)
@@ -556,7 +616,7 @@ pub struct FormatResult {
     ok: bool,
     /// The formatted text, if formatting succeeded.
     text: Option<String>,
-    diagnostics: Vec<apio::Diagnostic>,
+    diagnostics: Vec<outcome::Diagnostic>,
 }
 
 /// Formats one file's text with `apio format` (Verible) in a scratch
