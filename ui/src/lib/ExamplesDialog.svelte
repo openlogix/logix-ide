@@ -1,7 +1,7 @@
 <!--
   Browse the examples by board and open one. With `onlyBoard` (after a
   board change in the toolbar), only that board's examples are shown,
-  after the user's recent projects for that board (`recents`), and closing
+  after the recent projects for that board (`recents`), and closing
   keeps the current files.
 -->
 <script lang="ts">
@@ -164,7 +164,7 @@
     {#if onlyBoard}
       <p class="hint">
         {recents.length > 0
-          ? "Open one of your projects for this board, start from one of its examples, or keep your current files."
+          ? "Open a recent project for this board, start from one of its examples, or keep your current files."
           : "Start from one of the board's examples, or keep your current files."}
       </p>
     {/if}
@@ -206,7 +206,7 @@
 
       <ul class="examples" aria-label="Examples">
         {#if shownRecents.length > 0}
-          <li class="section">Your projects</li>
+          <li class="section">Recent projects</li>
           {#each shownRecents as dir (dir)}
             <li>
               <button

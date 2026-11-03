@@ -244,11 +244,11 @@ test("changing the board offers your recent projects for it", async ({ page }) =
   await pickBoard(page, "iCEBreaker");
   const dialog = page.getByRole("dialog", { name: "Examples" });
   await expect(dialog.getByRole("button", { name: /^blinky/ })).toBeVisible();
-  await expect(dialog.getByText("Your projects", { exact: true })).toHaveCount(0);
+  await expect(dialog.getByText("Recent projects", { exact: true })).toHaveCount(0);
   await dialog.getByRole("button", { name: "Keep Current Files" }).click();
   // The fake's recent projects are UPduino v2 projects: listed first.
   await pickBoard(page, "UPDuino v2.0");
-  await expect(dialog.getByText("Your projects", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Recent projects", { exact: true })).toBeVisible();
   await expect(dialog.getByRole("heading")).toHaveText("Projects and examples for UPDuino v2.0");
   await dialog.getByRole("button", { name: /counter/ }).click();
   await dialog.getByRole("button", { name: "Open" }).click();
