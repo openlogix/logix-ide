@@ -359,13 +359,24 @@ test("dragging the divider to the bottom hides the output", async ({ page }) => 
   });
   await page.mouse.up();
   await expect(output(page)).toBeHidden();
-  await expect(divider).toHaveCount(0);
   await expect(page.locator(".status-bar")).toBeVisible();
   // Show brings it back at its earlier height.
   await page.getByRole("button", { name: /Show/ }).click();
   await expect(output(page)).toBeVisible();
   const after = await page.locator(".console-area").boundingBox();
   expect(Math.round(after!.height)).toBe(Math.round(before!.height));
+  // Hidden again, the divider can be dragged back up to show it.
+  await page.getByRole("button", { name: /Hide/ }).click();
+  await expect(output(page)).toBeHidden();
+  const low = (await divider.boundingBox())!;
+  await page.mouse.move(low.x + low.width / 2, low.y + low.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(low.x + low.width / 2, low.y - 200, { steps: 5 });
+  await page.mouse.up();
+  await expect(output(page)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Hide/ })).toBeVisible();
+  const dragged = await page.locator(".console-area").boundingBox();
+  expect(dragged!.height).toBeGreaterThan(150);
 });
 
 test("shows the design diagram and switches modules", async ({ page }) => {

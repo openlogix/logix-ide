@@ -106,7 +106,8 @@
 
   function onDividerDown(e: PointerEvent) {
     dragging = true;
-    collapsing = false;
+    // From the hidden state the drag starts collapsed.
+    collapsing = !consoleVisible;
     heightBeforeDrag = consoleHeight;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     e.preventDefault();
@@ -117,7 +118,11 @@
     const bottom = splitEl.getBoundingClientRect().bottom;
     const requested = bottom - e.clientY - DIVIDER_HEIGHT / 2;
     collapsing = dragHidesConsole(requested);
-    if (!collapsing) fitConsoleHeight(requested);
+    if (!collapsing) {
+      // Dragged up from the hidden state: the output comes back.
+      if (!consoleVisible) setConsoleVisible(true);
+      fitConsoleHeight(requested);
+    }
   }
 
   function onDividerUp() {
@@ -1631,18 +1636,19 @@
       </div>
     </main>
 
-    {#if consoleVisible}
+    <!-- Shown with the output hidden too, so it can be dragged back up. -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="divider"
       style:height="{DIVIDER_HEIGHT}px"
-      title="Drag to resize; drag to the bottom to hide the output"
+      title={consoleVisible
+        ? "Drag to resize; drag to the bottom to hide the output"
+        : "Drag up to show the output"}
       onpointerdown={onDividerDown}
       onpointermove={onDividerMove}
       onpointerup={onDividerUp}
       onpointercancel={onDividerUp}
     ></div>
-    {/if}
 
     <section
       class="console-area"

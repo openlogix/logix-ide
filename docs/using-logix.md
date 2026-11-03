@@ -21,8 +21,8 @@
   and ++cmd+c++ to copy, or right-click for **Copy**, **Select All** and
   **Clear Output**. Drag the bar above it to resize it. To hide it, drag
   the bar all the way down, click **Hide**, or use **View > Toggle Output**
-  (++cmd+j++); it comes back with **Show**, and when you Verify, Upload,
-  Run Tests or Simulate.
+  (++cmd+j++); it comes back with **Show**, by dragging the bar up, and when
+  you Verify, Upload, Run Tests or Simulate.
 
 ## Projects
 
