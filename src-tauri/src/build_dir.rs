@@ -35,12 +35,23 @@ pub struct BuildInput<'a> {
     pub files: &'a [ProjectFile],
 }
 
-/// The project's pin constraint file, if it has one.
-pub fn constraint_file(files: &[ProjectFile]) -> Option<&str> {
-    files
-        .iter()
-        .map(|f| f.name.as_str())
-        .find(|n| is_constraint_file(n))
+/// The project's pin constraint file for a board whose pin files have the
+/// extension `wanted` (any case): the first such file, or else the first
+/// pin file of any kind (the engine then explains that it's the wrong
+/// kind). `None` if the project has no pin file.
+pub fn constraint_file<'a>(files: &'a [ProjectFile], wanted: Option<&str>) -> Option<&'a str> {
+    let pins = || {
+        files
+            .iter()
+            .map(|f| f.name.as_str())
+            .filter(|n| is_constraint_file(n))
+    };
+    let matches = |n: &&str| {
+        let ext = Path::new(n).extension().and_then(|e| e.to_str());
+        ext.zip(wanted)
+            .is_some_and(|(e, w)| e.eq_ignore_ascii_case(w))
+    };
+    pins().find(matches).or_else(|| pins().next())
 }
 
 /// The first pin constraint file among file names.
@@ -366,10 +377,18 @@ mod tests {
 
     #[test]
     fn finds_constraint_file() {
+        let pcf = Some("pcf");
         assert_eq!(
-            constraint_file(&[file("main.v", ""), file("Pins.PCF", "")]),
+            constraint_file(&[file("main.v", ""), file("Pins.PCF", "")], pcf),
             Some("Pins.PCF")
         );
-        assert_eq!(constraint_file(&[file("main.v", "")]), None);
+        assert_eq!(constraint_file(&[file("main.v", "")], pcf), None);
+        // The board's kind wins over an earlier pin file of another kind.
+        let both = [file("main.v", ""), file("a.lpf", ""), file("b.pcf", "")];
+        assert_eq!(constraint_file(&both, pcf), Some("b.pcf"));
+        assert_eq!(constraint_file(&both, Some("lpf")), Some("a.lpf"));
+        // None of the board's kind: the first one, for the engine to refuse.
+        assert_eq!(constraint_file(&both, Some("cst")), Some("a.lpf"));
+        assert_eq!(constraint_file(&both, None), Some("a.lpf"));
     }
 }

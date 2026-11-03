@@ -303,7 +303,8 @@ pub async fn run_task(
             return Err(anyhow!("\"{target}\" can't be used here.").into());
         }
     }
-    let constraint = build_dir::constraint_file(&files).map(str::to_owned);
+    let constraint =
+        build_dir::constraint_file(&files, engine::constraint_extension(&arch)).map(str::to_owned);
     let log = on_line;
     let dir = blocking(move || {
         // Keep GTKWave layouts saved since the last run; preparing clears

@@ -85,6 +85,16 @@ export function friendly(message: string): string {
       "Start a new project with the board selected, or open one of the board's examples."
     );
   }
+  // The engine refuses a pin file of another FPGA family's kind.
+  const wrongKind = /^constraint_file: "(.+)" isn't a \.(\w+) file\.\s*(.*)$/.exec(message);
+  if (wrongKind) {
+    const [, file, ext, why] = wrongKind;
+    const renamed = file.replace(/\.[^./\\]*$/, "") + `.${ext}`;
+    return (
+      `The pin file ${file} is the wrong kind for this board. ${why} ` +
+      `If it's written for this board, rename it to ${renamed}.`
+    ).replace(/\s+/g, " ");
+  }
   return message;
 }
 

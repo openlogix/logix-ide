@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic } from "./backend";
-import { byFile, firstLocated, outcomeText, testbenchLines } from "./tasks";
+import { byFile, firstLocated, friendly, outcomeText, testbenchLines } from "./tasks";
 
 const err = (file: string | null, line: number | null, message: string): Diagnostic => ({
   severity: "error",
@@ -139,6 +139,15 @@ describe("friendly messages", () => {
         action: null,
       }),
     ).toMatch(/^Build failed: The project has no pin file/);
+  });
+  it("explains a pin file of the wrong kind", () => {
+    expect(
+      friendly(
+        'constraint_file: "pinout.lpf" isn\'t a .pcf file. iCE40 FPGAs, as on the Alhambra II, need a .pcf constraint file.',
+      ),
+    ).toBe(
+      "The pin file pinout.lpf is the wrong kind for this board. iCE40 FPGAs, as on the Alhambra II, need a .pcf constraint file. If it's written for this board, rename it to pinout.pcf.",
+    );
   });
 });
 

@@ -21,6 +21,20 @@ pub struct Board {
     pub arch: String,
 }
 
+/// The pin constraint file extension the engine's build accepts for an FPGA
+/// architecture (its `docs/tool-api.md`, build tool): each family's tools
+/// read only their own format, and the engine refuses another extension.
+/// `None` for an architecture it doesn't list.
+pub fn constraint_extension(arch: &str) -> Option<&'static str> {
+    match arch {
+        "ice40" => Some("pcf"),
+        "ecp5" => Some("lpf"),
+        "gowin" => Some("cst"),
+        "xilinx" => Some("xdc"),
+        _ => None,
+    }
+}
+
 /// The engine's boards and their USB filters.
 #[derive(Debug, Clone)]
 pub struct Catalog {
@@ -90,5 +104,14 @@ mod tests {
         assert_eq!(boards[2].description, "odd");
         assert_eq!(boards[2].arch, "");
         assert!(parse_boards(&json!({})).is_err());
+    }
+
+    #[test]
+    fn constraint_extensions_follow_the_family() {
+        assert_eq!(constraint_extension("ice40"), Some("pcf"));
+        assert_eq!(constraint_extension("ecp5"), Some("lpf"));
+        assert_eq!(constraint_extension("gowin"), Some("cst"));
+        assert_eq!(constraint_extension("xilinx"), Some("xdc"));
+        assert_eq!(constraint_extension("other"), None);
     }
 }
