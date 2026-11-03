@@ -151,8 +151,6 @@ export interface UsbDevice {
   manufacturer: string;
   product: string;
   serialNumber: string;
-  /** E.g. "FT2232H". */
-  deviceType: string;
 }
 
 export interface SerialDevice {
@@ -164,7 +162,7 @@ export interface SerialDevice {
   product: string;
 }
 
-/** Connected devices, from `apio api scan-devices`. */
+/** Connected devices: USB devices from Logix Engine, serial ports from Apio. */
 export interface Devices {
   usb: UsbDevice[];
   serial: SerialDevice[];
@@ -298,16 +296,15 @@ export const backend = {
     invoke<ProjectDoc | null>("open_last_project"),
 
   /**
-   * Formats a Verilog/SystemVerilog file's text with `apio format`, without
-   * touching the project folder. `board` may be null (any board works).
-   * Apio's output comes through `onApioOutput`.
+   * Formats a Verilog/SystemVerilog file's text with Logix Engine's
+   * `format` (Verible), without touching the project folder. Verible's
+   * output comes through `onApioOutput`.
    */
   formatFile: (
     name: string,
     text: string,
-    board: string | null,
   ): Promise<FormatResult> =>
-    invoke<FormatResult>("format_file", { name, text, board }),
+    invoke<FormatResult>("format_file", { name, text }),
 
   /**
    * A new, unsaved project for `board` (or else the last chosen board),
@@ -459,9 +456,8 @@ export const backend = {
     listen<MenuId>("menu", (e) => handler(e.payload)),
 
   /**
-   * Apio output that isn't part of a build, upload, test or setup (which
-   * report their own lines): board and example lists, opening an example,
-   * Auto Format. Every Apio run is shown in the console.
+   * Tool output that isn't part of a task or setup (which report their
+   * own lines): opening an example (Apio) and Auto Format (Logix Engine).
    */
   onApioOutput: (handler: (line: string) => void): Promise<UnlistenFn> =>
     listen<string>("apio-output", (e) => handler(e.payload)),

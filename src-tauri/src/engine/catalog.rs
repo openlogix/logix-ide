@@ -1,10 +1,12 @@
-//! The boards the engine supports, from its `get_catalog` tool.
+//! The boards the engine supports, from its `get_catalog` tool, and their
+//! USB filters (for the board list's "Connected" group).
 
 use anyhow::{Context, Result};
 use serde::Serialize;
 use serde_json::{json, Value};
 
 use super::client::{tool_error, Engine};
+use super::devices::{usb_rules, UsbRule};
 
 /// A board the IDE can target.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -19,8 +21,16 @@ pub struct Board {
     pub arch: String,
 }
 
-/// All boards, sorted by description.
-pub async fn boards(engine: &Engine) -> Result<Vec<Board>> {
+/// The engine's boards and their USB filters.
+#[derive(Debug, Clone)]
+pub struct Catalog {
+    /// All boards, sorted by description.
+    pub boards: Vec<Board>,
+    pub usb_rules: Vec<UsbRule>,
+}
+
+/// Reads the engine's catalog.
+pub async fn catalog(engine: &Engine) -> Result<Catalog> {
     let catalog = engine
         .call(
             "get_catalog",
@@ -29,7 +39,10 @@ pub async fn boards(engine: &Engine) -> Result<Vec<Board>> {
         )
         .await?
         .map_err(|e| tool_error("get_catalog", &e))?;
-    parse_boards(&catalog)
+    Ok(Catalog {
+        boards: parse_boards(&catalog)?,
+        usb_rules: usb_rules(&catalog["boards"]),
+    })
 }
 
 fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {

@@ -49,7 +49,12 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   const first = errors[0];
   if (!first) return `${VERB[task].noun} failed. See the output below.`;
   const where = location(first);
-  return `${VERB[task].noun} failed: ${where ? `${where}: ` : ""}${friendly(first.message)}`;
+  const problem = `${where ? `${where}: ` : ""}${friendly(first.message)}`;
+  // A failing testbench is still simulated: its waveform shows the problem.
+  if (task === "simulate" && outcome.testbenches.length > 0) {
+    return `The testbench failed (GTKWave shows the signals): ${problem}`;
+  }
+  return `${VERB[task].noun} failed: ${problem}`;
 }
 
 /** The first error (or else warning) that points into a file. */

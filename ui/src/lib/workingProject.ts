@@ -146,12 +146,10 @@ module ${module};
     $dumpvars(0, ${module});
 
     // Your test steps go here. To fail the test when a check fails:
-    //   if (actual !== expected) begin
-    //     $display("expected %h, got %h", expected, actual);
-    //     if (!\`APIO_SIM) $fatal;
-    //   end
-    // (\`APIO_SIM is 1 when simulating, so the run continues to show the
-    // signals in GTKWave.)
+    //   if (actual !== expected)
+    //     $error("expected %h, got %h", expected, actual);
+    // Run Tests stops at the first error; Simulate runs to the end and
+    // shows the signals in GTKWave.
 
     #100;
     $finish;

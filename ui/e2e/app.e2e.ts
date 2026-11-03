@@ -147,7 +147,7 @@ test("Auto Format replaces the text and reports it", async ({ page }) => {
     ),
   );
   await expect(status(page)).toHaveText("Auto Format finished.");
-  await expect(output(page)).toContainText("$ apio format main.v");
+  await expect(output(page)).toContainText("$ verible-verilog-format --nofailsafe_success --inplace main.v");
 });
 
 test("picking the current board offers its examples too", async ({ page }) => {

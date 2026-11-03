@@ -68,23 +68,6 @@ impl Apio {
         Some(Path::new(packages).join("definitions"))
     }
 
-    /// The boards' USB identities (see `board_match.rs`). Empty if Apio's
-    /// definitions can't be read: then no board shows as connected.
-    pub async fn usb_rules(&self) -> Vec<super::UsbRule> {
-        let Some(dir) = self.definitions_dir().await else {
-            return Vec::new();
-        };
-        let path = dir.join("boards.jsonc");
-        let rules = tokio::fs::read_to_string(&path)
-            .await
-            .map_err(anyhow::Error::from)
-            .and_then(|text| super::board_match::parse_usb_rules(&text));
-        rules.unwrap_or_else(|e| {
-            crate::log!("Can't read board USB ids from {}: {e:#}", path.display());
-            Vec::new()
-        })
-    }
-
     /// Copies an example's files into a fresh scratch folder and returns it.
     /// The folder is replaced by the next fetch. Apio's output goes to
     /// `on_line`.

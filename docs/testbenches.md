@@ -13,14 +13,16 @@ testbenches and shows the result of each:
 
 To run just one, right-click its tab and choose **Run This Test**.
 
-A test fails when the testbench stops with `$fatal`. The line that failed is
-marked in the editor.
+A test fails when the testbench reports an error (`$error` or `$fatal`), or
+when it doesn't end with `$finish`. Run Tests stops a testbench at its first
+error, and the line that failed is marked in the editor.
 
 ## Simulate
 
 **Simulate** (the waveform, ++option+cmd+t++) runs the testbench that's open
 (or the project's only one) and shows its signals in **GTKWave**, a waveform
-viewer.
+viewer. The testbench runs to the end even when a check fails, and GTKWave
+opens zoomed in around the first failure, so you can see what led up to it.
 
 ![A testbench's signals in GTKWave: the clock, a counter and the LEDs over time](images/gtkwave.png)
 
@@ -51,17 +53,16 @@ endmodule
 ```
 
 Inside, create the module you test, drive its inputs, and check its outputs.
-To fail the test when a check fails:
+When a check fails, report it with `$error`, with the values in the message:
 
 ```verilog
-if (actual !== expected) begin
-  $display("expected %h, got %h", expected, actual);
-  if (!`APIO_SIM) $fatal;
-end
+if (actual !== expected)
+  $error("expected %h, got %h", expected, actual);
 ```
 
-`` `APIO_SIM `` is 1 when simulating, so the simulation keeps going and you
-can look at the signals in GTKWave.
+Logix finds the line and the time of each error. Don't call `$dumpfile`:
+Logix decides where the waveform goes. Use `$fatal` only when going on makes
+no sense, such as a missing data file.
 
 For more about testbenches, see the Apio guide
 [Using testbenches](https://fpgawars.github.io/apio/docs/using-testbenches/).

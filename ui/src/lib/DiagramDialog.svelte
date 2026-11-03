@@ -1,5 +1,5 @@
 <!--
-  Shows the design diagram (an SVG drawn by `apio graph`). The SVG is shown
+  Shows the design diagram (an SVG drawn by Logix Engine's `graph`). The SVG is shown
   as an image, so nothing in it can run as code.
 -->
 <script lang="ts">

@@ -196,7 +196,7 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
     }
     let apio = ready_apio(state).await?;
     let engine = ready_engine(state).await?;
-    let boards = engine::boards(&engine)
+    let engine::Catalog { boards, usb_rules } = engine::catalog(&engine)
         .await
         .context("Couldn't get the list of boards.")?;
     let mut examples = apio
@@ -209,7 +209,6 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
         .examples
         .retain(|e| boards.iter().any(|b| b.id == e.board));
     examples.hidden += total - examples.examples.len();
-    let usb_rules = apio.usb_rules().await;
     let c = Catalog {
         boards,
         examples,
@@ -269,10 +268,11 @@ async fn example_doc(
 // Build and upload
 // ---------------------------------------------------------------------------
 
-/// Builds or uploads the project's current (possibly unsaved) files in a
-/// temporary Apio project, streaming Apio's output lines to `on_line`.
-/// `key` identifies the project (so builds of the same project reuse
-/// Apio's output); `source_dir` is the folder whose other files (e.g.
+/// Runs Verify, Upload, Run Tests, Simulate or Show Diagram with Logix
+/// Engine on the project's current (possibly unsaved) files in the build
+/// folder, streaming the tools' output and the phases to `on_event`.
+/// `key` identifies the project (so builds of the same project reuse the
+/// engine's output); `source_dir` is the folder whose other files (e.g.
 /// memory init data) are copied along.
 #[allow(clippy::too_many_arguments)]
 #[tauri::command]
@@ -291,25 +291,17 @@ pub async fn run_task(
     let Ok(_running) = state.task.try_lock() else {
         return Err(anyhow!("A build or upload is already running.").into());
     };
-    // Verify and Upload run on the engine; the others still on Apio.
-    let on_engine = matches!(task, outcome::Task::Build | outcome::Task::Upload);
-    let apio = ready_apio(&state).await?;
-    let engine = if on_engine {
-        Some(ready_engine(&state).await?)
-    } else {
-        None
-    };
-    let arch = if on_engine {
-        let boards = catalog(&state).await?.boards;
-        let Some(b) = boards.iter().find(|b| b.id == board) else {
-            return Err(anyhow!(
-                "Logix doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
-            )
-            .into());
-        };
-        b.arch.clone()
-    } else {
-        String::new()
+    let engine = ready_engine(&state).await?;
+    let boards = catalog(&state).await?.boards;
+    let Some(arch) = boards
+        .iter()
+        .find(|b| b.id == board)
+        .map(|b| b.arch.clone())
+    else {
+        return Err(anyhow!(
+            "Logix doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
+        )
+        .into());
     };
     let on_line = {
         let channel = on_event.clone();
@@ -320,8 +312,8 @@ pub async fn run_task(
     let root = platform::current_implemented()?.data_dir()?.join("build");
     let names: Vec<String> = files.iter().map(|f| f.name.clone()).collect();
     // `testbench` is the testbench for Test/Simulate, or the module to draw
-    // for Graph. It's passed to Apio as an argument, so only accept project
-    // testbenches and plain Verilog module names.
+    // for Graph. Only accept project testbenches and plain Verilog module
+    // names.
     if let Some(target) = &testbench {
         let ok = if task == outcome::Task::Graph {
             project::is_verilog_identifier(target)
@@ -333,8 +325,7 @@ pub async fn run_task(
         }
     }
     let constraint = build_dir::constraint_file(&files).map(str::to_owned);
-    let log = on_line.clone();
-    let board_id = board.clone();
+    let log = on_line;
     let dir = blocking(move || {
         // Keep GTKWave layouts saved since the last run; preparing clears
         // the build folder.
@@ -349,7 +340,6 @@ pub async fn run_task(
                 key: &key,
                 source_dir: source_dir.as_deref().map(Path::new),
                 files: &files,
-                board: &board_id,
             },
         )
         .context("Couldn't prepare the build.")?;
@@ -369,39 +359,27 @@ pub async fn run_task(
     };
     let cancel = tokio_util::sync::CancellationToken::new();
     *state.task_cancel.lock().unwrap() = Some(cancel.clone());
-    let result = if let Some(engine) = engine {
-        let input = engine::BuildInput {
-            board: &board,
-            arch: &arch,
-            source_folder: &dir,
-            files: &names,
-            constraint_file: constraint.as_deref(),
-            lint: lint_on_verify(),
-        };
-        let channel = on_event.clone();
-        let on_event = move |event| {
-            let _ = channel.send(event);
-        };
-        engine::run_task(&engine, task, &input, on_event, &cancel)
-            .await
-            .context("Couldn't run Logix Engine.")
-    } else {
-        apio.run_task(
-            task,
-            testbench.as_deref(),
-            lint_on_verify(),
-            &dir,
-            names,
-            constraint,
-            on_line,
-            &cancel,
-        )
-        .await
-        .context("Couldn't run Apio.")
+    let input = engine::TaskInput {
+        board: &board,
+        arch: &arch,
+        source_folder: &dir,
+        files: &names,
+        constraint_file: constraint.as_deref(),
+        lint: lint_on_verify(),
+        target: testbench.as_deref(),
     };
+    let channel = on_event.clone();
+    let send = move |event| {
+        let _ = channel.send(event);
+    };
+    let result = engine::run_task(&engine, task, &input, send, &cancel)
+        .await
+        .context("Couldn't run Logix Engine.");
     *state.task_cancel.lock().unwrap() = None;
     let outcome = result?;
-    if task == outcome::Task::Simulate && outcome.ok {
+    // The engine opens GTKWave whenever the testbench ran, even failing
+    // (its waveform shows where).
+    if task == outcome::Task::Simulate && !outcome.testbenches.is_empty() {
         tauri::async_runtime::spawn(bring_gtkwave_to_front(app, gtkwave_before));
     }
     Ok(outcome)
@@ -410,7 +388,7 @@ pub async fn run_task(
 /// How GTKWave's process is named.
 const GTKWAVE: &str = "gtkwave";
 
-/// After `apio sim --detach`, GTKWave starts in the background and its
+/// After a simulation, GTKWave starts in the background and its
 /// window would stay behind Logix. Waits for the new GTKWave (up to ~8 s)
 /// and brings it to the front.
 async fn bring_gtkwave_to_front(app: AppHandle, before: Vec<i32>) {
@@ -512,15 +490,30 @@ pub async fn lsp_send(state: State<'_, AppState>, message: String) -> Result<(),
     Ok(())
 }
 
-/// The connected USB devices and serial ports (Tools > Connected Devices,
-/// and hints when Upload can't find the board).
+/// The connected USB devices and serial ports.
+#[derive(Debug, Serialize)]
+pub struct Devices {
+    usb: Vec<engine::UsbDevice>,
+    serial: Vec<apio::SerialDevice>,
+}
+
+/// The connected USB devices (from the engine) and serial ports (from
+/// Apio, best effort), for Tools > Connected Devices and hints when Upload
+/// can't find the board.
 #[tauri::command]
-pub async fn scan_devices(state: State<'_, AppState>) -> Result<apio::Devices, UserError> {
-    let apio = ready_apio(&state).await?;
-    Ok(apio
-        .scan_devices()
+pub async fn scan_devices(state: State<'_, AppState>) -> Result<Devices, UserError> {
+    let engine = ready_engine(&state).await?;
+    let usb = engine::list_devices(&engine)
         .await
-        .context("Couldn't list the connected devices.")?)
+        .context("Couldn't list the connected devices.")?;
+    let serial = match try_ready_apio(&state) {
+        Some(apio) => apio.serial_ports().await.unwrap_or_else(|e| {
+            crate::log!("Can't list the serial ports: {e:#}");
+            Vec::new()
+        }),
+        None => Vec::new(),
+    };
+    Ok(Devices { usb, serial })
 }
 
 /// The boards that match the connected USB devices, for the board list's
@@ -528,15 +521,16 @@ pub async fn scan_devices(state: State<'_, AppState>) -> Result<apio::Devices, U
 #[tauri::command]
 pub async fn connected_boards(
     state: State<'_, AppState>,
-) -> Result<Vec<apio::ConnectedBoard>, UserError> {
-    let apio = ready_apio(&state).await?;
+) -> Result<Vec<engine::ConnectedBoard>, UserError> {
+    let engine = ready_engine(&state).await?;
     let rules = catalog(&state).await?.usb_rules;
-    // Polled every few seconds: log only changes, not every scan.
-    let devices = apio::quietly(apio.scan_devices())
+    let devices = engine::list_devices(&engine)
         .await
         .context("Couldn't list the connected devices.")?;
-    let found = apio::match_boards(&rules, &devices);
-    static LAST: std::sync::Mutex<Option<Vec<apio::ConnectedBoard>>> = std::sync::Mutex::new(None);
+    let found = engine::match_boards(&rules, &devices);
+    // Polled every few seconds: log only changes, not every scan.
+    static LAST: std::sync::Mutex<Option<Vec<engine::ConnectedBoard>>> =
+        std::sync::Mutex::new(None);
     let mut last = LAST.lock().unwrap_or_else(|e| e.into_inner());
     if last.as_ref() != Some(&found) {
         let names: Vec<_> = found.iter().map(|c| c.board.as_str()).collect();
@@ -619,17 +613,15 @@ pub struct FormatResult {
     diagnostics: Vec<outcome::Diagnostic>,
 }
 
-/// Formats one file's text with `apio format` (Verible) in a scratch
-/// project and returns the result; Apio's output goes to the console. The project folder isn't touched.
-/// `board` is only needed because Apio requires one in `apio.ini`; any
-/// board works, so the first known one is used if the project has none.
+/// Formats one file's text with the engine's `format` (Verible) in a
+/// scratch folder and returns the result; Verible's output goes to the
+/// console. The project folder isn't touched.
 #[tauri::command]
 pub async fn format_file(
     app: AppHandle,
     state: State<'_, AppState>,
     name: String,
     text: String,
-    board: Option<String>,
 ) -> Result<FormatResult, UserError> {
     if !project::is_hdl_source(&name) {
         return Err(anyhow!(
@@ -638,29 +630,19 @@ pub async fn format_file(
         .into());
     }
     let _formatting = state.format.lock().await;
-    let apio = ready_apio(&state).await?;
-    let board = match board {
-        Some(b) => b,
-        None => catalog(&state)
-            .await?
-            .boards
-            .first()
-            .map(|b| b.id.clone())
-            .ok_or_else(|| UserError::from(anyhow!("No boards are available.")))?,
-    };
+    let engine = ready_engine(&state).await?;
     let root = platform::current_implemented()?.data_dir()?.join("format");
     let file = ProjectFile {
         name: name.clone(),
         text,
     };
     let dir = blocking(move || {
-        build_dir::prepare_single(&root, &file, &board).context("Couldn't prepare formatting.")
+        build_dir::prepare_single(&root, &file).context("Couldn't prepare formatting.")
     })
     .await??;
-    let outcome = apio
-        .format_file(&dir, &name, console_log(&app))
+    let outcome = engine::format_file(&engine, &dir, &name, console_log(&app))
         .await
-        .context("Couldn't run Apio.")?;
+        .context("Couldn't run Logix Engine.")?;
     let text = if outcome.ok {
         let path = dir.join(&name);
         Some(

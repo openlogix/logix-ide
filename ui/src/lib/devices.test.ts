@@ -8,7 +8,6 @@ const alhambra = {
   manufacturer: "AlhambraBits",
   product: "Alhambra II v1.0A",
   serialNumber: "FTATANKC",
-  deviceType: "FT2232H",
 };
 
 describe("devices", () => {

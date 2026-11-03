@@ -2,8 +2,9 @@
 // "e2e" mode, Vite replaces the real backend with this (see
 // vite.config.ts), so the real UI runs in a plain browser without Tauri or
 // Apio. It behaves like a small, predictable Logix backend:
-// - the FPGA tools are ready right away, with Apio's real boards and
-//   examples, and outputs replayed from real Apio runs (e2e/fixtures);
+// - the FPGA tools are ready right away, with Logix Engine's real boards,
+//   Apio's real examples, and outputs replayed from real engine runs
+//   (e2e/fixtures);
 // - a build fails if main.v contains "oops" (with an error on that line);
 // - Auto Format removes trailing spaces.
 // Tests drive native-menu actions through `window.__fake.menu(id)`.
@@ -20,11 +21,12 @@ import type {
 // Everything except `backend` comes from the real module (types, toUserError).
 export * from "../src/lib/backend";
 
-// Real Apio data and output (see e2e/fixtures/README.md).
+// Real engine and Apio data and output (see e2e/fixtures/README.md).
 import catalog from "./fixtures/catalog.json";
 import verifyOutput from "./fixtures/verify.txt?raw";
 import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
 import testOutput from "./fixtures/test.txt?raw";
+import graphOutput from "./fixtures/graph.txt?raw";
 import graphSvg from "./fixtures/graph.svg?raw";
 import packageJson from "../../package.json";
 
@@ -250,13 +252,23 @@ export const backend: typeof Real.backend = {
       outcome.report = null;
     }
     if (outcome.ok && task === "graph") {
-      lines = [`\x1b[2m$ apio graph --no-viewer${target ? ` -t ${target}` : ""}\x1b[0m`];
+      // The engine's yosys command names the module drawn.
+      lines = outputLines(graphOutput).map((l) =>
+        l.replace(/ main' /, ` ${target ?? "main"}' `),
+      );
       outcome.graphSvg = graphSvg;
       outcome.report = null;
     }
-    // Verify and Upload run on Logix Engine, which reports its phases.
+    // Logix Engine reports each task's phases.
+    const phase = {
+      build: "Synthesizing",
+      upload: "Synthesizing",
+      test: "Running main_tb.v",
+      simulate: "Running main_tb.v",
+      graph: "Drawing the graph",
+    }[task];
     const phases = task === "build" || task === "upload";
-    if (phases) onEvent({ kind: "progress", message: "Synthesizing", percent: null });
+    onEvent({ kind: "progress", message: phase, percent: null });
     for (const line of lines) {
       onLine(line);
       await pause(5);
@@ -271,7 +283,9 @@ export const backend: typeof Real.backend = {
   openLastProject: async () => null,
 
   formatFile: async (name, text) => {
-    handlers.output?.(`$ apio format ${name}`);
+    handlers.output?.(
+      `\x1b[2m$ verible-verilog-format --nofailsafe_success --inplace ${name}\x1b[0m`,
+    );
     return {
       ok: true,
       text: text.replace(/[ \t]+$/gm, ""),
@@ -329,7 +343,6 @@ export const backend: typeof Real.backend = {
         manufacturer: "AlhambraBits",
         product: "Alhambra II v1.0A",
         serialNumber: "FTATANKC",
-        deviceType: "FT2232H",
       },
     ],
     serial: [

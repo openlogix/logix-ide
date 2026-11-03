@@ -93,6 +93,17 @@ describe("test results", () => {
       outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 0.3, action: null }),
     ).toBe("Simulation done in 0.3 s. GTKWave shows the signals.");
   });
+  it("says GTKWave shows a failing testbench too", () => {
+    const failure = { severity: "error" as const, file: "main_tb.v", line: 52, column: null, message: "Assertion failed" };
+    const outcome = { ok: false, diagnostics: [failure], report: null, cancelled: false, graphSvg: null, seconds: 0.3, action: null };
+    expect(
+      outcomeText("simulate", { ...outcome, testbenches: [{ name: "main_tb.v", passed: false }] }),
+    ).toBe("The testbench failed (GTKWave shows the signals): main_tb.v:52: Assertion failed");
+    // A compile error: nothing was simulated.
+    expect(outcomeText("simulate", { ...outcome, testbenches: [] })).toBe(
+      "Simulation failed: main_tb.v:52: Assertion failed",
+    );
+  });
 });
 
 describe("build report in the status", () => {

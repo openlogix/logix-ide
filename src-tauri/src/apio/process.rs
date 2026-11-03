@@ -9,21 +9,6 @@ use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::Command;
 use tokio_util::sync::CancellationToken;
 
-tokio::task_local! {
-    /// Set (with `quietly`) for frequent background runs that would flood
-    /// the log, e.g. the connected-board polling.
-    static QUIET: bool;
-}
-
-/// Runs `work` without logging the Apio runs it makes.
-pub async fn quietly<T>(work: impl std::future::Future<Output = T>) -> T {
-    QUIET.scope(true, work).await
-}
-
-fn quiet() -> bool {
-    QUIET.try_with(|q| *q).unwrap_or(false)
-}
-
 /// Runs `cmd`, calling `on_line` for every line it writes to stdout or
 /// stderr, and returns its exit status. If `cancel` is triggered, the
 /// process and everything it started are stopped.
@@ -43,9 +28,7 @@ where
         .map(|a| a.to_string_lossy())
         .collect::<Vec<_>>()
         .join(" ");
-    if !quiet() {
-        crate::log!("Run: {line}");
-    }
+    crate::log!("Run: {line}");
     let mut child = cmd.spawn().context("can't start Apio")?;
     let stdout = child.stdout.take().context("no stdout pipe")?;
     let stderr = child.stderr.take().context("no stderr pipe")?;
@@ -64,9 +47,7 @@ where
     } else {
         ""
     };
-    if !quiet() || !status.success() {
-        crate::log!("Exit: {status}{stopped}");
-    }
+    crate::log!("Exit: {status}{stopped}");
     let _ = out_task.await;
     let _ = err_task.await;
     Ok(status)

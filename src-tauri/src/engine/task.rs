@@ -1,13 +1,14 @@
-//! Verify and Upload with the engine, in a prepared build folder (see
-//! `build_dir`): Verify is `lint` (unless turned off) then `build`; Upload
-//! is `build` then `program_board`. The tools' live output goes to the
-//! console and the engine's phases to the status bar.
+//! Verify, Upload, Run Tests, Simulate and Show Diagram with the engine, in
+//! a prepared build folder (see `build_dir`): Verify is `lint` (unless
+//! turned off) then `build`; Upload is `build` then `program_board`; the
+//! others are `test`, `simulate` and `graph`. The tools' live output goes to
+//! the console and the engine's phases to the status bar.
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Instant;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use regex::Regex;
 use serde_json::{json, Value};
 use tokio_util::sync::CancellationToken;
@@ -16,6 +17,7 @@ use super::client::{CallOptions, Engine, OutputKind, OutputLevel, OutputLine, To
 use super::phase_sink;
 use crate::outcome::{
     dedup, BuildReport, Clock, Diagnostic, Resource, Severity, Task, TaskEvent, TaskOutcome,
+    TestbenchResult,
 };
 use crate::project;
 
@@ -26,8 +28,8 @@ const TOP_MODULE: &str = "main";
 /// words (`friendly` in `tasks.ts`).
 pub const NO_CONSTRAINT_FILE: &str = "No constraint file (pin file) for the board.";
 
-/// What to build.
-pub struct BuildInput<'a> {
+/// What to run the task on.
+pub struct TaskInput<'a> {
     pub board: &'a str,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
@@ -39,6 +41,9 @@ pub struct BuildInput<'a> {
     pub constraint_file: Option<&'a str>,
     /// Lint before building (Verify only; Settings).
     pub lint: bool,
+    /// The testbench for Run Tests (all if `None`) and Simulate, or the
+    /// module to draw for Show Diagram (`main` if `None`).
+    pub target: Option<&'a str>,
 }
 
 /// The engine's build folder inside the prepared folder. The engine wants
@@ -61,12 +66,23 @@ fn design_files(files: &[String]) -> Vec<String> {
         .collect()
 }
 
-/// Runs Verify (`Task::Build`) or Upload with the engine. `on_event` gets
-/// console lines and progress.
+/// The GTKWave layout for a testbench, next to it: `main_tb.v` ->
+/// `main_tb.gtkw`. The engine writes a default one there unless the user
+/// saved their own (`build_dir::save_back_gtkw` copies those back).
+fn layout_file(testbench: &str) -> String {
+    let stem = Path::new(testbench)
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_else(|| testbench.to_string());
+    format!("{stem}.gtkw")
+}
+
+/// Runs `task` with the engine. `on_event` gets console lines and
+/// progress.
 pub async fn run<F>(
     engine: &Engine,
     task: Task,
-    input: &BuildInput<'_>,
+    input: &TaskInput<'_>,
     on_event: F,
     cancel: &CancellationToken,
 ) -> Result<TaskOutcome>
@@ -74,6 +90,14 @@ where
     F: Fn(TaskEvent) + Send + Sync + Clone + 'static,
 {
     let started = Instant::now();
+    let runner = Runner {
+        engine,
+        on_event,
+        cancel,
+        sources: design_files(input.files),
+        folder: input.source_folder.to_string_lossy().into_owned(),
+        build_folder: build_folder(input.source_folder),
+    };
     let mut outcome = TaskOutcome {
         ok: false,
         diagnostics: Vec::new(),
@@ -84,125 +108,315 @@ where
         seconds: 0.0,
         action: None,
     };
-    let sources = design_files(input.files);
-    let folder = input.source_folder.to_string_lossy().into_owned();
-    let build_folder = build_folder(input.source_folder)
-        .to_string_lossy()
-        .into_owned();
-    let line = {
-        let on_event = on_event.clone();
-        move |line: String| on_event(TaskEvent::Line { line })
+    let finished = match task {
+        Task::Build | Task::Upload => runner.build(task, input, &mut outcome).await?,
+        Task::Test => runner.test(input, &mut outcome).await?,
+        Task::Simulate => runner.simulate(input, &mut outcome).await?,
+        Task::Graph => runner.graph(input, &mut outcome).await?,
     };
-    let Some(constraint_file) = input.constraint_file else {
-        outcome.diagnostics.push(error(NO_CONSTRAINT_FILE));
-        outcome.seconds = started.elapsed().as_secs_f64();
-        return Ok(outcome);
-    };
-    let call = |name: &'static str, args: Value| {
-        let on_event = on_event.clone();
-        async move {
-            let console = Console::new(on_event.clone());
-            let progress = phase_sink(move |message, percent, _new| {
-                on_event(TaskEvent::Progress {
-                    message: message.to_string(),
-                    percent,
-                })
-            });
-            let options = CallOptions {
-                on_progress: Some(progress),
-                on_output: Some(console.sink()),
-                cancel: Some(cancel.clone()),
-            };
-            let result = engine.call_with(name, args, options).await;
-            console.flush();
-            result
-        }
-    };
-
-    if task == Task::Build && input.lint {
-        let result = call(
-            "lint",
-            json!({
-                "board": input.board,
-                "top_module": TOP_MODULE,
-                "source_folder": folder,
-                "source_files": sources,
-            }),
-        )
-        .await?;
-        match result {
-            // Lint fails for warnings too, so its result never stops the
-            // build; only the build decides success.
-            Ok(lint) => outcome
-                .diagnostics
-                .extend(diagnostics(&lint["diagnostics"])),
-            Err(e) if is_cancelled(&e) => return Ok(stopped(outcome, started)),
-            Err(e) => line(red(&format!("Lint: {}", message(&e)))),
-        }
+    if !finished {
+        outcome.ok = false;
+        outcome.cancelled = true;
     }
-
-    let result = call(
-        "build",
-        json!({
-            "board": input.board,
-            "top_module": TOP_MODULE,
-            "source_folder": folder,
-            "source_files": sources,
-            "constraint_file": constraint_file,
-            "build_folder": build_folder,
-        }),
-    )
-    .await?;
-    match result {
-        Ok(build) => {
-            outcome.diagnostics.extend(diagnostics(&build["warnings"]));
-            outcome.report = Some(report(input.arch, &build));
-            outcome.ok = true;
-        }
-        Err(e) => {
-            if is_cancelled(&e) {
-                return Ok(stopped(outcome, started));
-            }
-            failed(&mut outcome, &e, &line);
-        }
-    }
-
-    if task == Task::Upload && outcome.ok {
-        let result: ToolResult =
-            call("program_board", json!({ "build_folder": build_folder })).await?;
-        match result {
-            Ok(done) => {
-                let device = &done["device"];
-                let name = device["product"]
-                    .as_str()
-                    .or(device["manufacturer"].as_str())
-                    .unwrap_or("the board");
-                line(format!("Programmed {name}."));
-            }
-            Err(e) => {
-                if is_cancelled(&e) {
-                    return Ok(stopped(outcome, started));
-                }
-                outcome.ok = false;
-                failed(&mut outcome, &e, &line);
-            }
-        }
-    }
-
     outcome.diagnostics = dedup(outcome.diagnostics);
     outcome.seconds = started.elapsed().as_secs_f64();
     Ok(outcome)
 }
 
-fn is_cancelled(error: &Value) -> bool {
-    error["category"] == "cancelled"
+/// Runs one task's engine calls. Each step returns `Ok(false)` when it was
+/// stopped (the Stop button), so the remaining steps are skipped.
+struct Runner<'a, F> {
+    engine: &'a Engine,
+    on_event: F,
+    cancel: &'a CancellationToken,
+    /// The design files (`design_files`).
+    sources: Vec<String>,
+    /// The prepared folder, as the engine's `source_folder`.
+    folder: String,
+    build_folder: PathBuf,
 }
 
-fn stopped(mut outcome: TaskOutcome, started: Instant) -> TaskOutcome {
-    outcome.ok = false;
-    outcome.cancelled = true;
-    outcome.seconds = started.elapsed().as_secs_f64();
-    outcome
+impl<F> Runner<'_, F>
+where
+    F: Fn(TaskEvent) + Send + Sync + Clone + 'static,
+{
+    /// Calls an engine tool, with its live output in the console and its
+    /// phases in the status bar.
+    async fn call(&self, name: &str, args: Value) -> Result<ToolResult> {
+        let console = Console::new(self.on_event.clone());
+        let on_event = self.on_event.clone();
+        let progress = phase_sink(move |message, percent, _new| {
+            on_event(TaskEvent::Progress {
+                message: message.to_string(),
+                percent,
+            })
+        });
+        let options = CallOptions {
+            on_progress: Some(progress),
+            on_output: Some(console.sink()),
+            cancel: Some(self.cancel.clone()),
+        };
+        let result = self.engine.call_with(name, args, options).await;
+        console.flush();
+        result
+    }
+
+    fn line(&self, line: String) {
+        (self.on_event)(TaskEvent::Line { line });
+    }
+
+    fn build_folder(&self) -> String {
+        self.build_folder.to_string_lossy().into_owned()
+    }
+
+    /// Verify (lint, then build) or Upload (build, then program the board).
+    async fn build(
+        &self,
+        task: Task,
+        input: &TaskInput<'_>,
+        outcome: &mut TaskOutcome,
+    ) -> Result<bool> {
+        let Some(constraint_file) = input.constraint_file else {
+            outcome.diagnostics.push(error(NO_CONSTRAINT_FILE));
+            return Ok(true);
+        };
+        if task == Task::Build && input.lint {
+            let result = self
+                .call(
+                    "lint",
+                    json!({
+                        "board": input.board,
+                        "top_module": TOP_MODULE,
+                        "source_folder": self.folder,
+                        "source_files": self.sources,
+                    }),
+                )
+                .await?;
+            match result {
+                // Lint fails for warnings too, so its result never stops
+                // the build; only the build decides success.
+                Ok(lint) => outcome
+                    .diagnostics
+                    .extend(diagnostics(&lint["diagnostics"])),
+                Err(e) if is_cancelled(&e) => return Ok(false),
+                Err(e) => self.line(red(&format!("Lint: {}", message(&e)))),
+            }
+        }
+
+        let result = self
+            .call(
+                "build",
+                json!({
+                    "board": input.board,
+                    "top_module": TOP_MODULE,
+                    "source_folder": self.folder,
+                    "source_files": self.sources,
+                    "constraint_file": constraint_file,
+                    "build_folder": self.build_folder(),
+                }),
+            )
+            .await?;
+        match result {
+            Ok(build) => {
+                outcome.diagnostics.extend(diagnostics(&build["warnings"]));
+                outcome.report = Some(report(input.arch, &build));
+                outcome.ok = true;
+            }
+            Err(e) if is_cancelled(&e) => return Ok(false),
+            Err(e) => self.failed(outcome, &e),
+        }
+
+        if task == Task::Upload && outcome.ok {
+            let result = self
+                .call(
+                    "program_board",
+                    json!({ "build_folder": self.build_folder() }),
+                )
+                .await?;
+            match result {
+                Ok(done) => {
+                    let device = &done["device"];
+                    let name = device["product"]
+                        .as_str()
+                        .or(device["manufacturer"].as_str())
+                        .unwrap_or("the board");
+                    self.line(format!("Programmed {name}."));
+                }
+                Err(e) if is_cancelled(&e) => return Ok(false),
+                Err(e) => self.failed(outcome, &e),
+            }
+        }
+        Ok(true)
+    }
+
+    /// Run Tests: the chosen testbench, or all of the project's.
+    async fn test(&self, input: &TaskInput<'_>, outcome: &mut TaskOutcome) -> Result<bool> {
+        let testbenches: Vec<String> = match input.target {
+            Some(tb) => vec![tb.to_string()],
+            None => input
+                .files
+                .iter()
+                .filter(|f| project::is_testbench(f))
+                .cloned()
+                .collect(),
+        };
+        if testbenches.is_empty() {
+            outcome.diagnostics.push(error(
+                "This project has no testbenches. Testbench file names end with _tb.v or _tb.sv.",
+            ));
+            return Ok(true);
+        }
+        let result = self
+            .call(
+                "test",
+                json!({
+                    "board": input.board,
+                    "source_folder": self.folder,
+                    "source_files": self.sources,
+                    "build_folder": self.build_folder(),
+                    "testbench_files": testbenches,
+                }),
+            )
+            .await?;
+        match result {
+            Ok(test) => {
+                for tb in test["testbenches"].as_array().into_iter().flatten() {
+                    self.testbench_result(tb, outcome);
+                }
+                outcome.ok = test["passed"] == true;
+            }
+            Err(e) if is_cancelled(&e) => return Ok(false),
+            Err(e) => self.failed(outcome, &e),
+        }
+        Ok(true)
+    }
+
+    /// Simulate: runs one testbench to the end and opens GTKWave on it,
+    /// failing or not (the waveform is how the user finds the problem).
+    async fn simulate(&self, input: &TaskInput<'_>, outcome: &mut TaskOutcome) -> Result<bool> {
+        let Some(testbench) = input.target else {
+            outcome
+                .diagnostics
+                .push(error("Choose the testbench to simulate."));
+            return Ok(true);
+        };
+        let result = self
+            .call(
+                "simulate",
+                json!({
+                    "board": input.board,
+                    "source_folder": self.folder,
+                    "source_files": self.sources,
+                    "build_folder": self.build_folder(),
+                    "testbench_file": testbench,
+                    "layout_file": layout_file(testbench),
+                }),
+            )
+            .await?;
+        match result {
+            Ok(sim) => {
+                let mut tb = sim.clone();
+                tb["file"] = json!(testbench);
+                self.testbench_result(&tb, outcome);
+                outcome.ok = sim["passed"] == true;
+            }
+            Err(e) if is_cancelled(&e) => return Ok(false),
+            Err(e) => self.failed(outcome, &e),
+        }
+        Ok(true)
+    }
+
+    /// Show Diagram: draws a module as an SVG.
+    async fn graph(&self, input: &TaskInput<'_>, outcome: &mut TaskOutcome) -> Result<bool> {
+        let result = self
+            .call(
+                "graph",
+                json!({
+                    "top_module": input.target.unwrap_or(TOP_MODULE),
+                    "source_folder": self.folder,
+                    "source_files": self.sources,
+                    "build_folder": self.build_folder(),
+                }),
+            )
+            .await?;
+        match result {
+            Ok(graph) => {
+                outcome
+                    .diagnostics
+                    .extend(diagnostics(&graph["diagnostics"]));
+                let file = graph["graph_file"].as_str().unwrap_or("graph.svg");
+                let path = self.build_folder.join(file);
+                let svg = tokio::fs::read_to_string(&path)
+                    .await
+                    .with_context(|| format!("can't read {}", path.display()))?;
+                outcome.graph_svg = Some(relative_paths(&svg, &self.folder));
+                outcome.ok = true;
+            }
+            Err(e) if is_cancelled(&e) => return Ok(false),
+            Err(e) => self.failed(outcome, &e),
+        }
+        Ok(true)
+    }
+
+    /// Records one testbench's result (from `test`, or `simulate`'s
+    /// result with its `file`): passed or not, its problems, and why it
+    /// ended if it didn't end itself.
+    fn testbench_result(&self, tb: &Value, outcome: &mut TaskOutcome) {
+        let name = tb["file"].as_str().unwrap_or("").to_string();
+        let passed = tb["passed"] == true;
+        outcome.diagnostics.extend(diagnostics(&tb["diagnostics"]));
+        if let Some(note) = ending_note(&name, tb["ending"].as_str().unwrap_or("")) {
+            self.line(red(&note));
+            if !passed {
+                outcome.diagnostics.push(Diagnostic {
+                    file: Some(name.clone()),
+                    ..error(&note)
+                });
+            }
+        }
+        outcome.testbenches.push(TestbenchResult { name, passed });
+    }
+
+    /// Records a failed step: the error's diagnostics, or else its message
+    /// as an error without a location, and the suggested action.
+    fn failed(&self, outcome: &mut TaskOutcome, error: &Value) {
+        failed(outcome, error, &|l| self.line(l));
+    }
+}
+
+/// The diagram names the design's processes by file and line. The engine
+/// passes yosys absolute paths, so those read like
+/// `/Users/you/.logix/build/main.v:5.14-5.25`; shows them as `main.v:...`.
+/// TODO(revisit): ask the engine to label them relative to the source
+/// folder.
+fn relative_paths(svg: &str, folder: &str) -> String {
+    let mut svg = svg.replace(&format!("{folder}/"), "");
+    // The engine resolves symbolic links (e.g. /var -> /private/var).
+    if let Ok(real) = std::fs::canonicalize(folder) {
+        svg = svg.replace(&format!("{}/", real.to_string_lossy()), "");
+    }
+    svg
+}
+
+/// Why a testbench run ended, when the engine stopped it or it ran out of
+/// things to simulate (`ending` in the engine's test results).
+fn ending_note(testbench: &str, ending: &str) -> Option<String> {
+    match ending {
+        "timeout" => Some(format!(
+            "{testbench} was stopped because it ran too long. Does it end with $finish?"
+        )),
+        "sim_time_limit" => Some(format!(
+            "{testbench} was stopped at its simulation time limit. Does it end with $finish?"
+        )),
+        "no_finish" => Some(format!(
+            "{testbench} ended without calling $finish, which usually means it stopped early by mistake."
+        )),
+        _ => None,
+    }
+}
+
+fn is_cancelled(error: &Value) -> bool {
+    error["category"] == "cancelled"
 }
 
 /// The engine error's message, with its suggested action when there is
@@ -247,7 +461,7 @@ fn error(message: &str) -> Diagnostic {
 /// The engine's diagnostics (file relative to the source folder, which
 /// holds the project's files under their own names). Its `info` ones are
 /// shown as warnings, since the editor has only errors and warnings.
-fn diagnostics(list: &Value) -> Vec<Diagnostic> {
+pub(super) fn diagnostics(list: &Value) -> Vec<Diagnostic> {
     let Some(list) = list.as_array() else {
         return Vec::new();
     };
@@ -318,7 +532,7 @@ static PROGRESS_BAR: LazyLock<Regex> =
 /// next line shows whether it was the last one. TODO(revisit): if the
 /// engine marks redraws itself, drop the pattern.
 #[derive(Clone)]
-struct Console<F> {
+pub(super) struct Console<F> {
     on_event: F,
     held: Arc<Mutex<Option<(String, String)>>>,
 }
@@ -327,14 +541,14 @@ impl<F> Console<F>
 where
     F: Fn(TaskEvent) + Send + Sync + Clone + 'static,
 {
-    fn new(on_event: F) -> Self {
+    pub(super) fn new(on_event: F) -> Self {
         Console {
             on_event,
             held: Arc::new(Mutex::new(None)),
         }
     }
 
-    fn sink(&self) -> super::client::OutputSink {
+    pub(super) fn sink(&self) -> super::client::OutputSink {
         let console = self.clone();
         Arc::new(move |line: OutputLine| console.take(line))
     }
@@ -371,7 +585,7 @@ where
     }
 
     /// Sends a held progress bar line (at the end of a call).
-    fn flush(&self) {
+    pub(super) fn flush(&self) {
         if let Some((_, text)) = self.held.lock().unwrap().take() {
             self.send(text);
         }
@@ -519,9 +733,10 @@ mod tests {
         );
     }
 
-    /// Verify and Upload against a real engine, on a copy of Apio's
-    /// alhambra-ii blinky (no board needed: Upload fails with
-    /// `connect_board` unless one is plugged in):
+    /// Verify, Upload, Run Tests, Show Diagram and Auto Format against a
+    /// real engine, on a copy of Apio's alhambra-ii blinky (no board
+    /// needed: Upload fails with `connect_board` unless one is plugged in;
+    /// Simulate isn't run, since it opens GTKWave):
     /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> LOGIX_TEST_EXAMPLE=<alhambra-ii/blinky> cargo test real_engine_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
@@ -551,13 +766,14 @@ mod tests {
             let events = events.clone();
             move |e: TaskEvent| events.lock().unwrap().push(e)
         };
-        let mut input = BuildInput {
+        let mut input = TaskInput {
             board: "alhambra-ii",
             arch: "ice40",
             source_folder: &dir,
             files: &files,
             constraint_file: constraint.as_deref(),
             lint: true,
+            target: None,
         };
         let cancel = CancellationToken::new();
         let good = run(&engine, Task::Build, &input, sink.clone(), &cancel)
@@ -586,10 +802,191 @@ mod tests {
         // Upload: builds, then looks for the board.
         std::fs::write(&main, text).unwrap();
         input.lint = false;
-        let upload = run(&engine, Task::Upload, &input, sink, &cancel)
+        let upload = run(&engine, Task::Upload, &input, sink.clone(), &cancel)
             .await
             .unwrap();
         println!("{upload:?}");
         assert!(upload.ok || upload.action.as_deref() == Some("connect_board"));
+
+        // Run Tests: all testbenches, then one that fails.
+        events.lock().unwrap().clear();
+        let test = run(&engine, Task::Test, &input, sink.clone(), &cancel)
+            .await
+            .unwrap();
+        for e in events.lock().unwrap().iter() {
+            println!("{e:?}");
+        }
+        println!("{test:?}");
+        assert!(test.ok, "{test:?}");
+        assert_eq!(test.testbenches.len(), 1);
+        assert!(test.testbenches[0].passed);
+        let tb = dir.join("main_tb.v");
+        let tb_text = std::fs::read_to_string(&tb).unwrap();
+        std::fs::write(
+            &tb,
+            tb_text.replacen("`EXPECT_EQ(leds, 8'b0)", "`EXPECT_EQ(leds, 8'b1)", 1),
+        )
+        .unwrap();
+        input.target = Some("main_tb.v");
+        let failed = run(&engine, Task::Test, &input, sink.clone(), &cancel)
+            .await
+            .unwrap();
+        println!("{failed:?}");
+        assert!(!failed.ok);
+        assert!(!failed.testbenches[0].passed);
+        assert!(failed
+            .diagnostics
+            .iter()
+            .any(|d| d.file.as_deref() == Some("main_tb.v") && d.line.is_some()));
+        std::fs::write(&tb, tb_text).unwrap();
+
+        // Show Diagram.
+        input.target = None;
+        let graph = run(&engine, Task::Graph, &input, sink.clone(), &cancel)
+            .await
+            .unwrap();
+        assert!(graph.ok, "{graph:?}");
+        assert!(graph.graph_svg.unwrap().contains("<svg"));
+        input.target = Some("nope");
+        let no_module = run(&engine, Task::Graph, &input, sink, &cancel)
+            .await
+            .unwrap();
+        println!("{no_module:?}");
+        assert!(!no_module.ok);
+
+        // Auto Format: a messy file is formatted, a broken one reports
+        // where the problem is.
+        let format_dir = tmp.path().join("format");
+        std::fs::create_dir_all(&format_dir).unwrap();
+        let messy = format_dir.join("alu.v");
+        std::fs::write(
+            &messy,
+            "module alu(input a,output b);assign b=a;\n  endmodule\n",
+        )
+        .unwrap();
+        let ok = super::super::format_file(&engine, &format_dir, "alu.v", |l| println!("{l}"))
+            .await
+            .unwrap();
+        assert!(ok.ok);
+        assert!(std::fs::read_to_string(&messy)
+            .unwrap()
+            .contains("assign b = a;"));
+        std::fs::write(
+            format_dir.join("bad.v"),
+            "module x;\ninitial begin\nend end\nendmodule\n",
+        )
+        .unwrap();
+        let bad = super::super::format_file(&engine, &format_dir, "bad.v", |l| println!("{l}"))
+            .await
+            .unwrap();
+        println!("{bad:?}");
+        assert!(!bad.ok);
+        assert!(bad
+            .diagnostics
+            .iter()
+            .any(|d| d.file.as_deref() == Some("bad.v") && d.line == Some(3)));
+    }
+
+    /// Recaptures the fake backend's fixtures (`ui/e2e/fixtures/`) from a
+    /// real engine, for the fake's blinky (in `fakeBackend.ts`):
+    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> LOGIX_FIXTURES_OUT=../ui/e2e/fixtures cargo test capture_fixtures -- --ignored`
+    #[tokio::test]
+    #[ignore]
+    async fn capture_fixtures() {
+        let var = |k: &str| std::env::var(k).unwrap_or_else(|_| panic!("set {k}"));
+        let out = PathBuf::from(var("LOGIX_FIXTURES_OUT"));
+        let engine = Engine::start(
+            Path::new(&var("LOGIX_TEST_ENGINE_EXE")),
+            Path::new(&var("LOGIX_TEST_ENGINE_FOLDER")),
+        )
+        .await
+        .unwrap();
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().canonicalize().unwrap().join("build");
+        std::fs::create_dir_all(&dir).unwrap();
+        let blinky = "module main (\n    input sys_clk,\n    output led\n);\n  reg [23:0] counter = 0;\n  always @(posedge sys_clk) counter <= counter + 1;\n  assign led = counter[23];\nendmodule\n";
+        let tb = "`timescale 1ns / 1ps\nmodule main_tb;\n  initial begin\n    $dumpvars(0, main_tb);\n    #100;\n    $finish;\n  end\nendmodule\n";
+        std::fs::write(dir.join("main_tb.v"), tb).unwrap();
+        std::fs::write(dir.join("pinout.pcf"), "set_io sys_clk 49\nset_io led 45\n").unwrap();
+        let files: Vec<String> = ["main.v", "main_tb.v", "pinout.pcf"]
+            .map(String::from)
+            .into();
+        // Scratch paths as they are in Logix.
+        let home = std::env::var("HOME").unwrap();
+        let tidy = |line: &str| {
+            line.replace(&dir.to_string_lossy().into_owned(), "~/.logix/build")
+                .replace(&home, "~")
+        };
+        let capture = |task: Task, target: Option<&'static str>, main: &'static str, name: &str| {
+            std::fs::write(dir.join("main.v"), main).unwrap();
+            let lines = Arc::new(Mutex::new(Vec::new()));
+            let sink = {
+                let lines = lines.clone();
+                move |e: TaskEvent| {
+                    if let TaskEvent::Line { line } = e {
+                        lines.lock().unwrap().push(line)
+                    }
+                }
+            };
+            let input = TaskInput {
+                board: "alhambra-ii",
+                arch: "ice40",
+                source_folder: &dir,
+                files: &files,
+                constraint_file: Some("pinout.pcf"),
+                lint: true,
+                target,
+            };
+            let engine = &engine;
+            let path = out.join(name);
+            let tidy = &tidy;
+            async move {
+                let outcome = run(engine, task, &input, sink, &CancellationToken::new())
+                    .await
+                    .unwrap();
+                let text: Vec<String> = lines.lock().unwrap().iter().map(|l| tidy(l)).collect();
+                std::fs::write(path, text.join("\n") + "\n").unwrap();
+                outcome
+            }
+        };
+        let broken = blinky.replace("counter[23];", "counter[23]").leak();
+        // Built from scratch, so each command line is shown.
+        let _ = std::fs::remove_dir_all(dir.join("_build"));
+        assert!(capture(Task::Build, None, blinky, "verify.txt").await.ok);
+        assert!(
+            !capture(Task::Build, None, broken, "verify-error.txt")
+                .await
+                .ok
+        );
+        assert!(capture(Task::Test, None, blinky, "test.txt").await.ok);
+        let graph = capture(Task::Graph, None, blinky, "graph.txt").await;
+        std::fs::write(out.join("graph.svg"), graph.graph_svg.unwrap()).unwrap();
+    }
+
+    #[test]
+    fn diagram_paths_are_relative() {
+        let svg = "<text>PROC $3 /Users/you/.logix/build/main.v:5.14-5.25</text>";
+        assert_eq!(
+            relative_paths(svg, "/Users/you/.logix/build"),
+            "<text>PROC $3 main.v:5.14-5.25</text>"
+        );
+    }
+
+    #[test]
+    fn layout_next_to_the_testbench() {
+        assert_eq!(layout_file("main_tb.v"), "main_tb.gtkw");
+        assert_eq!(layout_file("uart_tb.sv"), "uart_tb.gtkw");
+    }
+
+    #[test]
+    fn explains_how_a_testbench_ended() {
+        assert!(ending_note("main_tb.v", "finished").is_none());
+        assert!(ending_note("main_tb.v", "first_failure").is_none());
+        assert!(ending_note("main_tb.v", "no_finish")
+            .unwrap()
+            .contains("without calling $finish"));
+        assert!(ending_note("main_tb.v", "timeout")
+            .unwrap()
+            .starts_with("main_tb.v"));
     }
 }

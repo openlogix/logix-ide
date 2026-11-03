@@ -2,16 +2,12 @@
 //! releases, file layout and output. Everything else talks to Apio through
 //! this module.
 
-mod board_match;
 mod bundle;
 mod catalog;
 mod devices;
-mod diagnostics;
 mod language_server;
 mod process;
-mod report;
 mod setup;
-mod task;
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -20,11 +16,10 @@ use std::process::{ExitStatus, Stdio};
 use anyhow::{bail, Result};
 use tokio_util::sync::CancellationToken;
 
-pub use board_match::{match_boards, ConnectedBoard, UsbRule};
 pub use catalog::{starter_example, ExampleList, DEFAULT_BOARD};
-pub use devices::Devices;
+pub use devices::SerialDevice;
 pub use language_server::LanguageServer;
-pub use process::{quietly, strip_ansi};
+pub use process::strip_ansi;
 pub use setup::run_setup;
 
 /// The Apio release the IDE uses: pinned in package.json (`appConstants`,

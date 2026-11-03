@@ -558,7 +558,7 @@
     status = { text: "Formatting…", kind: "info" };
     log(`Formatting ${file}…`);
     try {
-      const result = await backend.formatFile(file, before, p.board);
+      const result = await backend.formatFile(file, before);
       if (project !== p) return; // Another project was opened meanwhile.
       // Old markers in this file no longer match its lines.
       const others = shownDiagnostics.filter((d) => d.file !== file);

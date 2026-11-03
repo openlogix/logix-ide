@@ -116,8 +116,8 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
 ### The end-to-end tests
 
 They run the real UI in WebKit (the browser engine of the macOS window)
-against a **fake backend** (`ui/e2e/fakeBackend.ts`) that replays real Apio
-output, so they need no FPGA tools or board. The documentation screenshots
+against a **fake backend** (`ui/e2e/fakeBackend.ts`) that replays real
+Logix Engine output, so they need no FPGA tools or board. The documentation screenshots
 are made the same way.
 
 ### The log

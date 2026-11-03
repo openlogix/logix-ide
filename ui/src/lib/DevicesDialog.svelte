@@ -66,12 +66,8 @@
             {#each devices.usb as d, i (i)}
               <li>
                 <span class="name">{usbLabel(d)}</span>
-                {#if d.deviceType || d.serialNumber}
-                  <span class="muted"
-                    >{[d.deviceType, d.serialNumber && `serial ${d.serialNumber}`]
-                      .filter(Boolean)
-                      .join(", ")}</span
-                  >
+                {#if d.serialNumber}
+                  <span class="muted">serial {d.serialNumber}</span>
                 {/if}
               </li>
             {/each}
