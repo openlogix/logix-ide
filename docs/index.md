@@ -22,7 +22,7 @@ its first start.
 - **Upload** it to your board; Logix shows when it's connected.
 - **Test** it with testbenches, and **simulate** it to see the signals in
   GTKWave.
-- **Learn** from more than a hundred examples for over a hundred boards.
+- **Learn** from more than a hundred examples for almost 80 boards.
 - **See** your design as a diagram.
 
 ## Platforms

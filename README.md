@@ -37,7 +37,7 @@ itself.
 - ⚡ **Upload** it to your board with one click. Logix even tells you when
   your board is connected.
 - 📚 **Learn from examples**: more than a hundred ready-to-run examples for
-  over a hundred boards, from a blinking LED onwards.
+  almost 80 boards, from a blinking LED onwards.
 - 🧪 **Test and simulate** your design with testbenches, and look at its
   signals in GTKWave, without a board.
 - 🔍 **See your design as a diagram** of its modules and signals.
@@ -105,24 +105,26 @@ security setting on your Mac.
 
 1. Start Logix and wait for **Ready.** at the bottom of the window. Choose
    your board in the list at the top (the **Alhambra II** at first), then
-   click **Start with Blinky** on the start screen.
-2. Click **Verify** (the ✓ button). Logix builds the design and shows how
-   much of the FPGA it uses.
+   click **From Example…** on the start screen and open **blinky**.
+2. Click the **Verify** button <img src="docs/images/icon-verify.png" alt="Verify button" height="20">.
+   Logix builds the design and shows how much of the FPGA it uses.
 3. Plug in your board. When Logix sees it, the word next to the board list
    changes to **Connected**.
-4. Click **Upload** (the → button). Your board's LED starts blinking! 🎉
-5. Now make it your own: change the blinking speed, save with ⌘S, and upload
-   again.
+4. Click the **Upload** button <img src="docs/images/icon-upload.png" alt="Upload button" height="20">.
+   Your board's LED starts blinking! 🎉
+5. Now make it your own: change the blinking speed, save it with
+   **File > Save Project**, and upload again.
 
 The [Quick start](https://openlogix.github.io/logix-ide/quick-start/) guide walks
 through these steps with pictures.
 
 ## Learn more
 
-The [Logix documentation](https://openlogix.github.io/logix-ide/) covers everything,
+The [Logix IDE documentation](https://openlogix.github.io/logix-ide/) covers everything,
 in short, beginner-friendly pages:
 
 - [Installing](https://openlogix.github.io/logix-ide/installing/)
+- [Tour](https://openlogix.github.io/logix-ide/tour/)
 - [Quick start](https://openlogix.github.io/logix-ide/quick-start/)
 - [Using Logix](https://openlogix.github.io/logix-ide/using-logix/)
 - [Testbenches and simulation](https://openlogix.github.io/logix-ide/testbenches/)

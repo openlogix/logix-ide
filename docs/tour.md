@@ -19,8 +19,7 @@ you write **Verilog**, which describes hardware, instead of C++.
 - **The FPGA tools come by themselves.** On its first start, Logix downloads
   the open source FPGA tools it needs. You never have to learn or install
   them yourself.
-- **Learn by example.** More than a hundred examples for over a hundred
-  boards.
+- **Learn by example.** More than a hundred examples for almost 80 boards.
 
 To get it, see [Installing Logix](installing.md).
 
@@ -45,7 +44,7 @@ The main file is always `main.v`, and its module is named `main`. Other
 Verilog files and the board's pin file show up as tabs, and testbenches end
 with `_tb.v`. New projects go to `~/Documents/Logix`.
 
-This is blinky, the example the start screen offers first. A counter counts clock
+This is blinky, the first example to try. A counter counts clock
 cycles, and its top bit drives the LED, so the LED blinks:
 
 ```verilog
