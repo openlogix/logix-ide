@@ -1,6 +1,15 @@
-<!-- Small line icons for the toolbar, drawn in the current text color. -->
+<!-- Small line icons (toolbar, start screen), drawn in the current text color. -->
 <script lang="ts">
-  export type IconName = "verify" | "upload" | "test" | "simulate" | "stop";
+  export type IconName =
+    | "verify"
+    | "upload"
+    | "test"
+    | "simulate"
+    | "stop"
+    | "new"
+    | "open"
+    | "example"
+    | "folder";
 
   let { name, size = 18 }: { name: IconName; size?: number } = $props();
 </script>
@@ -36,5 +45,22 @@
   {:else if name === "simulate"}
     <!-- Digital waveform -->
     <polyline points="2 17 6 17 6 7 11 7 11 17 15 17 15 7 19 7 19 17 22 17" />
+  {:else if name === "new"}
+    <!-- Page with a plus -->
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 3 14 8 19 8" />
+    <line x1="12" y1="11" x2="12" y2="17" />
+    <line x1="9" y1="14" x2="15" y2="14" />
+  {:else if name === "open"}
+    <!-- Open folder -->
+    <path d="M3 19V6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2" />
+    <path d="M3 19l2.6-7.2A2 2 0 0 1 7.5 10.5H21l-2.8 7.7a2 2 0 0 1-1.9 1.3H3z" />
+  {:else if name === "example"}
+    <!-- Open book -->
+    <path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z" />
+    <path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z" />
+  {:else if name === "folder"}
+    <!-- Closed folder -->
+    <path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
   {/if}
 </svg>

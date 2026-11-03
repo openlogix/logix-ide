@@ -1503,21 +1503,34 @@
             </p>
           {/if}
           <div class="start-actions">
-            <button onclick={() => exclusive(newProject)}>New Project</button>
-            <button onclick={() => exclusive(openProject)}>Open Project…</button>
-            <button disabled={examples.length === 0} onclick={showExamples}
-              >From Example…</button
-            >
+            <button onclick={() => exclusive(newProject)}>
+              <span class="start-icon"><Icon name="new" size={26} /></span>
+              <span class="start-title">New Project</span>
+              <span class="start-hint">An empty design for your board</span>
+            </button>
+            <button onclick={() => exclusive(openProject)}>
+              <span class="start-icon"><Icon name="open" size={26} /></span>
+              <span class="start-title">Open Project…</span>
+              <span class="start-hint">A project folder on this computer</span>
+            </button>
+            <button disabled={examples.length === 0} onclick={showExamples}>
+              <span class="start-icon"><Icon name="example" size={26} /></span>
+              <span class="start-title">From Example…</span>
+              <span class="start-hint">Blinky and more, ready to build</span>
+            </button>
           </div>
           {#if recents.length > 0}
             <div class="recents">
               <h3>Recent projects</h3>
               <ul>
                 {#each recents.slice(0, 5) as dir (dir)}
+                  {@const name = dir.split(/[\\/]/).pop() ?? dir}
                   <li>
-                    <button class="link" title={dir} onclick={() => openRecent(dir)}
-                      >{dir.split(/[\\/]/).pop()}</button
-                    >
+                    <button class="recent" title={dir} onclick={() => openRecent(dir)}>
+                      <Icon name="folder" size={16} />
+                      <span class="recent-name">{name}</span>
+                      <span class="recent-path">{dir.slice(0, -name.length - 1)}</span>
+                    </button>
                   </li>
                 {/each}
               </ul>
@@ -1898,52 +1911,90 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 24px;
+    padding: 32px 24px;
     text-align: center;
+    overflow: auto;
   }
   .welcome h2 {
-    margin: 0;
-    font-size: 22px;
+    margin: 0 0 6px;
+    font-size: 26px;
     font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .welcome .motto {
-    margin: 0 0 12px;
-    color: var(--accent);
-    font-weight: 600;
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
   }
   .welcome p {
     max-width: 460px;
-    margin: 0 0 12px;
+    margin: 16px 0 0;
     line-height: 1.5;
   }
+  .start-actions {
+    display: flex;
+    gap: 16px;
+    margin-top: 36px;
+  }
   .start-actions button {
-    padding: 6px 16px;
+    width: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 16px 18px 18px;
     font: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    background: transparent;
-    color: var(--accent);
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg);
+    color: var(--fg);
     cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition:
+      border-color 0.12s,
+      box-shadow 0.12s,
+      transform 0.12s;
+  }
+  .start-actions button:hover:not(:disabled) {
+    border-color: var(--accent);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+  .start-actions button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
   .start-actions button:disabled {
     opacity: 0.5;
     cursor: default;
   }
-  .start-actions {
+  .start-icon {
     display: flex;
-    gap: 8px;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+  .start-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .start-hint {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--muted);
   }
   .recents {
-    margin-top: 22px;
-    min-width: 260px;
+    margin-top: 36px;
+    width: 572px;
+    max-width: 100%;
+    text-align: left;
   }
   .recents h3 {
-    margin: 0 0 6px;
-    font-size: 13px;
+    margin: 0 0 8px;
+    font-size: 12px;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: var(--muted);
   }
   .recents ul {
@@ -1951,16 +2002,34 @@
     margin: 0;
     padding: 0;
   }
-  .recents .link {
+  .recent {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
     border: none;
+    border-radius: 6px;
     background: none;
-    padding: 2px 0;
     color: var(--accent);
     cursor: pointer;
     font: inherit;
+    text-align: left;
   }
-  .recents .link:hover {
-    text-decoration: underline;
+  .recent:hover {
+    background: var(--tabs-bg);
+  }
+  .recent-name {
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .recent-path {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 12px;
   }
 
   .console-area {
