@@ -60,8 +60,8 @@ const HELP_LINKS: &[Option<(&str, &str)>] = &[
         "https://openlogix.github.io/logix-ide/using-logix/#keyboard-shortcuts",
     )),
     None,
-    Some(("Logix Website", "https://www.openlogix.org/ide/")),
-    Some(("Logix on GitHub", "https://github.com/openlogix/logix-ide")),
+    Some(("Logix IDE Website", "https://www.openlogix.org/ide/")),
+    Some(("Logix IDE on GitHub", "https://github.com/openlogix/logix-ide")),
     Some((
         "Report a Problem",
         // A new issue whose text asks for the log (see SHOW_LOGS).
