@@ -66,6 +66,24 @@ const HELP_LINKS: &[Option<(&str, &str)>] = &[
     )),
 ];
 pub const STOP: &str = "stop";
+/// Menu items that act on the open project: greyed out (their shortcuts
+/// too) on the start screen, when no project is open.
+pub const NEEDS_PROJECT: &[&str] = &[
+    CLOSE_PROJECT,
+    NEW_FILE,
+    SAVE,
+    SAVE_AS,
+    TOGGLE_COMMENT,
+    GO_TO_DEFINITION,
+    VERIFY,
+    UPLOAD,
+    RUN_TESTS,
+    SIMULATE,
+    SHOW_DIAGRAM,
+    STOP,
+    SHOW_FOLDER,
+    AUTO_FORMAT,
+];
 /// Open Recent items are "recent:<index into the recent projects>".
 const RECENT_PREFIX: &str = "recent:";
 const CLEAR_RECENT: &str = "clear-recent";
@@ -75,9 +93,13 @@ const CLOSE: &str = "close";
 const QUIT: &str = "quit";
 
 pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+    let project_open = app
+        .try_state::<crate::AppState>()
+        .is_some_and(|s| s.project_open.load(std::sync::atomic::Ordering::SeqCst));
     let item = |id: &str, text: &str, accel: &str| {
         MenuItemBuilder::with_id(id, text)
             .accelerator(accel)
+            .enabled(project_open || !NEEDS_PROJECT.contains(&id))
             .build(app)
     };
     let quit = item(QUIT, "Quit Logix IDE", "CmdOrCtrl+Q")?;

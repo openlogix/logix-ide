@@ -161,6 +161,7 @@ macOS shortcuts below; elsewhere Ctrl replaces ⌘. The same as the Arduino IDE 
 - **Project**: Verify (⌘R), Upload (⌘U), Run Tests (⇧⌘T), Simulate (⌥⌘T), Show Diagram (⇧⌘D), Stop (⌘.), Show Project Folder (⌥⌘K).
 - **Tools**: Auto Format (⌘T), Connected Devices….
 - **Help**: Logix Documentation, Quick Start, Testbenches and Simulation, Troubleshooting, Keyboard Shortcuts (the docs pages), Logix Website (the product page), Logix on GitHub, Report a Problem (a new GitHub issue whose text asks what happened and for `logix.log`), Show Log Folder.
+- **No project open** (the start screen): the items that act on a project are greyed out, shortcuts included: Close Project, New File, Save Project, Save Project As, Comment/Uncomment, Go to Definition, all of Project, and Auto Format (`menu::NEEDS_PROJECT`). The UI reports it through `set_document_state` (an empty name), the backend keeps it in `AppState.project_open`, and the menu is rebuilt only when it changes.
 - Item ids are kebab-case (`run-tests`, `show-diagram`, `select-all`, ...) and reach the UI as `menu` events; Help items are `help:<index>`, recent projects `recent:<index>`. Close and Quit go through the window-close flow in Rust.
 
 ## Backend interface

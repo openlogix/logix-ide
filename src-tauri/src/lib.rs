@@ -37,6 +37,9 @@ pub struct AppState {
     catalog: tokio::sync::Mutex<Option<Catalog>>,
     /// Whether the open project has unsaved changes (reported by the UI).
     dirty: AtomicBool,
+    /// Whether a project is open (reported by the UI); the menu items that
+    /// need one are greyed out otherwise (`menu::NEEDS_PROJECT`).
+    project_open: AtomicBool,
     /// Set when the UI has already dealt with unsaved changes, so the next
     /// close request goes through.
     force_close: AtomicBool,

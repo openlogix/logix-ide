@@ -993,6 +993,12 @@ pub fn set_document_state(
     dirty: bool,
 ) {
     state.dirty.store(dirty, Ordering::SeqCst);
+    // The project-only menu items follow whether a project is open; the
+    // menu is rebuilt only when that changes.
+    let open = !name.is_empty();
+    if state.project_open.swap(open, Ordering::SeqCst) != open {
+        crate::menu::refresh(window.app_handle());
+    }
     let marker = if dirty { "● " } else { "" };
     // As in the Arduino IDE: e.g. "blinky | Logix IDE 0.1.0", or
     // "● blinky | Logix IDE 0.1.0" with unsaved changes.
