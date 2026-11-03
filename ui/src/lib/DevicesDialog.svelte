@@ -1,4 +1,4 @@
-<!-- Tools > Connected Devices: the USB devices and serial ports connected. -->
+<!-- Tools > Connected Devices: the USB devices connected. -->
 <script lang="ts">
   import type { Devices } from "./backend";
   import { usbLabel } from "./devices";
@@ -74,21 +74,6 @@
           </ul>
         {/if}
 
-        <h3>Serial ports</h3>
-        {#if devices.serial.length === 0}
-          <p class="muted">None.</p>
-        {:else}
-          <ul>
-            {#each devices.serial as d, i (i)}
-              <li>
-                <span class="port">{d.port}</span>
-                <span class="muted"
-                  >{[d.product, d.manufacturer].filter(Boolean).join(", ")}</span
-                >
-              </li>
-            {/each}
-          </ul>
-        {/if}
 
         <p class="muted hint">
           Upload finds the board by its USB ids and name. If your board is
@@ -176,10 +161,6 @@
     padding: 6px 0;
     border-bottom: 1px solid var(--border);
     font-size: 13px;
-  }
-  .port {
-    font-family: ui-monospace, Menlo, Consolas, monospace;
-    font-size: 12px;
   }
   .muted {
     color: var(--muted);

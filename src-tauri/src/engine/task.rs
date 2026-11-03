@@ -785,6 +785,12 @@ mod tests {
         assert!(good.ok, "{good:?}");
         assert!(good.report.as_ref().unwrap().resources.len() > 3);
 
+        // The language server comes from the engine's verible package.
+        let ls = super::super::program_path(&engine, "verible", "verible-verilog-ls")
+            .await
+            .unwrap();
+        assert!(ls.is_file(), "{}", ls.display());
+
         // A syntax error is marked at its line.
         let main = dir.join("main.v");
         let text = std::fs::read_to_string(&main).unwrap();

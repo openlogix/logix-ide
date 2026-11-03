@@ -345,15 +345,6 @@ export const backend: typeof Real.backend = {
         serialNumber: "FTATANKC",
       },
     ],
-    serial: [
-      {
-        port: "/dev/cu.usbserial-FTATANKC0",
-        vid: "0403",
-        pid: "6010",
-        manufacturer: "AlhambraBits",
-        product: "Alhambra II v1.0A",
-      },
-    ],
   }),
   onOpenRecent: unlisten,
 

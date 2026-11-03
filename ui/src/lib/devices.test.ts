@@ -28,10 +28,10 @@ describe("devices", () => {
   });
 
   it("lists connected devices or gives tips", () => {
-    expect(deviceSummaryLines({ usb: [alhambra], serial: [] })[1]).toBe(
+    expect(deviceSummaryLines({ usb: [alhambra] })[1]).toBe(
       "  • Alhambra II v1.0A (AlhambraBits, 0403:6010)",
     );
-    expect(deviceSummaryLines({ usb: [], serial: [] })[0]).toBe(
+    expect(deviceSummaryLines({ usb: [] })[0]).toBe(
       "No USB devices are connected.",
     );
   });

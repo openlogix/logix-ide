@@ -4,6 +4,7 @@ mod build_dir;
 mod commands;
 mod download;
 mod engine;
+mod language_server;
 pub mod logging;
 mod menu;
 mod outcome;
@@ -32,7 +33,7 @@ pub struct AppState {
     /// Held while formatting, which reuses one scratch folder.
     format: tokio::sync::Mutex<()>,
     /// The Verilog language server, while running (live errors).
-    lsp: tokio::sync::Mutex<Option<apio::LanguageServer>>,
+    lsp: tokio::sync::Mutex<Option<language_server::LanguageServer>>,
     /// Board and example lists, fetched once per run (boards from the
     /// engine, examples from Apio).
     catalog: tokio::sync::Mutex<Option<Catalog>>,

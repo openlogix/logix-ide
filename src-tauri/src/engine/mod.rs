@@ -5,14 +5,14 @@
 //! Moving from Apio to the engine happens step by step: the IDE sets up
 //! the engine at startup, and the board list, Verify, Upload, Run Tests,
 //! Simulate, Show Diagram, Auto Format and the connected devices use it;
-//! the examples, the serial ports and the language server still come from
-//! Apio.
+//! the examples still come from Apio.
 
 mod bundle;
 mod catalog;
 mod client;
 mod devices;
 mod format;
+mod info;
 mod setup;
 mod task;
 
@@ -23,6 +23,7 @@ pub use catalog::{catalog, Board, Catalog};
 pub use client::Engine;
 pub use devices::{list_devices, match_boards, ConnectedBoard, UsbDevice, UsbRule};
 pub use format::format_file;
+pub use info::program_path;
 pub use setup::run_setup;
 pub use task::{run as run_task, TaskInput};
 

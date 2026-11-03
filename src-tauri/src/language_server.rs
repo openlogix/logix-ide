@@ -1,16 +1,15 @@
-//! Verible's Verilog language server (from Apio's packages), for live
+//! Verible's Verilog language server (from Logix Engine's `verible`
+//! package; see `engine::program_path`), for live
 //! errors and other editor help while typing. Logix relays the language
 //! server protocol (LSP) between the server and the editor's LSP client:
 //! this module only frames messages; the UI speaks the protocol.
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Stdio;
 
 use anyhow::{bail, Context, Result};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
-
-use super::Apio;
 
 /// Server options: only syntax errors (Verible's style rules would flood
 /// beginners; Verify's lint catches design problems), plus hover info.
@@ -20,18 +19,6 @@ const SERVER_ARGS: &[&str] = &["--ruleset=none", "--lsp_enable_hover=true"];
 pub struct LanguageServer {
     stdin: ChildStdin,
     _child: Child,
-}
-
-impl Apio {
-    /// Where Apio's packages have the language server (silently asks Apio).
-    pub async fn language_server_path(&self) -> Result<PathBuf> {
-        let system = self.api_json("get-system", None).await?;
-        let path = system
-            .pointer("/system/verible-language-server")
-            .and_then(|v| v.as_str())
-            .context("Apio doesn't report a Verilog language server")?;
-        Ok(PathBuf::from(path))
-    }
 }
 
 impl LanguageServer {
@@ -141,7 +128,7 @@ mod tests {
     #[ignore]
     async fn real_language_server() {
         use std::sync::{Arc, Mutex};
-        let exe = PathBuf::from(std::env::var("LOGIX_TEST_VERIBLE_LS").unwrap());
+        let exe = std::path::PathBuf::from(std::env::var("LOGIX_TEST_VERIBLE_LS").unwrap());
         let received = Arc::new(Mutex::new(Vec::<String>::new()));
         let sink = received.clone();
         let mut server =

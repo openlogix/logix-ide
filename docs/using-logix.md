@@ -119,8 +119,8 @@ signals. Choose another module in the window to draw just that one.
 
 ## Connected devices
 
-**Tools > Connected Devices…** lists the USB devices and serial ports
-connected to the computer, which helps when Upload can't find the board.
+**Tools > Connected Devices…** lists the USB devices connected to the
+computer, which helps when Upload can't find the board.
 
 ![The Connected Devices window with an Alhambra II board](images/devices.png)
 

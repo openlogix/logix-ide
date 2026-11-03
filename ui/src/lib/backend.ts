@@ -153,19 +153,9 @@ export interface UsbDevice {
   serialNumber: string;
 }
 
-export interface SerialDevice {
-  /** E.g. "/dev/cu.usbserial-FTATANKC0". */
-  port: string;
-  vid: string;
-  pid: string;
-  manufacturer: string;
-  product: string;
-}
-
-/** Connected devices: USB devices from Logix Engine, serial ports from Apio. */
+/** Connected devices, from Logix Engine. */
 export interface Devices {
   usb: UsbDevice[];
-  serial: SerialDevice[];
 }
 
 /** A board that matches a connected USB device. */
@@ -401,7 +391,7 @@ export const backend = {
   onLspClosed: (handler: () => void): Promise<UnlistenFn> =>
     listen("lsp-closed", () => handler()),
 
-  /** The connected USB devices and serial ports. */
+  /** The connected USB devices. */
   scanDevices: (): Promise<Devices> => invoke<Devices>("scan_devices"),
 
   /** The boards that match the connected USB devices (silent). */

@@ -316,7 +316,6 @@ test("lists the connected devices", async ({ page }) => {
   );
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
   await expect(dialog).toContainText("Alhambra II v1.0A (AlhambraBits, 0403:6010)");
-  await expect(dialog).toContainText("/dev/cu.usbserial-FTATANKC0");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 });

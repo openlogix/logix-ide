@@ -439,9 +439,8 @@ pub async fn lsp_start(app: AppHandle, state: State<'_, AppState>) -> Result<(),
     if slot.is_some() {
         return Ok(());
     }
-    let apio = ready_apio(&state).await?;
-    let exe = apio
-        .language_server_path()
+    let engine = ready_engine(&state).await?;
+    let exe = engine::program_path(&engine, "verible", "verible-verilog-ls")
         .await
         .context("Couldn't find the Verilog language server.")?;
     let on_message = {
@@ -459,7 +458,7 @@ pub async fn lsp_start(app: AppHandle, state: State<'_, AppState>) -> Result<(),
             });
         }
     };
-    let server = apio::LanguageServer::start(&exe, on_message, on_exit)
+    let server = crate::language_server::LanguageServer::start(&exe, on_message, on_exit)
         .context("Couldn't start the Verilog language server.")?;
     crate::log!("Language server started: {}", exe.display());
     *slot = Some(server);
@@ -490,30 +489,21 @@ pub async fn lsp_send(state: State<'_, AppState>, message: String) -> Result<(),
     Ok(())
 }
 
-/// The connected USB devices and serial ports.
+/// The connected USB devices.
 #[derive(Debug, Serialize)]
 pub struct Devices {
     usb: Vec<engine::UsbDevice>,
-    serial: Vec<apio::SerialDevice>,
 }
 
-/// The connected USB devices (from the engine) and serial ports (from
-/// Apio, best effort), for Tools > Connected Devices and hints when Upload
-/// can't find the board.
+/// The connected USB devices, for Tools > Connected Devices and hints when
+/// Upload can't find the board.
 #[tauri::command]
 pub async fn scan_devices(state: State<'_, AppState>) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
     let usb = engine::list_devices(&engine)
         .await
         .context("Couldn't list the connected devices.")?;
-    let serial = match try_ready_apio(&state) {
-        Some(apio) => apio.serial_ports().await.unwrap_or_else(|e| {
-            crate::log!("Can't list the serial ports: {e:#}");
-            Vec::new()
-        }),
-        None => Vec::new(),
-    };
-    Ok(Devices { usb, serial })
+    Ok(Devices { usb })
 }
 
 /// The boards that match the connected USB devices, for the board list's
