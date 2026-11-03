@@ -39,7 +39,7 @@ describe("build report", () => {
     ]);
   });
 
-  it("uses Apio's names for unknown families", () => {
+  it("uses the toolchain's names for unknown families", () => {
     const other: BuildReport = {
       arch: "newfpga",
       resources: [

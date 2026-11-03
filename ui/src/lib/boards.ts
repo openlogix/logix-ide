@@ -8,7 +8,7 @@ export interface BoardGroup {
   collapsible: boolean;
 }
 
-/** FPGA architectures (Apio's ids), in the picker's order, with names. */
+/** FPGA architectures (the engine's ids), in the picker's order, with names. */
 const ARCHITECTURES: [string, string][] = [
   ["ice40", "Lattice iCE40"],
   ["ecp5", "Lattice ECP5"],

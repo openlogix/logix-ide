@@ -24,20 +24,6 @@ pub const MAIN_FILE: &str = "main.v";
 pub const MAIN_FILES: &[&str] = &["main.v", "main.sv"];
 pub const SETTINGS_FILE: &str = "logix.json";
 
-/// Contents of `main.v` for a new project.
-pub const STARTER_MAIN: &str = "\
-// The top module must be named 'main'.
-
-module main (
-    input  CLK,   // Clock
-    output LED0   // An LED
-);
-
-  // Your design goes here.
-
-endmodule
-";
-
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
 /// and headers, and the pin constraint formats used by Apio's boards.
 pub const EDITABLE_EXTENSIONS: &[&str] = &[
@@ -79,14 +65,6 @@ pub fn project_name(dir: &Path) -> String {
     dir.file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_else(|| dir.display().to_string())
-}
-
-/// The files of a new project.
-pub fn starter_files() -> Vec<ProjectFile> {
-    vec![ProjectFile {
-        name: MAIN_FILE.into(),
-        text: STARTER_MAIN.into(),
-    }]
 }
 
 /// Whether a file with this name is shown as an editor tab.
@@ -374,22 +352,21 @@ pub(crate) fn write_atomic(path: &Path, data: &[u8]) -> Result<()> {
 pub(crate) enum CopyMode {
     /// Everything (Save As: the user's files).
     All,
-    /// For a build: Apio reads Verilog and pin files from all subfolders,
-    /// but Logix only uses the top-level ones, so those in subfolders are
-    /// left out, and so is a whole project nested in a subfolder.
+    /// For a build: everything but a project nested in a subfolder (a
+    /// folder with its own `logix.json`), which would be copied into every
+    /// build (and, for Save As inside the source, into itself). The engine
+    /// builds only the files Logix lists, so other files can go along.
     Build,
 }
 
 /// Copies a project folder's top-level entries, except hidden ones and the
-/// names in `skip`. Returns what was left out (`CopyMode::Build`), as paths
-/// relative to `source`, e.g. "old/main.v" or "blinky/" (a nested project).
+/// names in `skip`.
 pub(crate) fn copy_project_contents(
     source: &Path,
     target: &Path,
     skip: &[&str],
     mode: CopyMode,
-) -> Result<Vec<String>> {
-    let mut left_out = Vec::new();
+) -> Result<()> {
     for entry in
         std::fs::read_dir(source).with_context(|| format!("can't read {}", source.display()))?
     {
@@ -399,48 +376,21 @@ pub(crate) fn copy_project_contents(
         if name_str.starts_with('.') || skip.contains(&name_str.as_ref()) {
             continue;
         }
-        copy_recursive(
-            &entry.path(),
-            &target.join(&name),
-            mode,
-            &name_str,
-            0,
-            &mut left_out,
-        )?;
+        copy_recursive(&entry.path(), &target.join(&name), mode)?;
     }
-    left_out.sort();
-    Ok(left_out)
+    Ok(())
 }
 
-fn copy_recursive(
-    from: &Path,
-    to: &Path,
-    mode: CopyMode,
-    rel: &str,
-    depth: usize,
-    left_out: &mut Vec<String>,
-) -> Result<()> {
+fn copy_recursive(from: &Path, to: &Path, mode: CopyMode) -> Result<()> {
     if from.is_dir() {
         if mode == CopyMode::Build && from.join(SETTINGS_FILE).is_file() {
-            left_out.push(format!("{rel}/"));
             return Ok(());
         }
         std::fs::create_dir_all(to)?;
         for entry in std::fs::read_dir(from)? {
             let entry = entry?;
-            let name = entry.file_name();
-            let child = format!("{rel}/{}", name.to_string_lossy());
-            copy_recursive(
-                &entry.path(),
-                &to.join(&name),
-                mode,
-                &child,
-                depth + 1,
-                left_out,
-            )?;
+            copy_recursive(&entry.path(), &to.join(entry.file_name()), mode)?;
         }
-    } else if mode == CopyMode::Build && depth > 0 && is_editable(rel) {
-        left_out.push(rel.to_string());
     } else {
         std::fs::copy(from, to)
             .with_context(|| format!("can't copy {} to {}", from.display(), to.display()))?;
@@ -676,7 +626,17 @@ mod tests {
     #[test]
     fn create_refuses_existing_target() {
         let tmp = tempfile::tempdir().unwrap();
-        let err = create(tmp.path(), None, &starter_files(), &[], None).unwrap_err();
+        let err = create(
+            tmp.path(),
+            None,
+            &[ProjectFile {
+                name: MAIN_FILE.into(),
+                text: "module main;\nendmodule\n".into(),
+            }],
+            &[],
+            None,
+        )
+        .unwrap_err();
         assert!(err.to_string().contains("already exists"));
     }
 

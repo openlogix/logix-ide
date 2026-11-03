@@ -1,0 +1,4 @@
+{
+  "board": "arty-a7-35t",
+  "description": "Blinks an LED with a 200MHz PLL clock"
+}

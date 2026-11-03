@@ -1,7 +1,7 @@
 [package]
 name = "logix"
 version = "0.1.0"
-description = "\"The Arduino experience, for FPGAs\": a simple IDE for FPGAs, powered by Apio"
+description = "\"The Arduino experience, for FPGAs\": a simple IDE for FPGAs, powered by Logix Engine"
 edition = "2021"
 license = "Apache-2.0"
 
@@ -30,6 +30,7 @@ regex = "1"
 tokio-util = "0.7"
 # MCP client for Logix Engine (engine/), the same crate the engine uses.
 rmcp = { version = "3.8", features = ["client", "transport-async-rw"] }
+include_dir = "0.7"
 
 # macOS only: bringing GTKWave's window to the front (platform.rs).
 [target.'cfg(target_os = "macos")'.dependencies]

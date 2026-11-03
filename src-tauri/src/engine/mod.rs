@@ -1,11 +1,9 @@
 //! The Logix Engine adapter: the only place that runs the engine or knows
 //! about its releases and file layout. The engine is an MCP server that the
 //! IDE launches as a child process and talks to over stdin/stdout.
-//!
-//! Moving from Apio to the engine happens step by step: the IDE sets up
-//! the engine at startup, and the board list, Verify, Upload, Run Tests,
-//! Simulate, Show Diagram, Auto Format and the connected devices use it;
-//! the examples still come from Apio.
+//! Every FPGA operation goes through it: the board list, Verify, Upload,
+//! Run Tests, Simulate, Show Diagram, Auto Format, the connected devices
+//! and the language server's executable.
 
 mod bundle;
 mod catalog;

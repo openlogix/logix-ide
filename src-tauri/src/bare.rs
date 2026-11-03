@@ -1,8 +1,8 @@
 //! Bare Minimum projects (named after the Arduino IDE's BareMinimum
 //! example): a board's pins and a design that does nothing yet, to start
-//! from scratch. Plain code, no Tauri or Apio.
+//! from scratch. Plain code, no Tauri.
 //!
-//! Apio's example pin files list only the pins their example uses, and the
+//! The examples' pin files list only the pins their example uses, and the
 //! tools reject a port without a pin (and an empty design), so Bare Minimum
 //! takes both the pin file and the ports from the board's starter example
 //! (blinky) and sets the outputs to 0.
@@ -13,7 +13,7 @@ use regex::Regex;
 
 use crate::project::ProjectFile;
 
-/// Pin constraint file extensions (the formats used by Apio's boards).
+/// Pin constraint file extensions (the formats the boards use).
 const PIN_FILE_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc", "pdc", "ccf"];
 
 /// `main.v` for a board without an example to take the pins from.
@@ -306,67 +306,30 @@ endmodule
     }
 }
 
-/// Checks Bare Minimum against Apio's real examples: run with
-/// `LOGIX_EXAMPLES_DIR=<apio packages>/definitions/examples cargo test
-/// survey_bare_minimum -- --ignored --nocapture`. With `LOGIX_BARE_OUT=<dir>`
-/// it also writes each board's project there, to build with Apio.
+/// Every board with a starter example gets a Bare Minimum. (Whether they
+/// build is checked against a real engine by `real_examples_build` in
+/// `engine/task.rs`.)
 #[cfg(test)]
 mod survey {
     use super::*;
-    use std::path::Path;
+    use crate::{examples, project};
 
     #[test]
-    #[ignore]
-    fn survey_bare_minimum() {
-        let root = std::env::var("LOGIX_EXAMPLES_DIR").expect("LOGIX_EXAMPLES_DIR");
-        let out = std::env::var("LOGIX_BARE_OUT").ok();
-        let mut boards: Vec<_> = std::fs::read_dir(&root)
-            .unwrap()
-            .flatten()
-            .map(|e| e.path())
-            .collect();
-        boards.sort();
-        let (mut ok, mut failed) = (0, Vec::new());
+    fn every_starter_gives_a_bare_minimum() {
+        let all = examples::all();
+        let tmp = tempfile::tempdir().unwrap();
+        let mut boards: Vec<&str> = all.iter().map(|e| e.board.as_str()).collect();
+        boards.dedup();
+        let mut made = 0;
         for board in boards {
-            let Some(dir) = ["blinky", "ledon"]
-                .iter()
-                .map(|n| board.join(n))
-                .find(|d| d.is_dir())
-            else {
+            let Some(starter) = examples::starter_example(&all, board) else {
                 continue;
             };
-            let files: Vec<ProjectFile> = std::fs::read_dir(&dir)
-                .unwrap()
-                .flatten()
-                .filter(|e| e.path().is_file())
-                .map(|e| ProjectFile {
-                    name: e.file_name().to_string_lossy().into_owned(),
-                    text: std::fs::read_to_string(e.path()).unwrap_or_default(),
-                })
-                .collect();
-            let name = board.file_name().unwrap().to_string_lossy().into_owned();
-            match bare_files(&files) {
-                Some(bare) => {
-                    ok += 1;
-                    if let Some(out) = &out {
-                        let d = Path::new(out).join(&name);
-                        std::fs::create_dir_all(&d).unwrap();
-                        for f in &bare {
-                            std::fs::write(d.join(&f.name), &f.text).unwrap();
-                        }
-                        std::fs::write(
-                            d.join("apio.ini"),
-                            format!("[env:default]\nboard = {name}\ntop-module = main\n"),
-                        )
-                        .unwrap();
-                    }
-                }
-                None => failed.push(name),
-            }
+            let dir = examples::write(board, &starter.name, &tmp.path().join("x")).unwrap();
+            let files = project::load(&dir).unwrap().files;
+            assert!(bare_files(&files).is_some(), "{board}");
+            made += 1;
         }
-        println!(
-            "Bare Minimum: {ok} boards, can't read {}: {failed:?}",
-            failed.len()
-        );
+        assert!(made > 60, "{made}");
     }
 }

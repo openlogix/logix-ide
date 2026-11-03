@@ -6,16 +6,16 @@ import type { Board, Example } from "./backend";
  */
 export const BARE_MINIMUM = "Bare Minimum";
 
-/** An entry in the Examples dialog: one of Apio's examples, or Bare Minimum. */
+/** An entry in the Examples dialog: one of the examples, or Bare Minimum. */
 export interface ExampleEntry extends Example {
   bare?: boolean;
 }
 
 export interface BoardGroup {
   board: Board;
-  /** Bare Minimum (if it matches the search) first, then Apio's examples. */
+  /** Bare Minimum (if it matches the search) first, then the examples. */
   examples: ExampleEntry[];
-  /** How many of Apio's examples the board has. */
+  /** How many examples the board has. */
   count: number;
 }
 

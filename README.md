@@ -24,8 +24,9 @@ the circuit in **Verilog**, a hardware description language.
 
 Getting started with FPGAs used to mean installing many tools and learning
 their commands. Logix takes care of all of that so you can focus on your
-design. It's built on [Apio](https://github.com/FPGAwars/apio) and the open
-source FPGA tools, and it downloads everything it needs by itself.
+design. It's built on [Logix Engine](https://github.com/openlogix/logix-engine)
+and the open source FPGA tools, and it downloads everything it needs by
+itself.
 
 ## What you can do
 
@@ -91,8 +92,8 @@ earns your trust:
   published.
 - **Made by the Apio maintainer.** Logix is made by the main maintainer of
   [Apio](https://github.com/FPGAwars/apio), the open source FPGA toolchain
-  Logix runs on, with one goal: making FPGAs accessible and fun for
-  everyone.
+  whose tools and examples Logix builds on, with one goal: making FPGAs
+  accessible and fun for everyone.
 
 **Why the Terminal step, then?** Apple asks app makers to pay for a yearly
 developer account to "sign" their apps. Logix isn't signed that way yet, so

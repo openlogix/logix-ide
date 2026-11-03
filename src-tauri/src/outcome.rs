@@ -1,6 +1,6 @@
 //! What a build, upload, test, simulation or diagram returns to the UI,
-//! and the events it streams while running. Shared by both adapters (Apio
-//! and Logix Engine), so the UI sees the same results from either.
+//! and the events it streams while running. Plain types, independent of
+//! the engine's own result format.
 
 use serde::{Deserialize, Serialize};
 
@@ -89,7 +89,7 @@ pub struct Diagnostic {
 pub struct BuildReport {
     /// FPGA family, e.g. "ice40", "ecp5", "gowin", "xilinx".
     pub arch: String,
-    /// The FPGA's resources, with Apio's (family-specific) names.
+    /// The FPGA's resources, with the toolchain's (family-specific) names.
     pub resources: Vec<Resource>,
     pub clocks: Vec<Clock>,
 }

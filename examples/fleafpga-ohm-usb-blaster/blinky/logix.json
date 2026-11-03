@@ -1,0 +1,4 @@
+{
+  "board": "fleafpga-ohm-usb-blaster",
+  "description": "Blinks an LED (untested)"
+}

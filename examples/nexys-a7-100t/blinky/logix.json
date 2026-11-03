@@ -1,0 +1,4 @@
+{
+  "board": "nexys-a7-100t",
+  "description": "Blinks an LED"
+}

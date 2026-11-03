@@ -1,0 +1,4 @@
+{
+  "board": "zedboard",
+  "description": "Blinks an LED"
+}

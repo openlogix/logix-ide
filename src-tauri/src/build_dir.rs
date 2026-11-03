@@ -63,18 +63,10 @@ fn is_constraint_file(name: &str) -> bool {
         })
 }
 
-/// A prepared build folder.
-pub struct Prepared {
-    /// The folder to run the engine in.
-    pub dir: PathBuf,
-    /// Files and folders of the project left out of the build (Verilog and
-    /// pin files in subfolders, nested projects); see `CopyMode::Build`.
-    pub left_out: Vec<String>,
-}
-
 /// Fills `root` with the project's files and the project folder's other
 /// contents.
-pub fn prepare(root: &Path, input: &BuildInput) -> Result<Prepared> {
+/// Returns the folder to run the engine in.
+pub fn prepare(root: &Path, input: &BuildInput) -> Result<PathBuf> {
     project::check_files(input.files)?;
 
     let key_path = root.join(KEY_FILE);
@@ -100,7 +92,6 @@ pub fn prepare(root: &Path, input: &BuildInput) -> Result<Prepared> {
         }
     }
 
-    let mut left_out = Vec::new();
     if let Some(source) = input.source_dir.filter(|d| d.is_dir()) {
         let skip: Vec<&str> = input
             .files
@@ -108,16 +99,13 @@ pub fn prepare(root: &Path, input: &BuildInput) -> Result<Prepared> {
             .map(|f| f.name.as_str())
             .chain(RESERVED_NAMES.iter().copied())
             .collect();
-        left_out = project::copy_project_contents(source, root, &skip, project::CopyMode::Build)?;
+        project::copy_project_contents(source, root, &skip, project::CopyMode::Build)?;
     }
     for f in input.files {
         project::write_atomic(&root.join(&f.name), f.text.as_bytes())?;
     }
     std::fs::write(&key_path, input.key)?;
-    Ok(Prepared {
-        dir: root.to_path_buf(),
-        left_out,
-    })
+    Ok(root.to_path_buf())
 }
 
 /// Fills `root` with just `file` (for Auto Format, which formats the
@@ -202,8 +190,7 @@ mod tests {
                 files: &files,
             },
         )
-        .unwrap()
-        .dir;
+        .unwrap();
         assert_eq!(names(&dir), [".logix-build-key", "main.v", "pinout.pcf"]);
     }
 
@@ -270,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn leaves_out_sources_in_subfolders_and_nested_projects() {
+    fn copies_subfolders_but_not_nested_projects() {
         let tmp = tempfile::tempdir().unwrap();
         let src = tmp.path().join("proj");
         for (name, text) in [
@@ -288,7 +275,7 @@ mod tests {
         }
         let root = tmp.path().join("build");
         let files = [file("main.v", "in memory")];
-        let prepared = prepare(
+        prepare(
             &root,
             &BuildInput {
                 key: "k",
@@ -297,9 +284,10 @@ mod tests {
             },
         )
         .unwrap();
-        assert_eq!(prepared.left_out, ["copy/", "data/old.v", "data/pins.pcf"]);
+        // Subfolders go along (the engine builds only the listed files),
+        // but not a nested project.
         assert!(root.join("data/rom.hex").exists());
-        assert!(!root.join("data/old.v").exists());
+        assert!(root.join("data/old.v").exists());
         assert!(!root.join("copy").exists());
     }
 

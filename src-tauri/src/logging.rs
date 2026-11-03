@@ -11,8 +11,22 @@
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use regex::Regex;
+
+/// Terminal escape sequences: colors and styles (`ESC[...m`), cursor and
+/// erase commands, and title/link sequences (`ESC]...BEL`).
+static ANSI: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[@-Z\\-_])").unwrap()
+});
+
+/// Removes terminal escape sequences (e.g. colors): the log keeps the
+/// output pane's lines as plain text.
+pub fn strip_ansi(text: &str) -> std::borrow::Cow<'_, str> {
+    ANSI.replace_all(text, "")
+}
 
 /// Log files kept: this run's and the previous runs'.
 const KEEP: usize = 5;
@@ -102,7 +116,7 @@ fn output_into(log: &mut Log, lines: &[String]) {
     let mut text = String::new();
     for line in lines {
         text.push_str("| ");
-        text.push_str(crate::apio::strip_ansi(line).trim_end());
+        text.push_str(strip_ansi(line).trim_end());
         text.push('\n');
     }
     append(log, &text);
@@ -175,6 +189,15 @@ fn civil_from_days(days: i64) -> (i64, u32, u32) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn strips_ansi_sequences() {
+        assert_eq!(strip_ansi("\x1b[32mSUCCESS\x1b[0m"), "SUCCESS");
+        assert_eq!(strip_ansi("a\x1b[1;38;5;208mb\x1b[0m c"), "ab c");
+        assert_eq!(strip_ansi("\x1b[2K\x1b[?25lline"), "line");
+        assert_eq!(strip_ansi("\x1b]8;;http://x\x07link\x1b]8;;\x07"), "link");
+        assert_eq!(strip_ansi("plain"), "plain");
+    }
     use std::time::Duration;
 
     #[test]

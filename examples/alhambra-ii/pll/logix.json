@@ -1,0 +1,4 @@
+{
+  "board": "alhambra-ii",
+  "description": "Blinks an LED with a 48MHz PLL clock"
+}

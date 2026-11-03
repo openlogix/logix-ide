@@ -1,5 +1,5 @@
 //! The single place that knows which OS/CPU we run on. Platform-specific
-//! behavior (Apio bundle selection, data directories, file fixups, etc.)
+//! behavior (engine package names, data directories, file fixups, etc.)
 //! lives here rather than in `cfg!(target_os)` checks elsewhere.
 
 use std::path::{Path, PathBuf};
@@ -37,31 +37,6 @@ impl Platform {
         Ok(())
     }
 
-    /// The platform id Apio uses in its release file names.
-    pub fn apio_platform_id(self) -> &'static str {
-        match self {
-            Platform::MacosArm64 => "darwin-arm64",
-            Platform::LinuxX86_64 => "linux-x86-64",
-            Platform::WindowsX86_64 => "windows-amd64",
-        }
-    }
-
-    /// File extension of Apio's standalone bundle archive.
-    pub fn apio_bundle_ext(self) -> &'static str {
-        match self {
-            Platform::WindowsX86_64 => "zip",
-            _ => "tgz",
-        }
-    }
-
-    /// Name of the Apio executable inside the bundle.
-    pub fn apio_exe_name(self) -> &'static str {
-        match self {
-            Platform::WindowsX86_64 => "apio.exe",
-            _ => "apio",
-        }
-    }
-
     /// The platform id Logix Engine uses in its package names and reports
     /// in `get_engine_info`.
     pub fn engine_platform_id(self) -> &'static str {
@@ -86,9 +61,8 @@ impl Platform {
         matches!(self, Platform::MacosArm64)
     }
 
-    /// Per-user directory where the IDE keeps the Apio bundle and Apio's
-    /// packages. Apio rejects an `APIO_HOME` containing spaces or non-ASCII
-    /// characters, so this can't be e.g. `~/Library/Application Support`.
+    /// Per-user directory where the IDE keeps Logix Engine, its packages
+    /// (the FPGA tools), settings and scratch folders: `~/.logix`.
     pub fn data_dir(self) -> Result<PathBuf> {
         self.ensure_implemented()?;
         let home = dirs::home_dir().context("can't find the user's home directory")?;
@@ -129,7 +103,7 @@ impl Platform {
         }
     }
 
-    /// Makes a freshly unpacked Apio bundle or engine package runnable.
+    /// Makes a freshly unpacked engine package runnable.
     pub fn prepare_unpacked_bundle(self, bundle_dir: &Path, exe: &Path) -> Result<()> {
         match self {
             Platform::MacosArm64 => {
@@ -145,34 +119,6 @@ impl Platform {
             other => other.ensure_implemented(),
         }
     }
-}
-
-/// Prepares a child process so `stop_process_tree` can stop it together
-/// with everything it starts (Apio runs scons, which runs yosys, ...).
-pub fn isolate_process_tree(cmd: &mut tokio::process::Command) {
-    #[cfg(unix)]
-    {
-        // Its own process group, so the whole group can be stopped at once.
-        cmd.process_group(0);
-    }
-    #[cfg(not(unix))]
-    {
-        // TODO(revisit): use a job object on Windows to stop child processes.
-        let _ = cmd;
-    }
-}
-
-/// Stops a child started with `isolate_process_tree` and the processes it
-/// started.
-pub fn stop_process_tree(child: &mut tokio::process::Child) {
-    #[cfg(unix)]
-    if let Some(pid) = child.id() {
-        // A negative pid addresses the whole process group.
-        let _ = std::process::Command::new("/bin/kill")
-            .args(["-TERM", &format!("-{pid}")])
-            .status();
-    }
-    let _ = child.start_kill();
 }
 
 /// Process ids of the running GUI apps whose name or executable contains
@@ -336,14 +282,5 @@ mod tests {
         assert!(!Platform::LinuxX86_64.is_implemented());
         assert!(!Platform::WindowsX86_64.is_implemented());
         assert!(Platform::LinuxX86_64.data_dir().is_err());
-    }
-
-    #[test]
-    fn apio_release_names() {
-        assert_eq!(Platform::MacosArm64.apio_platform_id(), "darwin-arm64");
-        assert_eq!(Platform::LinuxX86_64.apio_platform_id(), "linux-x86-64");
-        assert_eq!(Platform::WindowsX86_64.apio_platform_id(), "windows-amd64");
-        assert_eq!(Platform::WindowsX86_64.apio_bundle_ext(), "zip");
-        assert_eq!(Platform::MacosArm64.apio_bundle_ext(), "tgz");
     }
 }

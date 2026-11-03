@@ -1,15 +1,13 @@
 //! Progress events sent to the UI while the IDE sets up its tools at
-//! startup (the Apio bundle and its packages, then the Logix Engine and its
-//! packages). Shared by both adapters.
+//! startup: downloading Logix Engine, then installing its packages.
 
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum SetupStage {
+    /// Checking what's installed.
     Checking,
-    DownloadingApio,
-    InstallingPackages,
     DownloadingEngine,
     InstallingEnginePackages,
     Ready,
@@ -26,7 +24,7 @@ pub enum SetupEvent {
     Stage {
         stage: SetupStage,
     },
-    /// Bytes of the file being downloaded (Apio or the engine).
+    /// Bytes of the engine package being downloaded.
     Download {
         received: u64,
         total: Option<u64>,

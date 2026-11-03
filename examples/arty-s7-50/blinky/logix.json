@@ -1,0 +1,4 @@
+{
+  "board": "arty-s7-50",
+  "description": "Blinks an LED"
+}

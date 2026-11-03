@@ -112,7 +112,7 @@ export function isHdlSource(name: string): boolean {
   return /\.s?vh?$/i.test(name);
 }
 
-/** Whether a file is a testbench (`*_tb.v` or `*_tb.sv`), as Apio expects. */
+/** Whether a file is a testbench (`*_tb.v` or `*_tb.sv`), as Logix names them. */
 export function isTestbench(name: string): boolean {
   return /_tb\.s?v$/i.test(name);
 }

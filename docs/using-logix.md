@@ -127,7 +127,7 @@ computer, which helps when Upload can't find the board.
 ## Help
 
 The **Help** menu links to these pages, the keyboard shortcuts and
-troubleshooting, and to the Apio documentation for going further.
+troubleshooting.
 **Report a Problem** opens a new report on GitHub, and **Show Log Folder**
 opens the folder with Logix's log, to attach to a report (see
 [Troubleshooting](troubleshooting.md#still-stuck)).

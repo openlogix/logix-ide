@@ -1,5 +1,5 @@
 <!--
-  Browse Apio's examples by board and open one. With `onlyBoard` (after a
+  Browse the examples by board and open one. With `onlyBoard` (after a
   board change in the toolbar), only that board's examples are shown and
   closing keeps the current files.
 -->
@@ -59,14 +59,14 @@
     groups.find((g) => g.board.id === selectedBoard) ?? groups[0] ?? null,
   );
   /**
-   * The clicked entry, or else the board's only example from Apio if it has
+   * The clicked entry, or else the board's only example if it has
    * just one (or Bare Minimum if it has none).
    */
   const selectedExample = $derived.by(() => {
     const clicked = group?.examples.find((e) => key(e) === selectedKey);
     if (clicked || !group) return clicked ?? null;
-    const fromApio = group.examples.filter((e) => !e.bare);
-    if (fromApio.length === 1 && group.count === 1) return fromApio[0];
+    const real = group.examples.filter((e) => !e.bare);
+    if (real.length === 1 && group.count === 1) return real[0];
     return group.count === 0 && group.examples.length === 1
       ? group.examples[0]
       : null;

@@ -1,0 +1,4 @@
+{
+  "board": "sipeed-tang-nano-20k",
+  "description": "Blinks an LED with a 180MHz PLL clock"
+}

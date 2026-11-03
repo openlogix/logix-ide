@@ -1,5 +1,4 @@
-//! Downloading and unpacking release files (the Apio bundle and the Logix
-//! Engine), shared by both adapters.
+//! Downloading and unpacking release files (the Logix Engine package).
 
 use std::path::Path;
 use std::time::{Duration, Instant};

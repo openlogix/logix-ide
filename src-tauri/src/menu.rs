@@ -54,12 +54,6 @@ const HELP_LINKS: &[Option<(&str, &str)>] = &[
         "https://openlogix.github.io/logix-ide/using-logix/#keyboard-shortcuts",
     )),
     None,
-    // For going further: Logix uses Apio, and its docs cover the tools.
-    Some((
-        "Apio Documentation",
-        "https://fpgawars.github.io/apio/docs/",
-    )),
-    None,
     Some(("Logix Website", "https://www.openlogix.org/ide/")),
     Some(("Logix on GitHub", "https://github.com/openlogix/logix-ide")),
     Some((
@@ -89,8 +83,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         name: Some("Logix IDE".into()),
         version: Some(app.package_info().version.to_string()),
         comments: Some(format!(
-            "\"The Arduino experience, for FPGAs.\"\nPowered by Apio (release {}) and Logix Engine (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
-            crate::apio::APIO_RELEASE_TAG,
+            "\"The Arduino experience, for FPGAs.\"\nPowered by Logix Engine (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
             crate::engine::ENGINE_RELEASE_TAG
         )),
         copyright: Some("Licensed under the Apache License 2.0.".into()),

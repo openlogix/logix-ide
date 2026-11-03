@@ -12,8 +12,8 @@ use tauri_plugin_dialog::{
     DialogExt, MessageDialogButtons, MessageDialogKind, MessageDialogResult,
 };
 
-use crate::apio;
 use crate::engine;
+use crate::examples;
 use crate::outcome;
 use crate::project::{self, ProjectFile};
 use crate::setup_events::{SetupEvent, SetupStage};
@@ -59,34 +59,18 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
     }
 }
 
-/// Makes sure Apio and its packages are installed, streaming progress to
-/// `on_event`. Safe to call again (e.g. to retry after an error).
+/// Makes sure Logix Engine and its packages (the FPGA tools) are
+/// installed and starts it, streaming progress to `on_event`. Safe to call
+/// again (e.g. to retry after an error).
 #[tauri::command]
-pub async fn setup_apio(
+pub async fn setup(
     state: State<'_, AppState>,
     on_event: Channel<SetupEvent>,
 ) -> Result<(), UserError> {
-    let mut apio_slot = state.apio.lock().await;
-    if apio_slot.is_none() {
-        let channel = on_event.clone();
-        let result = apio::run_setup(move |event| {
-            let _ = channel.send(event);
-        })
-        .await;
-        match result {
-            Ok(ready) => {
-                crate::log!("Apio setup ready");
-                *apio_slot = Some(ready);
-            }
-            Err(e) => {
-                crate::log!("Apio setup failed: {e:#}");
-                return Err(e.into());
-            }
-        }
-    }
-    drop(apio_slot);
-    // Then the engine. Verify and the other actions still use Apio; the
-    // move to the engine happens step by step.
+    let _ = on_event.send(SetupEvent::Stage {
+        stage: SetupStage::Checking,
+    });
+    remove_old_apio_data().await;
     let mut engine_slot = state.engine.lock().await;
     if engine_slot.is_none() {
         let channel = on_event.clone();
@@ -109,6 +93,27 @@ pub async fn setup_apio(
         stage: SetupStage::Ready,
     });
     Ok(())
+}
+
+/// Logix used Apio before Logix Engine; its private copy (about 3 GB of
+/// FPGA tools in `~/.logix/apio`) isn't used anymore. Best effort.
+async fn remove_old_apio_data() {
+    let Ok(dir) = platform::current_implemented().and_then(|p| p.data_dir()) else {
+        return;
+    };
+    let old = dir.join("apio");
+    if old.is_dir() {
+        // remove_dir_all doesn't follow symbolic links, so a linked folder
+        // (e.g. a developer's own Apio packages) is only unlinked.
+        match tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&old)).await {
+            Ok(Ok(())) => crate::log!(
+                "Removed the old Apio data in {}",
+                dir.join("apio").display()
+            ),
+            Ok(Err(e)) => crate::log!("Can't remove the old Apio data: {e}"),
+            Err(e) => crate::log!("Can't remove the old Apio data: {e}"),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -149,32 +154,14 @@ impl From<project::Project> for ProjectDoc {
 // Boards and examples
 // ---------------------------------------------------------------------------
 
-/// The ready Apio installation, or a user-facing error if setup hasn't
-/// finished.
-async fn ready_apio(state: &AppState) -> Result<apio::Apio, UserError> {
-    state
-        .apio
-        .lock()
-        .await
-        .clone()
-        .ok_or_else(|| anyhow!("The FPGA tools aren't ready yet.").into())
-}
-
-/// Sends the output of primary Apio commands that aren't part of a build,
-/// upload, test or setup (which stream through their own channel) to the
-/// console, as `apio-output` events. Info commands (`apio api ...`) run
-/// silently instead.
+/// Sends tool output that isn't part of a task or setup (which stream
+/// through their own channel) to the console, as `apio-output` events:
+/// Auto Format's.
 fn console_log(app: &AppHandle) -> impl Fn(String) + Send + Sync + Clone + 'static {
     let app = app.clone();
     move |line| {
         let _ = app.emit("apio-output", line);
     }
-}
-
-/// The ready Apio installation, or `None` if setup hasn't finished or is
-/// still running (doesn't wait for it).
-fn try_ready_apio(state: &AppState) -> Option<apio::Apio> {
-    state.apio.try_lock().ok()?.clone()
 }
 
 /// The running engine, or a user-facing error if setup hasn't finished.
@@ -188,27 +175,27 @@ async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>
 }
 
 /// The board and example lists (fetched on first use): the engine's
-/// boards, and Apio's examples for those boards.
+/// boards, and Logix's examples for those boards.
 async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
     let mut slot = state.catalog.lock().await;
     if let Some(c) = slot.as_ref() {
         return Ok(c.clone());
     }
-    let apio = ready_apio(state).await?;
     let engine = ready_engine(state).await?;
     let engine::Catalog { boards, usb_rules } = engine::catalog(&engine)
         .await
         .context("Couldn't get the list of boards.")?;
-    let mut examples = apio
-        .examples()
-        .await
-        .context("Couldn't get the list of examples.")?;
-    // Examples for boards the engine doesn't support yet can't be built.
-    let total = examples.examples.len();
-    examples
-        .examples
-        .retain(|e| boards.iter().any(|b| b.id == e.board));
-    examples.hidden += total - examples.examples.len();
+    // Examples for boards the engine doesn't support can't be built.
+    let all = examples::all();
+    let total = all.len();
+    let list: Vec<_> = all
+        .into_iter()
+        .filter(|e| boards.iter().any(|b| b.id == e.board))
+        .collect();
+    let examples = examples::ExampleList {
+        hidden: total - list.len(),
+        examples: list,
+    };
     let c = Catalog {
         boards,
         examples,
@@ -225,35 +212,32 @@ pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<engine::Board>
 
 /// The examples Logix supports, and how many unsupported ones were hidden.
 #[tauri::command]
-pub async fn get_examples(state: State<'_, AppState>) -> Result<apio::ExampleList, UserError> {
+pub async fn get_examples(state: State<'_, AppState>) -> Result<examples::ExampleList, UserError> {
     Ok(catalog(&state).await?.examples)
 }
 
 /// Opens an example as a new, unsaved project set to the example's board.
 #[tauri::command]
-pub async fn open_example(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    board: String,
-    name: String,
-) -> Result<ProjectDoc, UserError> {
-    let apio = ready_apio(&state).await?;
-    example_doc(&app, &apio, board, &name, name.clone()).await
+pub async fn open_example(board: String, name: String) -> Result<ProjectDoc, UserError> {
+    example_doc(board, &name, name.clone()).await
 }
 
 /// An example as a new, unsaved project named `doc_name`.
 async fn example_doc(
-    app: &AppHandle,
-    apio: &apio::Apio,
     board: String,
     example: &str,
     doc_name: String,
 ) -> Result<ProjectDoc, UserError> {
-    let dir = apio
-        .fetch_example(&board, example, console_log(app))
-        .await
-        .context("Couldn't open the example.")?;
-    let loaded = blocking(move || project::load(&dir)).await??;
+    // Written out to a scratch folder, replaced by the next example: the
+    // project's files are loaded from there, and its other files (e.g. a
+    // GTKWave layout) are copied from there on the first save.
+    let dst = platform::current_implemented()?.data_dir()?.join("example");
+    let (board_id, name) = (board.clone(), example.to_string());
+    let loaded = blocking(move || {
+        let dir = examples::write(&board_id, &name, &dst).context("Couldn't open the example.")?;
+        project::load(&dir)
+    })
+    .await??;
     Ok(ProjectDoc {
         dir: None,
         template_dir: Some(loaded.dir.to_string_lossy().into_owned()),
@@ -343,10 +327,7 @@ pub async fn run_task(
             },
         )
         .context("Couldn't prepare the build.")?;
-        if !prepared.left_out.is_empty() {
-            log(left_out_message(&prepared.left_out));
-        }
-        Ok::<_, anyhow::Error>(prepared.dir)
+        Ok::<_, anyhow::Error>(prepared)
     })
     .await??;
     // GTKWave windows open before the simulation, to recognize the new one.
@@ -528,22 +509,6 @@ pub async fn connected_boards(
         *last = Some(found.clone());
     }
     Ok(found)
-}
-
-/// The output pane's note about project files a build left out.
-fn left_out_message(left_out: &[String]) -> String {
-    let what: Vec<String> = left_out
-        .iter()
-        .map(|p| match p.strip_suffix('/') {
-            Some(dir) => format!("{dir}/ (a project inside this one)"),
-            None => p.clone(),
-        })
-        .collect();
-    format!(
-        "Not used in the build: {}. Logix only builds the files at the top of the \
-         project folder.",
-        what.join(", ")
-    )
 }
 
 /// Copies GTKWave layouts the user saved (from a simulation) back to the
@@ -755,16 +720,13 @@ pub async fn open_last_project() -> Result<Option<ProjectDoc>, UserError> {
     Ok(Some(loaded.into()))
 }
 
-/// A new, unsaved project for `board` (or else the last chosen board). If
-/// the FPGA tools are ready and the board has a starter example (`blinky`
-/// or `ledon`), the project starts from it, so it has the board's pin file
-/// and builds right away. Otherwise it gets the generic starter `main.v`.
+/// A new, unsaved project for `board` (or else the last chosen board, or
+/// the default one). If the board has a starter example (`blinky` or
+/// `ledon`), the project starts from it, so it has the board's pin file and
+/// builds right away. Otherwise it gets a `main.v` that says a pin file is
+/// needed.
 #[tauri::command]
-pub async fn new_project(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    board: Option<String>,
-) -> Result<ProjectDoc, UserError> {
+pub async fn new_project(board: Option<String>) -> Result<ProjectDoc, UserError> {
     // A new project always has a board: the given one, the last one chosen,
     // or else the default.
     let board = board
@@ -773,50 +735,28 @@ pub async fn new_project(
                 .ok()
                 .and_then(|p| settings::load(&p).last_board)
         })
-        .or_else(|| Some(apio::DEFAULT_BOARD.to_string()));
-    if let (Some(b), Some(apio)) = (&board, try_ready_apio(&state)) {
-        if let Ok(catalog) = catalog(&state).await {
-            match apio::starter_example(&catalog.examples.examples, b) {
-                Some(ex) => {
-                    let name = ex.name.clone();
-                    if let Ok(mut doc) =
-                        example_doc(&app, &apio, b.clone(), &name, "untitled".into()).await
-                    {
-                        doc.starter = true;
-                        return Ok(doc);
-                    }
-                }
-                // No example to take the pins from: say what's missing.
-                None => return Ok(no_pins_doc(b.clone(), true)),
-            }
+        .unwrap_or_else(|| examples::DEFAULT_BOARD.to_string());
+    match examples::starter_example(&examples::all(), &board) {
+        Some(ex) => {
+            let mut doc = example_doc(board, &ex.name.clone(), "untitled".into()).await?;
+            doc.starter = true;
+            Ok(doc)
         }
+        // No example to take the pins from: say what's missing.
+        None => Ok(no_pins_doc(board, true)),
     }
-    // The tools aren't ready (first run, or setup failed).
-    Ok(ProjectDoc {
-        dir: None,
-        template_dir: None,
-        name: "untitled".into(),
-        files: project::starter_files(),
-        board,
-        starter: true,
-    })
 }
 
 /// A board's Bare Minimum project (Examples): its pins and a design that
 /// does nothing yet (see `bare.rs`), as a new, unsaved project.
 #[tauri::command]
-pub async fn open_bare_minimum(
-    app: AppHandle,
-    state: State<'_, AppState>,
-    board: String,
-) -> Result<ProjectDoc, UserError> {
-    let apio = ready_apio(&state).await?;
-    let catalog = catalog(&state).await?;
-    let Some(ex) = apio::starter_example(&catalog.examples.examples, &board) else {
+pub async fn open_bare_minimum(board: String) -> Result<ProjectDoc, UserError> {
+    let all = examples::all();
+    let Some(ex) = examples::starter_example(&all, &board) else {
         return Ok(no_pins_doc(board, false));
     };
     let name = ex.name.clone();
-    let starter = example_doc(&app, &apio, board.clone(), &name, "untitled".into()).await?;
+    let starter = example_doc(board.clone(), &name, "untitled".into()).await?;
     Ok(match bare::bare_files(&starter.files) {
         Some(files) => ProjectDoc {
             dir: None,
@@ -1094,10 +1034,10 @@ mod tests {
     #[test]
     fn user_error_splits_message_and_details() {
         let err = Err::<(), _>(anyhow::anyhow!("dns error"))
-            .context("Couldn't download Apio.")
+            .context("Couldn't download Logix Engine.")
             .unwrap_err();
         let user = UserError::from(err);
-        assert_eq!(user.message, "Couldn't download Apio.");
-        assert_eq!(user.details, "Couldn't download Apio.: dns error");
+        assert_eq!(user.message, "Couldn't download Logix Engine.");
+        assert_eq!(user.details, "Couldn't download Logix Engine.: dns error");
     }
 }

@@ -1,0 +1,9 @@
+# Constraint file of the pll example for the Alhambra II board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# ------------ External clock (12MHz) -----------------------------------------
+set_io ext_clk 49  # input
+
+# ------------ User Led (active high) -----------------------------------------
+set_io led 45  # output, leds[0] on the board

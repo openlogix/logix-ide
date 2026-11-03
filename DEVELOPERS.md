@@ -71,8 +71,8 @@ Logix supports so far.
    in VS Code with the Claude Code extension).
 
 That's all. The JavaScript packages are installed by the scripts when
-needed, and Logix downloads Apio and the FPGA tools on its first run, as it
-does for users (into `~/.logix`, about 3 GB).
+needed, and Logix downloads Logix Engine and the FPGA tools on its first
+run, as it does for users (into `~/.logix`, about 3 GB).
 
 Optional, only for previewing the documentation site: Python 3.
 
@@ -81,7 +81,8 @@ Optional, only for previewing the documentation site: Python 3.
 | Folder | What's in it |
 | :--- | :--- |
 | `ui/` | The window's user interface (TypeScript, Svelte), and its tests |
-| `src-tauri/` | The backend (Rust): runs Apio, files, menus |
+| `src-tauri/` | The backend (Rust): runs Logix Engine, files, menus |
+| `examples/` | The examples Logix offers, one folder per board and example |
 | `scripts/` | `run.sh`, `test.sh`, `clean.sh` |
 | `docs/` | The user documentation site |
 | `.github/` | The GitHub workflows (tests, releases, docs) |
@@ -123,33 +124,31 @@ are made the same way.
 ### The log
 
 Logix writes a log to `~/.logix/logs/logix.log` (and the dev terminal shows
-the same `[logix] ...` lines): versions, every Apio command and its result,
-errors, and what the output pane showed. In the app: **Help > Show Log
+the same `[logix] ...` lines): versions, errors, and what the output pane
+showed. Logix Engine keeps its own log in `~/.logix/engine/logs/`. In the app: **Help > Show Log
 Folder**.
 
-### Moving to a new Apio release
+### Moving to a new Logix Engine release
 
-Logix uses a fixed Apio release, set in `package.json`, as in the Apio
-VS Code extension:
+Logix uses a fixed engine release, set in `package.json`:
 
 ```json
 "appConstants": {
-  "apioCliReleaseRepo": "fpgawars/apio",
-  "apioCliReleaseTag": "2026-10-22"
+  "engineReleaseRepo": "openlogix/logix-engine",
+  "engineReleaseTag": "2026-11-03"
 }
 ```
 
-Change the tag to a newer (non-pre-release) Apio release and restart
-`scripts/run.sh`: Logix downloads that Apio on its next start.
+Change the tag and restart `scripts/run.sh`: Logix downloads that engine on
+its next start. A release replaced under the same tag isn't downloaded
+again; delete `~/.logix/engine-bin` to get it.
 
-### Using a local Apio
+### Examples
 
-To try Logix with your own Apio (e.g. when changing Apio itself), set
-`LOGIX_APIO_BIN` to its executable before `scripts/run.sh`:
-
-```
-LOGIX_APIO_BIN=/path/to/apio scripts/run.sh
-```
+The examples are in `examples/<board>/<name>/`, each a Logix project with
+a `logix.json` holding its board and description. They were imported from
+Apio's examples with `scripts/import-apio-examples.py` (see its header);
+they're Logix's own now, so edit them here.
 
 ### Previewing the documentation site
 
@@ -194,8 +193,8 @@ These are the house rules for changes, whether you prompt Claude or not:
   running `scripts/test.sh`. Claude doesn't commit unless asked.
 - **Keep Logix simple**, like the Arduino IDE: ease of use for beginners
   comes before power-user features. Its motto is **"The Arduino experience, for FPGAs."**
-- **Apio does the FPGA work**; Logix is a front end. When Logix needs
-  something from Apio, prefer asking for an Apio change over working
+- **Logix Engine does the FPGA work**; Logix is a front end. When Logix
+  needs something from the engine, prefer changing the engine over working
   around it.
 - **Don't program a connected board** or stop other running programs
   without asking.

@@ -31,7 +31,7 @@ describe("groupExamples", () => {
     ]);
   });
 
-  it("counts only Apio's examples", () => {
+  it("counts only real examples, not Bare Minimum", () => {
     const counts = groupExamples(boards, examples, "").map((g) => g.count);
     expect(counts).toEqual([2, 1, 0, 1]);
   });

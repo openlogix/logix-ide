@@ -1,5 +1,5 @@
 // Live errors and other help while typing, from Verible's Verilog language
-// server (started by the backend; see src-tauri/src/apio/language_server.rs).
+// server (started by the backend; see src-tauri/src/language_server.rs).
 // The CodeMirror LSP client talks the protocol; the backend only relays
 // messages.
 import {

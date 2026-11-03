@@ -63,6 +63,3 @@ if (actual !== expected)
 Logix finds the line and the time of each error. Don't call `$dumpfile`:
 Logix decides where the waveform goes. Use `$fatal` only when going on makes
 no sense, such as a missing data file.
-
-For more about testbenches, see the Apio guide
-[Using testbenches](https://fpgawars.github.io/apio/docs/using-testbenches/).

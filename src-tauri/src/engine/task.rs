@@ -734,10 +734,10 @@ mod tests {
     }
 
     /// Verify, Upload, Run Tests, Show Diagram and Auto Format against a
-    /// real engine, on a copy of Apio's alhambra-ii blinky (no board
+    /// real engine, on the alhambra-ii blinky example (no board
     /// needed: Upload fails with `connect_board` unless one is plugged in;
     /// Simulate isn't run, since it opens GTKWave):
-    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> LOGIX_TEST_EXAMPLE=<alhambra-ii/blinky> cargo test real_engine_build -- --ignored --nocapture`
+    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_engine_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
     async fn real_engine_build() {
@@ -750,16 +750,7 @@ mod tests {
         .unwrap();
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path().join("build");
-        std::fs::create_dir_all(&dir).unwrap();
-        let mut files = Vec::new();
-        for entry in std::fs::read_dir(var("LOGIX_TEST_EXAMPLE")).unwrap() {
-            let entry = entry.unwrap();
-            let name = entry.file_name().to_string_lossy().into_owned();
-            if entry.path().is_file() && name != "apio.ini" {
-                std::fs::copy(entry.path(), dir.join(&name)).unwrap();
-                files.push(name);
-            }
-        }
+        let files = example_files("alhambra-ii", "blinky", &dir);
         let constraint = crate::build_dir::constraint_file_name(&files).map(str::to_owned);
         let events = Arc::new(Mutex::new(Vec::new()));
         let sink = {
@@ -891,6 +882,109 @@ mod tests {
             .diagnostics
             .iter()
             .any(|d| d.file.as_deref() == Some("bad.v") && d.line == Some(3)));
+    }
+
+    /// Writes an example into `dir` and returns its project file names.
+    fn example_files(board: &str, name: &str, dir: &Path) -> Vec<String> {
+        crate::examples::write(board, name, dir).unwrap();
+        crate::project::load(dir)
+            .unwrap()
+            .files
+            .into_iter()
+            .map(|f| f.name)
+            .collect()
+    }
+
+    /// Every example builds and passes its tests on a real engine, and so
+    /// does every board's Bare Minimum (slow: all 108 examples):
+    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_examples_build -- --ignored --nocapture`
+    #[tokio::test]
+    #[ignore]
+    async fn real_examples_build() {
+        let var = |k: &str| std::env::var(k).unwrap_or_else(|_| panic!("set {k}"));
+        let engine = Engine::start(
+            Path::new(&var("LOGIX_TEST_ENGINE_EXE")),
+            Path::new(&var("LOGIX_TEST_ENGINE_FOLDER")),
+        )
+        .await
+        .unwrap();
+        let catalog = super::super::catalog(&engine).await.unwrap();
+        let tmp = tempfile::tempdir().unwrap();
+        let cancel = CancellationToken::new();
+        let mut failed = Vec::new();
+        let all = crate::examples::all();
+        let run_one = |board: String, label: String, dir: PathBuf, files: Vec<String>| {
+            let arch = catalog
+                .boards
+                .iter()
+                .find(|b| b.id == board)
+                .map(|b| b.arch.clone())
+                .unwrap_or_default();
+            let engine = &engine;
+            let cancel = &cancel;
+            async move {
+                let constraint = crate::build_dir::constraint_file_name(&files).map(str::to_owned);
+                let mut input = TaskInput {
+                    board: &board,
+                    arch: &arch,
+                    source_folder: &dir,
+                    files: &files,
+                    constraint_file: constraint.as_deref(),
+                    lint: false,
+                    target: None,
+                };
+                let mut problems = Vec::new();
+                let build = run(engine, Task::Build, &input, |_| {}, cancel)
+                    .await
+                    .unwrap();
+                if !build.ok {
+                    problems.push(format!("build: {:?}", build.diagnostics));
+                }
+                if files.iter().any(|f| project::is_testbench(f)) {
+                    input.target = None;
+                    let test = run(engine, Task::Test, &input, |_| {}, cancel)
+                        .await
+                        .unwrap();
+                    if !test.ok {
+                        problems.push(format!("test: {:?}", test.diagnostics));
+                    }
+                }
+                println!(
+                    "{label}: {}",
+                    if problems.is_empty() { "ok" } else { "FAILED" }
+                );
+                (problems.is_empty(), format!("{label}: {problems:?}"))
+            }
+        };
+        for (i, e) in all.iter().enumerate() {
+            let dir = tmp.path().join(format!("e{i}"));
+            let files = example_files(&e.board, &e.name, &dir);
+            let label = format!("{}/{}", e.board, e.name);
+            let (ok, why) = run_one(e.board.clone(), label, dir, files).await;
+            if !ok {
+                failed.push(why);
+            }
+            // The board's Bare Minimum, from its starter example.
+            if crate::examples::starter_example(&all, &e.board).map(|s| &s.name) == Some(&e.name) {
+                let dir = tmp.path().join(format!("b{i}"));
+                std::fs::create_dir_all(&dir).unwrap();
+                let starter = crate::project::load(&tmp.path().join(format!("e{i}"))).unwrap();
+                let bare = crate::bare::bare_files(&starter.files).unwrap();
+                for f in &bare {
+                    std::fs::write(dir.join(&f.name), &f.text).unwrap();
+                }
+                let files = bare.into_iter().map(|f| f.name).collect();
+                let label = format!("{} Bare Minimum", e.board);
+                let (ok, why) = run_one(e.board.clone(), label, dir, files).await;
+                if !ok {
+                    failed.push(why);
+                }
+            }
+        }
+        for f in &failed {
+            println!("{f}");
+        }
+        assert!(failed.is_empty(), "{} failed", failed.len());
     }
 
     /// Recaptures the fake backend's fixtures (`ui/e2e/fixtures/`) from a

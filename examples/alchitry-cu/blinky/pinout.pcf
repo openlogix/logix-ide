@@ -1,0 +1,16 @@
+# Constraint file of the blinky example for the Alchitry Cu board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# ------------ System clock (100MHz) ------------------------------------------
+set_io sys_clk P7  # input
+
+# ------------ User Leds (active high) ----------------------------------------
+set_io leds[0] J11  # output
+set_io leds[1] K11  # output
+set_io leds[2] K12  # output
+set_io leds[3] K14  # output
+set_io leds[4] L12  # output
+set_io leds[5] L14  # output
+set_io leds[6] M12  # output
+set_io leds[7] N14  # output

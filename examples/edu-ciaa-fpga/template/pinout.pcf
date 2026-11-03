@@ -1,0 +1,9 @@
+# Constraint file of the template example for the EDU-CIAA-FPGA board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (12MHz).
+set_io sys_clk 94  # input
+
+# LED (LED0, D6), active high.
+set_io led 1  # output

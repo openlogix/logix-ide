@@ -1,0 +1,273 @@
+//-- The Imperial March, composed by John Williams for Star Wars: A New Hope.
+//-- Original code by Obijuan for open-fpga-verilog-tutorial, chapter 27 [https://github.com/Obijuan/open-fpga-verilog-tutorial/wiki/Cap%C3%ADtulo-27%3A-Memoria-ROM-gen%C3%A9rica]
+//-- Remake of the original code by JorFru: adjusted to 4/4 bars, and added the third part of the melody.
+0  //-- A 0 is a rest.
+0
+0
+0
+0
+0
+0
+0
+//
+3BCA //-- SOL_4
+3BCA
+3BCA
+0
+3BCA //-- SOL_4
+3BCA
+3BCA
+0
+3BCA //-- SOL_4
+3BCA
+3BCA
+0
+4B55 //-- REs_4
+4B55
+4B55
+3247 //-- SIb_4
+//
+3BCA //-- SOL_4
+3BCA
+3BCA
+0
+4B55 //-- REs_4
+4B55
+4B55
+3247 //-- SIb_4
+3BCA //-- SOL_4
+3BCA
+3BCA
+3BCA
+3BCA
+3BCA
+3BCA
+0
+//----------- Second part
+27E8  //-- RE_5
+27E8
+27E8
+0
+27E8  //-- RE_5
+27E8
+27E8
+0
+27E8  //-- RE_5
+27E8
+27E8
+0
+25AA  //-- REs_5
+25AA
+25AA
+3247 //-- LAs_4
+//
+3F58  //-- FAs_4
+3F58
+3F58
+0
+4B55  //--REs_4
+4B55
+4B55
+3247  //--LAs_4
+3BCA  //--SOL_4
+3BCA
+3BCA
+3BCA
+3BCA
+3BCA
+3BCA
+0
+//------------Tercer trozo
+1DE5  //--SOL_5
+1DE5
+1DE5
+0
+3BCA  //--SOL_4
+3BCA
+0
+3BCA
+1DE5  //--SOL_5
+1DE5
+1DE5
+0
+1FAC  //--FAs_5
+1FAC
+1FAC
+218E //--FA_5
+//
+238D //--MI_5
+25AA //--REs_5
+238D //--MI_5
+238D
+0
+0
+386F  //--SOLs_4
+386F
+2A47  //--DOs_5
+2A47
+2A47
+0
+2CCB  //--DO_5
+2CCB
+2CCB
+2F75  //--SI_4
+//
+3247  //--LAs_4
+3544  //--LA_4
+3247 //--LAs_4
+3247
+0
+0
+4B55 //REs_4
+4B55
+3F58 //FAs_4
+3F58
+3F58
+0
+4B55 //REs_4
+4B55
+4B55
+3BCA //SOL_4
+//
+3247 //LAs_4
+3247
+3247
+0
+3BCA //SOL_4
+3BCA
+3BCA
+3247 //LAs_4
+27E8
+27E8
+27E8
+27E8
+27E8
+27E8
+27E8
+0
+//-------------- The third part repeats, but its last bar is different
+1DE5  //--SOL_5
+1DE5
+1DE5
+0
+3BCA  //--SOL_4
+3BCA
+0
+3BCA
+1DE5  //--SOL_5
+1DE5
+1DE5
+0
+1FAC  //--FAs_5
+1FAC
+1FAC
+218E //--FA_5
+//
+238D //--MI_5
+25AA //--REs_5
+238D //--MI_5
+238D
+0
+0
+386F  //--SOLs_4
+386F
+2A47  //--DOs_5
+2A47
+2A47
+0
+2CCB  //--DO_5
+2CCB
+2CCB
+2F75  //--SI_4
+//
+3247  //--LAs_4
+3544  //--LA_4
+3247 //--LAs_4
+3247
+0
+0
+4B55 //REs_4
+4B55
+3F58 //FAs_4
+3F58
+3F58
+0
+4B55 //REs_4
+4B55
+4B55
+3247 //LAs_4
+//
+3BCA //SOL_4
+3BCA
+3BCA
+0
+4B55 //REs_4
+4B55
+4B55
+3247 //LAs_4
+3BCA //SOL_4
+3BCA
+3BCA
+3BCA
+3BCA
+3BCA
+3BCA
+0
+// Fillers to 256 words
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+//

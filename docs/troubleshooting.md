@@ -57,9 +57,9 @@ Verify and Upload ask you to choose another board.
 
 ## An example isn't in the list
 
-A few examples use features Logix doesn't support yet (such as files in
-subfolders, or several build setups), so they're not listed. Examples for boards
-Logix doesn't support yet aren't listed either (see above).
+Logix comes with examples for the boards it supports; boards it doesn't
+support yet have none (see above). Some of Apio's examples aren't in Logix
+yet, such as ones with files in subfolders or several build setups.
 
 ## A build or simulation doesn't finish
 

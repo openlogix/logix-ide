@@ -1,0 +1,4 @@
+{
+  "board": "sipeed-tang-nano-4k",
+  "description": "Blinks an LED (untested)"
+}

@@ -220,11 +220,7 @@
     switch (event.kind) {
       case "stage":
         stage = event.stage;
-        if (
-          event.stage !== "downloadingApio" &&
-          event.stage !== "downloadingEngine"
-        )
-          download = null;
+        if (event.stage !== "downloadingEngine") download = null;
         if (event.stage !== "installingEnginePackages") installStep = null;
         // A long first-run install: give the user a project meanwhile.
         if (event.stage !== "checking" && event.stage !== "ready")
@@ -246,7 +242,7 @@
     setupError = null;
     stage = "checking";
     try {
-      await backend.setupApio(onSetupEvent);
+      await backend.setup(onSetupEvent);
       // The "ready" event comes through another channel and may arrive
       // after this returns; don't wait for it.
       stage = "ready";
@@ -1347,12 +1343,9 @@
 
   const stageText: Record<SetupStage, string> = {
     checking: "Checking FPGA tools…",
-    downloadingApio: "Downloading Apio…",
-    installingPackages:
-      "Installing FPGA tools. The first run can take a few minutes…",
     downloadingEngine: "Downloading Logix Engine…",
     installingEnginePackages:
-      "Installing FPGA tools for Logix Engine. The first run can take a few minutes…",
+      "Installing FPGA tools. The first run can take a few minutes…",
     ready: "",
   };
 </script>

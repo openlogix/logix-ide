@@ -1,0 +1,4 @@
+{
+  "board": "icepi-zero",
+  "description": "Blinks an LED"
+}

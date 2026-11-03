@@ -36,14 +36,12 @@ export function toUserError(e: unknown): UserError {
 
 export type SetupStage =
   | "checking"
-  | "downloadingApio"
-  | "installingPackages"
   | "downloadingEngine"
   | "installingEnginePackages"
   | "ready";
 
 /**
- * Progress events sent while setting up Apio, then Logix Engine (see
+ * Progress events sent while setting up Logix Engine (see
  * `SetupEvent` in Rust). `progress` is the engine's package install: the
  * current phase (e.g. "Installing oss-cad-suite") and its percentage.
  */
@@ -75,7 +73,7 @@ export interface ProjectDoc {
 export type SaveChoice = "save" | "discard" | "cancel";
 
 export interface Board {
-  /** Apio board id, e.g. "alhambra-ii". */
+  /** Board id, e.g. "alhambra-ii". */
   id: string;
   /** e.g. "Alhambra II (Lattice, iCE40)". */
   description: string;
@@ -106,11 +104,11 @@ export interface TestbenchResult {
   passed: boolean;
 }
 
-/** Resource usage and clocks after a successful build (see apio/report.rs). */
+/** Resource usage and clocks after a successful build. */
 export interface BuildReport {
   /** FPGA family, e.g. "ice40", "ecp5", "gowin", "xilinx". */
   arch: string;
-  /** With Apio's family-specific names, e.g. "ICESTORM_LC". */
+  /** With the toolchain's family-specific names, e.g. "ICESTORM_LC". */
   resources: { name: string; used: number; available: number }[];
   clocks: { name: string; fmaxMhz: number }[];
 }
@@ -218,13 +216,14 @@ export const backend = {
   appInfo: (): Promise<AppInfo> => invoke<AppInfo>("app_info"),
 
   /**
-   * Makes sure Apio and its packages are installed. Resolves when ready,
-   * rejects with a `UserError` on failure. Safe to call again to retry.
+   * Makes sure Logix Engine and its packages (the FPGA tools) are
+   * installed and starts it. Resolves when ready, rejects with a
+   * `UserError` on failure. Safe to call again to retry.
    */
-  setupApio: (onEvent: (event: SetupEvent) => void): Promise<void> => {
+  setup: (onEvent: (event: SetupEvent) => void): Promise<void> => {
     const channel = new Channel<SetupEvent>();
     channel.onmessage = onEvent;
-    return invoke<void>("setup_apio", { onEvent: channel });
+    return invoke<void>("setup", { onEvent: channel });
   },
 
   /** All boards, sorted by description. Needs the FPGA tools ready. */
@@ -253,9 +252,9 @@ export const backend = {
    * unsaved) files. `testbench` picks one testbench for "test" (all if
    * null) and "simulate", or the module to draw for "graph" (main if null). `key` identifies the project; `sourceDir` is the folder
    * whose other files are copied along; `projectDir` (saved projects only)
-   * receives GTKWave layouts saved since the last run. Apio's output lines go to
-   * `onLine`. Resolves with the outcome (including failures); rejects only
-   * if Apio couldn't run.
+   * receives GTKWave layouts saved since the last run. The tools' output
+   * and the engine's phases go to `onEvent`. Resolves with the outcome
+   * (including failures); rejects only if the engine couldn't run.
    */
   runTask: (
     task: Task,
@@ -447,7 +446,7 @@ export const backend = {
 
   /**
    * Tool output that isn't part of a task or setup (which report their
-   * own lines): opening an example (Apio) and Auto Format (Logix Engine).
+   * own lines): Auto Format's.
    */
   onApioOutput: (handler: (line: string) => void): Promise<UnlistenFn> =>
     listen<string>("apio-output", (e) => handler(e.payload)),

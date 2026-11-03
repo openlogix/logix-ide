@@ -46,9 +46,7 @@ async function typeAtStart(page: Page, text: string) {
 test("shows the engine's package install progress", async ({ page }) => {
   await page.goto("/?engineSetup");
   const bar = page.locator(".status-bar");
-  await expect(status(page)).toContainText(
-    "Installing FPGA tools for Logix Engine",
-  );
+  await expect(status(page)).toContainText("Installing FPGA tools.");
   await expect(bar).toContainText("Installing oss-cad-suite 42%");
   await expect(bar.locator("progress")).toHaveJSProperty("value", 0.42);
   await expect(output(page)).toContainText("Installing oss-cad-suite...");
@@ -63,7 +61,7 @@ test("shows the engine's package install progress", async ({ page }) => {
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
   await start(page);
-  await expect(output(page)).toContainText("108 examples available (56 hidden");
+  await expect(output(page)).toContainText("108 examples available.");
   // Logix Engine's 79 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();

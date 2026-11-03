@@ -1,0 +1,11 @@
+// Constraint file of the pll example for the Sipeed Tang Nano 20K board.
+// It assigns the design's signals to FPGA pins, and lists only
+// the pins that this example uses.
+
+// Clock (27MHz).
+IO_LOC  "ext_clk" 4;
+IO_PORT "ext_clk" IO_TYPE=LVCMOS33;
+
+// LED, active low.
+IO_LOC  "led_n" 15;
+IO_PORT "led_n" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8;

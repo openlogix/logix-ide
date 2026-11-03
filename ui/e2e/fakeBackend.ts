@@ -1,9 +1,9 @@
 // A fake of src/lib/backend.ts for the end-to-end UI tests (Playwright). In
 // "e2e" mode, Vite replaces the real backend with this (see
 // vite.config.ts), so the real UI runs in a plain browser without Tauri or
-// Apio. It behaves like a small, predictable Logix backend:
+// Logix Engine. It behaves like a small, predictable Logix backend:
 // - the FPGA tools are ready right away, with Logix Engine's real boards,
-//   Apio's real examples, and outputs replayed from real engine runs
+//   Logix's examples, and outputs replayed from real engine runs
 //   (e2e/fixtures);
 // - a build fails if main.v contains "oops" (with an error on that line);
 // - Auto Format removes trailing spaces.
@@ -21,7 +21,7 @@ import type {
 // Everything except `backend` comes from the real module (types, toUserError).
 export * from "../src/lib/backend";
 
-// Real engine and Apio data and output (see e2e/fixtures/README.md).
+// Real engine data and output (see e2e/fixtures/README.md).
 import catalog from "./fixtures/catalog.json";
 import verifyOutput from "./fixtures/verify.txt?raw";
 import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
@@ -117,7 +117,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
 } {
   const main = files.find((f) => f.name === "main.v")?.text ?? "";
   // The blinky with the ";" missing after "assign led = counter[23]":
-  // replay what Apio really reports (lint's message, on the next line).
+  // replay what the engine really reports (lint's message, on the next line).
   if (/assign led = counter\[23\]\s*$/m.test(main)) {
     const line = main.split("\n").findIndex((l) => /^\s*endmodule/.test(l)) + 1;
     return {
@@ -200,12 +200,8 @@ export const backend: typeof Real.backend = {
     platformSupported: true,
   }),
 
-  setupApio: async (onEvent) => {
+  setup: async (onEvent) => {
     onEvent({ kind: "stage", stage: "checking" });
-    onEvent({
-      kind: "log",
-      line: "Checking FPGA tools (the first run can take a few minutes)...",
-    });
     // With `/?engineSetup`, setup stops in the engine's package install
     // until a test calls `__fake.finishSetup()`.
     if (new URLSearchParams(location.search).has("engineSetup")) {

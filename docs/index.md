@@ -9,8 +9,7 @@ board.
 ![The Logix window after Verify: the design in the editor, and the build's usage report below](images/main.png)
 
 Behind the scenes, Logix uses open source FPGA tools, through
-[Logix Engine](https://github.com/openlogix/logix-engine) (and
-[Apio](https://github.com/FPGAwars/apio) for the examples, for now). You don't
+[Logix Engine](https://github.com/openlogix/logix-engine). You don't
 need to know them or install anything else: Logix downloads what it needs on
 its first start.
 

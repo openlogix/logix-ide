@@ -12,18 +12,18 @@ use super::{bundle, Layout, ENGINE_RELEASE_REPO, ENGINE_RELEASE_TAG};
 use crate::platform;
 use crate::setup_events::{SetupEvent, SetupStage};
 
-// User-facing messages, as in Apio's setup: the outermost message is plain
+// User-facing messages: the outermost message is plain
 // language, and the full chain (shown in the console) keeps the details.
 const MSG_DOWNLOAD: &str =
     "Couldn't download Logix Engine. Check your internet connection, then click Retry.";
 const MSG_UNPACK: &str = "Couldn't install Logix Engine on this computer.";
 const MSG_PREPARE: &str = "Couldn't prepare the folder for Logix Engine.";
 const MSG_START: &str = "Couldn't start Logix Engine.";
-const MSG_PACKAGES: &str = "Couldn't install the FPGA tools for Logix Engine. Check your internet connection, then click Retry.";
+const MSG_PACKAGES: &str =
+    "Couldn't install the FPGA tools. Check your internet connection, then click Retry.";
 
 /// Makes the engine ready to use and returns it running. `emit` receives
-/// progress events. Runs after Apio's setup, so it doesn't emit `Checking`
-/// or `Ready`.
+/// progress events. The caller sends `Ready` afterwards.
 pub async fn run_setup<F>(emit: F) -> Result<Engine>
 where
     F: Fn(SetupEvent) + Send + Sync + Clone + 'static,

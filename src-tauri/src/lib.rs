@@ -1,9 +1,9 @@
-mod apio;
 mod bare;
 mod build_dir;
 mod commands;
 mod download;
 mod engine;
+mod examples;
 mod language_server;
 pub mod logging;
 mod menu;
@@ -20,11 +20,9 @@ use tauri::{Emitter, Manager, WindowEvent};
 /// State shared by all Tauri commands.
 #[derive(Default)]
 pub struct AppState {
-    /// Set once Apio setup has succeeded. The lock also keeps two setup
-    /// runs from overlapping (e.g. after a UI reload during development).
-    apio: tokio::sync::Mutex<Option<apio::Apio>>,
-    /// The running Logix Engine, set once its setup has succeeded (after
-    /// Apio's). Dropping it stops the engine.
+    /// The running Logix Engine, set once its setup has succeeded. The lock
+    /// also keeps two setup runs from overlapping (e.g. after a UI reload
+    /// during development). Dropping it stops the engine.
     engine: tokio::sync::Mutex<Option<std::sync::Arc<engine::Engine>>>,
     /// Held while a build or upload runs, so only one runs at a time.
     task: tokio::sync::Mutex<()>,
@@ -35,7 +33,7 @@ pub struct AppState {
     /// The Verilog language server, while running (live errors).
     lsp: tokio::sync::Mutex<Option<language_server::LanguageServer>>,
     /// Board and example lists, fetched once per run (boards from the
-    /// engine, examples from Apio).
+    /// engine, examples built in).
     catalog: tokio::sync::Mutex<Option<Catalog>>,
     /// Whether the open project has unsaved changes (reported by the UI).
     dirty: AtomicBool,
@@ -47,7 +45,7 @@ pub struct AppState {
 #[derive(Clone)]
 struct Catalog {
     boards: Vec<engine::Board>,
-    examples: apio::ExampleList,
+    examples: examples::ExampleList,
     usb_rules: Vec<engine::UsbRule>,
 }
 
@@ -68,10 +66,9 @@ pub fn run() {
         .setup(|app| {
             let info = app.package_info();
             logging::init(&format!(
-                "Logix IDE {} ({}), Apio {}, Logix Engine {}",
+                "Logix IDE {} ({}), Logix Engine {}",
                 info.version,
                 platform::current().map_or("unknown platform".into(), |p| format!("{p:?}")),
-                apio::APIO_RELEASE_TAG,
                 engine::ENGINE_RELEASE_TAG
             ));
             install_panic_logging();
@@ -94,7 +91,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::app_info,
-            commands::setup_apio,
+            commands::setup,
             commands::run_task,
             commands::cancel_task,
             commands::scan_devices,
