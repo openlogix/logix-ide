@@ -1520,7 +1520,7 @@
     >
     <span class="toolbar-gap"></span>
     <button
-      title="Run tests (⇧⌘T): run the testbenches"
+      title="Run tests (⇧⌘T): run all the testbenches"
       class:busy={running === "test"}
       disabled={!canRun || !menuState.testbenches}
       onclick={() => runTask("test")}><Icon name="test" /></button

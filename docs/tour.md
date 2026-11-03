@@ -30,7 +30,7 @@ To get it, see [Installing Logix](installing.md).
 | :---: | :--- | :--- |
 | ![Verify](images/icon-verify.png){ .toolbar-icon } | **Verify** | Checks the design and builds it |
 | ![Upload](images/icon-upload.png){ .toolbar-icon } | **Upload** | Builds the design and programs the board |
-| ![Run Tests](images/icon-test.png){ .toolbar-icon } | **Run Tests** | Runs the project's testbenches |
+| ![Run Tests](images/icon-test.png){ .toolbar-icon } | **Run Tests** | Runs all the project's testbenches |
 | ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals in GTKWave |
 | ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running |
 | | Board list | Picks your board; boards plugged in come first |
