@@ -59,7 +59,7 @@ export function groupExamples(
   const allBoards = boards.concat(
     [...byBoard.keys()]
       .filter((id) => !known.has(id))
-      .map((id) => ({ id, description: id, arch: "" })),
+      .map((id) => ({ id, description: id, arch: "", pinExtension: null })),
   );
 
   const groups: BoardGroup[] = [];

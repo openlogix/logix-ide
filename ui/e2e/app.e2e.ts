@@ -193,6 +193,23 @@ test("adds a file as a new tab and checks names", async ({ page }) => {
   await expect(page.locator(".cm-content")).toContainText("module counter");
 });
 
+test("tab icons mark testbenches and the board's kind of pin file", async ({ page }) => {
+  await start(page);
+  await expect(tab(page, "main_tb.v").locator(".tab-icon")).toHaveCount(1);
+  await expect(tab(page, "main.v").locator(".tab-icon")).toHaveCount(0);
+  // The Alhambra II is iCE40: its pin file is .pcf.
+  await expect(tab(page, "pinout.pcf").locator(".tab-icon")).toHaveCount(1);
+  await expect(tab(page, "pinout.pcf")).toHaveAttribute("title", /^Pin file: /);
+  await page.getByTitle(/^New file/).click();
+  await page.locator(".tab-input").fill("extra.lpf");
+  await page.keyboard.press("Enter");
+  await expect(tab(page, "extra.lpf").locator(".tab-icon")).toHaveCount(0);
+  await expect(tab(page, "extra.lpf")).toHaveAttribute(
+    "title",
+    /another kind of board: not used with this board, whose pin file is a \.pcf file/,
+  );
+});
+
 test("Auto Format replaces the text and reports it", async ({ page }) => {
   await start(page);
   await chooseBoard(page);

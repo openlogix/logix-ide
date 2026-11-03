@@ -107,28 +107,48 @@ export function isTestbench(name: string): boolean {
 }
 
 /** What a project file is for, as shown on its tab (icon and tooltip). */
-export type FileRole = "main" | "design" | "include" | "testbench" | "pins";
+export type FileRole = "main" | "design" | "include" | "testbench" | "pins" | "otherPins";
 
 /** Pin constraint file extensions (as `CONSTRAINT_EXTENSIONS` in `build_dir.rs`). */
 const PIN_FILE = /\.(pcf|lpf|cst|xdc|pdc|ccf)$/i;
 
-/** The role of the project file `name`; `main` is the project's main file. */
-export function fileRole(name: string, main: string): FileRole {
+/**
+ * The role of the project file `name`; `main` is the project's main file
+ * and `pinExtension` the board's pin file extension (e.g. "pcf"; null if
+ * unknown). A pin file of another kind (e.g. .lpf on an iCE40 board) isn't
+ * used with the board: `otherPins`.
+ */
+export function fileRole(
+  name: string,
+  main: string,
+  pinExtension: string | null = null,
+): FileRole {
   if (name === main) return "main";
   if (isTestbench(name)) return "testbench";
-  if (PIN_FILE.test(name)) return "pins";
+  if (PIN_FILE.test(name)) {
+    const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
+    return pinExtension === null || ext === pinExtension.toLowerCase()
+      ? "pins"
+      : "otherPins";
+  }
   if (/\.s?vh$/i.test(name)) return "include";
   return "design";
 }
 
-/** A tab's tooltip: what the file is for, and for others than the main file, how to rename it. */
-export function roleTooltip(role: FileRole): string {
+/**
+ * A tab's tooltip: what the file is for, and for others than the main
+ * file, how to rename it. `pinExtension` as in `fileRole`.
+ */
+export function roleTooltip(role: FileRole, pinExtension: string | null = null): string {
   const what: Record<FileRole, string> = {
     main: "Main file: the design's top module, named main",
     design: "Design file: part of your design",
     include: "Include file: text other Verilog files include",
     testbench: "Testbench: check your design with Run Tests or Simulate",
     pins: "Pin file: connects your design's signals to the board's pins",
+    otherPins: `Pin file for another kind of board: not used with this board${
+      pinExtension ? `, whose pin file is a .${pinExtension} file` : ""
+    }`,
   };
   return role === "main"
     ? `${what.main}.`

@@ -868,6 +868,10 @@
   let homeBoard = $state<string | null>(null);
   /** The board in the toolbar: the project's, or else `homeBoard`. */
   const currentBoard = $derived(project ? project.board : homeBoard);
+  /** The current board's pin file extension, e.g. "pcf" (null if unknown). */
+  const pinExtension = $derived(
+    boards.find((b) => b.id === currentBoard)?.pinExtension ?? null,
+  );
   /** The start screen's recent projects (folders). */
   let recents = $state<string[]>([]);
   /** Whether Verify and Upload can be started now. */
@@ -1643,14 +1647,14 @@
                 class:active={f.name === activeFile}
                 class:has-error={fileProblems.get(f.name) === "error"}
                 class:has-warning={fileProblems.get(f.name) === "warning"}
-                title={roleTooltip(fileRole(f.name, mainFile(project)))}
+                title={roleTooltip(fileRole(f.name, mainFile(project), pinExtension), pinExtension)}
                 onclick={() => selectFile(f.name)}
                 ondblclick={() => startRename(f.name)}
                 oncontextmenu={(e) => openTabMenu(e, f.name)}
               >
-                {#if fileRole(f.name, mainFile(project)) === "testbench"}<span
+                {#if fileRole(f.name, mainFile(project), pinExtension) === "testbench"}<span
                     class="tab-icon"><Icon name="test" size={12} /></span
-                  >{:else if fileRole(f.name, mainFile(project)) === "pins"}<span
+                  >{:else if fileRole(f.name, mainFile(project), pinExtension) === "pins"}<span
                     class="tab-icon"><Icon name="chip" size={12} /></span
                   >{/if}{f.name}{#if isFileDirty(project, f)}<span
                     class="dot"

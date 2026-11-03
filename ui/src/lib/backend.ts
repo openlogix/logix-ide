@@ -77,6 +77,8 @@ export interface Board {
   description: string;
   /** FPGA architecture, e.g. "ice40", "ecp5", "gowin", "xilinx" ("" if unknown). */
   arch: string;
+  /** The extension of the board's pin files, e.g. "pcf" (null if unknown). */
+  pinExtension: string | null;
 }
 
 export interface Example {

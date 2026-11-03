@@ -177,6 +177,15 @@ describe("file roles", () => {
     expect(fileRole("pinout.pcf", "main.v")).toBe("pins");
     expect(fileRole("Pins.LPF", "main.v")).toBe("pins");
   });
+  it("marks only the board's kind of pin file", () => {
+    expect(fileRole("pinout.pcf", "main.v", "pcf")).toBe("pins");
+    expect(fileRole("Pinout.PCF", "main.v", "pcf")).toBe("pins");
+    expect(fileRole("pinout.lpf", "main.v", "pcf")).toBe("otherPins");
+    expect(fileRole("pinout.lpf", "main.v", "lpf")).toBe("pins");
+    expect(roleTooltip("otherPins", "pcf")).toBe(
+      "Pin file for another kind of board: not used with this board, whose pin file is a .pcf file. Double-click to rename; right-click for more.",
+    );
+  });
   it("explains the roles in the tooltips", () => {
     expect(roleTooltip("main")).toBe("Main file: the design's top module, named main.");
     expect(roleTooltip("testbench")).toMatch(/^Testbench: .* Double-click to rename/);

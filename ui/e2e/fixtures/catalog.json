@@ -3,397 +3,476 @@
   {
    "id": "alchitry-au",
    "description": "Alchitry Au (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "alchitry-au-plus",
    "description": "Alchitry Au+ (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "alchitry-cu",
    "description": "Alchitry Cu Development Board",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "alhambra-ii",
    "description": "Alhambra II",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "alinx-ax7035",
    "description": "Alinx ARTIX-7 AX7035",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "arice1",
    "description": "ARiCE v1",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "arty-a7-100t",
    "description": "Arty A7-100T (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "arty-a7-35t",
    "description": "Arty A7-35T (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "arty-s7-25",
    "description": "Arty S7-25 (Xilinx, Spartan7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "arty-s7-50",
    "description": "Arty S7-50 (Xilinx, Spartan7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "azukar2",
    "description": "AZUKAR v2",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "basys3",
    "description": "Basys3 (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "brs-100-gw1nr9",
    "description": "BrisbaneSilicon 9k",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "epm11",
    "description": "BrisbaneSilicon EPM11",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "butterstick-r10-2g-85k-ft2232h",
    "description": "butterstick r1.0 FT2232H",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "butterstick-r10-2g-85k-ft232h",
    "description": "butterstick r1.0 FT232H",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "cmod-a7-35t",
    "description": "Cmod A7-35T (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "colorlight-i9plus",
    "description": "Colorlight i9+ (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "colorlight-5a-75b-v61",
    "description": "ColorLight-5A-75B-V61",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75b-v7",
    "description": "ColorLight-5A-75B-V7",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75b-v8",
    "description": "ColorLight-5A-75B-V8",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75e-v6",
    "description": "ColorLight-5A-75E-V6",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75e-v71-ft2232h",
    "description": "ColorLight-5A-75E-V71",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75e-v71-ft232h",
    "description": "ColorLight-5A-75E-V71",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75e-v71-usb-blaster",
    "description": "ColorLight-5A-75E-V71",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i5-v7-0",
    "description": "ColorLight-i5",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i5-v7-0-ram",
    "description": "ColorLight-i5 (RAM)",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i9-v7-2-cmsis-dap",
    "description": "ColorLight-i9",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i9-v7-2-ft2232h",
    "description": "ColorLight-i9",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i9-v7-2-ft232h",
    "description": "ColorLight-i9",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i9-v7-2-usb-blaster",
    "description": "ColorLight-i9",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "versa",
    "description": "ECP5 Versa",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "ecp5-evaluation-board",
    "description": "ECP5-Evaluation-Board",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "ecp5-mini-12",
    "description": "ECP5-Mini-12",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "ecp5-mini-25",
    "description": "ECP5-Mini-12",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "edu-ciaa-fpga",
    "description": "EDU-CIAA-FPGA",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "fleafpga-ohm-ft2232h",
    "description": "FleaFPGA-Ohm_(FT2232H)",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "fleafpga-ohm-ft232h",
    "description": "FleaFPGA-Ohm_(FT232H)",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "fleafpga-ohm-usb-blaster",
    "description": "FleaFPGA-Ohm_(USB-Blaster)",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "fpga101",
    "description": "FPGA 101 - Workshop Badge",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "ice40-up5k",
    "description": "iCE40 UltraPlus Breakout",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "ice40-hx8k",
    "description": "iCE40-HX8K Breakout Board",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "icebreaker",
    "description": "iCEBreaker",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "icenode",
    "description": "ICENode",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "icepi-zero",
    "description": "Icepi Zero",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "icestick",
    "description": "iCEstick Eval Kit",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "icesugar-pro",
    "description": "Icesugar Pro",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "icesugar-pro-ram",
    "description": "Icesugar Pro (RAM)",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "icezum",
    "description": "Icezum Alhambra",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "kefir",
    "description": "Kéfir I iCE40-HX4K",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "microphase-a7-lite",
    "description": "MicroPhase A7-Lite (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "mimas-a7",
    "description": "Mimas A7 (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "mimas-ecp5-mini",
    "description": "Mimas ECP5 Mini",
-   "arch": "ecp5"
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "nexys-a7-100t",
    "description": "Nexys A7-100T / Nexys 4 DDR (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "nexys-a7-50t",
    "description": "Nexys A7-50T (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "ok-ice40pro",
    "description": "OK-iCE40Pro",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "pynq-z1",
    "description": "Pynq-Z1 (Xilinx, Zynq7 PL)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "pynq-z2",
    "description": "Pynq-Z2 (Xilinx, Zynq7 PL)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "qmtech-xc7a100t-ft2232h",
    "description": "QMTECH XC7A100T core board (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "sipeed-tang-nano",
    "description": "Sipeed Tang Nano",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "sipeed-tang-nano-1k",
    "description": "Sipeed Tang Nano 1k",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "sipeed-tang-nano-20k",
    "description": "Sipeed Tang Nano 20k",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "sipeed-tang-nano-4k",
    "description": "Sipeed Tang Nano 4k",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "sipeed-tang-nano-9k",
    "description": "Sipeed Tang Nano 9k",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "sipeed-tang-primer-20k",
    "description": "Sipeed Tang Primer 20k",
-   "arch": "gowin"
+   "arch": "gowin",
+   "pinExtension": "cst"
   },
   {
    "id": "go-board",
    "description": "The Go Board",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "thetamachines-eth4k",
    "description": "Theta Machines ETH4K",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "upduino",
    "description": "UPDuino v1.0",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "upduino2",
    "description": "UPDuino v2.0",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "upduino21",
    "description": "UPduino v2.1",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "upduino3",
    "description": "UPduino v3.0",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "upduino31",
    "description": "UPduino v3.1",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "vsdsquadron-fm",
    "description": "VSDSquadron FPGA Mini",
-   "arch": "ice40"
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "zedboard",
    "description": "ZedBoard (Xilinx, Zynq7 PL)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "zxtres",
    "description": "ZXTRES (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "zxtres-plus",
    "description": "ZXTRES+ (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "zxtres-plus-plus",
    "description": "ZXTRES++ (Xilinx, Artix7)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "zybo-z7-10",
    "description": "Zybo Z7-10 (Xilinx, Zynq7 PL)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   },
   {
    "id": "zybo-z7-20",
    "description": "Zybo Z7-20 (Xilinx, Zynq7 PL)",
-   "arch": "xilinx"
+   "arch": "xilinx",
+   "pinExtension": "xdc"
   }
  ],
  "examples": [

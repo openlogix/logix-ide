@@ -19,6 +19,10 @@ pub struct Board {
     /// The FPGA architecture: "ice40", "ecp5", "gowin" or "xilinx", for
     /// grouping the board list and naming resources in the build report.
     pub arch: String,
+    /// The extension of the board's pin files, e.g. "pcf" (see
+    /// `constraint_extension`), so the UI can tell which pin file is used.
+    /// `None` for an architecture the engine doesn't list.
+    pub pin_extension: Option<String>,
 }
 
 /// The pin constraint file extension the engine's build accepts for an FPGA
@@ -66,14 +70,18 @@ fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
     let fpgas = &catalog["fpgas"];
     let mut list: Vec<Board> = boards
         .iter()
-        .map(|(id, b)| Board {
-            id: id.clone(),
-            description: b["description"].as_str().unwrap_or(id).to_string(),
-            arch: b["fpga_id"]
+        .map(|(id, b)| {
+            let arch = b["fpga_id"]
                 .as_str()
                 .and_then(|fpga| fpgas[fpga]["architecture"].as_str())
                 .unwrap_or("")
-                .to_string(),
+                .to_string();
+            Board {
+                id: id.clone(),
+                description: b["description"].as_str().unwrap_or(id).to_string(),
+                pin_extension: constraint_extension(&arch).map(String::from),
+                arch,
+            }
         })
         .collect();
     list.sort_by_key(|b| b.description.to_lowercase());

@@ -6,7 +6,8 @@
   **Run Tests** ![](images/icon-test.png){ .toolbar-icon }, **Simulate** ![](images/icon-simulate.png){ .toolbar-icon },
   **Stop** ![](images/icon-stop.png){ .toolbar-icon }, and the board list.
 - **Tabs**: one per file of the project. A dot marks unsaved changes. A
-  flask marks testbenches and a chip marks the pin file; hover over a tab to
+  flask marks testbenches and a chip marks the board's pin file (a pin file
+  for another kind of board has no chip, since this board doesn't use it); hover over a tab to
   see what its file is for.
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
