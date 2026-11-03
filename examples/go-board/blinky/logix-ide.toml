@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "go-board"
+description = "Blinks an LED"

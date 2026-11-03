@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "ok-ice40pro"
+description = "Blinks an LED (untested)"

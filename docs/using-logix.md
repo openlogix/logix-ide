@@ -33,8 +33,9 @@ files in the folder show up as tabs:
 - the board's pin file (`.pcf`, `.lpf`, `.cst`, `.xdc`, `.pdc` or `.ccf`),
 - testbenches (`*_tb.v`, see [Testbenches and simulation](testbenches.md)).
 
-Logix also keeps a small `logix.json` with the project's board. You don't
-need to edit it.
+Logix also keeps a small `logix-ide.toml` with the project's settings, such
+as its board. You don't need to edit it, but you can add comments (lines
+starting with `#`); Logix keeps them.
 
 Other files and subfolders in the project folder are kept as they are, and
 data files (such as memory contents) go along to the build. Verilog and pin

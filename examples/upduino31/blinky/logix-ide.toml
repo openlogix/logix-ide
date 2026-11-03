@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "upduino31"
+description = "Blinks an LED"

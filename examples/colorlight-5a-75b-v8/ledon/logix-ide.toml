@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "colorlight-5a-75b-v8"
+description = "Turns on the LED"

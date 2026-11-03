@@ -1,7 +1,7 @@
 # Examples
 
 The examples Logix IDE offers in File > Examples, built into the app. Each
-folder `<board>/<name>/` is a Logix project: its files and a `logix.json`
+folder `<board>/<name>/` is a Logix project: its files and a `logix-ide.toml`
 with the board and a one-line description.
 
 They come from [Apio](https://github.com/FPGAwars/apio)'s examples

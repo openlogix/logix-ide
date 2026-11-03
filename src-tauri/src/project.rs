@@ -1,14 +1,15 @@
-//! The Logix project model, independent of Tauri and Apio.
+//! The Logix IDE project model, independent of Tauri.
 //!
 //! A project is a folder (any name) containing:
 //! - `main.v` (or `main.sv` for SystemVerilog): the main file, whose top
-//!   module is `main` (the same convention as Apio's examples);
+//!   module is `main`;
 //! - optionally more source files (Verilog, pin constraints, testbenches),
 //!   which the IDE shows as tabs;
 //! - optionally anything else (subfolders, docs, images), kept as is;
-//! - `logix.json`: IDE settings such as the chosen board. Users never edit it.
-//!
-//! There's no `apio.ini`; the IDE generates one in a temporary build project.
+//! - `logix-ide.toml`: the project's settings, such as its board (TOML, so
+//!   it can hold comments; Logix keeps them when it updates a value).
+//!   Projects saved before used `logix.json`, which is still read and is
+//!   replaced on the next save.
 //!
 //! The UI holds the files in memory. Creating, renaming and deleting files
 //! take effect on save, like text edits.
@@ -22,7 +23,9 @@ use serde::{Deserialize, Serialize};
 pub const MAIN_FILE: &str = "main.v";
 /// Accepted main file names, in order of preference.
 pub const MAIN_FILES: &[&str] = &["main.v", "main.sv"];
-pub const SETTINGS_FILE: &str = "logix.json";
+pub const SETTINGS_FILE: &str = "logix-ide.toml";
+/// The project file's earlier name and format (JSON), still read.
+pub const OLD_SETTINGS_FILE: &str = "logix.json";
 
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
 /// and headers, and the pin constraint formats used by Apio's boards.
@@ -31,16 +34,15 @@ pub const EDITABLE_EXTENSIONS: &[&str] = &[
 ];
 
 /// Names that belong to the IDE or the build, never project files.
-pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "apio.ini", "_build"];
+pub(crate) const RESERVED_NAMES: &[&str] =
+    &[SETTINGS_FILE, OLD_SETTINGS_FILE, "apio.ini", "_build"];
 
-/// `logix.json`. Unknown fields are preserved so newer versions of the IDE
-/// can add settings without older ones dropping them.
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct Settings {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    board: Option<String>,
-    #[serde(flatten)]
-    extra: serde_json::Map<String, serde_json::Value>,
+/// The first lines of a new project file.
+const SETTINGS_HEADER: &str = "# Logix IDE project settings.\n";
+
+/// Whether `dir` is a Logix project folder (it has a project file).
+pub fn is_project_dir(dir: &Path) -> bool {
+    dir.join(SETTINGS_FILE).is_file() || dir.join(OLD_SETTINGS_FILE).is_file()
 }
 
 /// One source file of a project (a top-level file in the folder).
@@ -178,7 +180,10 @@ pub fn load(dir: &Path) -> Result<Project> {
         dir: dir.to_path_buf(),
         name: project_name(dir),
         files,
-        board: settings.board,
+        board: settings
+            .get("board")
+            .and_then(|b| b.as_str())
+            .map(String::from),
     })
 }
 
@@ -209,10 +214,28 @@ pub fn save(
     for f in files {
         write_atomic(&dir.join(&f.name), f.text.as_bytes())?;
     }
+    // Only the values Logix owns change; the user's comments, layout and
+    // other settings stay.
+    let path = dir.join(SETTINGS_FILE);
+    let is_new = !path.exists();
     let mut settings = read_settings(dir).unwrap_or_default();
-    settings.board = board.map(str::to_owned);
-    let json = serde_json::to_vec_pretty(&settings)?;
-    write_atomic(&dir.join(SETTINGS_FILE), &json)
+    match board {
+        Some(b) => settings["board"] = toml_edit::value(b),
+        None => {
+            settings.remove("board");
+        }
+    }
+    let mut text = settings.to_string();
+    if is_new {
+        text.insert_str(0, SETTINGS_HEADER);
+    }
+    write_atomic(&path, text.as_bytes())?;
+    // Replaced by the TOML file.
+    let old = dir.join(OLD_SETTINGS_FILE);
+    if old.is_file() {
+        std::fs::remove_file(&old).with_context(|| format!("can't delete {}", old.display()))?;
+    }
+    Ok(())
 }
 
 /// Creates a new project folder `target` ("Save As") with `files`. If
@@ -259,12 +282,12 @@ pub fn create(
     save(target, files, &[], board)
 }
 
-/// The Logix project folder (one with a `logix.json`) that contains `path`,
-/// if any.
+/// The Logix project folder (one with a project file) that contains
+/// `path`, if any.
 pub fn enclosing_project(path: &Path) -> Option<PathBuf> {
     path.ancestors()
         .skip(1)
-        .find(|dir| dir.join(SETTINGS_FILE).is_file())
+        .find(|dir| is_project_dir(dir))
         .map(Path::to_path_buf)
 }
 
@@ -328,13 +351,29 @@ pub(crate) fn check_files(files: &[ProjectFile]) -> Result<()> {
     Ok(())
 }
 
-fn read_settings(dir: &Path) -> Result<Settings> {
+/// The project file, or else the board from an old `logix.json` in a new
+/// TOML document, or else an empty one.
+fn read_settings(dir: &Path) -> Result<toml_edit::DocumentMut> {
     let path = dir.join(SETTINGS_FILE);
-    if !path.exists() {
-        return Ok(Settings::default());
+    if path.exists() {
+        let text = std::fs::read_to_string(&path)
+            .with_context(|| format!("can't read {}", path.display()))?;
+        return text
+            .parse()
+            .with_context(|| format!("{} isn't valid TOML", path.display()));
     }
-    let bytes = std::fs::read(&path).with_context(|| format!("can't read {}", path.display()))?;
-    serde_json::from_slice(&bytes).with_context(|| format!("{} is damaged", path.display()))
+    let mut settings = toml_edit::DocumentMut::new();
+    let old = dir.join(OLD_SETTINGS_FILE);
+    if old.exists() {
+        let bytes = std::fs::read(&old).with_context(|| format!("can't read {}", old.display()))?;
+        let json: serde_json::Value = serde_json::from_slice(&bytes)
+            .with_context(|| format!("{} is damaged", old.display()))?;
+        // The board was the only setting it held.
+        if let Some(board) = json["board"].as_str() {
+            settings["board"] = toml_edit::value(board);
+        }
+    }
+    Ok(settings)
 }
 
 /// Writes via a temporary file and rename, so a crash never leaves a
@@ -353,7 +392,7 @@ pub(crate) enum CopyMode {
     /// Everything (Save As: the user's files).
     All,
     /// For a build: everything but a project nested in a subfolder (a
-    /// folder with its own `logix.json`), which would be copied into every
+    /// folder with its own project file), which would be copied into every
     /// build (and, for Save As inside the source, into itself). The engine
     /// builds only the files Logix lists, so other files can go along.
     Build,
@@ -383,7 +422,7 @@ pub(crate) fn copy_project_contents(
 
 fn copy_recursive(from: &Path, to: &Path, mode: CopyMode) -> Result<()> {
     if from.is_dir() {
-        if mode == CopyMode::Build && from.join(SETTINGS_FILE).is_file() {
+        if mode == CopyMode::Build && is_project_dir(from) {
             return Ok(());
         }
         std::fs::create_dir_all(to)?;
@@ -550,20 +589,39 @@ mod tests {
     }
 
     #[test]
-    fn save_preserves_unknown_settings() {
+    fn save_keeps_comments_and_unknown_settings() {
         let tmp = tempfile::tempdir().unwrap();
         write(tmp.path(), MAIN_FILE, "x");
-        write(
-            tmp.path(),
-            SETTINGS_FILE,
-            r#"{"board":"a","future":{"x":1}}"#,
-        );
+        let text = "# My notes.\nboard = \"a\" # the old board\n\n[future]\nx = 1\n";
+        write(tmp.path(), SETTINGS_FILE, text);
         save(tmp.path(), &[file("main.v", "y")], &[], Some("b")).unwrap();
-        let json: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(tmp.path().join(SETTINGS_FILE)).unwrap())
-                .unwrap();
-        assert_eq!(json["board"], "b");
-        assert_eq!(json["future"]["x"], 1);
+        let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
+        assert!(saved.starts_with("# My notes.\nboard = \"b\""), "{saved}");
+        assert!(saved.contains("[future]\nx = 1"), "{saved}");
+        assert_eq!(load(tmp.path()).unwrap().board.as_deref(), Some("b"));
+    }
+
+    #[test]
+    fn a_new_project_file_has_a_header() {
+        let tmp = tempfile::tempdir().unwrap();
+        write(tmp.path(), MAIN_FILE, "x");
+        save(tmp.path(), &[file("main.v", "y")], &[], Some("alhambra-ii")).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap(),
+            "# Logix IDE project settings.\nboard = \"alhambra-ii\"\n"
+        );
+    }
+
+    #[test]
+    fn reads_an_old_logix_json_and_replaces_it_on_save() {
+        let tmp = tempfile::tempdir().unwrap();
+        write(tmp.path(), MAIN_FILE, "x");
+        write(tmp.path(), OLD_SETTINGS_FILE, r#"{"board":"icezum"}"#);
+        assert!(is_project_dir(tmp.path()));
+        assert_eq!(load(tmp.path()).unwrap().board.as_deref(), Some("icezum"));
+        save(tmp.path(), &[file("main.v", "y")], &[], Some("icezum")).unwrap();
+        assert!(!tmp.path().join(OLD_SETTINGS_FILE).exists());
+        assert_eq!(load(tmp.path()).unwrap().board.as_deref(), Some("icezum"));
     }
 
     #[test]

@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "ice40-up5k"
+description = "Turns the RGB LED green"

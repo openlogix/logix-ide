@@ -13,8 +13,8 @@ Only examples Logix can open as they are are kept: a top-level main.v or
 main.sv, no subfolders, and an apio.ini with one env for the example's
 board, top module main, and no settings other than board, top-module and
 default-testbench. Each becomes a Logix project: its files without Apio's
-apio.ini, info and hidden files, plus a logix.json with the board and the
-description (from Apio's info file). The examples folder is replaced.
+apio.ini, info and hidden files, plus a logix-ide.toml with the board and
+the description (from Apio's info file). The examples folder is replaced.
 """
 
 import json
@@ -137,8 +137,12 @@ def main() -> None:
                     (out / f.name).write_bytes(data)
             info = example / "info"
             description = info.read_text().strip() if info.exists() else ""
-            project = {"board": board, "description": description}
-            (out / "logix.json").write_text(json.dumps(project, indent=2) + "\n")
+            # TOML basic strings take JSON's escapes.
+            (out / "logix-ide.toml").write_text(
+                "# Logix IDE project settings.\n"
+                f"board = {json.dumps(board)}\n"
+                f"description = {json.dumps(description, ensure_ascii=False)}\n"
+            )
             kept += 1
     print(f"{kept} examples imported, {skipped} skipped")
 

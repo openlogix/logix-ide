@@ -1,6 +1,6 @@
 //! Logix's examples, built into the app from the repo's `examples/` folder:
 //! `examples/<board>/<name>/`, each a Logix project (its files and a
-//! `logix.json` with the board and a description). Plain Rust, no Tauri.
+//! `logix-ide.toml` with the board and a description). Plain Rust, no Tauri.
 
 use std::path::{Path, PathBuf};
 
@@ -47,9 +47,10 @@ pub fn all() -> Vec<Example> {
                     .unwrap_or_default()
             };
             let description = example
-                .get_file(example.path().join("logix.json"))
-                .and_then(|f| serde_json::from_slice::<serde_json::Value>(f.contents()).ok())
-                .and_then(|j| j["description"].as_str().map(String::from))
+                .get_file(example.path().join(crate::project::SETTINGS_FILE))
+                .and_then(|f| f.contents_utf8())
+                .and_then(|t| t.parse::<toml_edit::DocumentMut>().ok())
+                .and_then(|d| d.get("description")?.as_str().map(String::from))
                 .unwrap_or_default();
             list.push(Example {
                 board: name(board),

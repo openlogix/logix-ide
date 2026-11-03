@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "sipeed-tang-nano-20k"
+description = "Blinks an LED"

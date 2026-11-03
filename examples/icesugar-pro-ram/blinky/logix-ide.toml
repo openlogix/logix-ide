@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "icesugar-pro-ram"
+description = "Blinks an LED"

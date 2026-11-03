@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "edu-ciaa-fpga"
+description = "Project template"

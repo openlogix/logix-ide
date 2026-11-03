@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "icebreaker"
+description = "Turns on the green LED"

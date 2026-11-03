@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "ecp5-evaluation-board"
+description = "Blinks an LED (untested)"
