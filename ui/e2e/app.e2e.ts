@@ -98,6 +98,10 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   await pickBoard(page, "iCEBreaker");
   await expect(boardButton(page)).toHaveText(/iCEBreaker/);
   await expect(start).toBeVisible();
+  // A recent project brings its own board to the toolbar.
+  await start.getByRole("button", { name: "counter" }).click();
+  await expect(tab(page, "main.v")).toBeVisible();
+  await expect(boardButton(page)).toHaveText(/UPduino/i);
 });
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {

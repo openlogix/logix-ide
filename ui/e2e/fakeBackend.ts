@@ -304,9 +304,13 @@ export const backend: typeof Real.backend = {
     board,
   }),
 
-  openProjectAt: async () => {
-    throw { message: "Not available in the fake backend.", details: "" };
-  },
+  // A saved project for the UPduino v2 (any folder), so tests can check that
+  // opening it brings its own board.
+  openProjectAt: async (dir) => ({
+    ...bareDoc("upduino2"),
+    dir,
+    name: dir.split("/").pop() ?? dir,
+  }),
   showProjectFolder: async () => {},
   saveGtkwaveLayouts: async () => [],
   cancelTask: async () => false,
