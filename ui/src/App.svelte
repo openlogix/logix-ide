@@ -407,18 +407,19 @@
     exclusive(async () => {
       if (!(await confirmLeave())) return;
       try {
-        const doc = await during(
-          `Opening example ${ex.name}…`,
-          () =>
-            ex.bare
-              ? backend.openBareMinimum(ex.board)
-              : backend.openExample(ex.board, ex.name),
-          `Opened example ${ex.name}.`,
+        const doc = await during(`Opening example ${ex.name}…`, () =>
+          ex.bare
+            ? backend.openBareMinimum(ex.board)
+            : backend.openExample(ex.board, ex.name),
         );
         loadDoc(doc);
-        log(`Opened example ${ex.board}/${ex.name}`);
+        finish(
+          ex.bare
+            ? `Opened Bare Minimum for ${boardName(ex.board)}.`
+            : `Opened example ${ex.board}/${ex.name}.`,
+        );
       } catch (e) {
-        showFileError(e);
+        commandFailed(e);
       }
     });
   }
@@ -441,20 +442,11 @@
   /** Auto Format is running. */
   let formatting = $state(false);
 
-  /**
-   * Shows `label` as the current activity while `work` runs, then `done`
-   * (if given) as the status.
-   */
-  async function during<T>(
-    label: string,
-    work: () => Promise<T>,
-    done?: string,
-  ): Promise<T> {
+  /** Shows `label` as the current activity while `work` runs. */
+  async function during<T>(label: string, work: () => Promise<T>): Promise<T> {
     activity = label;
     try {
-      const result = await work();
-      if (done) status = { text: done, kind: "info" };
-      return result;
+      return await work();
     } finally {
       activity = null;
     }
@@ -529,6 +521,23 @@
         status.kind === "ok" ? "\x1b[32m" : status.kind === "error" ? "\x1b[31m" : "";
       log(color ? `${color}${status.text}\x1b[0m` : status.text);
     }
+    log("Ready.");
+  }
+
+  /** Ends a file command (New, Open, Save, ...) that succeeded: `text` in
+   * the status bar and the output, green, then "Ready.". */
+  function finish(text: string) {
+    status = { text, kind: "ok" };
+    logDone();
+  }
+
+  /** Ends a file command that failed: the error (banner, and in red in
+   * the output with its details), then "Ready.". */
+  function commandFailed(e: unknown) {
+    const err = toUserError(e);
+    fileError = err.message;
+    status = { text: err.message, kind: "error" };
+    log(`\x1b[31mError: ${err.details}\x1b[0m`);
     log("Ready.");
   }
 
@@ -1006,13 +1015,12 @@
   async function newProject() {
     const board = project?.board ?? null;
     if (!(await confirmLeave())) return;
-    loadDoc(
-      await during(
-        "Creating a new project…",
-        () => backend.newProject(board),
-        "New project.",
-      ),
-    );
+    try {
+      loadDoc(await during("Creating a new project…", () => backend.newProject(board)));
+      finish("New project.");
+    } catch (e) {
+      commandFailed(e);
+    }
   }
 
   /** File > Open Recent. */
@@ -1020,15 +1028,13 @@
     exclusive(async () => {
       if (!(await confirmLeave())) return;
       try {
-        const doc = await during(
-          "Opening the project…",
-          () => backend.openProjectAt(dir),
-          "Opened the project.",
+        const doc = await during("Opening the project…", () =>
+          backend.openProjectAt(dir),
         );
         loadDoc(doc);
-        log(`Opened ${doc.dir}`);
+        finish(`Opened ${doc.dir}.`);
       } catch (e) {
-        showFileError(e);
+        commandFailed(e);
       }
     });
   }
@@ -1086,10 +1092,10 @@
       const doc = await backend.openProjectDialog();
       if (doc) {
         loadDoc(doc);
-        log(`Opened ${doc.dir}`);
+        finish(`Opened ${doc.dir}.`);
       }
     } catch (e) {
-      showFileError(e);
+      commandFailed(e);
     }
   }
 
@@ -1101,17 +1107,15 @@
     const files = filesForSave(p);
     const board = p.board;
     try {
-      await during(
-        "Saving…",
-        () => backend.saveProject(dir, files, [...p.removed], board),
-        "Saved.",
+      await during("Saving…", () =>
+        backend.saveProject(dir, files, [...p.removed], board),
       );
       markSaved(p, dir, p.name, files, board);
       fileError = null;
-      log(`Saved ${dir}`);
+      finish(`Saved ${dir}.`);
       return true;
     } catch (e) {
-      showFileError(e);
+      commandFailed(e);
       return false;
     }
   }
@@ -1134,10 +1138,10 @@
       // Keep the editor (and its undo history) as is.
       markSaved(p, doc.dir, doc.name, files, board);
       fileError = null;
-      log(`Saved ${doc.dir}`);
+      finish(`Saved ${doc.dir}.`);
       return true;
     } catch (e) {
-      showFileError(e);
+      commandFailed(e);
       return false;
     }
   }

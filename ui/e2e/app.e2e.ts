@@ -220,7 +220,11 @@ test("opens a board's Bare Minimum from the examples", async ({ page }) => {
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
   await expect(page.locator(".cm-content")).toContainText("assign led = 0;");
-  await expect(status(page)).toHaveText("Opened example Bare Minimum.");
+  await expect(status(page)).toHaveText("Opened Bare Minimum for Alhambra II.");
+  // Like every command, its output ends with the result, then "Ready.".
+  await expect(output(page)).toContainText(
+    /Opened Bare Minimum for Alhambra II\.\s*Ready\./,
+  );
   await expect(page.locator(".spinner")).toHaveCount(0);
 });
 
