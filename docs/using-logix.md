@@ -19,9 +19,10 @@
 - **Output**: what the FPGA tools print. References like `main.v:12` are
   links to that line. Click in it and press ++cmd+a++ to select all of it
   and ++cmd+c++ to copy, or right-click for **Copy**, **Select All** and
-  **Clear Output**. Drag the bar above it to resize it, or hide it with
-  **View > Toggle Output** (++cmd+j++); it comes back when you Verify,
-  Upload, Run Tests or Simulate.
+  **Clear Output**. Drag the bar above it to resize it. To hide it, drag
+  the bar all the way down, click **Hide**, or use **View > Toggle Output**
+  (++cmd+j++); it comes back with **Show**, and when you Verify, Upload,
+  Run Tests or Simulate.
 
 ## Projects
 

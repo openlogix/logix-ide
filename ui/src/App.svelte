@@ -59,7 +59,11 @@
     testbenchLines,
   } from "./lib/tasks";
   import { reportLines } from "./lib/buildReport";
-  import { clampConsoleHeight, DEFAULT_CONSOLE_HEIGHT } from "./lib/layout";
+  import {
+    clampConsoleHeight,
+    DEFAULT_CONSOLE_HEIGHT,
+    dragHidesConsole,
+  } from "./lib/layout";
 
   const MAX_CONSOLE_LINES = 5000;
   const DIVIDER_HEIGHT = 6;
@@ -69,6 +73,10 @@
   let splitEl = $state<HTMLElement | null>(null);
   let consoleHeight = $state(loadConsoleHeight());
   let dragging = $state(false);
+  /** Dragged near the bottom: the output hides on release (like Hide). */
+  let collapsing = $state(false);
+  /** The height before the drag, kept for Show after a collapse. */
+  let heightBeforeDrag = 0;
 
   function loadConsoleHeight(): number {
     try {
@@ -98,6 +106,8 @@
 
   function onDividerDown(e: PointerEvent) {
     dragging = true;
+    collapsing = false;
+    heightBeforeDrag = consoleHeight;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     e.preventDefault();
   }
@@ -105,12 +115,20 @@
   function onDividerMove(e: PointerEvent) {
     if (!dragging || !splitEl) return;
     const bottom = splitEl.getBoundingClientRect().bottom;
-    fitConsoleHeight(bottom - e.clientY - DIVIDER_HEIGHT / 2);
+    const requested = bottom - e.clientY - DIVIDER_HEIGHT / 2;
+    collapsing = dragHidesConsole(requested);
+    if (!collapsing) fitConsoleHeight(requested);
   }
 
   function onDividerUp() {
     if (!dragging) return;
     dragging = false;
+    if (collapsing) {
+      collapsing = false;
+      // Show brings it back at the height it had before this drag.
+      consoleHeight = heightBeforeDrag;
+      setConsoleVisible(false);
+    }
     saveConsoleHeight();
   }
 
@@ -1618,7 +1636,7 @@
     <div
       class="divider"
       style:height="{DIVIDER_HEIGHT}px"
-      title="Drag to resize"
+      title="Drag to resize; drag to the bottom to hide the output"
       onpointerdown={onDividerDown}
       onpointermove={onDividerMove}
       onpointerup={onDividerUp}
@@ -1628,7 +1646,7 @@
 
     <section
       class="console-area"
-      style:height={consoleVisible ? `${consoleHeight}px` : undefined}
+      style:height={consoleVisible && !collapsing ? `${consoleHeight}px` : undefined}
     >
       <div
         class="status-bar"
@@ -1672,6 +1690,7 @@
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="console"
+        style:display={collapsing ? "none" : null}
         bind:this={consoleEl}
         tabindex="0"
         role="log"
