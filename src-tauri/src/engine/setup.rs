@@ -225,4 +225,46 @@ mod tests {
             .unwrap_err();
         assert_eq!(err["category"], "request");
     }
+
+    /// Installs the real `verible` package (8 MB) through the setup's
+    /// progress path and checks the banner gets percentages:
+    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> cargo test real_engine_install_progress -- --ignored --nocapture`
+    #[tokio::test]
+    #[ignore]
+    async fn real_engine_install_progress() {
+        let exe = std::env::var("LOGIX_TEST_ENGINE_EXE").expect("set LOGIX_TEST_ENGINE_EXE");
+        let tmp = tempfile::tempdir().unwrap();
+        let folder = tmp.path().join("engine");
+        std::fs::create_dir_all(&folder).unwrap();
+        let engine = Engine::start(std::path::Path::new(&exe), &folder)
+            .await
+            .unwrap();
+        let events = Arc::new(Mutex::new(Vec::new()));
+        let sink = {
+            let events = events.clone();
+            progress_sink(move |e| events.lock().unwrap().push(e))
+        };
+        engine
+            .call(
+                "install_packages",
+                json!({"packages": ["verible"]}),
+                Some(sink),
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        let events = events.lock().unwrap().clone();
+        for e in &events {
+            println!("{e:?}");
+        }
+        let percents: Vec<u32> = events
+            .iter()
+            .filter_map(|e| match e {
+                SetupEvent::Progress { percent, .. } => *percent,
+                _ => None,
+            })
+            .collect();
+        assert!(percents.len() > 5, "{events:?}");
+        assert!(percents.windows(2).all(|w| w[1] >= w[0]), "{percents:?}");
+    }
 }

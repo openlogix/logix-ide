@@ -89,6 +89,7 @@ let preferences: Real.Preferences = {
 const handlers: {
   menu?: (id: MenuId) => void;
   output?: (line: string) => void;
+  finishSetup?: () => void;
 } = {};
 
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
@@ -100,6 +101,8 @@ const fake = {
   editorMenu: null as { canGoToDefinition: boolean } | null,
   /** How often the output pane's right-click menu was shown. */
   outputMenu: 0,
+  /** Ends a setup held at the engine's package install (`/?engineSetup`). */
+  finishSetup: () => handlers.finishSetup?.(),
 };
 (window as unknown as { __fake: typeof fake }).__fake = fake;
 
@@ -194,6 +197,18 @@ export const backend: typeof Real.backend = {
       kind: "log",
       line: "Checking FPGA tools (the first run can take a few minutes)...",
     });
+    // With `/?engineSetup`, setup stops in the engine's package install
+    // until a test calls `__fake.finishSetup()`.
+    if (new URLSearchParams(location.search).has("engineSetup")) {
+      onEvent({ kind: "stage", stage: "installingEnginePackages" });
+      onEvent({ kind: "log", line: "Installing oss-cad-suite..." });
+      onEvent({
+        kind: "progress",
+        message: "Installing oss-cad-suite",
+        percent: 42,
+      });
+      await new Promise<void>((resolve) => (handlers.finishSetup = resolve));
+    }
     await pause(50);
     onEvent({ kind: "stage", stage: "ready" });
   },

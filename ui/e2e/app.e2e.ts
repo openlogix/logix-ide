@@ -43,6 +43,24 @@ async function typeAtStart(page: Page, text: string) {
   await page.keyboard.type(text);
 }
 
+test("shows the engine's package install progress", async ({ page }) => {
+  await page.goto("/?engineSetup");
+  const banner = page.locator(".banner[role=status]");
+  await expect(banner).toContainText(
+    "Installing FPGA tools for Logix Engine",
+  );
+  await expect(banner).toContainText("Installing oss-cad-suite 42%");
+  await expect(banner.locator("progress")).toHaveJSProperty("value", 0.42);
+  await expect(output(page)).toContainText("Installing oss-cad-suite...");
+  await page.evaluate(() =>
+    (
+      window as unknown as { __fake: { finishSetup: () => void } }
+    ).__fake.finishSetup(),
+  );
+  await expect(output(page)).toContainText("Ready.");
+  await expect(banner).toHaveCount(0);
+});
+
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
   await start(page);
   await expect(output(page)).toContainText("146 examples available (18 hidden");

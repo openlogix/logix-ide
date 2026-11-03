@@ -4,15 +4,14 @@
 
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Context, Result};
 use rmcp::model::{
-    CallToolRequestParams, NumberOrString, ProgressNotificationParam, ProgressToken,
-    RequestMetaObject,
+    CallToolRequest, CallToolRequestParams, ClientRequest, ProgressNotificationParam,
+    ProgressToken, ServerResult,
 };
-use rmcp::service::{NotificationContext, RoleClient, RunningService};
+use rmcp::service::{NotificationContext, PeerRequestOptions, RoleClient, RunningService};
 use rmcp::transport::TokioChildProcess;
 use rmcp::{ClientHandler, ServiceExt};
 use serde_json::Value;
@@ -45,13 +44,54 @@ impl Progress {
     }
 }
 
-type ProgressSink = Arc<dyn Fn(Progress) + Send + Sync>;
+pub type ProgressSink = Arc<dyn Fn(Progress) + Send + Sync>;
+
+/// Routes progress notifications to the calls that want them, by progress
+/// token. rmcp gives every request its own token (any token the caller sets
+/// is replaced), and the IDE only learns it once the request is sent, so
+/// notifications that arrive before the call registers are kept and
+/// replayed. Sinks run under the lock, so their order is kept.
+#[derive(Default)]
+struct Routes {
+    sinks: HashMap<ProgressToken, ProgressSink>,
+    early: HashMap<ProgressToken, Vec<Progress>>,
+}
+
+/// At most this many early notifications are kept per call.
+const MAX_EARLY: usize = 1000;
+
+impl Routes {
+    fn deliver(&mut self, token: &ProgressToken, progress: Progress) {
+        match self.sinks.get(token) {
+            Some(sink) => sink(progress),
+            None => {
+                let early = self.early.entry(token.clone()).or_default();
+                if early.len() < MAX_EARLY {
+                    early.push(progress);
+                }
+            }
+        }
+    }
+
+    fn register(&mut self, token: ProgressToken, sink: ProgressSink) {
+        for progress in self.early.remove(&token).unwrap_or_default() {
+            sink(progress);
+        }
+        self.sinks.insert(token, sink);
+    }
+
+    /// Forgets a finished call, whether or not it wanted progress (the
+    /// engine sends progress for every call, since every call has a token).
+    fn finish(&mut self, token: &ProgressToken) {
+        self.sinks.remove(token);
+        self.early.remove(token);
+    }
+}
 
 /// Receives the engine's notifications.
 #[derive(Clone, Default)]
 struct Handler {
-    /// The calls waiting for progress, by progress token.
-    progress: Arc<Mutex<HashMap<ProgressToken, ProgressSink>>>,
+    routes: Arc<Mutex<Routes>>,
 }
 
 impl ClientHandler for Handler {
@@ -60,15 +100,10 @@ impl ClientHandler for Handler {
         params: ProgressNotificationParam,
         _context: NotificationContext<RoleClient>,
     ) {
-        let sink = self
-            .progress
+        self.routes
             .lock()
             .unwrap()
-            .get(&params.progress_token)
-            .cloned();
-        if let Some(sink) = sink {
-            sink(Progress::from_notification(&params));
-        }
+            .deliver(&params.progress_token, Progress::from_notification(&params));
     }
 }
 
@@ -80,7 +115,6 @@ pub type ToolResult = std::result::Result<Value, Value>;
 pub struct Engine {
     service: RunningService<RoleClient, Handler>,
     handler: Handler,
-    next_token: AtomicI64,
 }
 
 impl Engine {
@@ -98,17 +132,13 @@ impl Engine {
             .serve(transport)
             .await
             .context("the engine didn't start an MCP session")?;
-        Ok(Engine {
-            service,
-            handler,
-            next_token: AtomicI64::new(1),
-        })
+        Ok(Engine { service, handler })
     }
 
-    /// Calls a tool with `args` (a JSON object). With `on_progress`, asks
-    /// for progress notifications and passes them on as they arrive.
-    /// Fails only when the call can't be made or answered; a tool that
-    /// fails returns its error object.
+    /// Calls a tool with `args` (a JSON object). With `on_progress`, passes
+    /// the engine's progress notifications on as they arrive. Fails only
+    /// when the call can't be made or answered; a tool that fails returns
+    /// its error object.
     pub async fn call(
         &self,
         name: &str,
@@ -119,25 +149,30 @@ impl Engine {
         if let Value::Object(map) = args {
             params = params.with_arguments(map);
         }
-        let token = on_progress.map(|sink| {
-            let token = ProgressToken(NumberOrString::Number(
-                self.next_token.fetch_add(1, Ordering::SeqCst),
-            ));
+        let request = ClientRequest::CallToolRequest(CallToolRequest::new(params));
+        let handle = self
+            .service
+            .send_cancellable_request(request, PeerRequestOptions::no_options())
+            .await
+            .map_err(|e| anyhow!("can't send {name} to the engine: {e}"))?;
+        let token = handle.progress_token.clone();
+        if let Some(sink) = on_progress {
             self.handler
-                .progress
+                .routes
                 .lock()
                 .unwrap()
-                .insert(token.clone(), sink);
-            let mut meta = RequestMetaObject::new();
-            meta.set_progress_token(token.clone());
-            params.meta = Some(meta);
-            token
-        });
-        let result = self.service.call_tool(params).await;
-        if let Some(token) = token {
-            self.handler.progress.lock().unwrap().remove(&token);
+                .register(token.clone(), sink);
         }
-        let result = result.map_err(|e| anyhow!("the engine didn't answer {name}: {e}"))?;
+        let response = handle.await_response().await;
+        self.handler.routes.lock().unwrap().finish(&token);
+        let result = match response.map_err(|e| anyhow!("the engine didn't answer {name}: {e}"))? {
+            ServerResult::CallToolResult(result) => result,
+            other => {
+                return Err(anyhow!(
+                    "unexpected answer from the engine to {name}: {other:?}"
+                ))
+            }
+        };
         let content = result.structured_content.unwrap_or(Value::Null);
         Ok(if result.is_error == Some(true) {
             Err(content)
@@ -160,6 +195,44 @@ pub fn tool_error(name: &str, error: &Value) -> anyhow::Error {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rmcp::model::NumberOrString;
+
+    fn token(n: i64) -> ProgressToken {
+        ProgressToken(NumberOrString::Number(n))
+    }
+
+    fn step(percent: u32) -> Progress {
+        Progress {
+            message: None,
+            percent: Some(percent),
+        }
+    }
+
+    #[test]
+    fn routes_progress_including_early_notifications() {
+        let got = Arc::new(Mutex::new(Vec::new()));
+        let sink: ProgressSink = {
+            let got = got.clone();
+            Arc::new(move |p: Progress| got.lock().unwrap().push(p.percent.unwrap()))
+        };
+        let mut routes = Routes::default();
+        // Arrives before the call registers: kept, then replayed in order.
+        routes.deliver(&token(0), step(1));
+        routes.deliver(&token(0), step(2));
+        // Another call's progress (one that doesn't want it).
+        routes.deliver(&token(1), step(50));
+        routes.register(token(0), sink);
+        routes.deliver(&token(0), step(3));
+        assert_eq!(*got.lock().unwrap(), vec![1, 2, 3]);
+
+        routes.finish(&token(0));
+        routes.finish(&token(1));
+        routes.deliver(&token(0), step(4));
+        assert_eq!(*got.lock().unwrap(), vec![1, 2, 3]);
+        // Only the late one is kept, until its call finishes.
+        assert_eq!(routes.early.len(), 1);
+        assert!(routes.sinks.is_empty());
+    }
 
     fn notification(progress: f64, message: Option<&str>) -> ProgressNotificationParam {
         let mut p =
