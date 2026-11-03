@@ -1507,33 +1507,33 @@
 <div class="layout">
   <header class="toolbar">
     <button
-      title="Verify (⌘R): build the design"
+      title="Verify: build the design"
       class:busy={running === "build"}
       disabled={!canRun}
       onclick={() => runTask("build")}><Icon name="verify" /></button
     >
     <button
-      title="Upload (⌘U): build and program the board"
+      title="Upload: build the design and program the board"
       class:busy={running === "upload"}
       disabled={!canRun}
       onclick={() => runTask("upload")}><Icon name="upload" /></button
     >
     <span class="toolbar-gap"></span>
     <button
-      title="Run tests (⇧⌘T): run all the testbenches"
+      title="Run tests: run all the testbenches"
       class:busy={running === "test"}
       disabled={!canRun || !menuState.testbenches}
       onclick={() => runTask("test")}><Icon name="test" /></button
     >
     <button
-      title="Simulate (⌥⌘T): run the open testbench and show its signals in GTKWave"
+      title="Simulate: run the open testbench and show its signals in GTKWave"
       class:busy={running === "simulate"}
       disabled={!canRun || !menuState.simulate}
       onclick={() => runTask("simulate")}><Icon name="simulate" /></button
     >
     <button
       class="secondary"
-      title="Stop (⌘.): stop the running build, upload, test or simulation"
+      title="Stop: stop the running build, upload, test or simulation"
       disabled={!running}
       onclick={stopTask}><Icon name="stop" size={14} /></button
     >
@@ -1676,7 +1676,7 @@
               autofocus
             />
           {/if}
-          <button class="tab-add" title="New file (⇧⌘N)" onclick={startNewFile}
+          <button class="tab-add" title="New file" onclick={startNewFile}
             >+</button
           >
         {/if}
@@ -1744,7 +1744,7 @@
           >
         {/if}
         <button
-          title="{consoleVisible ? 'Hide' : 'Show'} the output (⌘J)"
+          title="{consoleVisible ? 'Hide' : 'Show'} the output"
           onclick={() => setConsoleVisible(!consoleVisible)}
           >{consoleVisible ? "Hide ▾" : "Show ▴"}</button
         >

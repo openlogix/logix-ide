@@ -46,7 +46,7 @@
       <button onclick={onRefresh} disabled={busy}
         >{busy ? "Scanning…" : "Refresh"}</button
       >
-      <button class="close" title="Close (Esc)" onclick={onClose}>✕</button>
+      <button class="close" title="Close" onclick={onClose}>✕</button>
     </header>
 
     <div class="body">

@@ -86,7 +86,7 @@
   >
     <header>
       <h2>Settings</h2>
-      <button class="close" title="Close (Esc)" onclick={onClose}>✕</button>
+      <button class="close" title="Close" onclick={onClose}>✕</button>
     </header>
 
     <div class="rows">

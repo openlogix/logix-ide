@@ -156,7 +156,7 @@
       />
       <button
         class="close"
-        title={onlyBoard ? "Keep current files (Esc)" : "Close (Esc)"}
+        title={onlyBoard ? "Keep current files" : "Close"}
         onclick={onClose}>✕</button
       >
     </header>

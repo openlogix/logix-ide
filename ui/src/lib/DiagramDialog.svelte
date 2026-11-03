@@ -86,7 +86,7 @@
           onclick={() => zoomIndex++}>+</button
         >
       </div>
-      <button class="close" title="Close (Esc)" onclick={onClose}>✕</button>
+      <button class="close" title="Close" onclick={onClose}>✕</button>
     </header>
 
     <div class="canvas" class:fit={zoom === 1}>
