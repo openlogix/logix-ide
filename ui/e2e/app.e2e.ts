@@ -14,16 +14,24 @@ async function pickBoard(page: Page, name: string) {
   await page.getByRole("option", { name, exact: true }).first().click();
 }
 
-/** Opens the app and waits until the (fake) FPGA tools are ready. */
+/**
+ * Opens the app, waits until the (fake) FPGA tools are ready, and starts
+ * with the Alhambra II's blinky from the start screen.
+ */
 async function start(page: Page) {
   await page.goto("/");
   await expect(output(page)).toContainText("Ready.");
+  await page.getByRole("button", { name: "Start with Blinky for Alhambra II" }).click();
+  await expect(tab(page, "pinout.pcf")).toBeVisible();
 }
 
-/**
- * Picks a board and opens its blinky from the examples it offers. New
- * projects already start with the Alhambra II's blinky.
- */
+const menu = (page: Page, id: string) =>
+  page.evaluate(
+    (id) => (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu(id),
+    id,
+  );
+
+/** Picks a board and opens its blinky from the examples it offers. */
 async function chooseBoard(page: Page, name = "Alhambra II") {
   if ((await boardButton(page).textContent())?.includes(name)) {
     await expect(tab(page, "pinout.pcf")).toBeVisible();
@@ -59,6 +67,35 @@ test("shows the engine's package install progress", async ({ page }) => {
   await expect(bar.locator("progress")).toHaveCount(0);
 });
 
+test("starts with the start screen, and New / Close Project", async ({ page }) => {
+  await page.goto("/");
+  await expect(output(page)).toContainText("Ready.");
+  // No project: the start screen, with the last board in the toolbar.
+  const start = page.getByLabel("Start");
+  await expect(start).toContainText("Welcome to Logix IDE");
+  await expect(boardButton(page)).toHaveText(/Alhambra II/);
+  await expect(page.getByTitle(/^Verify/)).toBeDisabled();
+  // New Project: the board's pins and an empty design, not blinky.
+  await start.getByRole("button", { name: "New Project" }).click();
+  await expect(tab(page, "pinout.pcf")).toBeVisible();
+  await expect(tab(page, "main_tb.v")).toHaveCount(0);
+  await expect(page.locator(".cm-content")).toContainText("assign led = 0;");
+  await expect(output(page)).toContainText(/New project\.\s*Ready\./);
+  // Close Project: back to the start screen, with the recent projects.
+  await page.evaluate(() => {
+    (window as unknown as { __fake: { recents: string[] } }).__fake.recents = [
+      "/Users/you/Documents/Logix/counter",
+    ];
+  });
+  await menu(page, "close-project");
+  await expect(start).toBeVisible();
+  await expect(start.getByRole("button", { name: "counter" })).toBeVisible();
+  await expect(output(page)).toContainText(/Closed the project\.\s*Ready\./);
+  // The board can still be changed; it's used for the next project.
+  await pickBoard(page, "iCEBreaker");
+  await expect(start).toContainText("Start with Blinky for iCEBreaker");
+});
+
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
   await start(page);
   await expect(output(page)).toContainText("108 examples available.");
@@ -80,14 +117,14 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   await expect(page.getByRole("option")).not.toHaveCount(8);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toBeHidden();
-  // A new project always has a board: the Alhambra II by default, with its
-  // blinky, ready to build.
+  // The Alhambra II by default, and its blinky (from the start screen) is
+  // ready to build.
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(page.locator(".welcome")).toHaveCount(0);
   await expect(page.getByTitle(/^Verify/)).toBeEnabled();
-  // Idle: no busy indicator, and the status bar says so.
-  await expect(status(page)).toHaveText("Ready.");
+  // Idle: no busy indicator, and the status bar shows the last result.
+  await expect(status(page)).toHaveText("Opened example alhambra-ii/blinky.");
   await expect(page.locator(".spinner")).toHaveCount(0);
 });
 

@@ -29,8 +29,6 @@ export interface WorkingProject {
   removed: string[];
   /** Files were added, renamed or deleted since the last save. */
   structureChanged: boolean;
-  /** Created by File > New (starter content), never saved. */
-  starter: boolean;
 }
 
 export function fromDoc(doc: ProjectDoc): WorkingProject {
@@ -48,7 +46,6 @@ export function fromDoc(doc: ProjectDoc): WorkingProject {
     })),
     removed: [],
     structureChanged: false,
-    starter: doc.starter,
   };
 }
 
@@ -62,14 +59,6 @@ export function isDirty(p: WorkingProject): boolean {
     p.board !== p.savedBoard ||
     p.files.some((f) => f.text !== f.savedText)
   );
-}
-
-/**
- * A new project the user hasn't changed or saved yet, so it can be
- * replaced (e.g. by another board's starter) without losing anything.
- */
-export function isUntouchedStarter(p: WorkingProject): boolean {
-  return p.starter && p.dir === null && !isDirty(p);
 }
 
 /**
@@ -195,7 +184,6 @@ export function markSaved(
 ) {
   p.dir = dir;
   p.templateDir = null;
-  p.starter = false;
   p.name = name;
   p.savedBoard = board;
   for (const f of p.files) {

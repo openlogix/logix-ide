@@ -53,28 +53,32 @@ module main_tb;
 endmodule
 `;
 
-function starterDoc(board: string | null): ProjectDoc {
-  if (!board) {
-    return {
-      dir: null,
-      templateDir: null,
-      name: "untitled",
-      files: [{ name: "main.v", text: "module main ();\nendmodule\n" }],
-      board: null,
-      starter: true,
-    };
-  }
+/** The blinky example for `board`, as an unsaved project. */
+function blinkyDoc(board: string): ProjectDoc {
   return {
     dir: null,
     templateDir: `/fake/examples/${board}/blinky`,
-    name: "untitled",
+    name: "blinky",
     files: [
       { name: "main.v", text: BLINKY_MAIN },
       { name: "main_tb.v", text: BLINKY_TB },
       { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
     ],
     board,
-    starter: true,
+  };
+}
+
+/** A board's Bare Minimum (also File > New Project > Empty Project). */
+function bareDoc(board: string): ProjectDoc {
+  return {
+    dir: null,
+    templateDir: null,
+    name: "untitled",
+    files: [
+      { name: "main.v", text: "module main (\n    input  sys_clk,\n    output led\n);\n\n  assign led = 0;\n\nendmodule\n" },
+      { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
+    ],
+    board,
   };
 }
 
@@ -97,6 +101,11 @@ const handlers: {
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
 const fake = {
   menu: (id: MenuId) => handlers.menu?.(id),
+  /** The start screen's recent projects (`recentProjects`); `?recents=a,b`
+   * sets them from the start. */
+  recents: (new URLSearchParams(location.search).get("recents") ?? "")
+    .split(",")
+    .filter(Boolean),
   /** Boards reported as plugged in (`connectedBoards`). */
   connected: [] as Real.ConnectedBoard[],
   /** The editor's right-click menu shown last (its Go to Definition state). */
@@ -225,18 +234,8 @@ export const backend: typeof Real.backend = {
     hidden: catalog.hidden,
   }),
 
-  openBareMinimum: async (board) => ({
-    dir: null,
-    templateDir: null,
-    name: "untitled",
-    files: [
-      { name: "main.v", text: "module main (\n    input  sys_clk,\n    output led\n);\n\n  assign led = 0;\n\nendmodule\n" },
-      { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
-    ],
-    board,
-    starter: false,
-  }),
-  openExample: async (board) => ({ ...starterDoc(board), starter: false, name: "blinky" }),
+  openBareMinimum: async (board) => bareDoc(board),
+  openExample: async (board) => blinkyDoc(board),
 
   runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, onEvent) => {
     const onLine = (line: string) => onEvent({ kind: "line", line });
@@ -289,7 +288,9 @@ export const backend: typeof Real.backend = {
     };
   },
 
-  newProject: async (board) => starterDoc(board ?? "alhambra-ii"),
+  newProject: async (board) => bareDoc(board ?? "alhambra-ii"),
+  lastBoard: async () => "alhambra-ii",
+  recentProjects: async () => fake.recents,
   setLastBoard: async () => {},
   openProjectDialog: async () => null,
   saveProject: async () => {},
@@ -300,7 +301,6 @@ export const backend: typeof Real.backend = {
     name: suggestedName,
     files,
     board,
-    starter: false,
   }),
 
   openProjectAt: async () => {

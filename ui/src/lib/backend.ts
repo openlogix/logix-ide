@@ -66,8 +66,6 @@ export interface ProjectDoc {
   /** The project's source files, main.v first. */
   files: ProjectFile[];
   board: string | null;
-  /** A new project with starter content (from File > New). */
-  starter: boolean;
 }
 
 export type SaveChoice = "save" | "discard" | "cancel";
@@ -190,6 +188,7 @@ export interface ExampleList {
 /** Ids of native menu items the UI handles (see `menu.rs`). */
 export type MenuId =
   | "new"
+  | "close-project"
   | "open"
   | "save"
   | "save-as"
@@ -296,12 +295,18 @@ export const backend = {
     invoke<FormatResult>("format_file", { name, text }),
 
   /**
-   * A new, unsaved project for `board` (or else the last chosen board),
-   * started from the board's basic example when possible, so it builds
-   * right away.
+   * File > New Project > Empty Project: an unsaved project for `board`
+   * (or else the last chosen board) with the board's pins and an empty
+   * design (its Bare Minimum), so it builds right away.
    */
   newProject: (board: string | null): Promise<ProjectDoc> =>
     invoke<ProjectDoc>("new_project", { board }),
+
+  /** The board for new projects: the last one chosen, or the default. */
+  lastBoard: (): Promise<string> => invoke<string>("last_board"),
+
+  /** The recent project folders, newest first (the start screen). */
+  recentProjects: (): Promise<string[]> => invoke<string[]>("recent_projects"),
 
   /** Remembers the board the user chose, for new projects. */
   setLastBoard: (board: string): Promise<void> =>

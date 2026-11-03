@@ -10,7 +10,10 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 use crate::{platform, settings};
 
 /// Menu ids forwarded to the UI (see `onMenu` in `src/lib/backend.ts`).
+/// File > New Project > Empty Project.
 pub const NEW: &str = "new";
+/// File > Close Project: back to the start screen.
+pub const CLOSE_PROJECT: &str = "close-project";
 pub const OPEN: &str = "open";
 pub const SAVE: &str = "save";
 pub const SAVE_AS: &str = "save-as";
@@ -116,18 +119,24 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         )
         .build()?;
 
+    // "Project" in the names: these act on the whole project, New File on
+    // one file in it.
+    let new_project = SubmenuBuilder::new(app, "New Project")
+        .item(&item(NEW, "Empty Project", "CmdOrCtrl+N")?)
+        .item(&item(EXAMPLES, "From Example…", "CmdOrCtrl+Shift+E")?)
+        .build()?;
     let mut file = SubmenuBuilder::new(app, "File")
-        .item(&item(NEW, "New", "CmdOrCtrl+N")?)
-        .item(&item(OPEN, "Open…", "CmdOrCtrl+O")?)
+        .item(&new_project)
+        .item(&item(OPEN, "Open Project…", "CmdOrCtrl+O")?)
         .item(&recent)
-        .item(&item(EXAMPLES, "Examples…", "CmdOrCtrl+Shift+E")?)
+        .item(&item(CLOSE_PROJECT, "Close Project", "CmdOrCtrl+W")?)
         .separator()
         .item(&item(NEW_FILE, "New File…", "CmdOrCtrl+Shift+N")?)
         .separator()
-        .item(&item(SAVE, "Save", "CmdOrCtrl+S")?)
-        .item(&item(SAVE_AS, "Save As…", "CmdOrCtrl+Shift+S")?)
+        .item(&item(SAVE, "Save Project", "CmdOrCtrl+S")?)
+        .item(&item(SAVE_AS, "Save Project As…", "CmdOrCtrl+Shift+S")?)
         .separator()
-        .item(&item(CLOSE, "Close Window", "CmdOrCtrl+W")?);
+        .item(&item(CLOSE, "Close Window", "CmdOrCtrl+Shift+W")?);
     if !mac {
         // As in the Arduino IDE on Windows and Linux: File > Preferences.
         file = file
@@ -235,10 +244,10 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
                 let _ = window.close();
             }
         }
-        NEW | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD | RUN_TESTS
-        | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | STOP | SHOW_DIAGRAM | DEVICES
-        | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL | OUTPUT_SELECT_ALL
-        | CLEAR_OUTPUT => {
+        NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
+        | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | STOP
+        | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
+        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {
@@ -344,7 +353,7 @@ pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-fn recent_projects() -> Vec<PathBuf> {
+pub fn recent_projects() -> Vec<PathBuf> {
     settings::default_path()
         .map(|p| settings::load(&p).recent_projects)
         .unwrap_or_default()

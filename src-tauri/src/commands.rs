@@ -132,9 +132,6 @@ pub struct ProjectDoc {
     /// `main.v` first.
     files: Vec<ProjectFile>,
     board: Option<String>,
-    /// A new project with starter content (from File > New). The UI may
-    /// replace it with another board's starter while it's untouched.
-    starter: bool,
 }
 
 impl From<project::Project> for ProjectDoc {
@@ -145,7 +142,6 @@ impl From<project::Project> for ProjectDoc {
             name: p.name,
             files: p.files,
             board: p.board,
-            starter: false,
         }
     }
 }
@@ -244,7 +240,6 @@ async fn example_doc(
         name: doc_name,
         files: loaded.files,
         board: Some(board),
-        starter: false,
     })
 }
 
@@ -720,31 +715,16 @@ pub async fn open_last_project() -> Result<Option<ProjectDoc>, UserError> {
     Ok(Some(loaded.into()))
 }
 
-/// A new, unsaved project for `board` (or else the last chosen board, or
-/// the default one). If the board has a starter example (`blinky` or
-/// `ledon`), the project starts from it, so it has the board's pin file and
-/// builds right away. Otherwise it gets a `main.v` that says a pin file is
-/// needed.
+/// File > New Project > Empty Project: an unsaved project for `board` (or
+/// else the last chosen board, or the default one) with the board's pins
+/// and a design that does nothing yet: its Bare Minimum (see
+/// `open_bare_minimum`). It builds right away.
 #[tauri::command]
 pub async fn new_project(board: Option<String>) -> Result<ProjectDoc, UserError> {
     // A new project always has a board: the given one, the last one chosen,
     // or else the default.
-    let board = board
-        .or_else(|| {
-            settings_path()
-                .ok()
-                .and_then(|p| settings::load(&p).last_board)
-        })
-        .unwrap_or_else(|| examples::DEFAULT_BOARD.to_string());
-    match examples::starter_example(&examples::all(), &board) {
-        Some(ex) => {
-            let mut doc = example_doc(board, &ex.name.clone(), "untitled".into()).await?;
-            doc.starter = true;
-            Ok(doc)
-        }
-        // No example to take the pins from: say what's missing.
-        None => Ok(no_pins_doc(board, true)),
-    }
+    let board = board.unwrap_or_else(last_board);
+    open_bare_minimum(board).await
 }
 
 /// A board's Bare Minimum project (Examples): its pins and a design that
@@ -753,7 +733,7 @@ pub async fn new_project(board: Option<String>) -> Result<ProjectDoc, UserError>
 pub async fn open_bare_minimum(board: String) -> Result<ProjectDoc, UserError> {
     let all = examples::all();
     let Some(ex) = examples::starter_example(&all, &board) else {
-        return Ok(no_pins_doc(board, false));
+        return Ok(no_pins_doc(board));
     };
     let name = ex.name.clone();
     let starter = example_doc(board.clone(), &name, "untitled".into()).await?;
@@ -764,14 +744,13 @@ pub async fn open_bare_minimum(board: String) -> Result<ProjectDoc, UserError> {
             name: "untitled".into(),
             files,
             board: Some(board),
-            starter: false,
         },
-        None => no_pins_doc(board, false),
+        None => no_pins_doc(board),
     })
 }
 
 /// A new project for a board without an example to take the pins from.
-fn no_pins_doc(board: String, starter: bool) -> ProjectDoc {
+fn no_pins_doc(board: String) -> ProjectDoc {
     ProjectDoc {
         dir: None,
         template_dir: None,
@@ -781,8 +760,25 @@ fn no_pins_doc(board: String, starter: bool) -> ProjectDoc {
             text: bare::NO_PINS_MAIN.into(),
         }],
         board: Some(board),
-        starter,
     }
+}
+
+/// The recent project folders, newest first (the start screen's list).
+#[tauri::command]
+pub fn recent_projects() -> Vec<String> {
+    crate::menu::recent_projects()
+        .into_iter()
+        .map(|p| p.to_string_lossy().into_owned())
+        .collect()
+}
+
+/// The board for new projects: the last one chosen, or the default.
+#[tauri::command]
+pub fn last_board() -> String {
+    settings_path()
+        .ok()
+        .and_then(|p| settings::load(&p).last_board)
+        .unwrap_or_else(|| examples::DEFAULT_BOARD.to_string())
 }
 
 /// Remembers the board the user chose, for new projects.
@@ -990,7 +986,13 @@ pub fn set_document_state(
     // As in the Arduino IDE: e.g. "blinky | Logix IDE 0.1.0", or
     // "● blinky | Logix IDE 0.1.0" with unsaved changes.
     let version = &window.app_handle().package_info().version;
-    let _ = window.set_title(&format!("{marker}{name} | Logix IDE {version}"));
+    // No project (the start screen): just the app's name.
+    let title = if name.is_empty() {
+        "Logix IDE".to_string()
+    } else {
+        format!("{marker}{name} | Logix IDE {version}")
+    };
+    let _ = window.set_title(&title);
 }
 
 /// Shows the output pane's right-click menu (see `menu::show_output_menu`).

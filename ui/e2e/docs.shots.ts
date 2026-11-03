@@ -15,8 +15,9 @@ const menu = (page: Page, id: string) =>
 async function startWithBoard(page: Page) {
   await page.goto("/");
   await expect(page.locator(".console")).toContainText("Ready.");
-  // New projects start with the Alhambra II blinky.
+  // Start with the Alhambra II blinky from the start screen.
   await expect(page.locator(".board-button")).toHaveText(/Alhambra II/);
+  await page.getByRole("button", { name: "Start with Blinky for Alhambra II" }).click();
   await expect(page.locator(".tab", { hasText: "pinout.pcf" })).toBeVisible();
   // The board is plugged in, as when following the quick start.
   await page.evaluate(() => {
@@ -39,6 +40,13 @@ async function shot(page: Page, name: string) {
   await page.waitForTimeout(300);
   await page.screenshot({ path: `${IMAGES}/${name}.png` });
 }
+
+test("the start screen", async ({ page }) => {
+  await page.goto("/?recents=/Users/you/Documents/Logix/counter,/Users/you/Documents/Logix/uart");
+  await expect(page.locator(".console")).toContainText("Ready.");
+  await expect(page.getByLabel("Start")).toContainText("counter");
+  await shot(page, "start");
+});
 
 test("the board picker", async ({ page }) => {
   await startWithBoard(page);

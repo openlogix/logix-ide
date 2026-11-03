@@ -8,7 +8,6 @@ import {
   fromDoc,
   isDirty,
   isHdlSource,
-  isUntouchedStarter,
   projectModules,
   isFileDirty,
   mainFile,
@@ -20,7 +19,6 @@ import {
 const savedDoc: ProjectDoc = {
   dir: "/p/blinky",
   templateDir: null,
-  starter: false,
   name: "blinky",
   board: null,
   files: [
@@ -150,21 +148,6 @@ describe("isHdlSource", () => {
   });
 });
 
-describe("isUntouchedStarter", () => {
-  const starterDoc = { ...savedDoc, dir: null, starter: true };
-  it("is true for a new, unchanged project", () => {
-    expect(isUntouchedStarter(fromDoc(starterDoc))).toBe(true);
-  });
-  it("is false once edited, saved, or for other projects", () => {
-    const edited = fromDoc(starterDoc);
-    edited.files[0].text = "x";
-    expect(isUntouchedStarter(edited)).toBe(false);
-    const saved = fromDoc(starterDoc);
-    markSaved(saved, "/p/x", "x", filesForSave(saved), null);
-    expect(isUntouchedStarter(saved)).toBe(false);
-    expect(isUntouchedStarter(fromDoc(savedDoc))).toBe(false);
-  });
-});
 
 describe("projectModules", () => {
   it("lists design modules, main first, without testbenches", () => {

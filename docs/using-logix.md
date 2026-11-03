@@ -43,17 +43,20 @@ files inside subfolders aren't part of the design: Logix only builds the
 ones at the top of the folder. Keep each project in its own folder, not
 inside another project.
 
-- **New project**: **File > New** (++cmd+n++) starts from the selected board's
-  basic example (blinky). To start from scratch instead, open the board's
-  **Bare Minimum** (see below).
+- **New project**: **File > New Project > Empty Project** (++cmd+n++) gives
+  the selected board's pin file and an empty design (the board's **Bare
+  Minimum**), ready to build. **File > New Project > From Example…**
+  (++shift+cmd+e++) starts from one of the board's examples instead.
 - **New file**: the **+** at the end of the tabs, or **File > New File…**
   (++shift+cmd+n++). Double-click a tab to rename it; right-click it to
   rename or delete it. These changes, like edits, are saved when you save
   the project.
-- **Open and save**: **File > Open…**, **Open Recent**, **Save**, **Save As…**.
-  Logix reopens the last project when it starts; otherwise it starts a new
-  project for the last board you chose (the **Alhambra II** the first
-  time).
+- **Open, close and save**: **File > Open Project…**, **Open Recent**,
+  **Close Project** (++cmd+w++), **Save Project**, **Save Project As…**.
+  Logix reopens the last project when it starts. With no project open, the
+  start screen offers a new project, an example (**Start with Blinky** for
+  the selected board) and your recent projects; the board in the toolbar is
+  the one new projects use.
   **Save As…** over an existing project replaces it; the old one goes to
   the Trash.
 - **Show Project Folder**: **Project > Show Project Folder**
@@ -80,7 +83,7 @@ selected board is plugged in. Some boards use a common USB chip that can't
 tell which board it is; they're not listed under Connected, but Upload still
 finds them.
 
-**File > Examples…** lists the examples for each board, with a search box.
+**File > New Project > From Example…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA type in the same way.
 
 ![The Examples window: boards on the left, the selected board's examples on the right](images/examples.png)
@@ -155,9 +158,10 @@ opens the folder with Logix's log, to attach to a report (see
 
 | Action | Shortcut |
 | :--- | :--- |
-| New project | ++cmd+n++ |
+| New empty project | ++cmd+n++ |
+| New project from an example | ++shift+cmd+e++ |
 | Open project | ++cmd+o++ |
-| Examples | ++shift+cmd+e++ |
+| Close project | ++cmd+w++ |
 | New file | ++shift+cmd+n++ |
 | Save / Save As | ++cmd+s++ / ++shift+cmd+s++ |
 | Verify | ++cmd+r++ |
@@ -172,4 +176,4 @@ opens the folder with Logix's log, to attach to a report (see
 | Comment/Uncomment lines | ++cmd+slash++ |
 | Go to Definition | ++f12++ (on a Mac keyboard, ++fn+f12++) |
 | Settings | ++cmd+comma++ |
-| Close Window | ++cmd+w++ |
+| Close Window | ++shift+cmd+w++ |

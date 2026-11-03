@@ -103,9 +103,9 @@ security setting on your Mac.
 
 ## Your first blinking LED
 
-1. Start Logix and wait for **Ready.** at the bottom of the window. Logix
-   opens a first project for the **Alhambra II** board. Have a different
-   board? Choose it in the list at the top, then pick its **blinky** example.
+1. Start Logix and wait for **Ready.** at the bottom of the window. Choose
+   your board in the list at the top (the **Alhambra II** at first), then
+   click **Start with Blinky** on the start screen.
 2. Click **Verify** (the ✓ button). Logix builds the design and shows how
    much of the FPGA it uses.
 3. Plug in your board. When Logix sees it, the word next to the board list

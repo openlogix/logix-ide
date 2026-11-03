@@ -45,7 +45,7 @@ The main file is always `main.v`, and its module is named `main`. Other
 Verilog files and the board's pin file show up as tabs, and testbenches end
 with `_tb.v`. New projects go to `~/Documents/Logix`.
 
-This is blinky, the design a new project starts from. A counter counts clock
+This is blinky, the example the start screen offers first. A counter counts clock
 cycles, and its top bit drives the LED, so the LED blinks:
 
 ```verilog
@@ -63,7 +63,7 @@ More in [Using Logix](using-logix.md#projects).
 
 ## Start from an example
 
-**File > Examples…** lists the examples for each board, with a search box.
+**File > New Project > From Example…** lists the examples for each board, with a search box.
 Every board's list starts with **Bare Minimum**: the board's pins and a
 design that does nothing yet, to start from scratch. Choosing a board never
 changes your files.
@@ -108,8 +108,9 @@ hardware you meant.
 
 ## Your first blink
 
-1. **File > New**.
-2. Pick your board.
+1. Pick your board in the toolbar.
+2. On the start screen, click **Start with Blinky** (or **File > New
+   Project > From Example…**, then blinky).
 3. **Verify**.
 4. **Upload**. The LED blinks.
 

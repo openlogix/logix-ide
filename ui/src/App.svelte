@@ -36,7 +36,6 @@
     fromDoc,
     isHdlSource,
     isTestbench,
-    isUntouchedStarter,
     isDirty,
     isFileDirty,
     MAIN_FILE,
@@ -222,9 +221,6 @@
         stage = event.stage;
         if (event.stage !== "downloadingEngine") download = null;
         if (event.stage !== "installingEnginePackages") installStep = null;
-        // A long first-run install: give the user a project meanwhile.
-        if (event.stage !== "checking" && event.stage !== "ready")
-          ensureProject();
         break;
       case "download":
         download = { received: event.received, total: event.total };
@@ -248,7 +244,6 @@
       stage = "ready";
       // Boards and examples first, so "Ready." comes last.
       await loadCatalog();
-      await ensureProject();
       startLsp();
       log("Ready.");
     } catch (e) {
@@ -256,30 +251,7 @@
       setupError = err.message;
       log(`Error: ${err.details}`);
       showOutput();
-      ensureProject();
     }
-  }
-
-  /**
-   * Starts a new project if there's none yet. At startup without a last
-   * project, this waits until the tools are ready, so the board's starter
-   * (blinky) shows right away instead of a placeholder that's replaced a
-   * moment later. A long install or a failed setup gets the placeholder.
-   */
-  async function ensureProject() {
-    if (project) return;
-    await exclusive(async () => {
-      if (project) return;
-      try {
-        loadDoc(
-          await during("Creating a new project…", () =>
-            backend.newProject(null),
-          ),
-        );
-      } catch (e) {
-        showFileError(e);
-      }
-    });
   }
 
   // ---- Boards and examples ----
@@ -297,26 +269,6 @@
       boards = boardList;
       examples = exampleList.examples;
       log(examplesSummary(exampleList.examples.length, exampleList.hidden));
-    } catch (e) {
-      showFileError(e);
-      return;
-    }
-    // A new project made before the tools were ready (e.g. at startup) has
-    // the generic starter; give it its board's starter now.
-    const p = project;
-    if (p && p.board && p.templateDir === null && isUntouchedStarter(p)) {
-      await exclusive(() => replaceStarter(p.board!));
-    }
-  }
-
-  /** Replaces an untouched new project with `board`'s starter project. */
-  async function replaceStarter(board: string) {
-    try {
-      const doc = await during("Preparing the board's starter…", () =>
-        backend.newProject(board),
-      );
-      // Only if the user hasn't started editing meanwhile.
-      if (project && isUntouchedStarter(project)) loadDoc(doc);
     } catch (e) {
       showFileError(e);
     }
@@ -373,8 +325,13 @@
    * Files" as the default.
    */
   function setBoard(id: string) {
-    if (!project || !id) return;
+    if (!id) return;
     backend.setLastBoard(id);
+    // No project (the start screen): it's the board for the next one.
+    if (!project) {
+      homeBoard = id;
+      return;
+    }
     if (examples.length === 0) {
       project.board = id;
       return;
@@ -858,25 +815,40 @@
 
   const dirty = $derived(project !== null && isDirty(project));
   /**
-   * The FPGA tools aren't ready (the first start's install, or a failed
-   * setup) and there's nothing of the user's to show: the editor area shows
-   * a welcome panel instead of a placeholder design that can't be built yet.
-   * Once ready, the board's starter (blinky) replaces it.
+   * No project open (first start, or after Close Project): the editor area
+   * shows the start screen. The toolbar still has a board, `homeBoard`
+   * (the last one chosen), which New Project and the examples use.
    */
-  const welcome = $derived(
-    !ready && (project === null || isUntouchedStarter(project)),
+  const welcome = $derived(project === null);
+  let homeBoard = $state<string | null>(null);
+  /** The board in the toolbar: the project's, or else `homeBoard`. */
+  const currentBoard = $derived(project ? project.board : homeBoard);
+  /** The start screen's recent projects (folders). */
+  let recents = $state<string[]>([]);
+  /** The board's starter example (blinky, else ledon), if it has one. */
+  const starter = $derived(
+    ["blinky", "ledon"]
+      .map((n) => examples.find((e) => e.board === currentBoard && e.name === n))
+      .find((e) => e) ?? null,
   );
   /** Whether Verify and Upload can be started now. */
   const canRun = $derived(
-    ready &&
-      project !== null &&
-      !welcome &&
-      running === null &&
-      activity === null,
+    ready && project !== null && running === null && activity === null,
   );
 
   $effect(() => {
+    // An empty name: no project, the title is just "Logix IDE".
     if (project) backend.setDocumentState(project.name, dirty);
+    else backend.setDocumentState("", false);
+  });
+
+  $effect(() => {
+    if (project === null) {
+      backend
+        .recentProjects()
+        .then((r) => (recents = r))
+        .catch(() => {});
+    }
   });
 
   function showFileError(e: unknown) {
@@ -1012,8 +984,10 @@
     return true;
   }
 
+  /** File > New Project > Empty Project: the board's pins and an empty
+   * design (its Bare Minimum). */
   async function newProject() {
-    const board = project?.board ?? null;
+    const board = currentBoard;
     if (!(await confirmLeave())) return;
     try {
       loadDoc(await during("Creating a new project…", () => backend.newProject(board)));
@@ -1021,6 +995,22 @@
     } catch (e) {
       commandFailed(e);
     }
+  }
+
+  /** File > Close Project: back to the start screen (asks to save first). */
+  async function closeProject() {
+    if (!project || !(await confirmLeave())) return;
+    homeBoard = project.board ?? homeBoard;
+    project = null;
+    fileProblems = new Map();
+    fileError = null;
+    cancelNaming();
+    finish("Closed the project.");
+  }
+
+  /** The start screen's "Start with Blinky". */
+  function startWithStarter() {
+    if (starter) openExample({ ...starter, bare: false });
   }
 
   /** File > Open Recent. */
@@ -1238,6 +1228,7 @@
       () => Promise<unknown>
     > = {
       new: newProject,
+      "close-project": closeProject,
       open: openProject,
       save,
       "save-as": saveAs,
@@ -1322,24 +1313,26 @@
       // E.g. the folder was moved or deleted; start fresh instead.
       log(`${toUserError(e).details} Starting a new project.`);
     }
-    // No project yet: a new one comes once the tools are ready
-    // (`ensureProject`).
+    // No project: the start screen.
   }
 
   onMount(async () => {
     await loadPrefs();
+    try {
+      homeBoard = await backend.lastBoard();
+    } catch {
+      // The board picker then starts empty.
+    }
     await openStartupProject();
     try {
       info = await backend.appInfo();
       log(`${info.name} ${info.version} (${info.platform})`);
     } catch (e) {
       log(`Backend error: ${e}`);
-      ensureProject();
       return;
     }
     if (!info.platformSupported) {
       setupError = "This platform is not supported yet.";
-      ensureProject();
       return;
     }
     runSetup();
@@ -1390,7 +1383,7 @@
   <ExamplesDialog
     {boards}
     {examples}
-    initialBoard={pendingBoard ?? project?.board ?? null}
+    initialBoard={pendingBoard ?? currentBoard}
     onlyBoard={pendingBoard}
     onOpen={openExample}
     onClose={() => closeExamples(true)}
@@ -1468,19 +1461,19 @@
     <BoardPicker
       {boards}
       connected={connected.map((c) => c.board)}
-      value={pendingBoard ?? project?.board ?? null}
-      disabled={!project || boards.length === 0}
+      value={pendingBoard ?? currentBoard}
+      disabled={boards.length === 0}
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}
     />
-    {#if ready && project?.board}
-      {@const boardConnected = isConnected(project.board)}
+    {#if ready && currentBoard}
+      {@const boardConnected = isConnected(currentBoard)}
       <span
         class="board-link"
         class:connected={boardConnected}
         title={boardConnected
-          ? `${boardName(project.board)} is connected.`
-          : `${boardName(project.board)} isn't connected (no matching USB device found).`}
+          ? `${boardName(currentBoard)} is connected.`
+          : `${boardName(currentBoard)} isn't connected (no matching USB device found).`}
         >{boardConnected ? "Connected" : "Not connected"}</span
       >
     {/if}
@@ -1505,7 +1498,7 @@
   <div class="split" class:dragging bind:this={splitEl}>
     <main class="editor">
       {#if welcome}
-        <div class="welcome">
+        <div class="welcome" aria-label="Start">
           <h2>Welcome to Logix IDE</h2>
           <p class="motto">"The Arduino experience, for FPGAs"</p>
           {#if setupError}
@@ -1513,11 +1506,38 @@
               Logix needs its FPGA tools to work. See the message above, and
               try again.
             </p>
-          {:else}
+          {:else if !ready}
             <p>
               Getting the FPGA tools ready… The first start takes several
               minutes.
             </p>
+          {/if}
+          {#if starter}
+            <button class="start-blinky" onclick={startWithStarter}
+              >Start with {starter.name === "blinky" ? "Blinky" : starter.name}
+              for {boardName(currentBoard)}</button
+            >
+          {/if}
+          <div class="start-actions">
+            <button onclick={() => exclusive(newProject)}>New Project</button>
+            <button onclick={() => exclusive(openProject)}>Open Project…</button>
+            <button disabled={examples.length === 0} onclick={showExamples}
+              >From Example…</button
+            >
+          </div>
+          {#if recents.length > 0}
+            <div class="recents">
+              <h3>Recent projects</h3>
+              <ul>
+                {#each recents.slice(0, 5) as dir (dir)}
+                  <li>
+                    <button class="link" title={dir} onclick={() => openRecent(dir)}
+                      >{dir.split(/[\\/]/).pop()}</button
+                    >
+                  </li>
+                {/each}
+              </ul>
+            </div>
           {/if}
         </div>
       {/if}
@@ -1912,6 +1932,57 @@
     max-width: 460px;
     margin: 0 0 12px;
     line-height: 1.5;
+  }
+  .start-actions button,
+  .welcome .start-blinky {
+    padding: 6px 16px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .start-actions button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .welcome .start-blinky {
+    margin: 4px 0 12px;
+    background: var(--accent);
+    color: #ffffff;
+  }
+  .start-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .recents {
+    margin-top: 22px;
+    min-width: 260px;
+  }
+  .recents h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .recents ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .recents .link {
+    border: none;
+    background: none;
+    padding: 2px 0;
+    color: var(--accent);
+    cursor: pointer;
+    font: inherit;
+  }
+  .recents .link:hover {
+    text-decoration: underline;
   }
 
   .console-area {
