@@ -26,14 +26,14 @@ To get it, see [Installing Logix](installing.md).
 
 ## The toolbar
 
-| Button | What it does | Shortcut |
-| :--- | :--- | :--- |
-| **Verify** | Checks the design and builds it | ++cmd+r++ |
-| **Upload** | Builds the design and programs the board | ++cmd+u++ |
-| **Run Tests** | Runs the project's testbenches | ++shift+cmd+t++ |
-| **Simulate** | Shows the signals in GTKWave | ++option+cmd+t++ |
-| **Stop** | Stops whatever is running | ++cmd+period++ |
-| Board list | Picks your board; boards plugged in come first | |
+| Button | | What it does | Shortcut |
+| :---: | :--- | :--- | :--- |
+| ![Verify](images/icon-verify.png){ .toolbar-icon } | **Verify** | Checks the design and builds it | ++cmd+r++ |
+| ![Upload](images/icon-upload.png){ .toolbar-icon } | **Upload** | Builds the design and programs the board | ++cmd+u++ |
+| ![Run Tests](images/icon-test.png){ .toolbar-icon } | **Run Tests** | Runs the project's testbenches | ++shift+cmd+t++ |
+| ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals in GTKWave | ++option+cmd+t++ |
+| ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running | ++cmd+period++ |
+| | Board list | Picks your board; boards plugged in come first | |
 
 Below the toolbar are a tab for each file, the editor, and the output with a
 status line that says what Logix is doing. Mistakes in the grammar, like a

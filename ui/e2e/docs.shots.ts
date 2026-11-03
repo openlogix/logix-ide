@@ -113,3 +113,26 @@ test("connected devices", async ({ page }) => {
   );
   await shot(page, "devices");
 });
+
+test("toolbar icons", async ({ page }) => {
+  // The toolbar buttons as small images for the docs text (icon-<name>.png),
+  // taken from the real UI so they always match it: no toolbar color around
+  // the round buttons, and Stop shown as when something runs.
+  await startWithBoard(page);
+  await page.addStyleTag({
+    content: ".toolbar { background: transparent !important; }",
+  });
+  const buttons: [string, RegExp][] = [
+    ["verify", /^Verify/],
+    ["upload", /^Upload/],
+    ["test", /^Run tests/],
+    ["simulate", /^Simulate/],
+    ["stop", /^Stop/],
+  ];
+  for (const [name, title] of buttons) {
+    const button = page.getByTitle(title);
+    await button.evaluate((b) => b.removeAttribute("disabled"));
+    await page.mouse.move(0, 0);
+    await button.screenshot({ path: `${IMAGES}/icon-${name}.png`, omitBackground: true });
+  }
+});

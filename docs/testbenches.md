@@ -6,7 +6,7 @@ checks its outputs, without a board. Testbench files end with `_tb.v` (or
 
 ## Run Tests
 
-**Run Tests** (the flask, ++shift+cmd+t++) runs all the project's
+**Run Tests** (![Run Tests button](images/icon-test.png){ .toolbar-icon }, ++shift+cmd+t++) runs all the project's
 testbenches and shows the result of each:
 
 ![Run Tests: the testbench's output and its result](images/tests.png)
@@ -19,7 +19,7 @@ error, and the line that failed is marked in the editor.
 
 ## Simulate
 
-**Simulate** (the waveform, ++option+cmd+t++) runs the testbench that's open
+**Simulate** (![Simulate button](images/icon-simulate.png){ .toolbar-icon }, ++option+cmd+t++) runs the testbench that's open
 (or the project's only one) and shows its signals in **GTKWave**, a waveform
 viewer. The testbench runs to the end even when a check fails, and GTKWave
 opens zoomed in around the first failure, so you can see what led up to it.

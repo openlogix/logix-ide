@@ -2,8 +2,9 @@
 
 ## The window
 
-- **Toolbar**: **Verify**, **Upload**, **Run Tests**, **Simulate**, **Stop**,
-  and the board list.
+- **Toolbar**: **Verify** ![](images/icon-verify.png){ .toolbar-icon }, **Upload** ![](images/icon-upload.png){ .toolbar-icon },
+  **Run Tests** ![](images/icon-test.png){ .toolbar-icon }, **Simulate** ![](images/icon-simulate.png){ .toolbar-icon },
+  **Stop** ![](images/icon-stop.png){ .toolbar-icon }, and the board list.
 - **Tabs**: one per file of the project. A dot marks unsaved changes.
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
