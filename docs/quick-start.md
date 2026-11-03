@@ -6,11 +6,11 @@ From a new project to a blinking LED in a few steps.
 
 Start Logix and wait until the output area at the bottom shows **Ready.**
 The window shows the start screen. Choose your board in the list in the
-toolbar (the **Alhambra II** is selected at first), then click **Start with
-Blinky for** your board. (On a few boards the basic example is called
-**ledon**.)
+toolbar (the **Alhambra II** is selected at first), then click **From
+Example…**, pick **blinky** for your board and click **Open**. (On a few
+boards the basic example is called **ledon**.)
 
-![The start screen: Start with Blinky, New Project, Open Project, From Example, and recent projects](images/start.png)
+![The start screen: New Project, Open Project, From Example, and recent projects](images/start.png)
 
 The project has everything needed to build: `main.v` (the design), a pin file such
 as `pinout.pcf` (which FPGA pins connect to what on the board), and usually a

@@ -15,9 +15,12 @@ const menu = (page: Page, id: string) =>
 async function startWithBoard(page: Page) {
   await page.goto("/");
   await expect(page.locator(".console")).toContainText("Ready.");
-  // Start with the Alhambra II blinky from the start screen.
+  // Open the Alhambra II blinky from the start screen's From Example….
   await expect(page.locator(".board-button")).toHaveText(/Alhambra II/);
-  await page.getByRole("button", { name: "Start with Blinky for Alhambra II" }).click();
+  await page.getByRole("button", { name: "From Example…" }).click();
+  const examples = page.getByRole("dialog", { name: "Examples" });
+  await examples.getByRole("button", { name: /^blinky/ }).click();
+  await examples.getByRole("button", { name: "Open" }).click();
   await expect(page.locator(".tab", { hasText: "pinout.pcf" })).toBeVisible();
   // The board is plugged in, as when following the quick start.
   await page.evaluate(() => {

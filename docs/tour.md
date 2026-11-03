@@ -109,8 +109,8 @@ hardware you meant.
 ## Your first blink
 
 1. Pick your board in the toolbar.
-2. On the start screen, click **Start with Blinky** (or **File > New
-   Project > From Example…**, then blinky).
+2. On the start screen, click **From Example…** (or **File > New
+   Project > From Example…**), then open blinky.
 3. **Verify**.
 4. **Upload**. The LED blinks.
 

@@ -16,12 +16,15 @@ async function pickBoard(page: Page, name: string) {
 
 /**
  * Opens the app, waits until the (fake) FPGA tools are ready, and starts
- * with the Alhambra II's blinky from the start screen.
+ * with the Alhambra II's blinky (the start screen's From Example…).
  */
 async function start(page: Page) {
   await page.goto("/");
   await expect(output(page)).toContainText("Ready.");
-  await page.getByRole("button", { name: "Start with Blinky for Alhambra II" }).click();
+  await page.getByRole("button", { name: "From Example…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Examples" });
+  await dialog.getByRole("button", { name: /^blinky/ }).click();
+  await dialog.getByRole("button", { name: "Open" }).click();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
 }
 
@@ -93,7 +96,8 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   await expect(output(page)).toContainText(/Closed the project\.\s*Ready\./);
   // The board can still be changed; it's used for the next project.
   await pickBoard(page, "iCEBreaker");
-  await expect(start).toContainText("Start with Blinky for iCEBreaker");
+  await expect(boardButton(page)).toHaveText(/iCEBreaker/);
+  await expect(start).toBeVisible();
 });
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
@@ -117,7 +121,7 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   await expect(page.getByRole("option")).not.toHaveCount(8);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toBeHidden();
-  // The Alhambra II by default, and its blinky (from the start screen) is
+  // The Alhambra II by default, and its blinky (from the examples) is
   // ready to build.
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
   await expect(tab(page, "pinout.pcf")).toBeVisible();

@@ -825,12 +825,6 @@
   const currentBoard = $derived(project ? project.board : homeBoard);
   /** The start screen's recent projects (folders). */
   let recents = $state<string[]>([]);
-  /** The board's starter example (blinky, else ledon), if it has one. */
-  const starter = $derived(
-    ["blinky", "ledon"]
-      .map((n) => examples.find((e) => e.board === currentBoard && e.name === n))
-      .find((e) => e) ?? null,
-  );
   /** Whether Verify and Upload can be started now. */
   const canRun = $derived(
     ready && project !== null && running === null && activity === null,
@@ -1007,11 +1001,6 @@
     cancelNaming();
     await backend.closeProject();
     finish("Closed the project.");
-  }
-
-  /** The start screen's "Start with Blinky". */
-  function startWithStarter() {
-    if (starter) openExample({ ...starter, bare: false });
   }
 
   /** File > Open Recent. */
@@ -1513,12 +1502,6 @@
               minutes.
             </p>
           {/if}
-          {#if starter}
-            <button class="start-blinky" onclick={startWithStarter}
-              >Start with {starter.name === "blinky" ? "Blinky" : starter.name}
-              for {boardName(currentBoard)}</button
-            >
-          {/if}
           <div class="start-actions">
             <button onclick={() => exclusive(newProject)}>New Project</button>
             <button onclick={() => exclusive(openProject)}>Open Project…</button>
@@ -1934,8 +1917,7 @@
     margin: 0 0 12px;
     line-height: 1.5;
   }
-  .start-actions button,
-  .welcome .start-blinky {
+  .start-actions button {
     padding: 6px 16px;
     font: inherit;
     font-size: 13px;
@@ -1949,11 +1931,6 @@
   .start-actions button:disabled {
     opacity: 0.5;
     cursor: default;
-  }
-  .welcome .start-blinky {
-    margin: 4px 0 12px;
-    background: var(--accent);
-    color: #ffffff;
   }
   .start-actions {
     display: flex;
