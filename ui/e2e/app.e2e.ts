@@ -328,6 +328,7 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
     definition: false,
     testbenches: true,
     simulate: true,
+    testbenchOpen: false,
   });
   const first = page.locator(".cm-line").first();
   const before = (await first.textContent()) ?? "";
@@ -348,6 +349,11 @@ test("file commands are enabled only where they work", async ({ page }) => {
   await expect.poll(menuState).toMatchObject({ verilog: true, testbenches: true, simulate: true });
   await expect(runTests).toBeEnabled();
   await expect(simulate).toBeEnabled();
+  // A testbench: its own Run This Test in the editor's right-click menu.
+  await tab(page, "main_tb.v").click();
+  await expect.poll(menuState).toMatchObject({ testbenchOpen: true });
+  await menu(page, "run-this-test");
+  await expect(page.locator(".status-text")).toContainText("Tests passed");
   // A pin file: Comment/Uncomment with its own line comment, but no Auto
   // Format.
   await tab(page, "pinout.pcf").click();
@@ -382,6 +388,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
     definition: false,
     testbenches: false,
     simulate: false,
+    testbenchOpen: false,
   });
 });
 

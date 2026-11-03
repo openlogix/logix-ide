@@ -887,6 +887,7 @@
     definition: project !== null && lsp !== null && isHdlSource(activeFile),
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && simulationTestbench(project) !== null,
+    testbenchOpen: project !== null && isTestbench(activeFile),
   });
 
   $effect(() => {
@@ -1261,6 +1262,13 @@
       consoleLines = [];
       return;
     }
+    // The editor's right-click menu, in a testbench (as on its tab).
+    if (id === "run-this-test" || id === "simulate-this-test") {
+      if (project && isTestbench(activeFile)) {
+        runTask(id === "run-this-test" ? "test" : "simulate", activeFile);
+      }
+      return;
+    }
     if (id === "recents-changed") {
       loadRecents();
       return;
@@ -1285,6 +1293,8 @@
         | "output-select-all"
         | "clear-output"
         | "recents-changed"
+        | "run-this-test"
+        | "simulate-this-test"
       >,
       () => Promise<unknown>
     > = {

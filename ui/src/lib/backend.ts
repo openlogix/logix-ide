@@ -199,6 +199,8 @@ export interface MenuState {
   testbenches: boolean;
   /** There's a testbench to simulate (Simulate). */
   simulate: boolean;
+  /** The open tab is a testbench (the editor menu's Run This Test, Simulate). */
+  testbenchOpen: boolean;
 }
 
 /** Ids of native menu items the UI handles (see `menu.rs`). */
@@ -226,6 +228,8 @@ export type MenuId =
   | "select-all"
   | "output-select-all"
   | "clear-output"
+  | "run-this-test"
+  | "simulate-this-test"
   // Not a menu item: the recent projects list changed (Clear Menu).
   | "recents-changed";
 

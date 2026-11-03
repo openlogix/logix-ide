@@ -37,6 +37,9 @@ pub const SELECT_ALL: &str = "select-all";
 /// The output pane's right-click menu.
 pub const OUTPUT_SELECT_ALL: &str = "output-select-all";
 pub const CLEAR_OUTPUT: &str = "clear-output";
+/// Editor right-click menu, in a testbench: run or simulate that testbench.
+pub const RUN_THIS_TEST: &str = "run-this-test";
+pub const SIMULATE_THIS_TEST: &str = "simulate-this-test";
 /// Sent to the UI (as a `menu` event) when File > Open Recent > Clear Menu
 /// emptied the list, so the start screen reloads its recent projects.
 pub const RECENTS_CHANGED: &str = "recents-changed";
@@ -109,6 +112,9 @@ pub struct MenuState {
     /// There's a testbench to simulate: the open tab is one, or the project
     /// has exactly one (Simulate).
     pub simulate: bool,
+    /// The open tab is a testbench: the editor's right-click menu adds Run
+    /// This Test and Simulate (hidden otherwise, to keep it short).
+    pub testbench_open: bool,
 }
 
 /// Whether the item `id` can be used in `state`.
@@ -311,7 +317,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
-        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT => {
+        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {
@@ -376,8 +382,16 @@ pub fn show_editor_menu<R: Runtime>(
         .select_all()
         .separator()
         .item(&item(TOGGLE_COMMENT, "Comment/Uncomment", "CmdOrCtrl+/")?)
-        .item(&item(AUTO_FORMAT, "Auto Format", "CmdOrCtrl+T")?)
-        .build()?;
+        .item(&item(AUTO_FORMAT, "Auto Format", "CmdOrCtrl+T")?);
+    // As on the tab's right-click menu: run or simulate this testbench.
+    let menu = if state.project && state.testbench_open {
+        menu.separator()
+            .item(&MenuItemBuilder::with_id(RUN_THIS_TEST, "Run This Test").build(window)?)
+            .item(&MenuItemBuilder::with_id(SIMULATE_THIS_TEST, "Simulate").build(window)?)
+    } else {
+        menu
+    };
+    let menu = menu.build()?;
     menu.popup(window.as_ref().window())
 }
 
@@ -492,6 +506,7 @@ mod tests {
             definition: true,
             testbenches: true,
             simulate: true,
+            testbench_open: true,
         };
         for id in [
             AUTO_FORMAT,

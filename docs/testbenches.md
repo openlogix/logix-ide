@@ -11,7 +11,8 @@ testbenches and shows the result of each:
 
 ![Run Tests: the testbench's output and its result](images/tests.png)
 
-To run just one, right-click its tab and choose **Run This Test**.
+To run just one, right-click its tab, or right-click in it in the editor,
+and choose **Run This Test**. **Simulate** is there too.
 
 A test fails when the testbench reports an error (`$error` or `$fatal`), or
 when it doesn't end with `$finish`. Run Tests stops a testbench at its first
