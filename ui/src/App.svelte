@@ -523,6 +523,19 @@
   // ---- Auto Format (Tools menu, Cmd+T, as in the Arduino IDE) ----
 
 
+  /**
+   * Ends a command's output: its result (the status bar's text, green
+   * after success, red after an error), then "Ready.".
+   */
+  function logDone() {
+    if (status) {
+      const color =
+        status.kind === "ok" ? "\x1b[32m" : status.kind === "error" ? "\x1b[31m" : "";
+      log(color ? `${color}${status.text}\x1b[0m` : status.text);
+    }
+    log("Ready.");
+  }
+
   async function autoFormat() {
     if (!project || formatting) return;
     const p = project;
@@ -580,6 +593,7 @@
       log(`Error: ${err.details}`);
     } finally {
       formatting = false;
+      if (project === p) logDone();
     }
   }
 
@@ -823,6 +837,7 @@
     } finally {
       running = null;
       taskStep = null;
+      if (project === p) logDone();
     }
   }
 

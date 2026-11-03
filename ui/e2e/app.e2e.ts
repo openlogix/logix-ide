@@ -100,6 +100,8 @@ test("a new project for a board builds right away", async ({ page }) => {
   await page.getByTitle(/^Verify/).click();
   await expect(status(page)).toContainText("Build succeeded");
   await expect(status(page)).toContainText("0.4% of logic cells");
+  // The output ends with the result, then Ready.
+  await expect(output(page)).toContainText(/Build succeeded in .*\s*Ready\.\s*$/);
 });
 
 test("a build error is marked in the editor and linked in the output", async ({ page }) => {
@@ -113,9 +115,11 @@ test("a build error is marked in the editor and linked in the output", async ({ 
   await expect(page.locator(".cm-lintRange-error")).toBeVisible();
   await expect(tab(page, "main.v")).toHaveClass(/has-error/);
 
-  // The "main.v:1" in the output jumps to the file.
+  // The "main.v:1" in the output jumps to the file (the tool's line, and
+  // the result line at the end).
   await tab(page, "pinout.pcf").click();
-  await page.locator(".file-link", { hasText: "main.v:1" }).click();
+  await expect(page.locator(".file-link", { hasText: "main.v:1" })).toHaveCount(2);
+  await page.locator(".file-link", { hasText: "main.v:1" }).first().click();
   await expect(tab(page, "main.v")).toHaveClass(/active/);
 });
 
