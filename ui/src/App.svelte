@@ -1910,8 +1910,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 32px 24px;
+    /* Top-aligned, so the space above the title equals the space between
+       it and the cards (--welcome-gap) at any window height. */
+    --welcome-gap: 40px;
+    justify-content: flex-start;
+    padding: var(--welcome-gap) 24px 24px;
     text-align: center;
     overflow: auto;
   }
@@ -1933,16 +1936,16 @@
   }
   .start-actions {
     display: flex;
-    gap: 16px;
-    margin-top: 36px;
+    gap: 12px;
+    margin-top: var(--welcome-gap);
   }
   .start-actions button {
-    width: 180px;
+    width: 156px;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-    padding: 16px 18px 18px;
+    gap: 2px;
+    padding: 12px 14px 14px;
     font: inherit;
     text-align: left;
     border: 1px solid var(--border);
@@ -1971,7 +1974,7 @@
   }
   .start-icon {
     display: flex;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     color: var(--accent);
   }
   .start-title {
@@ -1984,8 +1987,8 @@
     color: var(--muted);
   }
   .recents {
-    margin-top: 36px;
-    width: 572px;
+    margin-top: var(--welcome-gap);
+    width: 492px;
     max-width: 100%;
     text-align: left;
   }
