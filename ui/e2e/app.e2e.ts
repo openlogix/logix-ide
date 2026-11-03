@@ -45,12 +45,12 @@ async function typeAtStart(page: Page, text: string) {
 
 test("shows the engine's package install progress", async ({ page }) => {
   await page.goto("/?engineSetup");
-  const banner = page.locator(".banner[role=status]");
-  await expect(banner).toContainText(
+  const bar = page.locator(".status-bar");
+  await expect(status(page)).toContainText(
     "Installing FPGA tools for Logix Engine",
   );
-  await expect(banner).toContainText("Installing oss-cad-suite 42%");
-  await expect(banner.locator("progress")).toHaveJSProperty("value", 0.42);
+  await expect(bar).toContainText("Installing oss-cad-suite 42%");
+  await expect(bar.locator("progress")).toHaveJSProperty("value", 0.42);
   await expect(output(page)).toContainText("Installing oss-cad-suite...");
   await page.evaluate(() =>
     (
@@ -58,7 +58,7 @@ test("shows the engine's package install progress", async ({ page }) => {
     ).__fake.finishSetup(),
   );
   await expect(output(page)).toContainText("Ready.");
-  await expect(banner).toHaveCount(0);
+  await expect(bar.locator("progress")).toHaveCount(0);
 });
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {

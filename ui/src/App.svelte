@@ -467,6 +467,27 @@
       (stage !== null && stage !== "ready" && !setupError),
   );
 
+  /** Setup is under way (shown in the status bar, with its progress). */
+  const settingUp = $derived(
+    stage !== null && stage !== "ready" && !setupError,
+  );
+
+  /** Setup's progress detail: bytes downloaded, or the package and its %. */
+  const setupDetail = $derived.by(() => {
+    if (!settingUp) return "";
+    if (download)
+      return (
+        formatBytes(download.received) +
+        (download.total ? ` of ${formatBytes(download.total)}` : "")
+      );
+    if (installStep?.message)
+      return (
+        installStep.message +
+        (installStep.percent != null ? ` ${installStep.percent}%` : "")
+      );
+    return "";
+  });
+
   /** The status bar text: what's running, else the last result or Ready. */
   const statusText = $derived.by(() => {
     if (activity) return activity;
@@ -1455,23 +1476,6 @@
         <button onclick={runSetup}>Retry</button>
       {/if}
     </div>
-  {:else if stage && !ready}
-    <div class="banner" role="status">
-      <span>
-        {stageText[stage]}
-        {#if download}
-          {formatBytes(download.received)}{download.total
-            ? ` of ${formatBytes(download.total)}`
-            : ""}
-        {/if}
-        {#if installStep?.message}
-          {installStep.message}{installStep.percent != null
-            ? ` ${installStep.percent}%`
-            : ""}
-        {/if}
-      </span>
-      <progress value={downloadFraction ?? undefined} max="1"></progress>
-    </div>
   {/if}
 
   <div class="split" class:dragging bind:this={splitEl}>
@@ -1586,6 +1590,12 @@
           <span class="spinner" aria-label="Busy"></span>
         {/if}
         <span class="status-text" role="status">{statusText}</span>
+        {#if settingUp && !activity && !running}
+          {#if setupDetail}
+            <span class="setup-detail">{setupDetail}</span>
+          {/if}
+          <progress value={downloadFraction ?? undefined} max="1"></progress>
+        {/if}
         {#if consoleVisible}
           <button title="Clear the output" onclick={() => (consoleLines = [])}
             >Clear</button
@@ -1714,9 +1724,6 @@
   }
   .banner span {
     flex: 1;
-  }
-  .banner progress {
-    width: 200px;
   }
   .banner.error {
     background: var(--banner-error-bg);
@@ -1919,6 +1926,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .setup-detail {
+    flex: none;
+  }
+  .status-bar progress {
+    flex: none;
+    width: 160px;
   }
   .status-bar button {
     padding: 1px 10px;

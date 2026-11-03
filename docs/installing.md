@@ -22,8 +22,8 @@ Logix needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
 ## The first start
 
 On its first start, Logix downloads the FPGA tools it needs (Apio, Logix
-Engine, and their packages). This may take a few minutes and needs an internet connection; a
-banner at the top shows the progress, and the editor area says it's getting
+Engine, and their packages). This may take a few minutes and needs an internet connection; the
+status bar at the bottom of the window shows the progress, and the editor area says it's getting
 the FPGA tools ready. When the output area shows **Ready.**, Logix opens a
 first project for the Alhambra II board, and you can start.
 
