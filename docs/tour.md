@@ -26,14 +26,14 @@ To get it, see [Installing Logix](installing.md).
 
 ## The toolbar
 
-| Button | | What it does | Shortcut |
-| :---: | :--- | :--- | :--- |
-| ![Verify](images/icon-verify.png){ .toolbar-icon } | **Verify** | Checks the design and builds it | ++cmd+r++ |
-| ![Upload](images/icon-upload.png){ .toolbar-icon } | **Upload** | Builds the design and programs the board | ++cmd+u++ |
-| ![Run Tests](images/icon-test.png){ .toolbar-icon } | **Run Tests** | Runs the project's testbenches | ++shift+cmd+t++ |
-| ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals in GTKWave | ++option+cmd+t++ |
-| ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running | ++cmd+period++ |
-| | Board list | Picks your board; boards plugged in come first | |
+| Button | | What it does |
+| :---: | :--- | :--- |
+| ![Verify](images/icon-verify.png){ .toolbar-icon } | **Verify** | Checks the design and builds it |
+| ![Upload](images/icon-upload.png){ .toolbar-icon } | **Upload** | Builds the design and programs the board |
+| ![Run Tests](images/icon-test.png){ .toolbar-icon } | **Run Tests** | Runs the project's testbenches |
+| ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals in GTKWave |
+| ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running |
+| | Board list | Picks your board; boards plugged in come first |
 
 Below the toolbar are a tab for each file, the editor, and the output with a
 status line that says what Logix is doing. Mistakes in the grammar, like a
@@ -72,7 +72,7 @@ changes your files.
 
 ## Verify: check, build, report
 
-**Verify** checks the design for common mistakes, builds it for your board,
+The **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon } checks the design for common mistakes, builds it for your board,
 and reports how much of the FPGA it uses and how fast it can run. A mistake
 is marked on its line; hover over the mark to read it, or click the
 `file:line` link in the output to jump there.
@@ -82,7 +82,7 @@ is marked on its line; hover over the mark to read it, or click the
 ## Upload: put it on the board
 
 Plug the board in by USB. Next to the board list, Logix says **Connected**.
-Click **Upload**: Logix builds the design, shows how much of the FPGA it
+Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix builds the design, shows how much of the FPGA it
 uses, and programs the board. If it can't find the board,
 **Tools > Connected Devices…** shows what's plugged in, and
 [Troubleshooting](troubleshooting.md#upload-cant-find-the-board) has tips.
@@ -92,15 +92,15 @@ uses, and programs the board. If it can't find the board,
 ## Test without a board
 
 A **testbench** drives your design's inputs and checks its outputs, with no
-board needed. **Run Tests** runs them all and shows each result;
-**Simulate** shows the signals over time in GTKWave. Most examples come with
+board needed. The **Run Tests** button ![Run Tests button](images/icon-test.png){ .toolbar-icon } runs them all and shows each result;
+the **Simulate** button ![Simulate button](images/icon-simulate.png){ .toolbar-icon } shows the signals over time in GTKWave. Most examples come with
 a testbench. More in [Testbenches and simulation](testbenches.md).
 
 ![Run Tests: the testbench's output and its result](images/tests.png)
 
 ## See what you built
 
-**Project > Show Diagram** (++shift+cmd+d++) draws your design's modules and
+**Project > Show Diagram** draws your design's modules and
 signals: a good way to check that the hardware you described is the
 hardware you meant.
 
@@ -111,7 +111,7 @@ hardware you meant.
 1. Pick your board in the toolbar.
 2. On the start screen, click **From Example…** (or **File > New
    Project > From Example…**), then open blinky.
-3. **Verify**.
-4. **Upload**. The LED blinks.
+3. Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }.
+4. Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }. The LED blinks.
 
 The [Quick start](quick-start.md) walks through it step by step.

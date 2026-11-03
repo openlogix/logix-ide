@@ -18,7 +18,7 @@ testbench, `main_tb.v`.
 
 ## 2. Verify
 
-Click **Verify** (![Verify button](images/icon-verify.png){ .toolbar-icon }, ++cmd+r++). Logix checks the design for
+Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }. Logix checks the design for
 common mistakes, builds it, and shows how much of the FPGA it uses:
 
 ```
@@ -34,8 +34,8 @@ missing at the end of line 7, so the tools stop at the next line:
 ## 3. Upload
 
 Connect your board with a USB cable. Next to the board list, Logix shows
-**Connected** when it recognizes the board. Click **Upload**
-(![Upload button](images/icon-upload.png){ .toolbar-icon }, ++cmd+u++): Logix builds the design and programs the board. The LED should
+**Connected** when it recognizes the board. Click the **Upload** button
+![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix builds the design and programs the board. The LED should
 start blinking.
 
 If Logix can't find the board, see
@@ -43,16 +43,14 @@ If Logix can't find the board, see
 
 ## 4. Save
 
-Press ++cmd+s++ and give the project a name. Logix creates a folder for it,
+Choose **File > Save Project** and give the project a name. Logix creates a folder for it,
 in `~/Documents/Logix` by default.
 
 ## 5. Explore
 
 - Change the design: make the LED blink faster, add more LEDs, and click
   **Verify** and **Upload** again.
-- Open other examples with **File > New Project > From Example…**
-  (++shift+cmd+e++).
+- Open other examples with **File > New Project > From Example…**.
 - Try **Run Tests** and **Simulate**: see
   [Testbenches and simulation](testbenches.md).
-- See your design as a diagram: **Project > Show Diagram**
-  (++shift+cmd+d++).
+- See your design as a diagram: **Project > Show Diagram**.

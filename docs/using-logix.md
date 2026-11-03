@@ -14,18 +14,17 @@
 - **Right-click** in the editor for **Go to Definition** (jump to where the
   name you clicked is defined), Cut, Copy, Paste, **Comment/Uncomment** and
   Auto Format. The same items are in the **Edit** and **Tools** menus.
-  **Comment/Uncomment** (++cmd+slash++) also works in pin files, with their
+  **Comment/Uncomment** also works in pin files, with their
   own comment mark (`#`, or `//` in `.cst` files); Auto Format is for
   Verilog files only.
 - **Status bar**: while Logix is busy (checking the tools, verifying,
   uploading, opening an example…), a spinning circle and what it's doing.
   When it's done, the result, e.g. "Build succeeded…", or **Ready.**
 - **Output**: what the FPGA tools print. References like `main.v:12` are
-  links to that line. Click in it and press ++cmd+a++ to select all of it
-  and ++cmd+c++ to copy, or right-click for **Copy**, **Select All** and
-  **Clear Output**. Drag the bar above it to resize it. To hide it, drag
-  the bar all the way down, click **Hide**, or use **View > Toggle Output**
-  (++cmd+j++); it comes back with **Show**, by dragging the bar up, and when
+  links to that line. Select text in it and copy it as usual, or
+  right-click for **Copy**, **Select All** and **Clear Output**. Drag the bar above it to resize it. To hide it, drag
+  the bar all the way down, click **Hide**, or use **View > Toggle Output**;
+  it comes back with **Show**, by dragging the bar up, and when
   you Verify, Upload, Run Tests or Simulate.
 
 ## Projects
@@ -48,38 +47,38 @@ files inside subfolders aren't part of the design: Logix only builds the
 ones at the top of the folder. Keep each project in its own folder, not
 inside another project.
 
-- **New project**: **File > New Project > Empty Project** (++cmd+n++) gives
+- **New project**: **File > New Project > Empty Project** gives
   the selected board's pin file and an empty design (the board's **Bare
   Minimum**), ready to build. **File > New Project > From Example…**
-  (++shift+cmd+e++) starts from one of the board's examples instead.
-- **New file**: the **+** at the end of the tabs, or **File > New File…**
-  (++shift+cmd+n++). Double-click a tab to rename it; right-click it to
+  starts from one of the board's examples instead.
+- **New file**: the **+** at the end of the tabs, or **File > New File…**.
+  Double-click a tab to rename it; right-click it to
   rename or delete it. These changes, like edits, are saved when you save
   the project.
 - **Open, close and save**: **File > Open Project…**, **Open Recent**,
-  **Close Project** (++cmd+w++), **Save Project**, **Save Project As…**.
+  **Close Project**, **Save Project**, **Save Project As…**.
   Logix reopens the last project when it starts, unless you closed it.
   With no project open, the start screen offers a new project, opening a
   project or an example, and your recent projects;
   the board in the toolbar is the one new projects use.
   **Save As…** over an existing project replaces it; the old one goes to
   the Trash.
-- **Show Project Folder**: **Project > Show Project Folder**
-  (++option+cmd+k++) opens the folder in Finder.
+- **Show Project Folder**: **Project > Show Project Folder** opens the
+  folder in Finder.
 
 ## Boards and examples
 
 Choose the board in the toolbar's board list; the project remembers it. Click
 it to see all boards, grouped by FPGA type (Lattice iCE40, Lattice ECP5,
 Gowin, Xilinx), and type to search. Click a group's name to open or close
-it; the group of the current board opens by itself. The arrow keys and
-++enter++ work too.
+it; the group of the current board opens by itself. The keyboard works
+too.
 
 ![The board list: connected boards first, then all boards by FPGA type](images/boards.png)
 
 As in the Arduino IDE, choosing a board doesn't change your files: Logix
 offers the recent projects for that board and the board's examples, and
-**Keep Current Files** (or ++esc++) just switches the board. Choosing the current board again is a quick way to get
+**Keep Current Files** just switches the board. Choosing the current board again is a quick way to get
 to its examples.
 
 Boards plugged in by USB are listed first, under **Connected**, and the word
@@ -103,27 +102,27 @@ doesn't support yet, so they're not listed.
 
 ## Verify and Upload
 
-**Verify** (++cmd+r++):
+The **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }:
 
 1. checks the design for common mistakes (lint): warnings are shown in
    yellow and don't stop the build,
 2. builds it for the selected board,
 3. shows how much of the FPGA it uses and the maximum clock speed.
 
-**Upload** (++cmd+u++) builds the design, shows the same usage tables, and
+The **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon } builds the design, shows the same usage tables, and
 programs the board.
 
-Both use the files as they are in the editor, saved or not. **Stop**
-(++cmd+period++) stops a build or upload that takes too long.
+Both use the files as they are in the editor, saved or not. The **Stop**
+button ![Stop button](images/icon-stop.png){ .toolbar-icon } stops a build or upload that takes too long.
 
 ## Auto Format
 
-**Tools > Auto Format** (++cmd+t++) tidies up the indentation and spacing of
-the open Verilog file. Undo (++cmd+z++) restores the previous text.
+**Tools > Auto Format** tidies up the indentation and spacing of
+the open Verilog file. **Edit > Undo** restores the previous text.
 
 ## Diagram
 
-**Project > Show Diagram** (++shift+cmd+d++) draws the design's modules and
+**Project > Show Diagram** draws the design's modules and
 signals. Choose another module in the window to draw just that one.
 
 ![The diagram of the blinky design](images/diagram.png)
@@ -145,7 +144,7 @@ opens the folder with Logix's log, to attach to a report (see
 
 ## Settings
 
-**Logix IDE > Settings…** (++cmd+comma++):
+**Logix IDE > Settings…**:
 
 ![The Settings window](images/settings.png)
 
@@ -179,6 +178,7 @@ opens the folder with Logix's log, to attach to a report (see
 | Auto Format | ++cmd+t++ |
 | Toggle Output | ++cmd+j++ |
 | Comment/Uncomment lines | ++cmd+slash++ |
+| Select All (editor or output) | ++cmd+a++ |
 | Go to Definition | ++f12++ (on a Mac keyboard, ++fn+f12++) |
 | Settings | ++cmd+comma++ |
 | Close Window | ++shift+cmd+w++ |

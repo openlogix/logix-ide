@@ -63,7 +63,7 @@ yet, such as ones with files in subfolders or several build setups.
 
 ## A build or simulation doesn't finish
 
-Click **Stop** (++cmd+period++). A simulation that never ends usually means
+Click the **Stop** button ![Stop button](images/icon-stop.png){ .toolbar-icon }. A simulation that never ends usually means
 the testbench doesn't reach `$finish`.
 
 ## Starting over
