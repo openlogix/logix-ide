@@ -310,6 +310,10 @@ export const backend = {
   /** The recent project folders, newest first (the start screen). */
   recentProjects: (): Promise<string[]> => invoke<string[]>("recent_projects"),
 
+  /** The recent project folders made for `board`, newest first. */
+  recentProjectsForBoard: (board: string): Promise<string[]> =>
+    invoke<string[]>("recent_projects_for_board", { board }),
+
   /** Remembers the board the user chose, for new projects. */
   setLastBoard: (board: string): Promise<void> =>
     invoke<void>("set_last_board", { board }),

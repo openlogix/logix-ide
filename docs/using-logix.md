@@ -74,8 +74,8 @@ it; the group of the current board opens by itself. The arrow keys and
 ![The board list: connected boards first, then all boards by FPGA type](images/boards.png)
 
 As in the Arduino IDE, choosing a board doesn't change your files: Logix
-offers the board's examples, and **Keep Current Files** (or ++esc++) just
-switches the board. Choosing the current board again is a quick way to get
+offers your recent projects for that board and the board's examples, and
+**Keep Current Files** (or ++esc++) just switches the board. Choosing the current board again is a quick way to get
 to its examples.
 
 Boards plugged in by USB are listed first, under **Connected**, and the word

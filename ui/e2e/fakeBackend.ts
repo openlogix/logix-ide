@@ -291,6 +291,8 @@ export const backend: typeof Real.backend = {
   newProject: async (board) => bareDoc(board ?? "alhambra-ii"),
   lastBoard: async () => "alhambra-ii",
   recentProjects: async () => fake.recents,
+  // The fake's recent projects are all UPduino v2 projects (openProjectAt).
+  recentProjectsForBoard: async (board) => (board === "upduino2" ? fake.recents : []),
   setLastBoard: async () => {},
   closeProject: async () => {},
   openProjectDialog: async () => null,

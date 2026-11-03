@@ -120,6 +120,7 @@ pub fn run() {
             commands::set_last_board,
             commands::last_board,
             commands::recent_projects,
+            commands::recent_projects_for_board,
             commands::open_project_dialog,
             commands::save_project,
             commands::open_project_at,

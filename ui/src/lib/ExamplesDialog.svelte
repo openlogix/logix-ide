@@ -1,19 +1,23 @@
 <!--
   Browse the examples by board and open one. With `onlyBoard` (after a
-  board change in the toolbar), only that board's examples are shown and
-  closing keeps the current files.
+  board change in the toolbar), only that board's examples are shown,
+  after the user's recent projects for that board (`recents`), and closing
+  keeps the current files.
 -->
 <script lang="ts">
   import type { Board, Example } from "./backend";
   import { groupExamples, type ExampleEntry } from "./examples";
   import { archLabel, groupByArch } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
+  import Icon from "./Icon.svelte";
 
   let {
     boards,
     examples,
     initialBoard,
     onlyBoard = null,
+    recents = [],
+    onOpenRecent = () => {},
     onOpen,
     onClose,
   }: {
@@ -23,7 +27,9 @@
     initialBoard: string | null;
     /** Show only this board's examples (the board was just chosen). */
     onlyBoard?: string | null;
-
+    /** Recent project folders for `onlyBoard`, listed first. */
+    recents?: string[];
+    onOpenRecent?: (dir: string) => void;
     onOpen: (example: ExampleEntry) => void;
     onClose: () => void;
   } = $props();
@@ -33,6 +39,15 @@
   let selectedBoard = $state<string | null>(initialBoard);
   /** Selected example as "board/name". */
   let selectedKey = $state<string | null>(null);
+  /** Selected recent project folder (instead of an example). */
+  let selectedRecent = $state<string | null>(null);
+  const folderName = (dir: string) => dir.split(/[\\/]/).pop() ?? dir;
+  /** Recent projects shown: all of them, or those matching the search. */
+  const shownRecents = $derived(
+    recents.filter((d) =>
+      folderName(d).toLowerCase().includes(query.trim().toLowerCase()),
+    ),
+  );
 
   const key = (e: Example) => `${e.board}/${e.name}`;
   const groups = $derived(
@@ -63,6 +78,7 @@
    * just one (or Bare Minimum if it has none).
    */
   const selectedExample = $derived.by(() => {
+    if (selectedRecent) return null;
     const clicked = group?.examples.find((e) => key(e) === selectedKey);
     if (clicked || !group) return clicked ?? null;
     const real = group.examples.filter((e) => !e.bare);
@@ -75,17 +91,26 @@
   function selectBoard(id: string) {
     selectedBoard = id;
     selectedKey = null;
+    selectedRecent = null;
   }
 
+  function selectExample(k: string) {
+    selectedKey = k;
+    selectedRecent = null;
+  }
+
+  const canOpen = $derived(selectedRecent !== null || selectedExample !== null);
+
   function open() {
-    if (selectedExample) onOpen(selectedExample);
+    if (selectedRecent) onOpenRecent(selectedRecent);
+    else if (selectedExample) onOpen(selectedExample);
   }
 
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") {
       e.preventDefault();
       onClose();
-    } else if (e.key === "Enter" && selectedExample) {
+    } else if (e.key === "Enter" && canOpen) {
       e.preventDefault();
       open();
     }
@@ -111,11 +136,19 @@
     onclick={(e) => e.stopPropagation()}
   >
     <header>
-      <h2>{onlyBoard ? `Examples for ${onlyBoardName}` : "Examples"}</h2>
+      <h2>
+        {onlyBoard
+          ? `${recents.length > 0 ? "Projects and examples" : "Examples"} for ${onlyBoardName}`
+          : "Examples"}
+      </h2>
       <!-- svelte-ignore a11y_autofocus -->
       <input
         type="search"
-        placeholder={onlyBoard ? "Search examples" : "Search boards and examples"}
+        placeholder={onlyBoard
+          ? recents.length > 0
+            ? "Search projects and examples"
+            : "Search examples"
+          : "Search boards and examples"}
         bind:value={query}
         spellcheck="false"
         autocomplete="off"
@@ -130,7 +163,9 @@
 
     {#if onlyBoard}
       <p class="hint">
-        Start from one of the board's examples, or keep your current files.
+        {recents.length > 0
+          ? "Open one of your projects for this board, start from one of its examples, or keep your current files."
+          : "Start from one of the board's examples, or keep your current files."}
       </p>
     {/if}
 
@@ -170,13 +205,32 @@
       {/if}
 
       <ul class="examples" aria-label="Examples">
+        {#if shownRecents.length > 0}
+          <li class="section">Your projects</li>
+          {#each shownRecents as dir (dir)}
+            <li>
+              <button
+                class="recent"
+                class:selected={selectedRecent === dir}
+                title={dir}
+                onclick={() => (selectedRecent = dir)}
+                ondblclick={() => onOpenRecent(dir)}
+              >
+                <Icon name="folder" size={16} />
+                <span class="example-name">{folderName(dir)}</span>
+                <span class="example-desc">{dir.slice(0, -folderName(dir).length - 1)}</span>
+              </button>
+            </li>
+          {/each}
+          <li class="section">Examples</li>
+        {/if}
         {#if group}
           {#each group.examples as ex (ex.name)}
             <li>
               <button
                 class:selected={selectedExample !== null &&
                   key(ex) === key(selectedExample)}
-                onclick={() => (selectedKey = key(ex))}
+                onclick={() => selectExample(key(ex))}
                 ondblclick={() => onOpen(ex)}
               >
                 <span class="example-name">{ex.name}</span>
@@ -192,7 +246,7 @@
       <button class="secondary" onclick={onClose}
         >{onlyBoard ? "Keep Current Files" : "Cancel"}</button
       >
-      <button class="primary" disabled={!selectedExample} onclick={open}
+      <button class="primary" disabled={!canOpen} onclick={open}
         >Open</button
       >
     </footer>
@@ -332,6 +386,32 @@
   .examples button {
     flex-direction: column;
     gap: 2px;
+  }
+  .examples button.recent {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+  .recent :global(svg) {
+    flex: none;
+    color: var(--accent);
+  }
+  .recent.selected :global(svg) {
+    color: inherit;
+  }
+  .recent .example-desc {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .section {
+    padding: 10px 14px 4px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
   .example-name {
     font-weight: 600;
