@@ -62,6 +62,9 @@ pub enum TaskEvent {
         message: String,
         percent: Option<u32>,
     },
+    /// Upload's build is done and programming the board starts (the UI
+    /// says how the board will be programmed).
+    Programming,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

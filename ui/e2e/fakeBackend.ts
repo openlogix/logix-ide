@@ -279,6 +279,7 @@ export const backend: typeof Real.backend = {
       await pause(5);
     }
     if (phases && task === "upload" && outcome.ok) {
+      onEvent({ kind: "programming" });
       onEvent({ kind: "progress", message: "Writing flash", percent: 42 });
       onLine("Programmed Alhambra II v1.0A.");
     }

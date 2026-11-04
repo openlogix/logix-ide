@@ -854,9 +854,8 @@
       `${VERB[task]} ${p.name}${which} for ${boardName(board)}${summary ? ` (${summary})` : ""}…`,
     );
     const notes = boardInfo && configurationOf(boardInfo, variant)?.userNotes;
-    const plan = task === "upload" && boardInfo && uploadPlan(boardInfo, variant);
-    if (plan) log(plan);
-    if (task === "upload" && notes) log(`Note: ${notes}`);
+    // Said when programming starts, after the build.
+    const plan = task === "upload" && boardInfo ? uploadPlan(boardInfo, variant) : null;
     try {
       const outcome = await backend.runTask(
         task,
@@ -869,7 +868,10 @@
         variant,
         (event) => {
           if (event.kind === "line") log(event.line);
-          else taskStep = { message: event.message, percent: event.percent };
+          else if (event.kind === "programming") {
+            if (plan) log("", plan);
+            if (notes) log(`Note: ${notes}`);
+          } else taskStep = { message: event.message, percent: event.percent };
         },
       );
       taskStep = null;

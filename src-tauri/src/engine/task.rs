@@ -231,6 +231,7 @@ where
         }
 
         if task == Task::Upload && outcome.ok {
+            (self.on_event)(TaskEvent::Programming);
             let result = self
                 .call(
                     "program_board",
