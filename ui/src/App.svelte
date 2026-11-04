@@ -29,7 +29,6 @@
     choose as chooseVariant,
     configurationOf,
     hasChoice,
-    uploadFact,
     isConnected as variantConnected,
     menus as variantMenus,
     parseMenuId,
@@ -1653,10 +1652,9 @@
       <span
         class="board-link"
         class:connected={boardConnected}
-        title={(boardConnected
+        title={boardConnected
           ? `${boardName(currentBoard)} is connected.`
-          : `${boardName(currentBoard)} isn't connected (no matching USB device found).`) +
-          (currentBoardInfo ? ` ${uploadFact(currentBoardInfo, currentVariant)}` : "")}
+          : `${boardName(currentBoard)} isn't connected (no matching USB device found).`}
         >{boardConnected ? "Connected" : "Not connected"}</span
       >
     {/if}

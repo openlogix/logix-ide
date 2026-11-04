@@ -110,7 +110,7 @@ try it, please report whether it works.
 
 After **Upload**, Logix says where the design went: flash or RAM. Many
 boards upload to RAM only, including all the Xilinx boards (such as the
-Arty A7). Hovering over **Connected** next to the board tells it too.
+Arty A7).
 
 **File > New Project > From Example…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA type in the same way.

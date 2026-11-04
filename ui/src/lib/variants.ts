@@ -81,23 +81,6 @@ export function summary(board: Board, variant: Variant): string {
     .join(" · ");
 }
 
-/**
- * How an upload reaches the board, as a fact, e.g. "Uploads to RAM through
- * the FT232H adapter.". The connection is left out when it's the board's
- * own USB port or not known.
- */
-export function uploadFact(board: Board, variant: Variant): string {
-  const when = resolve(board, variant);
-  const memory = when.memory ? valueLabel(board, "memory", when.memory) : null;
-  if (!memory) return "";
-  const connection = when.connection;
-  const through =
-    connection && !["usb", "unspecified"].includes(connection)
-      ? ` through the ${valueLabel(board, "connection", connection)}`
-      : "";
-  return `Uploads to ${memory}${through}.`;
-}
-
 /** After a successful upload: where the design went, and what that means. */
 export function afterUpload(board: Board, variant: Variant): string | null {
   switch (resolve(board, variant).memory) {

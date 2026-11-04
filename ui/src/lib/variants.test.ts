@@ -12,7 +12,6 @@ import {
   resolve,
   summary,
   toStore,
-  uploadFact,
 } from "./variants";
 
 const plain: Board = {
@@ -82,9 +81,6 @@ describe("variants", () => {
     expect(hasChoice(plain)).toBe(false);
     expect(hasChoice(stick)).toBe(true);
     expect(summary(arty, {})).toBe("");
-    expect(uploadFact(arty, {})).toBe("Uploads to RAM.");
-    expect(uploadFact(plain, {})).toBe("Uploads to Flash.");
-    expect(uploadFact(stick, { memory: "ram" })).toBe("Uploads to RAM through the FT232H adapter.");
     expect(afterUpload(arty, {})).toBe("Uploaded to RAM: the design is lost when the board is powered off.");
     expect(afterUpload(plain, {})).toBe(
       "Uploaded to flash: the design stays when the board is powered off.",
