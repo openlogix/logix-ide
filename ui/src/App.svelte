@@ -8,6 +8,7 @@
     type ConnectedBoard,
     type Example,
     type Devices,
+    type UsbDevice,
     type Diagnostic,
     type Preferences,
     type MenuId,
@@ -34,8 +35,9 @@
   } from "./lib/variants";
   import DiagramDialog from "./lib/DiagramDialog.svelte";
   import DevicesDialog from "./lib/DevicesDialog.svelte";
+  import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
-  import { deviceSummaryLines, isBoardNotFound } from "./lib/devices";
+  import { deviceSummaryLines, isBoardNotFound, needsDeviceChoice } from "./lib/devices";
   import Icon from "./lib/Icon.svelte";
   import { pinCommentToken } from "./lib/pinFiles";
   import {
@@ -792,6 +794,14 @@
     }
   }
 
+  /** Upload's device picker, while several devices fit the board. */
+  let devicePicker = $state<{ board: string; devices: UsbDevice[] } | null>(null);
+
+  function chooseUploadDevice(id: string) {
+    devicePicker = null;
+    runTask("upload", null, id);
+  }
+
   /** The diagram window's content, while it's open. */
   let diagram = $state<{ svg: string; module: string } | null>(null);
 
@@ -809,9 +819,14 @@
 
   /**
    * Runs a build, upload, test or simulation. `testbench` picks a single
-   * testbench for "test" and "simulate".
+   * testbench for "test" and "simulate". `device` is the device Upload
+   * uses, once the user chose one (null: the only one that fits).
    */
-  async function runTask(task: Task, testbench: string | null = null) {
+  async function runTask(
+    task: Task,
+    testbench: string | null = null,
+    device: string | null = null,
+  ) {
     if (!project || running) return;
     if (!ready) {
       fileError = "The FPGA tools aren't ready yet.";
@@ -859,6 +874,7 @@
         filesForSave(p),
         board,
         variant,
+        task === "upload" ? device : null,
         (event) => {
           if (event.kind === "line") log(event.line);
           else taskStep = { message: event.message, percent: event.percent };
@@ -875,6 +891,12 @@
         isBoardNotFound(outcome)
       ) {
         await logConnectedDevices();
+      }
+      if (task === "upload" && needsDeviceChoice(outcome)) {
+        // Not a failure: Upload goes on once the user picks a device.
+        devicePicker = { board, devices: outcome.devices };
+        status = { text: "Choose the device to upload to.", kind: "info" };
+        return;
       }
       if (task === "graph" && outcome.ok && outcome.graphSvg) {
         diagram = { svg: outcome.graphSvg, module: testbench ?? "main" };
@@ -1526,8 +1548,19 @@
     {devices}
     error={devicesError}
     busy={devicesBusy}
+    board={currentBoard}
+    {boardName}
     onRefresh={refreshDevices}
     onClose={() => (devicesOpen = false)}
+  />
+{/if}
+
+{#if devicePicker}
+  <DevicePicker
+    boardName={boardName(devicePicker.board)}
+    devices={devicePicker.devices}
+    onChoose={chooseUploadDevice}
+    onClose={() => (devicePicker = null)}
   />
 {/if}
 

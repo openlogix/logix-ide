@@ -155,8 +155,14 @@ export interface TaskOutcome {
   /** For a successful "graph": the diagram as SVG. */
   graphSvg: string | null;
   seconds: number;
-  /** Logix Engine's suggested action when it failed, e.g. "connect_board". */
+  /**
+   * Logix Engine's suggested action when it failed, e.g. "connect_board",
+   * or "select_device" when Upload found several devices that fit the
+   * board (in `devices`).
+   */
   action: string | null;
+  /** For Upload's "select_device": the devices that fit, best first. */
+  devices: UsbDevice[];
 }
 
 /** Streamed while a task runs: console lines, and the current phase. */
@@ -173,17 +179,37 @@ export interface FormatResult {
 }
 
 export interface UsbDevice {
+  /** Logix Engine's device id, for Upload. Opaque and short-lived. */
+  id: string;
   /** USB vendor and product ids, as 4 hex digits. */
   vid: string;
   pid: string;
   manufacturer: string;
   product: string;
   serialNumber: string;
+  /**
+   * The boards it may be, best first, each with Logix Engine's confidence
+   * (1 to 3, higher is surer; only compare it).
+   */
+  boards: { board: string; confidence: number }[];
+  /** For Upload's candidates: the confidence that it is the build's board. */
+  buildConfidence: number | null;
+}
+
+/** A device that may be a board but can't be opened yet. */
+export interface UnreachableDevice {
+  vid: string;
+  pid: string;
+  /** The suggested fix, e.g. "fix_device_permissions". */
+  action: string;
+  actionDescription: string;
 }
 
 /** Connected devices, from Logix Engine. */
 export interface Devices {
   usb: UsbDevice[];
+  /** Devices that need a driver or permissions before they can be used. */
+  unreachable: UnreachableDevice[];
 }
 
 /** A board that matches a connected USB device. */
@@ -332,8 +358,10 @@ export const backend = {
    * unsaved) files. `testbench` picks one testbench for "test" (all if
    * null) and "simulate", or the module to draw for "graph" (main if null). `key` identifies the project; `sourceDir` is the folder
    * whose other files are copied along; `projectDir` (saved projects only)
-   * receives GTKWave layouts saved since the last run. The tools' output
-   * and the engine's phases go to `onEvent`. Resolves with the outcome
+   * receives GTKWave layouts saved since the last run. `device` is the
+   * device Upload uses (a `UsbDevice` id the user chose), or null to let
+   * Upload use the only one that fits. The tools' output and the engine's
+   * phases go to `onEvent`. Resolves with the outcome
    * (including failures); rejects only if the engine couldn't run.
    */
   runTask: (
@@ -345,6 +373,7 @@ export const backend = {
     files: ProjectFile[],
     board: string,
     variant: Variant,
+    device: string | null,
     onEvent: (event: TaskEvent) => void,
   ): Promise<TaskOutcome> => {
     const channel = new Channel<TaskEvent>();
@@ -358,6 +387,7 @@ export const backend = {
       files,
       board,
       variant,
+      device,
       onEvent: channel,
     });
   },

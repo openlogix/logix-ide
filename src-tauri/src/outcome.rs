@@ -42,8 +42,12 @@ pub struct TaskOutcome {
     pub graph_svg: Option<String>,
     pub seconds: f64,
     /// The engine's suggested action when it failed, such as
-    /// `connect_board` (see the engine's tool API).
+    /// `connect_board` (see the engine's tool API), or `select_device` when
+    /// Upload found several devices that fit the board (in `devices`).
     pub action: Option<String>,
+    /// For Upload with `select_device`: the devices that fit the board, best
+    /// first, for the user to choose from.
+    pub devices: Vec<crate::engine::UsbDevice>,
 }
 
 /// Streamed to the UI while a task runs.

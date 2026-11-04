@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use super::client::{tool_error, Engine};
-use super::devices::{usb_rules, UsbRule};
 
 /// A board the IDE can target.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -85,12 +84,11 @@ pub fn constraint_extension(arch: &str) -> Option<&'static str> {
     }
 }
 
-/// The engine's boards and their USB filters.
+/// The engine's boards.
 #[derive(Debug, Clone)]
 pub struct Catalog {
     /// All boards, sorted by description.
     pub boards: Vec<Board>,
-    pub usb_rules: Vec<UsbRule>,
 }
 
 /// Reads the engine's catalog.
@@ -105,7 +103,6 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
         .map_err(|e| tool_error("get_catalog", &e))?;
     Ok(Catalog {
         boards: parse_boards(&catalog)?,
-        usb_rules: usb_rules(&catalog["boards"]),
     })
 }
 

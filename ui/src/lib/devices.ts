@@ -12,11 +12,47 @@ export function isBoardNotFound(outcome: TaskOutcome): boolean {
   return outcome.action === "connect_board";
 }
 
+/** True if Upload found several devices that fit and the user must pick one. */
+export function needsDeviceChoice(outcome: TaskOutcome): boolean {
+  return outcome.action === "select_device" && outcome.devices.length > 1;
+}
+
+/**
+ * Logix Engine's confidence (1 to 3, higher is surer) in words. Logix only
+ * compares the number; the words just say "how sure".
+ */
+export function confidenceLabel(confidence: number | null): string {
+  if (confidence === null) return "";
+  if (confidence >= 3) return "Matches the board's name";
+  if (confidence >= 2) return "Likely";
+  return "Possible";
+}
+
+/**
+ * The boards a device most likely is: those with the best confidence,
+ * when it's 2 or more (a name match). Chip-only matches fit dozens of
+ * boards, so they aren't worth naming.
+ */
+export function likelyBoards(d: UsbDevice): string[] {
+  const best = Math.max(0, ...d.boards.map((b) => b.confidence));
+  if (best < 2) return [];
+  return d.boards.filter((b) => b.confidence === best).map((b) => b.board);
+}
+
+/** Whether a device may be the given board, at any confidence. */
+export function mayBeBoard(d: UsbDevice, board: string | null): boolean {
+  return board !== null && d.boards.some((b) => b.board === board);
+}
+
 /** Console lines listing what's connected, with tips when nothing is. */
 export function deviceSummaryLines(devices: Devices): string[] {
+  const locked = devices.unreachable.map(
+    (u) => `  • A device (${u.vid}:${u.pid}) can't be opened. ${u.actionDescription}`,
+  );
   if (devices.usb.length === 0) {
     return [
       "No USB devices are connected.",
+      ...locked,
       "Tips: check that the board is plugged in and powered, and try another cable",
       "(some USB cables only charge and don't carry data).",
     ];
@@ -24,6 +60,7 @@ export function deviceSummaryLines(devices: Devices): string[] {
   return [
     "Connected USB devices:",
     ...devices.usb.map((d) => `  • ${usbLabel(d)}`),
+    ...locked,
     "If your board isn't listed, check the cable and power.",
     "If it's listed, check that the board selected in the toolbar matches it.",
   ];

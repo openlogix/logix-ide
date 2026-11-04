@@ -26,8 +26,11 @@ click **Retry**.
   selected board. If the board appears under **Connected** in the list but
   isn't the selected one, select it. (Boards with a common USB chip are never
   listed there; Upload still finds them.)
-- Open **Tools > Connected Devices…** to see what the computer finds. If the
-  board is listed, check that the board selected in the toolbar matches it.
+- Open **Tools > Connected Devices…** to see what the computer finds, and
+  which boards each device looks like. If the board is listed, check that
+  the board selected in the toolbar matches it. A device listed under
+  **Found but can't be opened** needs permissions or a driver first; the
+  dialog says what to do.
 
 ## My design is gone after unplugging the board
 

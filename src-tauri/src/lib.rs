@@ -49,7 +49,6 @@ pub struct AppState {
 struct Catalog {
     boards: Vec<engine::Board>,
     examples: examples::ExampleList,
-    usb_rules: Vec<engine::UsbRule>,
 }
 
 /// Logs crashes (panics) too, so they're in problem reports.

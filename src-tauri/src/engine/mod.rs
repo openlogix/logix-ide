@@ -19,7 +19,9 @@ use std::sync::{Arc, Mutex};
 
 pub use catalog::{catalog, constraint_extension, Board, Catalog, Variant};
 pub use client::Engine;
-pub use devices::{list_devices, match_boards, ConnectedBoard, UsbDevice, UsbRule};
+pub use devices::{
+    connected_boards, list_devices, ConnectedBoard, DeviceList, UnreachableDevice, UsbDevice,
+};
 pub use format::format_file;
 pub use info::program_path;
 pub use setup::run_setup;
@@ -79,6 +81,39 @@ impl Layout {
     fn engine_folder(&self) -> PathBuf {
         self.data_dir.join("engine")
     }
+    /// The engine folder of a locally built engine (`LOGIX_DEV_ENGINE_BINARY`),
+    /// kept apart so it never touches the released engine's packages.
+    fn dev_engine_folder(&self) -> PathBuf {
+        self.data_dir.join("engine-dev")
+    }
+}
+
+/// The environment variable naming a locally built engine binary, for
+/// developing the IDE and the engine together (`scripts/run.sh
+/// --engine-repo-dir` sets it).
+pub const DEV_ENGINE_VARIABLE: &str = "LOGIX_DEV_ENGINE_BINARY";
+
+/// The locally built engine to use instead of the pinned release: the
+/// value of `LOGIX_DEV_ENGINE_BINARY`, honored only in development (debug)
+/// builds, so a released app always uses the engine it downloaded. Unset or
+/// empty means none; a value that isn't a file is an error.
+fn dev_engine_binary(value: Option<std::ffi::OsString>) -> anyhow::Result<Option<PathBuf>> {
+    if !cfg!(debug_assertions) {
+        return Ok(None);
+    }
+    match value {
+        Some(v) if !v.is_empty() => {
+            let path = PathBuf::from(v);
+            if !path.is_file() {
+                anyhow::bail!(
+                    "{DEV_ENGINE_VARIABLE} must be the path to a logix-engine binary, not {}",
+                    path.display()
+                );
+            }
+            Ok(Some(path))
+        }
+        _ => Ok(None),
+    }
 }
 
 #[cfg(test)]
@@ -112,5 +147,30 @@ mod tests {
             .to_string_lossy()
             .contains("engine"));
         assert_ne!(layout.bin_dir(), folder);
+        let dev = layout.dev_engine_folder();
+        assert_eq!(dev, Path::new("/Users/you/.logix/engine-dev"));
+        assert!(dev
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .contains("engine"));
+    }
+
+    #[test]
+    fn a_dev_engine_binary_must_be_a_file() {
+        assert!(dev_engine_binary(None).unwrap().is_none());
+        assert!(dev_engine_binary(Some("".into())).unwrap().is_none());
+        let tmp = tempfile::tempdir().unwrap();
+        assert!(
+            dev_engine_binary(Some(tmp.path().into())).is_err(),
+            "a folder"
+        );
+        let exe = tmp.path().join("logix-engine");
+        std::fs::write(&exe, "").unwrap();
+        // Tests are debug builds, where the variable counts.
+        assert_eq!(
+            dev_engine_binary(Some(exe.clone().into())).unwrap(),
+            Some(exe)
+        );
     }
 }

@@ -181,7 +181,7 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
         return Ok(c.clone());
     }
     let engine = ready_engine(state).await?;
-    let engine::Catalog { boards, usb_rules } = engine::catalog(&engine)
+    let engine::Catalog { boards } = engine::catalog(&engine)
         .await
         .context("Couldn't get the list of boards.")?;
     // Examples for boards the engine doesn't support can't be built.
@@ -195,11 +195,7 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
         hidden: total - list.len(),
         examples: list,
     };
-    let c = Catalog {
-        boards,
-        examples,
-        usb_rules,
-    };
+    let c = Catalog { boards, examples };
     *slot = Some(c.clone());
     Ok(c)
 }
@@ -270,6 +266,7 @@ pub async fn run_task(
     files: Vec<ProjectFile>,
     board: String,
     variant: engine::Variant,
+    device: Option<String>,
     on_event: Channel<outcome::TaskEvent>,
 ) -> Result<outcome::TaskOutcome, UserError> {
     let Ok(_running) = state.task.try_lock() else {
@@ -350,6 +347,7 @@ pub async fn run_task(
         constraint_file: constraint.as_deref(),
         lint: lint_on_verify(),
         target: testbench.as_deref(),
+        device: device.as_deref(),
     };
     let channel = on_event.clone();
     let send = move |event| {
@@ -474,8 +472,12 @@ pub async fn lsp_send(state: State<'_, AppState>, message: String) -> Result<(),
 
 /// The connected USB devices.
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Devices {
     usb: Vec<engine::UsbDevice>,
+    /// Devices that may be boards but can't be opened yet (a driver or
+    /// permissions), with the fix.
+    unreachable: Vec<engine::UnreachableDevice>,
 }
 
 /// The connected USB devices, for Tools > Connected Devices and hints when
@@ -483,10 +485,13 @@ pub struct Devices {
 #[tauri::command]
 pub async fn scan_devices(state: State<'_, AppState>) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
-    let usb = engine::list_devices(&engine)
+    let list = engine::list_devices(&engine, None)
         .await
         .context("Couldn't list the connected devices.")?;
-    Ok(Devices { usb })
+    Ok(Devices {
+        usb: list.devices,
+        unreachable: list.unreachable,
+    })
 }
 
 /// The boards that match the connected USB devices, for the board list's
@@ -496,11 +501,10 @@ pub async fn connected_boards(
     state: State<'_, AppState>,
 ) -> Result<Vec<engine::ConnectedBoard>, UserError> {
     let engine = ready_engine(&state).await?;
-    let rules = catalog(&state).await?.usb_rules;
-    let devices = engine::list_devices(&engine)
+    let list = engine::list_devices(&engine, None)
         .await
         .context("Couldn't list the connected devices.")?;
-    let found = engine::match_boards(&rules, &devices);
+    let found = engine::connected_boards(&list.devices);
     // Polled every few seconds: log only changes, not every scan.
     static LAST: std::sync::Mutex<Option<Vec<engine::ConnectedBoard>>> =
         std::sync::Mutex::new(None);

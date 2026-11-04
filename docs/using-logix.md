@@ -138,7 +138,8 @@ The **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }:
 3. shows how much of the FPGA it uses and the maximum clock speed.
 
 The **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon } builds the design, shows the same usage tables, and
-programs the board.
+programs the board. If several connected devices could be the board (for
+example two of the same board), Upload asks which one to use.
 
 Both use the files as they are in the editor, saved or not. The **Stop**
 button ![Stop button](images/icon-stop.png){ .toolbar-icon } stops a build or upload that takes too long.

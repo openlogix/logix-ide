@@ -94,6 +94,7 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
 | Task | Command |
 | :--- | :--- |
 | Run Logix (with live reload) | `scripts/run.sh` |
+| Run Logix with a locally built engine | `scripts/run.sh --engine-repo-dir <your logix-engine clone>` |
 | Run all checks and tests | `scripts/test.sh` |
 | Delete all build output and Logix's data (`~/.logix`) | `scripts/clean.sh` |
 | Type-check the UI | `npm run check` |
@@ -107,6 +108,11 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
   in the window right away; changes to the Rust backend rebuild and restart
   it by themselves. It also reinstalls the JavaScript packages when they
   changed.
+- **`scripts/run.sh --engine-repo-dir <folder>`** first builds Logix Engine
+  in your local `logix-engine` clone, then runs Logix with it instead of the
+  released engine, for working on both together. Its tools go to
+  `~/.logix/engine-dev`, apart from the released engine's (the first run
+  downloads them). Restart the script after changing the engine.
 - **`scripts/test.sh`** runs everything CI runs: the UI type check, unit tests, a
   production build and the end-to-end tests, then the Rust format check,
   lint and tests. It stops at the first failure. Run it before committing.

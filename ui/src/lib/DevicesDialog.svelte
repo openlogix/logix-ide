@@ -1,15 +1,21 @@
 <!-- Tools > Connected Devices: the USB devices connected. -->
 <script lang="ts">
   import type { Devices } from "./backend";
-  import { usbLabel } from "./devices";
+  import { likelyBoards, mayBeBoard, usbLabel } from "./devices";
 
   let {
     devices,
     error,
     busy,
+    board,
+    boardName,
     onRefresh,
     onClose,
   }: {
+    /** The board selected in the toolbar, if any. */
+    board: string | null;
+    /** A board's name for people, from its id. */
+    boardName: (id: string) => string;
     /** Null until the first scan finishes. */
     devices: Devices | null;
     /** Why scanning failed, if it did. */
@@ -69,6 +75,26 @@
                 {#if d.serialNumber}
                   <span class="muted">serial {d.serialNumber}</span>
                 {/if}
+                {#if likelyBoards(d).length > 0}
+                  <span class="muted"
+                    >Looks like: {likelyBoards(d).map(boardName).join(", ")}</span
+                  >
+                {/if}
+                {#if board && mayBeBoard(d, board)}
+                  <span class="fits">Can be the selected board ({boardName(board)})</span>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {/if}
+
+        {#if devices.unreachable.length > 0}
+          <h3>Found but can't be opened</h3>
+          <ul>
+            {#each devices.unreachable as u, i (i)}
+              <li>
+                <span class="name">A USB device ({u.vid}:{u.pid})</span>
+                <span class="muted">{u.actionDescription}</span>
               </li>
             {/each}
           </ul>
@@ -76,9 +102,9 @@
 
 
         <p class="muted hint">
-          Upload finds the board by its USB ids and name. If your board is
-          listed but Upload can't find it, check that the board selected in
-          the toolbar matches it.
+          Upload finds the board by its USB ids and name, and asks which one
+          when several fit. If your board is listed but Upload can't find it,
+          check that the board selected in the toolbar matches it.
         </p>
       {/if}
     </div>
@@ -164,6 +190,10 @@
   }
   .muted {
     color: var(--muted);
+    font-size: 12px;
+  }
+  .fits {
+    color: var(--status-ok-fg);
     font-size: 12px;
   }
   .hint {

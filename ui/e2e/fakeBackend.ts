@@ -112,6 +112,11 @@ const fake = {
     .filter(Boolean),
   /** Boards reported as plugged in (`connectedBoards`). */
   connected: [] as Real.ConnectedBoard[],
+  /** The devices Upload finds that fit the board; with several, Upload
+   * asks which one (`select_device`). One Alhambra II by default. */
+  uploadDevices: null as Real.UsbDevice[] | null,
+  /** The device id the last Upload used. */
+  uploadedDevice: null as string | null,
   /** The menu state the UI reported last (`setMenuState`). */
   menuState: null as Real.MenuState | null,
   /** The menu state when the editor's right-click menu was shown last. */
@@ -126,6 +131,21 @@ const fake = {
   finishSetup: () => handlers.finishSetup?.(),
 };
 (window as unknown as { __fake: typeof fake }).__fake = fake;
+
+/** A real Alhambra II, as Logix Engine lists it. */
+const alhambraDevice: Real.UsbDevice = {
+  id: "usb:1-1:0403:6010:FTATANKC",
+  vid: "0403",
+  pid: "6010",
+  manufacturer: "AlhambraBits",
+  product: "Alhambra II v1.0A",
+  serialNumber: "FTATANKC",
+  boards: [
+    { board: "alhambra-ii", confidence: 3 },
+    { board: "alchitry-au", confidence: 1 },
+  ],
+  buildConfidence: 3,
+};
 
 const unlisten = async () => () => {};
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -158,6 +178,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         graphSvg: null,
         seconds: 0.5,
         action: null,
+        devices: [],
       },
     };
   }
@@ -185,6 +206,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         graphSvg: null,
         seconds: 0.4,
         action: null,
+        devices: [],
       },
     };
   }
@@ -207,6 +229,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         graphSvg: null,
       seconds: 1.2,
       action: null,
+      devices: [],
     },
   };
 }
@@ -247,7 +270,7 @@ export const backend: typeof Real.backend = {
   openBareMinimum: async (board) => bareDoc(board),
   openExample: async (board) => blinkyDoc(board),
 
-  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, onEvent) => {
+  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, device, onEvent) => {
     fake.taskVariant = variant;
     const onLine = (line: string) => onEvent({ kind: "line", line });
     const { lines: buildLines, outcome } = buildOutcome(files, board);
@@ -279,7 +302,22 @@ export const backend: typeof Real.backend = {
       onLine(line);
       await pause(5);
     }
+    const fits = fake.uploadDevices ?? [alhambraDevice];
+    if (phases && task === "upload" && outcome.ok && !device && fits.length > 1) {
+      // The engine's list_devices for the build found several devices.
+      const message = `${fits.length} connected devices could be this board. Choose one to upload to.`;
+      onLine(`\x1b[31m${message}\x1b[0m`);
+      return {
+        ...outcome,
+        ok: false,
+        report: null,
+        action: "select_device",
+        devices: fits,
+        diagnostics: [{ severity: "error", file: null, line: null, column: null, message }],
+      };
+    }
     if (phases && task === "upload" && outcome.ok) {
+      fake.uploadedDevice = device ?? fits[0].id;
       // The engine's messages (program_board), for the board's memory.
       const info = (catalog.boards as Real.Board[]).find((b) => b.id === board);
       const memory = info && resolve(info, variant).memory === "ram" ? "RAM" : "flash";
@@ -367,17 +405,7 @@ export const backend: typeof Real.backend = {
   },
   chooseFolderDialog: async () => "/Users/you/fpga",
 
-  scanDevices: async () => ({
-    usb: [
-      {
-        vid: "0403",
-        pid: "6010",
-        manufacturer: "AlhambraBits",
-        product: "Alhambra II v1.0A",
-        serialNumber: "FTATANKC",
-      },
-    ],
-  }),
+  scanDevices: async () => ({ usb: [alhambraDevice], unreachable: [] }),
   onOpenRecent: unlisten,
 
   checkFileName: async (name, existing) => {

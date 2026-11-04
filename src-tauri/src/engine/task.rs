@@ -28,6 +28,51 @@ const TOP_MODULE: &str = "main";
 /// words (`friendly` in `tasks.ts`).
 pub const NO_CONSTRAINT_FILE: &str = "No constraint file (pin file) for the board.";
 
+/// Upload's outcome action when several devices fit the board.
+pub const SELECT_DEVICE: &str = "select_device";
+
+/// Upload's device from the devices that fit the build: the only one, or
+/// else the error to report (as the engine's errors look) and, with
+/// several, the candidates.
+fn pick_device(
+    list: &super::DeviceList,
+) -> std::result::Result<String, (Value, Vec<super::UsbDevice>)> {
+    match list.devices.as_slice() {
+        [one] => Ok(one.id.clone()),
+        [] => {
+            let error = match list.unreachable.first() {
+                Some(u) => json!({
+                    "category": "setup",
+                    "message": format!("The board was found but can't be opened. {}", u.action_description),
+                    "action": {"code": u.action},
+                }),
+                None => json!({
+                    "category": "setup",
+                    "message": "The board isn't connected. Connect it by USB, then Upload again.",
+                    "action": {"code": "connect_board"},
+                }),
+            };
+            Err((error, Vec::new()))
+        }
+        several => Err((
+            json!({
+                "category": "setup",
+                "message": format!("{} connected devices could be this board. Choose one to upload to.", several.len()),
+                "action": {"code": SELECT_DEVICE},
+            }),
+            several.to_vec(),
+        )),
+    }
+}
+
+/// What `choose_device` decided.
+enum Choice {
+    Device(String),
+    /// The outcome says why Upload can't go on.
+    Stop,
+    Cancelled,
+}
+
 /// What to run the task on.
 pub struct TaskInput<'a> {
     pub board: &'a str,
@@ -46,6 +91,9 @@ pub struct TaskInput<'a> {
     /// The testbench for Run Tests (all if `None`) and Simulate, or the
     /// module to draw for Show Diagram (`main` if `None`).
     pub target: Option<&'a str>,
+    /// For Upload: the device the user chose (an engine device ID), when
+    /// several fit the board. `None` lets Upload pick the only one.
+    pub device: Option<&'a str>,
 }
 
 /// The engine's build folder inside the prepared folder: `_build` (the
@@ -109,6 +157,7 @@ where
         graph_svg: None,
         seconds: 0.0,
         action: None,
+        devices: Vec::new(),
     };
     let finished = match task {
         Task::Build | Task::Upload => runner.build(task, input, &mut outcome).await?,
@@ -231,10 +280,18 @@ where
         }
 
         if task == Task::Upload && outcome.ok {
+            let device = match input.device {
+                Some(id) => id.to_string(),
+                None => match self.choose_device(outcome).await? {
+                    Choice::Device(id) => id,
+                    Choice::Stop => return Ok(true),
+                    Choice::Cancelled => return Ok(false),
+                },
+            };
             let result = self
                 .call(
                     "program_board",
-                    json!({ "build_folder": self.build_folder() }),
+                    json!({ "build_folder": self.build_folder(), "device": device }),
                 )
                 .await?;
             match result {
@@ -251,6 +308,35 @@ where
             }
         }
         Ok(true)
+    }
+
+    /// Upload's device: the only one that fits the build's board (the
+    /// engine's `list_devices` with the build folder). With none, or with
+    /// several (`select_device`, the candidates in `outcome.devices` for the
+    /// user to choose), the outcome says so and Upload stops.
+    async fn choose_device(&self, outcome: &mut TaskOutcome) -> Result<Choice> {
+        let result = self
+            .call(
+                "list_devices",
+                json!({ "build_folder": self.build_folder() }),
+            )
+            .await?;
+        let list = match result {
+            Ok(v) => super::devices::parse_devices(&v)?,
+            Err(e) if is_cancelled(&e) => return Ok(Choice::Cancelled),
+            Err(e) => {
+                self.failed(outcome, &e);
+                return Ok(Choice::Stop);
+            }
+        };
+        match pick_device(&list) {
+            Ok(id) => Ok(Choice::Device(id)),
+            Err((error, candidates)) => {
+                self.failed(outcome, &error);
+                outcome.devices = candidates;
+                Ok(Choice::Stop)
+            }
+        }
     }
 
     /// Run Tests: the chosen testbench, or all of the project's.
@@ -602,6 +688,30 @@ where
 mod tests {
     use super::*;
 
+    #[test]
+    fn upload_picks_the_only_device_or_asks() {
+        let list = |devices: serde_json::Value| {
+            super::super::devices::parse_devices(&json!({ "devices": devices })).unwrap()
+        };
+        let dev = |id: &str| json!({"id": id, "kind": "usb", "vid": "0403", "pid": "6010", "build_confidence": 3});
+        assert_eq!(pick_device(&list(json!([dev("a")]))).unwrap(), "a");
+
+        let (err, candidates) = pick_device(&list(json!([dev("a"), dev("b")]))).unwrap_err();
+        assert_eq!(err["action"]["code"], SELECT_DEVICE);
+        assert_eq!(candidates.len(), 2);
+
+        let (err, candidates) = pick_device(&list(json!([]))).unwrap_err();
+        assert_eq!(err["action"]["code"], "connect_board");
+        assert!(candidates.is_empty());
+
+        let locked = super::super::devices::parse_devices(&json!({"devices": [], "unreachable": [
+            {"vid": "0403", "pid": "6010", "action": {"code": "fix_device_permissions", "description": "Allow it."}}
+        ]})).unwrap();
+        let (err, _) = pick_device(&locked).unwrap_err();
+        assert_eq!(err["action"]["code"], "fix_device_permissions");
+        assert!(err["message"].as_str().unwrap().contains("Allow it."));
+    }
+
     /// The default configuration of the test boards.
     const NO_VARIANT: &super::super::Variant = &super::super::Variant::new();
 
@@ -659,6 +769,7 @@ mod tests {
             graph_svg: None,
             seconds: 0.0,
             action: None,
+            devices: Vec::new(),
         };
         let lines = Mutex::new(Vec::new());
         let e = json!({
@@ -775,6 +886,7 @@ mod tests {
             constraint_file: constraint.as_deref(),
             lint: true,
             target: None,
+            device: None,
         };
         let cancel = CancellationToken::new();
         let good = run(&engine, Task::Build, &input, sink.clone(), &cancel)
@@ -943,6 +1055,7 @@ mod tests {
                     constraint_file: constraint.as_deref(),
                     lint: false,
                     target: None,
+                    device: None,
                 };
                 let mut problems = Vec::new();
                 let build = run(engine, Task::Build, &input, |_| {}, cancel)
@@ -1048,6 +1161,7 @@ mod tests {
                 constraint_file: Some("pinout.pcf"),
                 lint: true,
                 target,
+                device: None,
             };
             let engine = &engine;
             let path = out.join(name);

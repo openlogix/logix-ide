@@ -658,6 +658,33 @@ test("shows the design diagram and switches modules", async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
+test("Upload asks which device when several fit the board", async ({ page }) => {
+  await start(page);
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: { uploadDevices: unknown[] } }).__fake;
+    const device = (serial: string, confidence: number) => ({
+      id: `usb:1-${serial}:0403:6010:${serial}`,
+      vid: "0403", pid: "6010", manufacturer: "AlhambraBits",
+      product: "Alhambra II v1.0A", serialNumber: serial,
+      boards: [{ board: "alhambra-ii", confidence }], buildConfidence: confidence,
+    });
+    f.uploadDevices = [device("A1", 3), device("B2", 3)];
+  });
+  await menu(page, "upload");
+  const picker = page.getByRole("dialog", { name: "Choose a Device" });
+  await expect(picker).toContainText("2 connected devices could be the Alhambra II");
+  await expect(picker).toContainText("serial B2 · Matches the board's name");
+  await expect(status(page)).toContainText("Choose the device to upload to.");
+  await picker.getByRole("listitem").filter({ hasText: "serial B2" }).getByRole("button", { name: "Upload" }).click();
+  await expect(picker).toBeHidden();
+  await expect(output(page)).toContainText("Programmed the flash of the Alhambra II");
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { __fake: { uploadedDevice: string } }).__fake.uploadedDevice,
+    ),
+  ).toBe("usb:1-B2:0403:6010:B2");
+});
+
 test("lists the connected devices", async ({ page }) => {
   await start(page);
   await page.evaluate(() =>
@@ -667,6 +694,9 @@ test("lists the connected devices", async ({ page }) => {
   );
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
   await expect(dialog).toContainText("Alhambra II v1.0A (AlhambraBits, 0403:6010)");
+  // The engine's matches: the board it looks like, and the selected one.
+  await expect(dialog).toContainText("Looks like: Alhambra II");
+  await expect(dialog).toContainText("Can be the selected board (Alhambra II)");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 });

@@ -8,7 +8,9 @@ use serde_json::{json, Value};
 
 use super::client::{tool_error, Engine, ProgressSink};
 use super::phase_sink;
-use super::{bundle, Layout, ENGINE_RELEASE_REPO, ENGINE_RELEASE_TAG};
+use super::{
+    bundle, dev_engine_binary, Layout, DEV_ENGINE_VARIABLE, ENGINE_RELEASE_REPO, ENGINE_RELEASE_TAG,
+};
 use crate::platform;
 use crate::setup_events::{SetupEvent, SetupStage};
 
@@ -35,37 +37,21 @@ where
     let platform = platform::current_implemented()?;
     let layout = Layout::new(&platform.data_dir()?);
 
-    let spec = bundle::package_spec(platform, ENGINE_RELEASE_REPO, ENGINE_RELEASE_TAG);
-    let bin_dir = layout.bin_dir();
-    if !bundle::is_installed(&bin_dir, platform.engine_exe_name(), &spec.url) {
-        emit(SetupEvent::Stage {
-            stage: SetupStage::DownloadingEngine,
-        });
-        log(format!("Downloading Logix Engine {ENGINE_RELEASE_TAG}..."));
-        let tmp_dir = layout.tmp_dir();
-        tokio::fs::create_dir_all(&tmp_dir)
-            .await
-            .with_context(|| format!("can't create {}", tmp_dir.display()))
-            .context(MSG_PREPARE)?;
-        let archive = tmp_dir.join(&spec.file_name);
-        let emit_dl = emit.clone();
-        crate::download::download(&spec.url, &archive, |received, total| {
-            emit_dl(SetupEvent::Download { received, total })
-        })
-        .await
-        .context(MSG_DOWNLOAD)?;
-        let bin_dir = bin_dir.clone();
-        tokio::task::spawn_blocking(move || {
-            bundle::install(platform, &archive, &spec, &tmp_dir, &bin_dir)
-        })
-        .await
-        .context(MSG_UNPACK)?
-        .context(MSG_UNPACK)?;
-        log("Logix Engine installed.".into());
-    }
-    let exe = bin_dir.join(platform.engine_exe_name());
+    let dev = dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE)).context(MSG_START)?;
+    let (exe, folder) = match dev {
+        Some(exe) => {
+            log(format!(
+                "Using the local Logix Engine {} ({DEV_ENGINE_VARIABLE}).",
+                exe.display()
+            ));
+            (exe, layout.dev_engine_folder())
+        }
+        None => (
+            install_release(platform, &layout, &emit).await?,
+            layout.engine_folder(),
+        ),
+    };
 
-    let folder = layout.engine_folder();
     tokio::fs::create_dir_all(&folder)
         .await
         .with_context(|| format!("can't create {}", folder.display()))
@@ -106,6 +92,48 @@ where
         log("FPGA tools for Logix Engine installed.".into());
     }
     Ok(engine)
+}
+
+/// Installs the pinned engine release if it isn't yet (download and
+/// unpack, with progress), and returns its executable.
+async fn install_release<F>(
+    platform: platform::Platform,
+    layout: &Layout,
+    emit: &F,
+) -> Result<std::path::PathBuf>
+where
+    F: Fn(SetupEvent) + Send + Sync + Clone + 'static,
+{
+    let log = |line: String| emit(SetupEvent::Log { line });
+    let spec = bundle::package_spec(platform, ENGINE_RELEASE_REPO, ENGINE_RELEASE_TAG);
+    let bin_dir = layout.bin_dir();
+    if !bundle::is_installed(&bin_dir, platform.engine_exe_name(), &spec.url) {
+        emit(SetupEvent::Stage {
+            stage: SetupStage::DownloadingEngine,
+        });
+        log(format!("Downloading Logix Engine {ENGINE_RELEASE_TAG}..."));
+        let tmp_dir = layout.tmp_dir();
+        tokio::fs::create_dir_all(&tmp_dir)
+            .await
+            .with_context(|| format!("can't create {}", tmp_dir.display()))
+            .context(MSG_PREPARE)?;
+        let archive = tmp_dir.join(&spec.file_name);
+        let emit_dl = emit.clone();
+        crate::download::download(&spec.url, &archive, |received, total| {
+            emit_dl(SetupEvent::Download { received, total })
+        })
+        .await
+        .context(MSG_DOWNLOAD)?;
+        let bin_dir = bin_dir.clone();
+        tokio::task::spawn_blocking(move || {
+            bundle::install(platform, &archive, &spec, &tmp_dir, &bin_dir)
+        })
+        .await
+        .context(MSG_UNPACK)?
+        .context(MSG_UNPACK)?;
+        log("Logix Engine installed.".into());
+    }
+    Ok(bin_dir.join(platform.engine_exe_name()))
 }
 
 /// Names of the packages `get_engine_info` reports as not installed
