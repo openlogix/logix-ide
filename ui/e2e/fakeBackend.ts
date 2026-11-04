@@ -23,7 +23,7 @@ export * from "../src/lib/backend";
 
 // Real engine data and output (see e2e/fixtures/README.md).
 import catalog from "./fixtures/catalog.json";
-import { resolve } from "../src/lib/variants";
+import { configurationOf, resolve } from "../src/lib/variants";
 import verifyOutput from "./fixtures/verify.txt?raw";
 import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
 import testOutput from "./fixtures/test.txt?raw";
@@ -284,7 +284,8 @@ export const backend: typeof Real.backend = {
       const info = (catalog.boards as Real.Board[]).find((b) => b.id === board);
       const memory = info && resolve(info, variant).memory === "ram" ? "RAM" : "flash";
       const name = info?.description ?? board;
-      onLine(`Programming the ${memory} of the ${name} through its USB port.`);
+      const untested = info && configurationOf(info, variant)?.tested === false ? " (untested)" : "";
+      onLine(`Programming the ${memory} of the ${name} through its USB port${untested}.`);
       onEvent({ kind: "progress", message: `Writing ${memory}`, percent: 42 });
       onLine("Programmed Alhambra II v1.0A.");
       onLine(
