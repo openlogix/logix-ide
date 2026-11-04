@@ -2,7 +2,7 @@
 // standard ones, Connection and Memory) and the configurations that exist.
 // All are shown, next to the board and in Tools, even a dimension with a
 // single value (the user's decision: hiding it was too opaque, e.g. that
-// the Arty uploads to RAM only).
+// a board uploads to RAM only).
 // Pure functions, unit-tested in variants.test.ts.
 //
 // A project stores the values the user chose (`[variant]` in

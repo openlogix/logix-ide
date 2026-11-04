@@ -396,7 +396,16 @@ test("lists plugged-in boards first and shows if the board is connected", async 
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
       { board: "basys3", exact: true, suggested: true, variants: [{}] },
-      { board: "arty-a7-35t", exact: false, suggested: false, variants: [{}] },
+      {
+        board: "arty-a7-35t",
+        exact: false,
+        suggested: false,
+        // Both of its configurations use the same USB port.
+        variants: [
+          { connection: "usb", memory: "ram" },
+          { connection: "usb", memory: "flash" },
+        ],
+      },
     ];
     window.dispatchEvent(new Event("focus"));
   });

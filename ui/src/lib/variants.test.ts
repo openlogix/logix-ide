@@ -25,7 +25,7 @@ const plain: Board = {
   configurations: [{ when: { connection: "usb", memory: "flash" }, tested: true }],
 };
 
-// Like the Arty A7: its own USB port, RAM only.
+// Like a Zybo Z7: its own USB port, RAM only.
 const arty: Board = {
   ...plain,
   id: "arty",

@@ -95,10 +95,10 @@ finds them.
 
 Next to the board, Logix shows how it's programmed: the connection (such
 as **USB**, the board's own USB port) and where the design goes (**Flash**
-or **RAM**). Click it to see what each means. A few boards can be
+or **RAM**). Click it to see what each means. Many boards can be
 programmed in more than one way: through different USB adapters (such as
 the ColorLight i9 or the ButterStick), or into flash or RAM (such as the
-iCESugar-Pro); for these, choose the option there or under **Tools**. The
+iCESugar-Pro or the Arty A7); for these, choose the option there or under **Tools**. The
 project remembers it.
 
 ![The ButterStick's options, open next to the board: Connection (USB bootloader, FT2232H adapter, FT232H adapter) and Memory (Flash, RAM), with a note about the bootloader](images/board-options.png)
@@ -110,8 +110,10 @@ project remembers it.
 An option marked **untested** hasn't been tried on a real board yet. If you
 try it, please report whether it works.
 
-Many boards upload to RAM only, including all the Xilinx boards (such as
-the Arty A7). After **Upload**, the output says where the design went.
+Boards that upload to RAM by default, such as the Xilinx boards, can
+usually upload to flash too (marked **untested** for now). A few upload to
+RAM only, such as the Zybo and PYNQ boards and the ULX3S. After **Upload**,
+the output says where the design went.
 
 **File > New Project > From Example…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA type in the same way.

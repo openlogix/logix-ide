@@ -22,6 +22,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -36,6 +41,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -61,6 +73,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -75,6 +92,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -256,6 +280,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -270,6 +299,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -295,6 +331,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -309,6 +350,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -334,6 +382,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -348,6 +401,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -373,6 +433,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -387,6 +452,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -451,6 +523,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -465,6 +542,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -637,6 +721,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -651,6 +740,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -676,6 +772,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -690,6 +791,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -715,6 +823,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -729,6 +842,14 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     }
    ]
   },
@@ -754,6 +875,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -768,6 +894,14 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     }
    ]
   },
@@ -793,6 +927,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -807,6 +946,14 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     }
    ]
   },
@@ -832,6 +979,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -846,6 +998,14 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     }
    ]
   },
@@ -881,6 +1041,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -909,6 +1074,30 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "ft232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     }
    ]
   },
@@ -1000,6 +1189,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1035,6 +1229,38 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "cmsis-dap",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "ft232h",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "flash"
+     },
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     }
    ]
   },
@@ -1099,6 +1325,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1113,6 +1344,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -1138,6 +1376,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1152,6 +1395,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -1177,6 +1427,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1191,6 +1446,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -1265,6 +1527,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1293,6 +1560,27 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "flash"
+     },
+     "tested": false
+    },
+    {
+     "when": {
+      "connection": "ft232h",
+      "memory": "flash"
+     },
+     "tested": false
+    },
+    {
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -1633,6 +1921,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1647,6 +1940,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -1920,6 +2220,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1934,6 +2239,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "unspecified",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -1959,6 +2271,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -1973,6 +2290,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -1998,6 +2322,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -2012,6 +2341,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "unspecified",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -2037,6 +2373,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -2051,6 +2392,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -2076,6 +2424,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -2090,6 +2443,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -2431,6 +2791,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -2445,6 +2810,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -3256,6 +3628,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -3270,6 +3647,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -3295,6 +3679,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -3309,6 +3698,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
@@ -3334,6 +3730,11 @@
      "label": "Memory",
      "values": [
       {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
        "help": "Faster to upload; lost when the board is powered off.",
        "id": "ram",
        "label": "RAM"
@@ -3348,6 +3749,13 @@
       "memory": "ram"
      },
      "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "flash"
+     },
+     "tested": false
     }
    ]
   },
