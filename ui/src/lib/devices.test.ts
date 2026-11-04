@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   confidenceLabel,
+  deviceBoardsLine,
   deviceSummaryLines,
   isBoardNotFound,
   likelyBoards,
@@ -55,6 +56,40 @@ describe("devices", () => {
     expect(mayBeBoard(generic, "alchitry-au")).toBe(true);
     expect(mayBeBoard(generic, "icestick")).toBe(false);
     expect(mayBeBoard(generic, null)).toBe(false);
+  });
+
+  it("says in one line which boards a device may be", () => {
+    const names: Record<string, string> = {
+      "arty-a7-35t": "Arty A7-35T (Xilinx, Artix7)",
+      basys3: "Basys3 (Xilinx, Artix7)",
+      icestick: "iCEstick Eval Kit",
+    };
+    const name = (id: string) => names[id] ?? id;
+    const digilent = {
+      ...alhambra,
+      boards: [
+        { board: "arty-a7-35t", confidence: 3 },
+        { board: "basys3", confidence: 3 },
+        { board: "icestick", confidence: 1 },
+      ],
+    };
+    expect(deviceBoardsLine(digilent, "arty-a7-35t", name)).toBe(
+      "Looks like the selected board, Arty A7-35T (Xilinx, Artix7). Or: Basys3 (Xilinx, Artix7).",
+    );
+    expect(deviceBoardsLine(digilent, "icestick", name)).toBe(
+      "Looks like: Arty A7-35T (Xilinx, Artix7), Basys3 (Xilinx, Artix7). It may also be the selected board.",
+    );
+    expect(deviceBoardsLine(digilent, "alhambra-ii", name)).toBe(
+      "Looks like: Arty A7-35T (Xilinx, Artix7), Basys3 (Xilinx, Artix7).",
+    );
+    const generic = { ...alhambra, boards: [{ board: "icestick", confidence: 1 }] };
+    expect(deviceBoardsLine(generic, "icestick", name)).toBe(
+      "May be the selected board, iCEstick Eval Kit.",
+    );
+    expect(deviceBoardsLine(generic, null, name)).toBeNull();
+    expect(deviceBoardsLine(alhambra, "alhambra-ii", name)).toBe(
+      "Looks like the selected board, alhambra-ii.",
+    );
   });
 
   it("puts confidence in words, by comparing", () => {

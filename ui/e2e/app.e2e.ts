@@ -706,8 +706,7 @@ test("lists the connected devices", async ({ page }) => {
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
   await expect(dialog).toContainText("Alhambra II v1.0A (AlhambraBits, 0403:6010)");
   // The engine's matches: the board it looks like, and the selected one.
-  await expect(dialog).toContainText("Looks like: Alhambra II");
-  await expect(dialog).toContainText("Can be the selected board (Alhambra II)");
+  await expect(dialog).toContainText("Looks like the selected board, Alhambra II.");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 });

@@ -44,6 +44,32 @@ export function mayBeBoard(d: UsbDevice, board: string | null): boolean {
   return board !== null && d.boards.some((b) => b.board === board);
 }
 
+/**
+ * One line on which boards a device may be, from the selected board's point
+ * of view (null when there's nothing worth saying): the boards it looks like
+ * by name, with the selected board first when it's one of them, or a note
+ * that it may be the selected board when only the USB chip fits.
+ */
+export function deviceBoardsLine(
+  d: UsbDevice,
+  selected: string | null,
+  boardName: (id: string) => string,
+): string | null {
+  const likely = likelyBoards(d);
+  const names = (ids: string[]) => ids.map(boardName).join(", ");
+  if (selected && likely.includes(selected)) {
+    const others = likely.filter((b) => b !== selected);
+    const or = others.length > 0 ? ` Or: ${names(others)}.` : "";
+    return `Looks like the selected board, ${boardName(selected)}.${or}`;
+  }
+  const fits = mayBeBoard(d, selected);
+  if (likely.length > 0) {
+    return `Looks like: ${names(likely)}.${fits ? " It may also be the selected board." : ""}`;
+  }
+  if (fits && selected) return `May be the selected board, ${boardName(selected)}.`;
+  return null;
+}
+
 /** Console lines listing what's connected, with tips when nothing is. */
 export function deviceSummaryLines(devices: Devices): string[] {
   const locked = devices.unreachable.map(

@@ -1,7 +1,7 @@
 <!-- Tools > Connected Devices: the USB devices connected. -->
 <script lang="ts">
   import type { Devices } from "./backend";
-  import { likelyBoards, mayBeBoard, usbLabel } from "./devices";
+  import { deviceBoardsLine, usbLabel } from "./devices";
 
   let {
     devices,
@@ -75,13 +75,8 @@
                 {#if d.serialNumber}
                   <span class="muted">serial {d.serialNumber}</span>
                 {/if}
-                {#if likelyBoards(d).length > 0}
-                  <span class="muted"
-                    >Looks like: {likelyBoards(d).map(boardName).join(", ")}</span
-                  >
-                {/if}
-                {#if board && mayBeBoard(d, board)}
-                  <span class="fits">Can be the selected board ({boardName(board)})</span>
+                {#if deviceBoardsLine(d, board, boardName)}
+                  <span class="muted">{deviceBoardsLine(d, board, boardName)}</span>
                 {/if}
               </li>
             {/each}
@@ -190,10 +185,6 @@
   }
   .muted {
     color: var(--muted);
-    font-size: 12px;
-  }
-  .fits {
-    color: var(--status-ok-fg);
     font-size: 12px;
   }
   .hint {
