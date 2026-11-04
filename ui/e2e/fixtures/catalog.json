@@ -38,16 +38,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -89,16 +89,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -296,16 +296,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -347,16 +347,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -398,16 +398,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -449,16 +449,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -539,16 +539,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -737,16 +737,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -788,16 +788,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -839,17 +839,17 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
-     },
-     "tested": true
-    },
-    {
-     "when": {
-      "connection": "ft2232h",
       "memory": "flash"
      },
      "tested": false,
      "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
+     "tested": true
     }
    ]
   },
@@ -891,17 +891,17 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
-     },
-     "tested": true
-    },
-    {
-     "when": {
-      "connection": "ft2232h",
       "memory": "flash"
      },
      "tested": false,
      "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
+     "tested": true
     }
    ]
   },
@@ -943,17 +943,17 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
-     },
-     "tested": true
-    },
-    {
-     "when": {
-      "connection": "ft2232h",
       "memory": "flash"
      },
      "tested": false,
      "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
+     "tested": true
     }
    ]
   },
@@ -995,17 +995,17 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
-     },
-     "tested": true
-    },
-    {
-     "when": {
-      "connection": "ft2232h",
       "memory": "flash"
      },
      "tested": false,
      "userNotes": "Writing the flash replaces the firmware the board came with."
+    },
+    {
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
+     "tested": true
     }
    ]
   },
@@ -1057,47 +1057,47 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     },
     {
      "when": {
       "connection": "ft232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     },
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false,
-     "userNotes": "Writing the flash replaces the firmware the board came with."
+     "tested": true
     },
     {
      "when": {
       "connection": "ft232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false,
-     "userNotes": "Writing the flash replaces the firmware the board came with."
+     "tested": true
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false,
-     "userNotes": "Writing the flash replaces the firmware the board came with."
+     "tested": true
     }
    ]
   },
@@ -1205,62 +1205,62 @@
     {
      "when": {
       "connection": "cmsis-dap",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     },
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     },
     {
      "when": {
       "connection": "ft232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false,
+     "userNotes": "Writing the flash replaces the firmware the board came with."
     },
     {
      "when": {
       "connection": "cmsis-dap",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false,
-     "userNotes": "Writing the flash replaces the firmware the board came with."
+     "tested": true
     },
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false,
-     "userNotes": "Writing the flash replaces the firmware the board came with."
+     "tested": true
     },
     {
      "when": {
       "connection": "ft232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false,
-     "userNotes": "Writing the flash replaces the firmware the board came with."
+     "tested": true
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false,
-     "userNotes": "Writing the flash replaces the firmware the board came with."
+     "tested": true
     }
    ]
   },
@@ -1341,16 +1341,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -1392,16 +1392,16 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -1443,16 +1443,16 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -1543,44 +1543,44 @@
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "ft232h",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "ft2232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     },
     {
      "when": {
       "connection": "ft232h",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -1937,16 +1937,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -2236,16 +2236,16 @@
     {
      "when": {
       "connection": "unspecified",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "unspecified",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -2287,16 +2287,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -2338,16 +2338,16 @@
     {
      "when": {
       "connection": "unspecified",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "unspecified",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -2389,16 +2389,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -2440,16 +2440,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -2807,16 +2807,16 @@
     {
      "when": {
       "connection": "usb",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -3644,16 +3644,16 @@
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -3695,16 +3695,16 @@
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },
@@ -3746,16 +3746,16 @@
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "ram"
+      "memory": "flash"
      },
-     "tested": true
+     "tested": false
     },
     {
      "when": {
       "connection": "usb-blaster",
-      "memory": "flash"
+      "memory": "ram"
      },
-     "tested": false
+     "tested": true
     }
    ]
   },

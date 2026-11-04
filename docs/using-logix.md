@@ -110,10 +110,10 @@ project remembers it.
 An option marked **untested** hasn't been tried on a real board yet. If you
 try it, please report whether it works.
 
-Boards that upload to RAM by default, such as the Xilinx boards, can
-usually upload to flash too (marked **untested** for now). A few upload to
-RAM only, such as the Zybo and PYNQ boards and the ULX3S. After **Upload**,
-the output says where the design went.
+Boards that can upload to flash do so unless you choose **RAM**. On many
+boards, such as the Xilinx boards, flash is still marked **untested**. A few
+upload to RAM only, such as the Zybo and PYNQ boards and the ULX3S. After
+**Upload**, the output says where the design went.
 
 **File > New Project > From Example…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA type in the same way.
