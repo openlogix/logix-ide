@@ -29,6 +29,7 @@
     choose as chooseVariant,
     configurationOf,
     hasChoice,
+    uploadPlan,
     isConnected as variantConnected,
     menus as variantMenus,
     parseMenuId,
@@ -853,6 +854,8 @@
       `${VERB[task]} ${p.name}${which} for ${boardName(board)}${summary ? ` (${summary})` : ""}…`,
     );
     const notes = boardInfo && configurationOf(boardInfo, variant)?.userNotes;
+    const plan = task === "upload" && boardInfo && uploadPlan(boardInfo, variant);
+    if (plan) log(plan);
     if (task === "upload" && notes) log(`Note: ${notes}`);
     try {
       const outcome = await backend.runTask(

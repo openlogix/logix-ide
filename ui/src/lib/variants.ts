@@ -81,6 +81,24 @@ export function summary(board: Board, variant: Variant): string {
     .join(" · ");
 }
 
+/**
+ * Before an upload: how the board will be programmed, e.g. "Programming the
+ * board's RAM through the FT232H adapter.". Null if not known.
+ */
+export function uploadPlan(board: Board, variant: Variant): string | null {
+  const when = resolve(board, variant);
+  const memory = { flash: "flash", ram: "RAM" }[when.memory];
+  if (!memory) return null;
+  const through =
+    {
+      usb: " through its USB port",
+      unspecified: " through USB",
+      bootloader: " through its USB bootloader",
+    }[when.connection] ??
+    (when.connection ? ` through the ${valueLabel(board, "connection", when.connection)}` : "");
+  return `Programming the board's ${memory}${through}.`;
+}
+
 /** After a successful upload: where the design went, and what that means. */
 export function afterUpload(board: Board, variant: Variant): string | null {
   switch (resolve(board, variant).memory) {
