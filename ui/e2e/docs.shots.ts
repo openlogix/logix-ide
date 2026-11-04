@@ -27,7 +27,9 @@ async function startWithBoard(page: Page) {
     const w = window as unknown as {
       __fake: { connected: { board: string; exact: boolean }[] };
     };
-    w.__fake.connected = [{ board: "alhambra-ii", exact: true }];
+    w.__fake.connected = [
+      { board: "alhambra-ii", exact: true, suggested: true, variants: [{}] },
+    ];
     window.dispatchEvent(new Event("focus"));
   });
   await expect(page.locator(".board-link")).toHaveText("Connected");

@@ -191,6 +191,12 @@ export interface ConnectedBoard {
   board: string;
   /** Its product name matched too, not just the USB chip's ids. */
   exact: boolean;
+  /**
+   * Worth listing in the board picker's Connected group (a product name
+   * match, or one of only a few boards with the chip's ids). Every listed
+   * board matches the device, so the selected one shows as connected.
+   */
+  suggested: boolean;
   /** The configurations whose USB filter matched ({} for most boards). */
   variants: Variant[];
 }

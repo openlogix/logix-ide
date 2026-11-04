@@ -68,6 +68,11 @@ pub struct ConnectedBoard {
     /// The board's product name matched too, not just the USB chip's ids
     /// (which many boards share).
     pub exact: bool,
+    /// Worth listing in the board picker's "Connected" group: a product
+    /// name match, or one of only a few boards with the chip's ids (generic
+    /// FTDI ids fit dozens). Boards that aren't suggested still match the
+    /// device, so the selected one shows as connected.
+    pub suggested: bool,
     /// The configurations whose filter matched, e.g. `{"connection":
     /// "ft232h"}` for a board with several adapters (one empty variant for
     /// most boards).
@@ -116,37 +121,44 @@ pub fn usb_rules(boards: &Value) -> Vec<UsbRule> {
 }
 
 /// The boards that match the connected USB devices, as the engine matches
-/// them (equal ids, and the product name contains a match for the
-/// pattern): per device, the boards whose product name matches, or else
-/// (if only a few) the boards with the same chip ids and no product
-/// pattern. Each board is listed once, exact matches first.
+/// them (equal ids, and the product name contains a match for the pattern,
+/// if the board has one). Each board is listed once, suggested ones first:
+/// per device, the boards whose product name matches, or else (if only a
+/// few) the boards with the same chip ids and no product pattern.
 pub fn match_boards(rules: &[UsbRule], devices: &[UsbDevice]) -> Vec<ConnectedBoard> {
     let mut found: Vec<ConnectedBoard> = Vec::new();
     for dev in devices {
         let (vid, pid) = (dev.vid.to_lowercase(), dev.pid.to_lowercase());
-        let same_chip = rules.iter().filter(|r| r.vid == vid && r.pid == pid);
-        let exact: Vec<&UsbRule> = same_chip
-            .clone()
+        let matching: Vec<&UsbRule> = rules
+            .iter()
+            .filter(|r| r.vid == vid && r.pid == pid)
             .filter(|r| {
                 r.product
                     .as_ref()
-                    .is_some_and(|re| re.is_match(&dev.product))
+                    .is_none_or(|re| re.is_match(&dev.product))
             })
             .collect();
-        let generic: Vec<&UsbRule> = same_chip.filter(|r| r.product.is_none()).collect();
-        let mut generic_boards: Vec<&str> = generic.iter().map(|r| r.board.as_str()).collect();
+        let exact = matching.iter().any(|r| r.product.is_some());
+        let mut generic_boards: Vec<&str> = matching
+            .iter()
+            .filter(|r| r.product.is_none())
+            .map(|r| r.board.as_str())
+            .collect();
         generic_boards.dedup();
-        let (chosen, is_exact) = if !exact.is_empty() {
-            (exact, true)
-        } else if generic_boards.len() <= MAX_GENERIC_MATCHES {
-            (generic, false)
-        } else {
-            continue;
+        let suggest = |r: &UsbRule| {
+            if exact {
+                r.product.is_some()
+            } else {
+                generic_boards.len() <= MAX_GENERIC_MATCHES
+            }
         };
-        for rule in chosen {
+        for rule in matching {
+            let is_exact = rule.product.is_some();
+            let suggested = suggest(rule);
             match found.iter_mut().find(|c| c.board == rule.board) {
                 Some(c) => {
                     c.exact |= is_exact;
+                    c.suggested |= suggested;
                     if !c.variants.contains(&rule.variant) {
                         c.variants.push(rule.variant.clone());
                     }
@@ -154,12 +166,13 @@ pub fn match_boards(rules: &[UsbRule], devices: &[UsbDevice]) -> Vec<ConnectedBo
                 None => found.push(ConnectedBoard {
                     board: rule.board.clone(),
                     exact: is_exact,
+                    suggested,
                     variants: vec![rule.variant.clone()],
                 }),
             }
         }
     }
-    found.sort_by_key(|c| !c.exact);
+    found.sort_by_key(|c| (!c.suggested, !c.exact));
     found
 }
 
@@ -200,9 +213,11 @@ mod tests {
         }
     }
 
+    /// The boards suggested in the board picker's Connected group.
     fn connected(devices: Vec<UsbDevice>) -> Vec<(String, bool)> {
         match_boards(&usb_rules(&boards()), &devices)
             .into_iter()
+            .filter(|c| c.suggested)
             .map(|c| (c.board, c.exact))
             .collect()
     }
@@ -276,6 +291,32 @@ mod tests {
         );
         let plain = match_boards(&usb_rules(&boards()), &[device("1d50", "6130", "")]);
         assert_eq!(plain[0].variants, [Variant::new()]);
+    }
+
+    /// An Arty (FTDI ids, "Digilent USB Device") also matches the Basys3's
+    /// product pattern: the Arty still matches, as the engine sees it, so
+    /// the toolbar shows it as connected when it's the selected board.
+    #[test]
+    fn every_matching_board_is_listed_suggested_or_not() {
+        let mut catalog = boards();
+        catalog["basys3"] = json!({"variants": {"configurations": [
+            {"usb": {"vid": "0403", "pid": "6010", "product_regex": "^Digilent USB Device"}}]}});
+        catalog["arty"] = json!({"variants": {"configurations": [
+            {"usb": {"vid": "0403", "pid": "6010"}}]}});
+        let found = match_boards(
+            &usb_rules(&catalog),
+            &[device("0403", "6010", "Digilent USB Device")],
+        );
+        let list: Vec<(&str, bool)> = found
+            .iter()
+            .map(|c| (c.board.as_str(), c.suggested))
+            .collect();
+        // Suggested first; the generic FTDI boards match too.
+        assert_eq!(list[0], ("basys3", true));
+        assert!(list.contains(&("arty", false)));
+        assert!(list.contains(&("generic-a", false)));
+        // Not the boards whose product pattern doesn't match.
+        assert!(!list.iter().any(|(b, _)| *b == "alhambra-ii"));
     }
 
     #[test]

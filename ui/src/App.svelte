@@ -1626,7 +1626,7 @@
     >
     <BoardPicker
       {boards}
-      connected={connected.map((c) => c.board)}
+      connected={connected.filter((c) => c.suggested).map((c) => c.board)}
       value={pendingBoard ?? currentBoard}
       disabled={boards.length === 0}
       placeholder={boards.length ? "Select board…" : "Loading boards…"}

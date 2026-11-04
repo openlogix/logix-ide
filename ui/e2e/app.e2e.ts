@@ -374,16 +374,34 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   const link = page.locator(".board-link");
   await expect(link).toHaveText("Not connected");
   await page.evaluate(() => {
-    const w = window as unknown as {
-      __fake: { connected: { board: string; exact: boolean }[] };
-    };
-    w.__fake.connected = [{ board: "alhambra-ii", exact: true }];
+    const w = window as unknown as { __fake: { connected: unknown[] } };
+    w.__fake.connected = [
+      { board: "alhambra-ii", exact: true, suggested: true, variants: [{}] },
+    ];
     window.dispatchEvent(new Event("focus"));
   });
   await expect(link).toHaveText("Connected");
   await boardButton(page).click();
   await expect(page.locator(".group").first()).toHaveText("Connected");
   await expect(page.getByRole("option").first()).toHaveText(/Alhambra II/);
+  await page.keyboard.press("Escape");
+
+  // An Arty reports the same name as the Basys3's pattern: only the Basys3
+  // is suggested, but the Arty matches too, so it shows as connected.
+  await page.evaluate(() => {
+    const w = window as unknown as { __fake: { connected: unknown[] } };
+    w.__fake.connected = [
+      { board: "basys3", exact: true, suggested: true, variants: [{}] },
+      { board: "arty-a7-35t", exact: false, suggested: false, variants: [{}] },
+    ];
+    window.dispatchEvent(new Event("focus"));
+  });
+  await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
+  await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
+  await expect(link).toHaveText("Connected");
+  await boardButton(page).click();
+  await expect(page.locator(".group").first()).toHaveText("Connected");
+  await expect(page.getByRole("option").first()).toHaveText(/Basys3/);
 });
 
 test("opens a board's Bare Minimum from the examples", async ({ page }) => {
