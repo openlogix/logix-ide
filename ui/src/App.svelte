@@ -1980,23 +1980,28 @@
     color: var(--toolbar-fg);
     font-size: 16px;
   }
-  /* Whether the selected board is plugged in: a dot and a word. */
-  .board-link {
+  /* Whether the selected board is plugged in: a dot and a word. A button
+     (it opens Connected Devices), so it must override `.toolbar button`,
+     the round icon buttons: hence `.toolbar .board-link`. */
+  .toolbar .board-link {
     display: flex;
     align-items: center;
     gap: 6px;
+    width: auto;
+    height: auto;
     margin-left: 10px;
+    padding: 2px 6px;
     font-size: 12px;
+    font-family: inherit;
+    line-height: inherit;
     color: rgba(255, 255, 255, 0.65);
     white-space: nowrap;
-    padding: 2px 6px;
     border: none;
     border-radius: 4px;
     background: transparent;
-    font-family: inherit;
     cursor: pointer;
   }
-  .board-link:hover {
+  .toolbar .board-link:hover {
     background: rgba(255, 255, 255, 0.12);
   }
   .board-link::before {
@@ -2006,7 +2011,7 @@
     border-radius: 50%;
     border: 1.5px solid rgba(255, 255, 255, 0.65);
   }
-  .board-link.connected {
+  .toolbar .board-link.connected {
     color: #ffffff;
   }
   .board-link.connected::before {
