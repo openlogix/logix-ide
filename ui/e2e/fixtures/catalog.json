@@ -233,7 +233,7 @@
       "memory": "flash"
      },
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     },
     {
      "when": {
@@ -600,7 +600,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
    ]
   },
@@ -666,7 +666,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
    ]
   },
@@ -680,7 +680,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
    ]
   },
@@ -917,7 +917,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
     }
    ]
   },
@@ -931,7 +931,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
     }
    ]
   },
@@ -945,7 +945,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
    ]
   },
@@ -1076,7 +1076,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the Soan-Papdi-Mini."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the Soan-Papdi-Mini."
     }
    ]
   },
@@ -1090,7 +1090,7 @@
     {
      "when": {},
      "tested": true,
-     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+     "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
    ]
   },
