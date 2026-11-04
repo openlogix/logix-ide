@@ -99,6 +99,8 @@ as the iCESugar-Pro). For these boards, the options in use show next to the
 board, for example **FT232H cable** or **RAM**. Click them to change them;
 they're also under **Tools**. The project remembers them.
 
+![The iCESugar-Pro set to upload to RAM, with its options open next to the board](images/board-options.png)
+
 - **Flash** keeps your design when the board is powered off.
 - **RAM** uploads faster, but the design is lost when the board is powered
   off.
