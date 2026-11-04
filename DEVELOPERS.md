@@ -113,6 +113,13 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
   released engine, for working on both together. Its tools go to
   `~/.logix/engine-dev`, apart from the released engine's (the first run
   downloads them). Restart the script after changing the engine.
+- **A local engine with an installed Logix** (for diagnosing a downloaded
+  Logix IDE, or guiding a user through it): quit Logix, then start it with
+  the variable set:
+  `open -a "Logix IDE" --env LOGIX_DEV_ENGINE_BINARY=/path/to/logix-engine`.
+  A banner shows the local engine for the whole session; start Logix
+  normally to go back to the regular engine. This is a diagnostic feature,
+  not for normal use.
 - **`scripts/test.sh`** runs everything CI runs: the UI type check, unit tests, a
   production build and the end-to-end tests, then the Rust format check,
   lint and tests. It stops at the first failure. Run it before committing.

@@ -40,6 +40,9 @@ where
     let dev = dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE)).context(MSG_START)?;
     let (exe, folder) = match dev {
         Some(exe) => {
+            emit(SetupEvent::DevEngine {
+                path: exe.display().to_string(),
+            });
             log(format!(
                 "Using the local Logix Engine {} ({DEV_ENGINE_VARIABLE}).",
                 exe.display()

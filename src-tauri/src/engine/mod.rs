@@ -94,13 +94,13 @@ impl Layout {
 pub const DEV_ENGINE_VARIABLE: &str = "LOGIX_DEV_ENGINE_BINARY";
 
 /// The locally built engine to use instead of the pinned release: the
-/// value of `LOGIX_DEV_ENGINE_BINARY`, honored only in development (debug)
-/// builds, so a released app always uses the engine it downloaded. Unset or
-/// empty means none; a value that isn't a file is an error.
-fn dev_engine_binary(value: Option<std::ffi::OsString>) -> anyhow::Result<Option<PathBuf>> {
-    if !cfg!(debug_assertions) {
-        return Ok(None);
-    }
+/// value of `LOGIX_DEV_ENGINE_BINARY`, in every build (development and
+/// released), for Logix developers and users guided by them, such as to
+/// diagnose a GitHub-built IDE. Not for normal use. Unset or empty means
+/// none; a value that isn't a file is an error.
+pub(super) fn dev_engine_binary(
+    value: Option<std::ffi::OsString>,
+) -> anyhow::Result<Option<PathBuf>> {
     match value {
         Some(v) if !v.is_empty() => {
             let path = PathBuf::from(v);
@@ -167,7 +167,6 @@ mod tests {
         );
         let exe = tmp.path().join("logix-engine");
         std::fs::write(&exe, "").unwrap();
-        // Tests are debug builds, where the variable counts.
         assert_eq!(
             dev_engine_binary(Some(exe.clone().into())).unwrap(),
             Some(exe)

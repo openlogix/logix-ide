@@ -658,6 +658,17 @@ test("shows the design diagram and switches modules", async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
+test("a local engine is shown for the whole session", async ({ page }) => {
+  await page.goto("/?devEngine");
+  const banner = page.getByRole("status").filter({ hasText: "local Logix Engine" });
+  await expect(banner).toContainText(
+    "Using a local Logix Engine, for diagnosis: /Users/you/logix-engine/target/debug/logix-engine",
+  );
+  // Still there once setup is done.
+  await expect(output(page)).toContainText("Ready.");
+  await expect(banner).toBeVisible();
+});
+
 test("Upload asks which device when several fit the board", async ({ page }) => {
   await start(page);
   await page.evaluate(() => {

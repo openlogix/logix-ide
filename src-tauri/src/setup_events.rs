@@ -38,4 +38,9 @@ pub enum SetupEvent {
     Log {
         line: String,
     },
+    /// Setup uses a local engine (`LOGIX_DEV_ENGINE_BINARY`) instead of the
+    /// pinned release, for diagnosis: the UI shows it for the whole session.
+    DevEngine {
+        path: String,
+    },
 }

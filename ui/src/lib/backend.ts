@@ -49,7 +49,9 @@ export type SetupEvent =
   | { kind: "stage"; stage: SetupStage }
   | { kind: "download"; received: number; total: number | null }
   | { kind: "progress"; message: string; percent: number | null }
-  | { kind: "log"; line: string };
+  | { kind: "log"; line: string }
+  /** A local engine (LOGIX_DEV_ENGINE_BINARY) is used, for diagnosis. */
+  | { kind: "devEngine"; path: string };
 
 export interface ProjectFile {
   name: string;

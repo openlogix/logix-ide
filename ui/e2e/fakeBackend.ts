@@ -244,6 +244,10 @@ export const backend: typeof Real.backend = {
 
   setup: async (onEvent) => {
     onEvent({ kind: "stage", stage: "checking" });
+    // With `/?devEngine`, setup uses a local engine (LOGIX_DEV_ENGINE_BINARY).
+    if (new URLSearchParams(location.search).has("devEngine")) {
+      onEvent({ kind: "devEngine", path: "/Users/you/logix-engine/target/debug/logix-engine" });
+    }
     // With `/?engineSetup`, setup stops in the engine's package install
     // until a test calls `__fake.finishSetup()`.
     if (new URLSearchParams(location.search).has("engineSetup")) {

@@ -260,6 +260,13 @@
     }
   }
 
+  /**
+   * The local engine in use instead of the released one
+   * (LOGIX_DEV_ENGINE_BINARY), shown for the whole session so it's never
+   * forgotten while diagnosing.
+   */
+  let devEngine = $state<string | null>(null);
+
   function onSetupEvent(event: SetupEvent) {
     switch (event.kind) {
       case "stage":
@@ -275,6 +282,9 @@
         break;
       case "log":
         log(event.line);
+        break;
+      case "devEngine":
+        devEngine = event.path;
         break;
     }
   }
@@ -1685,6 +1695,15 @@
     {/if}
   </header>
 
+  {#if devEngine}
+    <div class="banner dev-engine" role="status">
+      <span
+        >Using a local Logix Engine, for diagnosis: {devEngine}. Start Logix
+        normally to use the regular engine.</span
+      >
+    </div>
+  {/if}
+
   {#if fileError}
     <div class="banner error" role="alert">
       <span>{fileError}</span>
@@ -1994,6 +2013,11 @@
   }
   .banner span {
     flex: 1;
+  }
+  .banner.dev-engine {
+    background: var(--warning-mark);
+    color: #1f2328;
+    overflow-wrap: anywhere;
   }
   .banner.error {
     background: var(--banner-error-bg);
