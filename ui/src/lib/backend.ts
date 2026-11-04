@@ -105,7 +105,7 @@ export interface Board {
   arch: string;
   /** The extension of the board's pin files, e.g. "pcf" (null if unknown). */
   pinExtension: string | null;
-  /** The board's choices for programming it (none for most boards). */
+  /** How the board is programmed: Connection and Memory, for every board. */
   dimensions: Dimension[];
   /** The combinations that exist; the first is the default. */
   configurations: Configuration[];

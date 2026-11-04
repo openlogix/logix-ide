@@ -1,7 +1,8 @@
 // A board's variants: its dimensions (every board has the engine's two
 // standard ones, Connection and Memory) and the configurations that exist.
-// A dimension with more than one value is a choice, shown next to the board
-// and in Tools; one with a single value is a fact (e.g. "uploads to RAM").
+// All are shown, next to the board and in Tools, even a dimension with a
+// single value (the user's decision: hiding it was too opaque, e.g. that
+// the Arty uploads to RAM only).
 // Pure functions, unit-tested in variants.test.ts.
 //
 // A project stores the values the user chose (`[variant]` in
@@ -60,23 +61,13 @@ export function valueLabel(board: Board, dim: string, value: string): string {
   return d?.values.find((v) => v.id === value)?.label ?? value;
 }
 
-/** The dimensions the user can choose in: those with more than one value. */
-export function choices(board: Board | null) {
-  return board ? board.dimensions.filter((d) => d.values.length > 1) : [];
-}
-
-/** Whether the board has anything to choose (the toolbar's option button). */
-export function hasChoice(board: Board | null): boolean {
-  return choices(board).length > 0;
-}
-
 /**
- * The toolbar's summary: the value of every dimension with a choice, e.g.
- * "FT232H adapter · RAM". Empty for a board without choices.
+ * The toolbar's summary: the value of every dimension, e.g.
+ * "FT232H adapter · RAM" or "USB · Flash".
  */
 export function summary(board: Board, variant: Variant): string {
   const when = resolve(board, variant);
-  return choices(board)
+  return board.dimensions
     .map((d) => valueLabel(board, d.id, when[d.id]))
     .join(" · ");
 }
@@ -110,17 +101,17 @@ export function choose(
     board.configurations.find((x) => matches(x, wanted)) ??
     board.configurations.find((x) => x.when[dim] === value);
   if (!c) return { variant: toStore(board, variant), changed: [] };
-  const changed = choices(board)
+  const changed = board.dimensions
     .filter((d) => d.id !== dim && c.when[d.id] !== current[d.id])
     .map((d) => `${d.label}: ${valueLabel(board, d.id, c.when[d.id])}`);
   return { variant: toStore(board, c.when), changed };
 }
 
-/** The Tools submenus for the board's choices (none for most boards). */
+/** The Tools submenus, one per dimension of the board. */
 export function menus(board: Board | null, variant: Variant): VariantMenu[] {
   if (!board) return [];
   const when = resolve(board, variant);
-  return choices(board).map((d) => ({
+  return board.dimensions.map((d) => ({
     id: d.id,
     label: d.label,
     values: d.values.map((v) => ({
@@ -142,7 +133,7 @@ export function isConnected(
   if (!boardId) return false;
   const found = connected.find((c) => c.board === boardId);
   if (!found) return false;
-  if (!board || !hasChoice(board)) return true;
+  if (!board || board.dimensions.every((d) => d.values.length < 2)) return true;
   const when = resolve(board, variant);
   return found.variants.some((v) =>
     Object.entries(when).every(([k, x]) => v[k] === x),

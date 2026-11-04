@@ -250,8 +250,13 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
     }>;
   const summary = page.locator(".variant .summary");
   await start(page);
-  // Most boards have no choice, but Upload still says where the design went.
-  await expect(summary).toHaveCount(0);
+  // Every board shows how it's programmed, even with nothing to choose.
+  await expect(summary).toHaveText(/^\s*USB · Flash/);
+  const plain = (await fake()).menuState.variantMenus;
+  expect(plain.map((m) => m.values.map((v) => [v.label, v.checked]))).toEqual([
+    [["USB", true]],
+    [["Flash", true]],
+  ]);
   await menu(page, "upload");
   // The engine says it when programming starts, after the build.
   await expect(output(page)).toContainText(
@@ -260,13 +265,12 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
   await expect(output(page)).toContainText(
     "Programmed the flash of the Alhambra II: the design stays when the board is powered off.",
   );
-  expect((await fake()).menuState.variantMenus).toEqual([]);
 
   // The iCESugar-Pro can be programmed to flash or to RAM.
   await pickBoard(page, "Icesugar Pro");
   await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
-  await expect(summary).toHaveText(/^\s*Flash/);
-  const memory = (await fake()).menuState.variantMenus[0];
+  await expect(summary).toHaveText(/^\s*USB · Flash/);
+  const memory = (await fake()).menuState.variantMenus[1];
   expect(memory.label).toBe("Memory");
   expect(memory.values.map((v) => [v.label, v.checked])).toEqual([
     ["Flash", true],
@@ -277,14 +281,14 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
   await summary.click();
   const panel = page.getByRole("dialog", { name: "Icesugar Pro options" });
   await panel.getByRole("radio", { name: "RAM" }).click();
-  await expect(summary).toHaveText(/^\s*RAM/);
-  await expect(status(page)).toContainText("Icesugar Pro: RAM.");
+  await expect(summary).toHaveText(/^\s*USB · RAM/);
+  await expect(status(page)).toContainText("Icesugar Pro: USB · RAM.");
   await page.keyboard.press("Escape");
   await expect(panel).toBeHidden();
 
   // Builds use it, and saving stores it.
   await menu(page, "verify");
-  await expect(output(page)).toContainText("for Icesugar Pro (RAM)");
+  await expect(output(page)).toContainText("for Icesugar Pro (USB · RAM)");
   await expect(output(page)).toContainText("Ready.");
   expect((await fake()).taskVariant).toEqual({ connection: "usb", memory: "ram" });
   // After an upload to RAM, a reminder that it's lost at power-off.
@@ -301,7 +305,7 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
 
   // Tools > Memory > Flash: back to the default, stored as nothing.
   await menu(page, "variant:memory:flash");
-  await expect(summary).toHaveText(/^\s*Flash/);
+  await expect(summary).toHaveText(/^\s*USB · Flash/);
   await menu(page, "save");
   await expect(status(page)).toContainText("Saved");
   expect((await fake()).saved).toEqual({ board: "icesugar-pro", variant: {} });
@@ -450,7 +454,7 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
   const menu = (id: string) =>
     page.evaluate((id) => (window as unknown as { __fake: Fake }).__fake.menu(id), id);
   // In main.v; the fake has no live checker, so Go to Definition is off.
-  expect(await editorMenu()).toEqual({
+  expect(await editorMenu()).toMatchObject({
     project: true,
     verilog: true,
     comment: true,
@@ -458,7 +462,6 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
     testbenches: true,
     simulate: true,
     testbenchOpen: false,
-    variantMenus: [],
   });
   const first = page.locator(".cm-line").first();
   const before = (await first.textContent()) ?? "";
@@ -511,7 +514,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
   await expect(simulate).toBeDisabled();
   // No project: nothing that needs one.
   await menu(page, "close-project");
-  await expect.poll(menuState).toEqual({
+  await expect.poll(menuState).toMatchObject({
     project: false,
     verilog: false,
     comment: false,
@@ -519,7 +522,6 @@ test("file commands are enabled only where they work", async ({ page }) => {
     testbenches: false,
     simulate: false,
     testbenchOpen: false,
-    variantMenus: [],
   });
 });
 

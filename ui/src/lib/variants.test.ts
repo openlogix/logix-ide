@@ -3,7 +3,6 @@ import type { Board } from "./backend";
 import {
   choose,
   configurationOf,
-  hasChoice,
   isAvailable,
   isConnected,
   menus,
@@ -72,14 +71,16 @@ describe("variants", () => {
   it("defaults to the first configuration", () => {
     expect(resolve(stick, {})).toEqual({ connection: "bootloader", memory: "flash" });
     expect(summary(stick, {})).toBe("USB bootloader · Flash");
-    expect(summary(plain, {})).toBe("");
+    expect(summary(plain, {})).toBe("USB · Flash");
     expect(configurationOf(plain, {})).toBe(plain.configurations[0]);
   });
 
-  it("shows only dimensions with a choice; one value is a fact", () => {
-    expect(hasChoice(plain)).toBe(false);
-    expect(hasChoice(stick)).toBe(true);
-    expect(summary(arty, {})).toBe("");
+  it("shows every dimension, even with one value", () => {
+    expect(summary(arty, {})).toBe("USB · RAM");
+    expect(menus(arty, {}).map((m) => m.values.map((v) => [v.label, v.checked, v.enabled]))).toEqual([
+      [["USB", true, true]],
+      [["RAM", true, true]],
+    ]);
   });
 
   it("picks the first configuration with the given values", () => {
@@ -117,7 +118,6 @@ describe("variants", () => {
   });
 
   it("makes one Tools submenu per dimension", () => {
-    expect(menus(plain, {})).toEqual([]);
     expect(menus(null, {})).toEqual([]);
     const [connection, memory] = menus(stick, { connection: "ft232h" });
     expect(connection.label).toBe("Connection");

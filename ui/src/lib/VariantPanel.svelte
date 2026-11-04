@@ -1,13 +1,13 @@
 <script lang="ts">
-  // The toolbar's variant summary (e.g. "FT232H adapter · RAM"), for boards
-  // with choices, and the small panel it opens to change them: one section
-  // per dimension, its values as radio buttons and the selected value's
-  // help text. Values that don't exist
-  // with the other current values are dimmed; choosing one changes the
-  // others too (`choose` in variants.ts). The same choices are in
+  // The toolbar's variant summary (e.g. "FT232H adapter · RAM" or
+  // "USB · Flash"), for every board, and the small panel it opens to change
+  // it: one section per dimension, even one with a single value, its values
+  // as radio buttons and the selected value's help text. Values that don't
+  // exist with the other current values are dimmed; choosing one changes
+  // the others too (`choose` in variants.ts). The same choices are in
   // Tools > <dimension>.
   import type { Board, Variant } from "./backend";
-  import { choices, configurationOf, isAvailable, resolve, summary } from "./variants";
+  import { configurationOf, isAvailable, resolve, summary } from "./variants";
 
   let {
     board,
@@ -61,7 +61,7 @@
   </button>
   {#if open}
     <div class="panel" role="dialog" aria-label={`${board.description} options`}>
-      {#each choices(board) as dim (dim.id)}
+      {#each board.dimensions as dim (dim.id)}
         <div class="row" role="radiogroup" aria-label={dim.label}>
           <div class="label">{dim.label}</div>
           {#each dim.values as v (v.id)}

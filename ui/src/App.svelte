@@ -26,7 +26,6 @@
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
     choose as chooseVariant,
-    hasChoice,
     isConnected as variantConnected,
     menus as variantMenus,
     parseMenuId,
@@ -1632,7 +1631,7 @@
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}
     />
-    {#if currentBoardInfo && hasChoice(currentBoardInfo) && !pendingBoard}
+    {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0 && !pendingBoard}
       <VariantPanel
         board={currentBoardInfo}
         variant={currentVariant}
