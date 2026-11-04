@@ -11,7 +11,7 @@ crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
-# Reads the pinned Apio release from package.json (build.rs).
+# Reads the pinned Logix Engine release from package.json (build.rs).
 serde_json = "1"
 
 [dependencies]

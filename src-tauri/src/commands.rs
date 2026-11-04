@@ -154,12 +154,12 @@ impl From<project::Project> for ProjectDoc {
 // ---------------------------------------------------------------------------
 
 /// Sends tool output that isn't part of a task or setup (which stream
-/// through their own channel) to the console, as `apio-output` events:
+/// through their own channel) to the console, as `tool-output` events:
 /// Auto Format's.
 fn console_log(app: &AppHandle) -> impl Fn(String) + Send + Sync + Clone + 'static {
     let app = app.clone();
     move |line| {
-        let _ = app.emit("apio-output", line);
+        let _ = app.emit("tool-output", line);
     }
 }
 

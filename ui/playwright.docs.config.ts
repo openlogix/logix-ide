@@ -1,5 +1,5 @@
 // Takes the screenshots in docs/images from the real UI with the fake
-// backend (e2e/fakeBackend.ts, replaying real Apio output).
+// backend (e2e/fakeBackend.ts, replaying real Logix Engine output).
 // Run: npm run docs:screenshots
 import { defineConfig, devices } from "@playwright/test";
 import base from "./playwright.config";

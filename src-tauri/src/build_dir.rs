@@ -16,7 +16,7 @@ pub const CONSTRAINT_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc", "pdc", 
 
 /// Records which project the folder was prepared for.
 const KEY_FILE: &str = ".logix-build-key";
-/// The engine (and Apio, in projects simulated with it before) put one of
+/// The engine (and other tools, in projects simulated with them before) put one of
 /// these in the GTKWave layouts (.gtkw) they generate; files without them
 /// were saved by the user from GTKWave.
 const GTKW_AUTO_MARKERS: &[&str] = &[

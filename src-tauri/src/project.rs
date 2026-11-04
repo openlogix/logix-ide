@@ -26,7 +26,7 @@ pub const MAIN_FILES: &[&str] = &["main.v", "main.sv"];
 pub const SETTINGS_FILE: &str = "logix-ide.toml";
 
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
-/// and headers, and the pin constraint formats used by Apio's boards.
+/// and headers, and the pin constraint formats of the supported boards.
 pub const EDITABLE_EXTENSIONS: &[&str] = &[
     "v", "sv", "vh", "svh", "pcf", "lpf", "cst", "xdc", "pdc", "ccf",
 ];
@@ -99,7 +99,7 @@ pub fn is_editable(name: &str) -> bool {
         })
 }
 
-/// Whether a file is Verilog or SystemVerilog source (what Apio formats).
+/// Whether a file is Verilog or SystemVerilog source (what Auto Format takes).
 pub fn is_hdl_source(name: &str) -> bool {
     Path::new(name)
         .extension()
@@ -120,7 +120,7 @@ pub fn is_verilog_identifier(name: &str) -> bool {
         && chars.all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$')
 }
 
-/// Whether a file is a testbench: `*_tb.v` or `*_tb.sv`, as Apio expects.
+/// Whether a file is a testbench: `*_tb.v` or `*_tb.sv`.
 pub fn is_testbench(name: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     lower.ends_with("_tb.v") || lower.ends_with("_tb.sv")

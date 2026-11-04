@@ -21,7 +21,7 @@ use crate::outcome::{
 };
 use crate::project;
 
-/// The design's top module, as in Apio's examples.
+/// The design's top module: always main (see CLAUDE.md, Project on disk).
 const TOP_MODULE: &str = "main";
 
 /// Shown when the project has no pin file. The UI explains it in plain

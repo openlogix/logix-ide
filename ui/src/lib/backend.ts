@@ -401,7 +401,7 @@ export const backend = {
   /**
    * Formats a Verilog/SystemVerilog file's text with Logix Engine's
    * `format` (Verible), without touching the project folder. Verible's
-   * output comes through `onApioOutput`.
+   * output comes through `onToolOutput`.
    */
   formatFile: (
     name: string,
@@ -588,8 +588,8 @@ export const backend = {
    * Tool output that isn't part of a task or setup (which report their
    * own lines): Auto Format's.
    */
-  onApioOutput: (handler: (line: string) => void): Promise<UnlistenFn> =>
-    listen<string>("apio-output", (e) => handler(e.payload)),
+  onToolOutput: (handler: (line: string) => void): Promise<UnlistenFn> =>
+    listen<string>("tool-output", (e) => handler(e.payload)),
 
   /** The user tried to close the window while there are unsaved changes. */
   onCloseRequested: (handler: () => void): Promise<UnlistenFn> =>

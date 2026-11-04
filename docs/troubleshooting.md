@@ -75,7 +75,7 @@ board (see
 ## An example isn't in the list
 
 Logix comes with examples for the boards it supports; boards it doesn't
-support yet have none (see above). Some of Apio's examples aren't in Logix
+support yet have none (see above). Some examples aren't in Logix
 yet, such as ones with files in subfolders or several build setups.
 
 ## A build or simulation doesn't finish

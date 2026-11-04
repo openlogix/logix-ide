@@ -1485,7 +1485,7 @@
 
   $effect(() => {
     const unlisten = [
-      backend.onApioOutput((line) => log(line)),
+      backend.onToolOutput((line) => log(line)),
       backend.onLspClosed(onLspClosed),
       backend.onOpenRecent(openRecent),
       backend.onMenu(onMenu),

@@ -13,7 +13,7 @@ use super::client::{tool_error, Engine};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Board {
-    /// The catalog id, e.g. "alhambra-ii" (the same ids as Apio's).
+    /// The catalog id, e.g. "alhambra-ii".
     pub id: String,
     /// Human-readable name, e.g. "Alhambra II (Lattice, iCE40)".
     pub description: String,

@@ -445,7 +445,7 @@ export const backend: typeof Real.backend = {
     handlers.menu = handler;
     return () => {};
   },
-  onApioOutput: async (handler) => {
+  onToolOutput: async (handler) => {
     handlers.output = handler;
     return () => {};
   },

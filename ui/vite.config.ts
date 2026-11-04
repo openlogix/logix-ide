@@ -4,7 +4,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 
 export default defineConfig(({ mode }) => {
   // "e2e": the UI runs in a plain browser for the Playwright tests, with a
-  // fake backend instead of Tauri and Apio (see e2e/fakeBackend.ts).
+  // fake backend instead of Tauri and Logix Engine (see e2e/fakeBackend.ts).
   const e2e = mode === "e2e";
   return {
     // The UI project is this folder (ui/); npm runs from the repo root.
