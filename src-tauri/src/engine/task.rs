@@ -857,13 +857,13 @@ mod tests {
     /// real engine, on the alhambra-ii blinky example (no board
     /// needed: Upload fails with `connect_board` unless one is plugged in;
     /// Simulate isn't run, since it opens GTKWave):
-    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_engine_build -- --ignored --nocapture`
+    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_engine_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
     async fn real_engine_build() {
         let var = |k: &str| std::env::var(k).unwrap_or_else(|_| panic!("set {k}"));
         let engine = Engine::start(
-            Path::new(&var("LOGIX_TEST_ENGINE_EXE")),
+            Path::new(&var("LOGIX_DEV_ENGINE_BINARY")),
             Path::new(&var("LOGIX_TEST_ENGINE_FOLDER")),
         )
         .await
@@ -1019,13 +1019,13 @@ mod tests {
 
     /// Every example builds and passes its tests on a real engine, and so
     /// does every board's Bare Minimum (slow: all 135 examples):
-    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_examples_build -- --ignored --nocapture`
+    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_examples_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
     async fn real_examples_build() {
         let var = |k: &str| std::env::var(k).unwrap_or_else(|_| panic!("set {k}"));
         let engine = Engine::start(
-            Path::new(&var("LOGIX_TEST_ENGINE_EXE")),
+            Path::new(&var("LOGIX_DEV_ENGINE_BINARY")),
             Path::new(&var("LOGIX_TEST_ENGINE_FOLDER")),
         )
         .await
@@ -1113,14 +1113,14 @@ mod tests {
 
     /// Recaptures the fake backend's fixtures (`ui/e2e/fixtures/`) from a
     /// real engine, for the fake's blinky (in `fakeBackend.ts`):
-    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> LOGIX_FIXTURES_OUT=../ui/e2e/fixtures cargo test capture_fixtures -- --ignored`
+    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> LOGIX_FIXTURES_OUT=../ui/e2e/fixtures cargo test capture_fixtures -- --ignored`
     #[tokio::test]
     #[ignore]
     async fn capture_fixtures() {
         let var = |k: &str| std::env::var(k).unwrap_or_else(|_| panic!("set {k}"));
         let out = PathBuf::from(var("LOGIX_FIXTURES_OUT"));
         let engine = Engine::start(
-            Path::new(&var("LOGIX_TEST_ENGINE_EXE")),
+            Path::new(&var("LOGIX_DEV_ENGINE_BINARY")),
             Path::new(&var("LOGIX_TEST_ENGINE_FOLDER")),
         )
         .await

@@ -226,11 +226,11 @@ mod tests {
 
     /// Runs the setup flow's engine part against a real engine binary, with
     /// automatic install off so it needs no network:
-    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> cargo test real_engine_starts -- --ignored`
+    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> cargo test real_engine_starts -- --ignored`
     #[tokio::test]
     #[ignore]
     async fn real_engine_starts() {
-        let exe = std::env::var("LOGIX_TEST_ENGINE_EXE").expect("set LOGIX_TEST_ENGINE_EXE");
+        let exe = std::env::var("LOGIX_DEV_ENGINE_BINARY").expect("set LOGIX_DEV_ENGINE_BINARY");
         let tmp = tempfile::tempdir().unwrap();
         let folder = tmp.path().join("engine");
         std::fs::create_dir_all(&folder).unwrap();
@@ -255,11 +255,11 @@ mod tests {
 
     /// Installs the real `verible` package (8 MB) through the setup's
     /// progress path and checks the banner gets percentages:
-    /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> cargo test real_engine_install_progress -- --ignored --nocapture`
+    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> cargo test real_engine_install_progress -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
     async fn real_engine_install_progress() {
-        let exe = std::env::var("LOGIX_TEST_ENGINE_EXE").expect("set LOGIX_TEST_ENGINE_EXE");
+        let exe = std::env::var("LOGIX_DEV_ENGINE_BINARY").expect("set LOGIX_DEV_ENGINE_BINARY");
         let tmp = tempfile::tempdir().unwrap();
         let folder = tmp.path().join("engine");
         std::fs::create_dir_all(&folder).unwrap();
