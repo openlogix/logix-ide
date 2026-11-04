@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "icesugar-1-5"
+description = "Cycles the RGB LED through its colors"

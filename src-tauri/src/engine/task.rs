@@ -896,7 +896,7 @@ mod tests {
     }
 
     /// Every example builds and passes its tests on a real engine, and so
-    /// does every board's Bare Minimum (slow: all 108 examples):
+    /// does every board's Bare Minimum (slow: all 135 examples):
     /// `LOGIX_TEST_ENGINE_EXE=<logix-engine> LOGIX_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_examples_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]

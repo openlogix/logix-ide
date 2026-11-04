@@ -85,6 +85,12 @@
    "pinExtension": "cst"
   },
   {
+   "id": "butterstick-r10-2g-85k",
+   "description": "butterstick r1.0 DFU",
+   "arch": "ecp5",
+   "pinExtension": "lpf"
+  },
+  {
    "id": "butterstick-r10-2g-85k-ft2232h",
    "description": "butterstick r1.0 FT2232H",
    "arch": "ecp5",
@@ -134,19 +140,19 @@
   },
   {
    "id": "colorlight-5a-75e-v71-ft2232h",
-   "description": "ColorLight-5A-75E-V71",
+   "description": "ColorLight-5A-75E-V71 (FT2232H)",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75e-v71-ft232h",
-   "description": "ColorLight-5A-75E-V71",
+   "description": "ColorLight-5A-75E-V71 (FT232H)",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
   {
    "id": "colorlight-5a-75e-v71-usb-blaster",
-   "description": "ColorLight-5A-75E-V71",
+   "description": "ColorLight-5A-75E-V71 (USB-Blaster)",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
@@ -164,25 +170,25 @@
   },
   {
    "id": "colorlight-i9-v7-2-cmsis-dap",
-   "description": "ColorLight-i9",
+   "description": "ColorLight-i9 v7.2 (CMSIS-DAP)",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i9-v7-2-ft2232h",
-   "description": "ColorLight-i9",
+   "description": "ColorLight-i9 v7.2 (FT2232H)",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i9-v7-2-ft232h",
-   "description": "ColorLight-i9",
+   "description": "ColorLight-i9 v7.2 (FT232H)",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
   {
    "id": "colorlight-i9-v7-2-usb-blaster",
-   "description": "ColorLight-i9",
+   "description": "ColorLight-i9 v7.2 (USB-Blaster)",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
@@ -206,7 +212,7 @@
   },
   {
    "id": "ecp5-mini-25",
-   "description": "ECP5-Mini-12",
+   "description": "ECP5-Mini-25",
    "arch": "ecp5",
    "pinExtension": "lpf"
   },
@@ -235,6 +241,12 @@
    "pinExtension": "lpf"
   },
   {
+   "id": "fomu",
+   "description": "Fomu",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
    "id": "fpga101",
    "description": "FPGA 101 - Workshop Badge",
    "arch": "ice40",
@@ -255,6 +267,18 @@
   {
    "id": "icebreaker",
    "description": "iCEBreaker",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
+   "id": "icebreaker-bitsy0",
+   "description": "iCEBreaker bitsy v0",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
+   "id": "icebreaker-bitsy1",
+   "description": "iCEBreaker bitsy v1",
    "arch": "ice40",
    "pinExtension": "pcf"
   },
@@ -287,6 +311,18 @@
    "description": "Icesugar Pro (RAM)",
    "arch": "ecp5",
    "pinExtension": "lpf"
+  },
+  {
+   "id": "icesugar-1-5",
+   "description": "iCESugar v1.5",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
+   "id": "icesugar-nano",
+   "description": "iCESugar-nano",
+   "arch": "ice40",
+   "pinExtension": "pcf"
   },
   {
    "id": "icezum",
@@ -331,8 +367,32 @@
    "pinExtension": "xdc"
   },
   {
+   "id": "odt-icyblue-feather",
+   "description": "ODT_IcyBlue_Feather",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
    "id": "ok-ice40pro",
    "description": "OK-iCE40Pro",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
+   "id": "orangecrab-r02-25f",
+   "description": "OrangeCrab r0.2 25K",
+   "arch": "ecp5",
+   "pinExtension": "lpf"
+  },
+  {
+   "id": "orangecrab-r02-85f",
+   "description": "OrangeCrab r0.2 85K",
+   "arch": "ecp5",
+   "pinExtension": "lpf"
+  },
+  {
+   "id": "pico-ice",
+   "description": "pico-ice",
    "arch": "ice40",
    "pinExtension": "pcf"
   },
@@ -391,6 +451,18 @@
    "pinExtension": "cst"
   },
   {
+   "id": "soan-papdi",
+   "description": "Soan-Papdi",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
+   "id": "soan-papdi-mini",
+   "description": "Soan-Papdi-Mini",
+   "arch": "ice40",
+   "pinExtension": "pcf"
+  },
+  {
    "id": "go-board",
    "description": "The Go Board",
    "arch": "ice40",
@@ -401,6 +473,30 @@
    "description": "Theta Machines ETH4K",
    "arch": "ice40",
    "pinExtension": "pcf"
+  },
+  {
+   "id": "ulx3s-12f",
+   "description": "ULX3S 12K",
+   "arch": "ecp5",
+   "pinExtension": "lpf"
+  },
+  {
+   "id": "ulx3s-25f",
+   "description": "ULX3S 25K",
+   "arch": "ecp5",
+   "pinExtension": "lpf"
+  },
+  {
+   "id": "ulx3s-45f",
+   "description": "ULX3S 45K",
+   "arch": "ecp5",
+   "pinExtension": "lpf"
+  },
+  {
+   "id": "ulx3s-85f",
+   "description": "ULX3S 85K",
+   "arch": "ecp5",
+   "pinExtension": "lpf"
   },
   {
    "id": "upduino",
@@ -517,6 +613,16 @@
    "description": "Project template"
   },
   {
+   "board": "alinx-ax7035",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "arice1",
+   "name": "blinky",
+   "description": "Blinks an LED (not yet tried on the board)"
+  },
+  {
    "board": "arty-a7-100t",
    "name": "blinky",
    "description": "Blinks an LED"
@@ -565,6 +671,11 @@
    "board": "brs-100-gw1nr9",
    "name": "running-leds",
    "description": "Running lights on the 6 LEDs"
+  },
+  {
+   "board": "butterstick-r10-2g-85k",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
   },
   {
    "board": "butterstick-r10-2g-85k-ft2232h",
@@ -677,6 +788,16 @@
    "description": "Blinks an LED (untested)"
   },
   {
+   "board": "ecp5-mini-12",
+   "name": "blinky",
+   "description": "Blinks an LED (not yet tried on the board)"
+  },
+  {
+   "board": "ecp5-mini-25",
+   "name": "blinky",
+   "description": "Blinks an LED (not yet tried on the board)"
+  },
+  {
    "board": "edu-ciaa-fpga",
    "name": "and-gate-sv",
    "description": "An AND gate, in SystemVerilog"
@@ -715,6 +836,16 @@
    "board": "fleafpga-ohm-usb-blaster",
    "name": "blinky",
    "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "fomu",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "fomu",
+   "name": "rgb-led",
+   "description": "Cycles the RGB LED through its colors"
   },
   {
    "board": "fpga101",
@@ -782,6 +913,21 @@
    "description": "Turns on the green LED"
   },
   {
+   "board": "icebreaker-bitsy0",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "icebreaker-bitsy1",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "icenode",
+   "name": "blinky",
+   "description": "Blinks an LED (not yet tried on the board)"
+  },
+  {
    "board": "icepi-zero",
    "name": "blinky",
    "description": "Blinks an LED"
@@ -800,6 +946,21 @@
    "board": "icestick",
    "name": "template",
    "description": "Project template"
+  },
+  {
+   "board": "icesugar-1-5",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "icesugar-1-5",
+   "name": "rgb-led",
+   "description": "Cycles the RGB LED through its colors"
+  },
+  {
+   "board": "icesugar-nano",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
   },
   {
    "board": "icesugar-pro",
@@ -882,7 +1043,27 @@
    "description": "Blinks an LED"
   },
   {
+   "board": "odt-icyblue-feather",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
    "board": "ok-ice40pro",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "orangecrab-r02-25f",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "orangecrab-r02-85f",
+   "name": "blinky",
+   "description": "Blinks an LED (untested)"
+  },
+  {
+   "board": "pico-ice",
    "name": "blinky",
    "description": "Blinks an LED (untested)"
   },
@@ -945,6 +1126,56 @@
    "board": "sipeed-tang-nano-9k",
    "name": "pll",
    "description": "Blinks an LED with a 75MHz PLL clock"
+  },
+  {
+   "board": "sipeed-tang-primer-20k",
+   "name": "blinky",
+   "description": "Blinks a segment of a 7-segment PMOD (not yet tried on the board)"
+  },
+  {
+   "board": "soan-papdi",
+   "name": "blinky",
+   "description": "Blinking LED (untested)"
+  },
+  {
+   "board": "thetamachines-eth4k",
+   "name": "blinky",
+   "description": "Blinks an LED (not yet tried on the board)"
+  },
+  {
+   "board": "ulx3s-12f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-12f",
+   "name": "ledon",
+   "description": "Turns on one LED"
+  },
+  {
+   "board": "ulx3s-25f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-45f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-45f",
+   "name": "button-counter",
+   "description": "LEDs show a counter and a button"
+  },
+  {
+   "board": "ulx3s-85f",
+   "name": "blinky",
+   "description": "Blinks an LED"
+  },
+  {
+   "board": "ulx3s-85f",
+   "name": "button-counter",
+   "description": "LEDs show a counter and a button"
   },
   {
    "board": "upduino",

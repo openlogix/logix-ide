@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "alinx-ax7035"
+description = "Blinks an LED"

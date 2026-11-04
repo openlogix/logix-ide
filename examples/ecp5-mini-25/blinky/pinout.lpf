@@ -1,0 +1,12 @@
+# Constraint file of the blinky example for the ECP5-Mini-25 board (r0.2).
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (16MHz).
+LOCATE COMP "sys_clk" SITE "B9";
+IOBUF  PORT "sys_clk" PULLMODE=NONE IO_TYPE=LVCMOS33;
+FREQUENCY PORT "sys_clk" 16 MHZ;
+
+# The activity LED.
+LOCATE COMP "led" SITE "B2";
+IOBUF  PORT "led" PULLMODE=NONE IO_TYPE=LVCMOS33;

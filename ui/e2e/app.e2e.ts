@@ -119,19 +119,19 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
   await start(page);
-  await expect(output(page)).toContainText("108 examples available.");
-  // Logix Engine's 79 boards, grouped by FPGA architecture. Only the current
+  await expect(output(page)).toContainText("135 examples available.");
+  // Logix Engine's 95 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
   await expect(page.locator(".group")).toHaveText([
-    /Lattice iCE40\s*22/,
-    /Lattice ECP5\s*26/,
+    /Lattice iCE40\s*31/,
+    /Lattice ECP5\s*33/,
     /Gowin\s*8/,
     /Xilinx\s*23/,
   ]);
-  await expect(page.getByRole("option")).toHaveCount(22);
+  await expect(page.getByRole("option")).toHaveCount(31);
   await page.getByRole("button", { name: /Gowin/ }).click();
-  await expect(page.getByRole("option")).toHaveCount(30);
+  await expect(page.getByRole("option")).toHaveCount(39);
   await page.getByRole("button", { name: /Lattice iCE40/ }).click();
   await expect(page.getByRole("option")).toHaveCount(8);
   await page.getByRole("combobox").fill("a");

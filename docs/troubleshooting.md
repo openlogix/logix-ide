@@ -49,9 +49,9 @@ code while typing** is on in **Settings**.
 
 ## My board isn't in the list
 
-Logix is moving to its own build engine, Logix Engine, which supports 79
-boards so far: iCE40, ECP5, Gowin and Xilinx boards that program with
-openFPGALoader or iceprog. More boards are added as their programmers are
+Logix's build engine, Logix Engine, supports 95 boards so far: iCE40,
+ECP5, Gowin and Xilinx boards that program with openFPGALoader, iceprog,
+dfu-util or icesprog. More boards are added as their programmers are
 supported. A project for a board that isn't supported yet opens, but
 Verify and Upload ask you to choose another board.
 

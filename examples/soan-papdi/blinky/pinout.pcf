@@ -1,0 +1,18 @@
+# -----------------------------------------------------------------------------
+#- Soan Papdi constraint file (.pcf)
+#- Pins from the board's pin diagram:
+#- https://github.com/hardik1975/soanpapdi-docs
+# -----------------------------------------------------------------------------
+
+# ------------ System clock (12MHz) -------------------------------------------
+set_io sys_clk 35  # input
+
+# ------------ Output LEDs D0-D7 (active high) --------------------------------
+set_io leds[0] 31  # output, D0
+set_io leds[1] 32  # output, D1
+set_io leds[2] 34  # output, D2
+set_io leds[3] 36  # output, D3
+set_io leds[4] 37  # output, D4
+set_io leds[5] 44  # output, D5
+set_io leds[6] 45  # output, D6
+set_io leds[7] 46  # output, D7

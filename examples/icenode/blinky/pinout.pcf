@@ -1,0 +1,11 @@
+# Constraint file of the blinky example for the ICENode board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (12MHz).
+set_io sys_clk 35
+
+# RGB LED, active low. These are the iCE40UP5K's dedicated RGB LED pins.
+set_io rgb_led[0] 39  # RGB0.
+set_io rgb_led[1] 40  # RGB1.
+set_io rgb_led[2] 41  # RGB2.
