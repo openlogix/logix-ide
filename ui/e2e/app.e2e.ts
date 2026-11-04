@@ -255,10 +255,10 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
   await menu(page, "upload");
   // The engine says it when programming starts, after the build.
   await expect(output(page)).toContainText(
-    /yosys[\s\S]*Programming the board's flash through its USB port\.[\s\S]*Programmed/,
+    /yosys[\s\S]*Programming the flash of the Alhambra II through its USB port\.[\s\S]*Programmed/,
   );
   await expect(output(page)).toContainText(
-    "Programmed the board's flash: the design stays when the board is powered off.",
+    "Programmed the flash of the Alhambra II: the design stays when the board is powered off.",
   );
   expect((await fake()).menuState.variantMenus).toEqual([]);
 
@@ -290,7 +290,7 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
   // After an upload to RAM, a reminder that it's lost at power-off.
   await menu(page, "upload");
   await expect(output(page)).toContainText(
-    "Programmed the board's RAM: the design is lost when the board is powered off.",
+    "Programmed the RAM of the Icesugar Pro: the design is lost when the board is powered off.",
   );
   await menu(page, "save-as");
   await expect(status(page)).toContainText("Saved");

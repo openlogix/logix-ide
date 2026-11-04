@@ -283,11 +283,12 @@ export const backend: typeof Real.backend = {
       // The engine's messages (program_board), for the board's memory.
       const info = (catalog.boards as Real.Board[]).find((b) => b.id === board);
       const memory = info && resolve(info, variant).memory === "ram" ? "RAM" : "flash";
-      onLine(`Programming the board's ${memory} through its USB port.`);
+      const name = info?.description ?? board;
+      onLine(`Programming the ${memory} of the ${name} through its USB port.`);
       onEvent({ kind: "progress", message: `Writing ${memory}`, percent: 42 });
       onLine("Programmed Alhambra II v1.0A.");
       onLine(
-        `Programmed the board's ${memory}: the design ${
+        `Programmed the ${memory} of the ${name}: the design ${
           memory === "RAM" ? "is lost" : "stays"
         } when the board is powered off.`,
       );
