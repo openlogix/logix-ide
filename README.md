@@ -36,8 +36,8 @@ itself.
   and tells you how much of the FPGA it uses and how fast it can run.
 - ⚡ **Upload** it to your board with one click. Logix even tells you when
   your board is connected.
-- 📚 **Learn from examples**: more than 130 ready-to-run examples for
-  almost 100 boards, from a blinking LED onwards.
+- 📚 **Learn from examples**: more than 120 ready-to-run examples for
+  over 80 boards, from a blinking LED onwards.
 - 🧪 **Test and simulate** your design with testbenches, and look at its
   signals in GTKWave, without a board.
 - 🔍 **See your design as a diagram** of its modules and signals.

@@ -4,571 +4,1301 @@
    "id": "alchitry-au",
    "description": "Alchitry Au (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "alchitry-au-plus",
    "description": "Alchitry Au+ (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "alchitry-cu",
    "description": "Alchitry Cu Development Board",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "alhambra-ii",
    "description": "Alhambra II",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "alinx-ax7035",
    "description": "Alinx ARTIX-7 AX7035",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "arice1",
    "description": "ARiCE v1",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "arty-a7-100t",
    "description": "Arty A7-100T (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "arty-a7-35t",
    "description": "Arty A7-35T (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "arty-s7-25",
    "description": "Arty S7-25 (Xilinx, Spartan7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "arty-s7-50",
    "description": "Arty S7-50 (Xilinx, Spartan7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "azukar2",
    "description": "AZUKAR v2",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "basys3",
    "description": "Basys3 (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "brs-100-gw1nr9",
    "description": "BrisbaneSilicon 9k",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "epm11",
    "description": "BrisbaneSilicon EPM11",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "butterstick-r10-2g-85k",
-   "description": "butterstick r1.0 DFU",
+   "description": "butterstick r1.0",
    "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "butterstick-r10-2g-85k-ft2232h",
-   "description": "butterstick r1.0 FT2232H",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "butterstick-r10-2g-85k-ft232h",
-   "description": "butterstick r1.0 FT232H",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "id": "dfu",
+       "label": "USB bootloader"
+      },
+      {
+       "id": "ft2232h",
+       "label": "FT2232H cable"
+      },
+      {
+       "id": "ft232h",
+       "label": "FT232H cable"
+      }
+     ]
+    }
+   ],
+   "configurations": [
+    {
+     "when": {
+      "connection": "dfu"
+     },
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+    },
+    {
+     "when": {
+      "connection": "ft2232h"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft232h"
+     },
+     "tested": true
+    }
+   ]
   },
   {
    "id": "cmod-a7-35t",
    "description": "Cmod A7-35T (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "colorlight-i9plus",
    "description": "Colorlight i9+ (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "colorlight-5a-75b-v61",
    "description": "ColorLight-5A-75B-V61",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "colorlight-5a-75b-v7",
    "description": "ColorLight-5A-75B-V7",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "colorlight-5a-75b-v8",
    "description": "ColorLight-5A-75B-V8",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "colorlight-5a-75e-v6",
    "description": "ColorLight-5A-75E-V6",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
-   "id": "colorlight-5a-75e-v71-ft2232h",
-   "description": "ColorLight-5A-75E-V71 (FT2232H)",
+   "id": "colorlight-5a-75e-v71",
+   "description": "ColorLight-5A-75E-V71",
    "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "colorlight-5a-75e-v71-ft232h",
-   "description": "ColorLight-5A-75E-V71 (FT232H)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "colorlight-5a-75e-v71-usb-blaster",
-   "description": "ColorLight-5A-75E-V71 (USB-Blaster)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "id": "ft2232h",
+       "label": "FT2232H cable"
+      },
+      {
+       "id": "ft232h",
+       "label": "FT232H cable"
+      },
+      {
+       "id": "usb-blaster",
+       "label": "USB-Blaster cable"
+      }
+     ]
+    }
+   ],
+   "configurations": [
+    {
+     "when": {
+      "connection": "ft2232h"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft232h"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb-blaster"
+     },
+     "tested": true
+    }
+   ]
   },
   {
    "id": "colorlight-i5-v7-0",
    "description": "ColorLight-i5",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
+   "configurations": [
+    {
+     "when": {
+      "memory": "flash"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "memory": "ram"
+     },
+     "tested": true
+    }
+   ]
   },
   {
-   "id": "colorlight-i5-v7-0-ram",
-   "description": "ColorLight-i5 (RAM)",
+   "id": "colorlight-i9-v7-2",
+   "description": "ColorLight-i9 v7.2",
    "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "colorlight-i9-v7-2-cmsis-dap",
-   "description": "ColorLight-i9 v7.2 (CMSIS-DAP)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "colorlight-i9-v7-2-ft2232h",
-   "description": "ColorLight-i9 v7.2 (FT2232H)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "colorlight-i9-v7-2-ft232h",
-   "description": "ColorLight-i9 v7.2 (FT232H)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "colorlight-i9-v7-2-usb-blaster",
-   "description": "ColorLight-i9 v7.2 (USB-Blaster)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "id": "cmsis-dap",
+       "label": "CMSIS-DAP cable"
+      },
+      {
+       "id": "ft2232h",
+       "label": "FT2232H cable"
+      },
+      {
+       "id": "ft232h",
+       "label": "FT232H cable"
+      },
+      {
+       "id": "usb-blaster",
+       "label": "USB-Blaster cable"
+      }
+     ]
+    }
+   ],
+   "configurations": [
+    {
+     "when": {
+      "connection": "cmsis-dap"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft2232h"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft232h"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb-blaster"
+     },
+     "tested": true
+    }
+   ]
   },
   {
    "id": "versa",
    "description": "ECP5 Versa",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "ecp5-evaluation-board",
    "description": "ECP5-Evaluation-Board",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "ecp5-mini-12",
    "description": "ECP5-Mini-12",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "ecp5-mini-25",
    "description": "ECP5-Mini-25",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "edu-ciaa-fpga",
    "description": "EDU-CIAA-FPGA",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
-   "id": "fleafpga-ohm-ft2232h",
-   "description": "FleaFPGA-Ohm_(FT2232H)",
+   "id": "fleafpga-ohm",
+   "description": "FleaFPGA-Ohm",
    "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "fleafpga-ohm-ft232h",
-   "description": "FleaFPGA-Ohm_(FT232H)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "fleafpga-ohm-usb-blaster",
-   "description": "FleaFPGA-Ohm_(USB-Blaster)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "id": "ft2232h",
+       "label": "FT2232H cable"
+      },
+      {
+       "id": "ft232h",
+       "label": "FT232H cable"
+      },
+      {
+       "id": "usb-blaster",
+       "label": "USB-Blaster cable"
+      }
+     ]
+    }
+   ],
+   "configurations": [
+    {
+     "when": {
+      "connection": "ft2232h"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "ft232h"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "connection": "usb-blaster"
+     },
+     "tested": true
+    }
+   ]
   },
   {
    "id": "fomu",
    "description": "Fomu",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+    }
+   ]
   },
   {
    "id": "fpga101",
    "description": "FPGA 101 - Workshop Badge",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "ice40-up5k",
    "description": "iCE40 UltraPlus Breakout",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "ice40-hx8k",
    "description": "iCE40-HX8K Breakout Board",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "icebreaker",
    "description": "iCEBreaker",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "icebreaker-bitsy0",
    "description": "iCEBreaker bitsy v0",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+    }
+   ]
   },
   {
    "id": "icebreaker-bitsy1",
    "description": "iCEBreaker bitsy v1",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+    }
+   ]
   },
   {
    "id": "icenode",
    "description": "ICENode",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "icepi-zero",
    "description": "Icepi Zero",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "icestick",
    "description": "iCEstick Eval Kit",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "icesugar-pro",
    "description": "Icesugar Pro",
    "arch": "ecp5",
-   "pinExtension": "lpf"
-  },
-  {
-   "id": "icesugar-pro-ram",
-   "description": "Icesugar Pro (RAM)",
-   "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
+   "configurations": [
+    {
+     "when": {
+      "memory": "flash"
+     },
+     "tested": true
+    },
+    {
+     "when": {
+      "memory": "ram"
+     },
+     "tested": true
+    }
+   ]
   },
   {
    "id": "icesugar-1-5",
    "description": "iCESugar v1.5",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Connect only this iCESugar when programming: its programmer can't tell iCESugar boards apart, so the engine refuses when another board with the same USB IDs, such as an iCESugar-Pro, is connected."
+    }
+   ]
   },
   {
    "id": "icesugar-nano",
    "description": "iCESugar-nano",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Connect only this iCESugar when programming: its programmer can't tell iCESugar boards apart, so the engine refuses when another board with the same USB IDs, such as an iCESugar-Pro, is connected."
+    }
+   ]
   },
   {
    "id": "icezum",
    "description": "Icezum Alhambra",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "kefir",
    "description": "Kéfir I iCE40-HX4K",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "microphase-a7-lite",
    "description": "MicroPhase A7-Lite (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "mimas-a7",
    "description": "Mimas A7 (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "mimas-ecp5-mini",
    "description": "Mimas ECP5 Mini",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "nexys-a7-100t",
    "description": "Nexys A7-100T / Nexys 4 DDR (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "nexys-a7-50t",
    "description": "Nexys A7-50T (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "odt-icyblue-feather",
    "description": "ODT_IcyBlue_Feather",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": false,
+     "userNotes": "Its USB filter matches any device with an FTDI FT232H chip."
+    }
+   ]
   },
   {
    "id": "ok-ice40pro",
    "description": "OK-iCE40Pro",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "orangecrab-r02-25f",
    "description": "OrangeCrab r0.2 25K",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
+    }
+   ]
   },
   {
    "id": "orangecrab-r02-85f",
    "description": "OrangeCrab r0.2 85K",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
+    }
+   ]
   },
   {
    "id": "pico-ice",
    "description": "pico-ice",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+    }
+   ]
   },
   {
    "id": "pynq-z1",
    "description": "Pynq-Z1 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "pynq-z2",
    "description": "Pynq-Z2 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "qmtech-xc7a100t-ft2232h",
    "description": "QMTECH XC7A100T core board (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "sipeed-tang-nano",
    "description": "Sipeed Tang Nano",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "sipeed-tang-nano-1k",
    "description": "Sipeed Tang Nano 1k",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "sipeed-tang-nano-20k",
    "description": "Sipeed Tang Nano 20k",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "sipeed-tang-nano-4k",
    "description": "Sipeed Tang Nano 4k",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "sipeed-tang-nano-9k",
    "description": "Sipeed Tang Nano 9k",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "sipeed-tang-primer-20k",
    "description": "Sipeed Tang Primer 20k",
    "arch": "gowin",
-   "pinExtension": "cst"
+   "pinExtension": "cst",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "soan-papdi",
    "description": "Soan-Papdi",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the Soan-Papdi-Mini."
+    }
+   ]
   },
   {
    "id": "soan-papdi-mini",
    "description": "Soan-Papdi-Mini",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true,
+     "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
+    }
+   ]
   },
   {
    "id": "go-board",
    "description": "The Go Board",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "thetamachines-eth4k",
    "description": "Theta Machines ETH4K",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "ulx3s-12f",
    "description": "ULX3S 12K",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": false,
+     "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
+    }
+   ]
   },
   {
    "id": "ulx3s-25f",
    "description": "ULX3S 25K",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": false,
+     "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
+    }
+   ]
   },
   {
    "id": "ulx3s-45f",
    "description": "ULX3S 45K",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": false,
+     "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
+    }
+   ]
   },
   {
    "id": "ulx3s-85f",
    "description": "ULX3S 85K",
    "arch": "ecp5",
-   "pinExtension": "lpf"
+   "pinExtension": "lpf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": false,
+     "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
+    }
+   ]
   },
   {
    "id": "upduino",
    "description": "UPDuino v1.0",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "upduino2",
    "description": "UPDuino v2.0",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "upduino21",
    "description": "UPduino v2.1",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "upduino3",
    "description": "UPduino v3.0",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "upduino31",
    "description": "UPduino v3.1",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "vsdsquadron-fm",
    "description": "VSDSquadron FPGA Mini",
    "arch": "ice40",
-   "pinExtension": "pcf"
+   "pinExtension": "pcf",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "zedboard",
    "description": "ZedBoard (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "zxtres",
    "description": "ZXTRES (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "zxtres-plus",
    "description": "ZXTRES+ (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "zxtres-plus-plus",
    "description": "ZXTRES++ (Xilinx, Artix7)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "zybo-z7-10",
    "description": "Zybo Z7-10 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   },
   {
    "id": "zybo-z7-20",
    "description": "Zybo Z7-20 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
-   "pinExtension": "xdc"
+   "pinExtension": "xdc",
+   "dimensions": [],
+   "configurations": [
+    {
+     "when": {},
+     "tested": true
+    }
+   ]
   }
  ],
  "examples": [
@@ -678,16 +1408,6 @@
    "description": "Blinks an LED (untested)"
   },
   {
-   "board": "butterstick-r10-2g-85k-ft2232h",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
-   "board": "butterstick-r10-2g-85k-ft232h",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
    "board": "cmod-a7-35t",
    "name": "blinky",
    "description": "Blinks an LED"
@@ -728,24 +1448,14 @@
    "description": "Blinks an LED (untested)"
   },
   {
-   "board": "colorlight-5a-75e-v71-ft2232h",
+   "board": "colorlight-5a-75e-v71",
    "name": "blinky",
    "description": "Blinks an LED"
   },
   {
-   "board": "colorlight-5a-75e-v71-ft2232h",
+   "board": "colorlight-5a-75e-v71",
    "name": "ledon",
    "description": "Turns on the LED"
-  },
-  {
-   "board": "colorlight-5a-75e-v71-ft232h",
-   "name": "blinky",
-   "description": "Blinks an LED"
-  },
-  {
-   "board": "colorlight-5a-75e-v71-usb-blaster",
-   "name": "blinky",
-   "description": "Blinks an LED"
   },
   {
    "board": "colorlight-i5-v7-0",
@@ -753,27 +1463,7 @@
    "description": "Blinks an LED (untested)"
   },
   {
-   "board": "colorlight-i5-v7-0-ram",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
-   "board": "colorlight-i9-v7-2-cmsis-dap",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
-   "board": "colorlight-i9-v7-2-ft2232h",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
-   "board": "colorlight-i9-v7-2-ft232h",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
-   "board": "colorlight-i9-v7-2-usb-blaster",
+   "board": "colorlight-i9-v7-2",
    "name": "blinky",
    "description": "Blinks an LED (untested)"
   },
@@ -823,17 +1513,7 @@
    "description": "Blinks an LED"
   },
   {
-   "board": "fleafpga-ohm-ft2232h",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
-   "board": "fleafpga-ohm-ft232h",
-   "name": "blinky",
-   "description": "Blinks an LED (untested)"
-  },
-  {
-   "board": "fleafpga-ohm-usb-blaster",
+   "board": "fleafpga-ohm",
    "name": "blinky",
    "description": "Blinks an LED (untested)"
   },
@@ -971,11 +1651,6 @@
    "board": "icesugar-pro",
    "name": "pll",
    "description": "Blinks an LED with a 120MHz PLL clock"
-  },
-  {
-   "board": "icesugar-pro-ram",
-   "name": "blinky",
-   "description": "Blinks an LED"
   },
   {
    "board": "icezum",

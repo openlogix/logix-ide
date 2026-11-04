@@ -6,12 +6,14 @@
 //! - optionally more source files (Verilog, pin constraints, testbenches),
 //!   which the IDE shows as tabs;
 //! - optionally anything else (subfolders, docs, images), kept as is;
-//! - `logix-ide.toml`: the project's settings, such as its board (TOML, so
-//!   it can hold comments; Logix keeps them when it updates a value).
+//! - `logix-ide.toml`: the project's settings, such as its board and the
+//!   board's variant (TOML, so it can hold comments; Logix keeps them when
+//!   it updates a value).
 //!
 //! The UI holds the files in memory. Creating, renaming and deleting files
 //! take effect on save, like text edits.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
@@ -55,6 +57,27 @@ pub struct Project {
     /// `main.v` first, then the other source files by name.
     pub files: Vec<ProjectFile>,
     pub board: Option<String>,
+    /// The board's variant, e.g. `{"memory": "ram"}`: the `[variant]`
+    /// table. Empty means the board's default.
+    pub variant: Variant,
+}
+
+/// A board's variant: values of its dimensions, by dimension id.
+pub type Variant = BTreeMap<String, String>;
+
+/// The variant in the project settings (the `[variant]` table; values that
+/// aren't text are ignored).
+fn read_variant(settings: &toml_edit::DocumentMut) -> Variant {
+    settings
+        .get("variant")
+        .and_then(|v| v.as_table_like())
+        .map(|table| {
+            table
+                .iter()
+                .filter_map(|(k, v)| Some((k.to_string(), v.as_str()?.to_string())))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// The project's display name: its folder name.
@@ -179,6 +202,7 @@ pub fn load(dir: &Path) -> Result<Project> {
             .get("board")
             .and_then(|b| b.as_str())
             .map(String::from),
+        variant: read_variant(&settings),
     })
 }
 
@@ -190,6 +214,7 @@ pub fn save(
     files: &[ProjectFile],
     removed: &[String],
     board: Option<&str>,
+    variant: &Variant,
 ) -> Result<()> {
     if !dir.is_dir() {
         bail!("The project folder {} no longer exists.", dir.display());
@@ -220,6 +245,15 @@ pub fn save(
             settings.remove("board");
         }
     }
+    if variant.is_empty() {
+        settings.remove("variant");
+    } else {
+        let mut table = toml_edit::Table::new();
+        for (k, v) in variant {
+            table[k] = toml_edit::value(v);
+        }
+        settings["variant"] = toml_edit::Item::Table(table);
+    }
     let mut text = settings.to_string();
     if is_new {
         text.insert_str(0, SETTINGS_HEADER);
@@ -236,6 +270,7 @@ pub fn create(
     files: &[ProjectFile],
     removed: &[String],
     board: Option<&str>,
+    variant: &Variant,
 ) -> Result<()> {
     if target.exists() {
         bail!(
@@ -268,7 +303,7 @@ pub fn create(
             .collect();
         copy_project_contents(source, target, &skip, CopyMode::All)?;
     }
-    save(target, files, &[], board)
+    save(target, files, &[], board, variant)
 }
 
 /// Checks that Save As may replace the existing `target`, which the user
@@ -459,6 +494,8 @@ fn copy_recursive(from: &Path, to: &Path, mode: CopyMode) -> Result<()> {
 mod tests {
     use super::*;
 
+    const NO_VARIANT: &Variant = &Variant::new();
+
     fn file(name: &str, text: &str) -> ProjectFile {
         ProjectFile {
             name: name.into(),
@@ -480,14 +517,14 @@ mod tests {
             file("main.v", "module main; endmodule\n"),
             file("pinout.pcf", "pins"),
         ];
-        create(&dir, None, &files, &[], Some("alhambra-ii")).unwrap();
+        create(&dir, None, &files, &[], Some("alhambra-ii"), NO_VARIANT).unwrap();
 
         let p = load(&dir).unwrap();
         assert_eq!(p.name, "my blinky");
         assert_eq!(p.files, files);
         assert_eq!(p.board.as_deref(), Some("alhambra-ii"));
 
-        save(&dir, &[file("main.v", "changed\n")], &[], None).unwrap();
+        save(&dir, &[file("main.v", "changed\n")], &[], None, NO_VARIANT).unwrap();
         let p = load(&dir).unwrap();
         assert_eq!(p.files[0].text, "changed\n");
         assert_eq!(p.board, None);
@@ -530,7 +567,7 @@ mod tests {
             .map(|f| f.name)
             .collect();
         assert_eq!(names, ["main.sv", "util.sv"]);
-        assert!(save(tmp.path(), &[file("main.sv", "y")], &[], None).is_ok());
+        assert!(save(tmp.path(), &[file("main.sv", "y")], &[], None, NO_VARIANT).is_ok());
     }
 
     #[test]
@@ -557,7 +594,14 @@ mod tests {
         }
         // old.v renamed to new.v, gone.pcf deleted.
         let files = [file("main.v", "m"), file("new.v", "n")];
-        save(dir, &files, &["old.v".into(), "gone.pcf".into()], None).unwrap();
+        save(
+            dir,
+            &files,
+            &["old.v".into(), "gone.pcf".into()],
+            None,
+            NO_VARIANT,
+        )
+        .unwrap();
         assert!(!dir.join("old.v").exists());
         assert!(!dir.join("gone.pcf").exists());
         assert_eq!(std::fs::read_to_string(dir.join("new.v")).unwrap(), "n");
@@ -574,6 +618,7 @@ mod tests {
             &[file("main.v", "m"), file("foo.v", "f")],
             &["Foo.v".into()],
             None,
+            NO_VARIANT,
         )
         .unwrap();
         let names: Vec<_> = load(tmp.path())
@@ -594,6 +639,7 @@ mod tests {
             &[file("main.v", "m"), file("../x.v", "x")],
             &[],
             None,
+            NO_VARIANT,
         );
         assert!(err.is_err());
         let err = save(
@@ -601,9 +647,10 @@ mod tests {
             &[file("main.v", "m")],
             &["../../etc".into()],
             None,
+            NO_VARIANT,
         );
         assert!(err.is_err());
-        assert!(save(tmp.path(), &[file("other.v", "x")], &[], None).is_err());
+        assert!(save(tmp.path(), &[file("other.v", "x")], &[], None, NO_VARIANT).is_err());
     }
 
     #[test]
@@ -612,7 +659,14 @@ mod tests {
         write(tmp.path(), MAIN_FILE, "x");
         let text = "# My notes.\nboard = \"a\" # the old board\n\n[future]\nx = 1\n";
         write(tmp.path(), SETTINGS_FILE, text);
-        save(tmp.path(), &[file("main.v", "y")], &[], Some("b")).unwrap();
+        save(
+            tmp.path(),
+            &[file("main.v", "y")],
+            &[],
+            Some("b"),
+            NO_VARIANT,
+        )
+        .unwrap();
         let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
         assert!(saved.starts_with("# My notes.\nboard = \"b\""), "{saved}");
         assert!(saved.contains("[future]\nx = 1"), "{saved}");
@@ -620,10 +674,50 @@ mod tests {
     }
 
     #[test]
+    fn saves_and_loads_the_variant() {
+        let tmp = tempfile::tempdir().unwrap();
+        write(tmp.path(), MAIN_FILE, "x");
+        let ram = Variant::from([("memory".to_string(), "ram".to_string())]);
+        save(
+            tmp.path(),
+            &[file("main.v", "y")],
+            &[],
+            Some("icesugar-pro"),
+            &ram,
+        )
+        .unwrap();
+        let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
+        assert!(
+            saved.ends_with("board = \"icesugar-pro\"\n\n[variant]\nmemory = \"ram\"\n"),
+            "{saved}"
+        );
+        assert_eq!(load(tmp.path()).unwrap().variant, ram);
+        // The board's default: no [variant] table.
+        save(
+            tmp.path(),
+            &[file("main.v", "y")],
+            &[],
+            Some("icesugar-pro"),
+            NO_VARIANT,
+        )
+        .unwrap();
+        let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
+        assert!(!saved.contains("variant"), "{saved}");
+        assert!(load(tmp.path()).unwrap().variant.is_empty());
+    }
+
+    #[test]
     fn a_new_project_file_has_a_header() {
         let tmp = tempfile::tempdir().unwrap();
         write(tmp.path(), MAIN_FILE, "x");
-        save(tmp.path(), &[file("main.v", "y")], &[], Some("alhambra-ii")).unwrap();
+        save(
+            tmp.path(),
+            &[file("main.v", "y")],
+            &[],
+            Some("alhambra-ii"),
+            NO_VARIANT,
+        )
+        .unwrap();
         assert_eq!(
             std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap(),
             "# Logix IDE project settings.\nboard = \"alhambra-ii\"\n"
@@ -635,7 +729,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let project = tmp.path().join("blinky");
         let files = [file("main.v", "module main; endmodule")];
-        create(&project, None, &files, &[], Some("b")).unwrap();
+        create(&project, None, &files, &[], Some("b"), NO_VARIANT).unwrap();
         assert!(check_replace(&project, None).is_ok());
         let empty = tmp.path().join("empty");
         std::fs::create_dir(&empty).unwrap();
@@ -650,7 +744,7 @@ mod tests {
         // Never the project being saved, or a folder that holds it.
         assert!(check_replace(&project, Some(&project)).is_err());
         let parent = tmp.path().join("work");
-        create(&parent, None, &files, &[], None).unwrap();
+        create(&parent, None, &files, &[], None, NO_VARIANT).unwrap();
         let inner = parent.join("data");
         std::fs::create_dir(&inner).unwrap();
         assert!(check_replace(&parent, Some(&inner)).is_err());
@@ -661,21 +755,37 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let outer = tmp.path().join("blinky");
         let files = [file("main.v", "module main; endmodule")];
-        create(&outer, None, &files, &[], None).unwrap();
+        create(&outer, None, &files, &[], None, NO_VARIANT).unwrap();
 
         // Inside the project being saved, or inside any other project.
-        let err = create(&outer.join("blinky"), Some(&outer), &files, &[], None).unwrap_err();
+        let err = create(
+            &outer.join("blinky"),
+            Some(&outer),
+            &files,
+            &[],
+            None,
+            NO_VARIANT,
+        )
+        .unwrap_err();
         assert!(
             err.to_string()
                 .contains("inside the Logix project \"blinky\""),
             "{err}"
         );
         let deep = outer.join("sub").join("copy");
-        assert!(create(&deep, None, &files, &[], None).is_err());
+        assert!(create(&deep, None, &files, &[], None, NO_VARIANT).is_err());
         assert!(!outer.join("blinky").exists());
 
         // Next to it is fine.
-        create(&tmp.path().join("copy"), Some(&outer), &files, &[], None).unwrap();
+        create(
+            &tmp.path().join("copy"),
+            Some(&outer),
+            &files,
+            &[],
+            None,
+            NO_VARIANT,
+        )
+        .unwrap();
     }
 
     #[test]
@@ -697,7 +807,15 @@ mod tests {
 
         let dst = tmp.path().join("copy");
         let files = [file("main.v", "new"), file("pinout.pcf", "edited")];
-        create(&dst, Some(&src), &files, &["removed.v".into()], None).unwrap();
+        create(
+            &dst,
+            Some(&src),
+            &files,
+            &["removed.v".into()],
+            None,
+            NO_VARIANT,
+        )
+        .unwrap();
 
         assert_eq!(std::fs::read_to_string(dst.join("main.v")).unwrap(), "new");
         assert_eq!(
@@ -725,6 +843,7 @@ mod tests {
             }],
             &[],
             None,
+            NO_VARIANT,
         )
         .unwrap_err();
         assert!(err.to_string().contains("already exists"));

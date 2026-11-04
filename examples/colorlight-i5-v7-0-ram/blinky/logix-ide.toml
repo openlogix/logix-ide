@@ -1,3 +1,0 @@
-# Logix IDE project settings.
-board = "colorlight-i5-v7-0-ram"
-description = "Blinks an LED (untested)"

@@ -91,6 +91,21 @@ selected board is plugged in. Some boards use a common USB chip that can't
 tell which board it is; they're not listed under Connected, but Upload still
 finds them.
 
+### Board options
+
+A few boards can be programmed in more than one way: with different cables
+(such as the ColorLight i9 or the ButterStick), or into flash or RAM (such
+as the iCESugar-Pro). For these boards, the options in use show next to the
+board, for example **FT232H cable** or **RAM**. Click them to change them;
+they're also under **Tools**. The project remembers them.
+
+- **Flash** keeps your design when the board is powered off.
+- **RAM** uploads faster, but the design is lost when the board is powered
+  off.
+
+An option marked **untested** hasn't been tried on a real board yet. If you
+try it, please report whether it works.
+
 **File > New Project > From Example…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA type in the same way.
 

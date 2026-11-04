@@ -23,6 +23,26 @@ import sys
 from pathlib import Path
 
 SUPPORTED_KEYS = {"board", "top-module", "default-testbench"}
+
+# Apio boards that Logix Engine merged into one board with variants (another
+# cable, or flash or RAM). Their examples are the same as the board's, so
+# the first one imported is kept.
+MERGED = {
+    "icesugar-pro-ram": "icesugar-pro",
+    "colorlight-i5-v7-0-ram": "colorlight-i5-v7-0",
+    "colorlight-5a-75e-v71-ft2232h": "colorlight-5a-75e-v71",
+    "colorlight-5a-75e-v71-ft232h": "colorlight-5a-75e-v71",
+    "colorlight-5a-75e-v71-usb-blaster": "colorlight-5a-75e-v71",
+    "colorlight-i9-v7-2-cmsis-dap": "colorlight-i9-v7-2",
+    "colorlight-i9-v7-2-ft2232h": "colorlight-i9-v7-2",
+    "colorlight-i9-v7-2-ft232h": "colorlight-i9-v7-2",
+    "colorlight-i9-v7-2-usb-blaster": "colorlight-i9-v7-2",
+    "fleafpga-ohm-ft2232h": "fleafpga-ohm",
+    "fleafpga-ohm-ft232h": "fleafpga-ohm",
+    "fleafpga-ohm-usb-blaster": "fleafpga-ohm",
+    "butterstick-r10-2g-85k-ft2232h": "butterstick-r10-2g-85k",
+    "butterstick-r10-2g-85k-ft232h": "butterstick-r10-2g-85k",
+}
 MAIN_FILES = ("main.v", "main.sv")
 SKIPPED = {"apio.ini", "info"}
 
@@ -112,12 +132,17 @@ def main() -> None:
             shutil.rmtree(old)
     kept = skipped = 0
     for board_dir in sorted(p for p in source.iterdir() if p.is_dir()):
-        board = board_dir.name
+        apio_board = board_dir.name
+        board = MERGED.get(apio_board, apio_board)
         for example in sorted(p for p in board_dir.iterdir() if p.is_dir()):
-            if board not in boards or not is_supported(example, board):
+            if board not in boards or not is_supported(example, apio_board):
                 skipped += 1
                 continue
             out = target / board / example.name
+            if out.exists():
+                # The same example of another variant of the board.
+                skipped += 1
+                continue
             out.mkdir(parents=True)
             for f in sorted(example.iterdir()):
                 if f.is_dir() or f.name.startswith(".") or f.name in SKIPPED:

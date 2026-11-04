@@ -16,12 +16,23 @@
     type Task,
     type SetupEvent,
     type SetupStage,
+    type Variant,
   } from "./lib/backend";
   import Editor from "./lib/Editor.svelte";
   import { setHoverEnabled, startLanguageServer } from "./lib/lsp";
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
+  import VariantPanel from "./lib/VariantPanel.svelte";
+  import {
+    choose as chooseVariant,
+    configurationOf,
+    isConnected as variantConnected,
+    menus as variantMenus,
+    parseMenuId,
+    summary as variantSummary,
+    toStore,
+  } from "./lib/variants";
   import DiagramDialog from "./lib/DiagramDialog.svelte";
   import DevicesDialog from "./lib/DevicesDialog.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
@@ -341,8 +352,11 @@
     };
   });
 
+  /** Whether the toolbar's board is connected the way its variant programs it. */
   function isConnected(board: string | null | undefined): boolean {
-    return board != null && connected.some((c) => c.board === board);
+    if (board == null) return false;
+    const info = boards.find((b) => b.id === board) ?? null;
+    return variantConnected(info, board, currentVariant, connected);
   }
 
   /**
@@ -361,14 +375,17 @@
    */
   function setBoard(id: string) {
     if (!id) return;
-    backend.setLastBoard(id);
+    // Another board starts with its default variant.
+    const variant = id === currentBoard ? currentVariant : {};
+    backend.setLastBoard(id, variant);
     // No project (the start screen): it's the board for the next one.
     if (!project) {
       homeBoard = id;
+      homeVariant = variant;
       return;
     }
     if (examples.length === 0) {
-      project.board = id;
+      applyBoard(project, id);
       return;
     }
     pendingBoard = id;
@@ -391,8 +408,35 @@
     openRecent(dir);
   }
 
+  /** Sets the project's board; another board starts with its default variant. */
+  function applyBoard(p: WorkingProject, id: string) {
+    if (p.board !== id) p.variant = {};
+    p.board = id;
+  }
+
+  /**
+   * Chooses a value of one of the board's dimensions (the toolbar's
+   * variant panel, or Tools > <dimension>). If it doesn't go with the
+   * other current values, they change too, and the status says so.
+   */
+  function setVariant(dim: string, value: string) {
+    const info = currentBoardInfo;
+    if (!info) return;
+    const { variant, changed } = chooseVariant(info, currentVariant, dim, value);
+    if (project) project.variant = variant;
+    else homeVariant = variant;
+    backend.setLastBoard(info.id, variant);
+    const now = variantSummary(info, variant);
+    status = {
+      text: changed.length
+        ? `${info.description}: ${now} (${changed.join(", ")} changed with it).`
+        : `${info.description}: ${now}.`,
+      kind: "info",
+    };
+  }
+
   function closeExamples(keepFiles: boolean) {
-    if (keepFiles && pendingBoard && project) project.board = pendingBoard;
+    if (keepFiles && pendingBoard && project) applyBoard(project, pendingBoard);
     pendingBoard = null;
     examplesOpen = false;
   }
@@ -780,6 +824,8 @@
     }
     const p = project;
     const board = project.board;
+    const boardInfo = boards.find((b) => b.id === board) ?? null;
+    const variant = boardInfo ? toStore(boardInfo, p.variant) : p.variant;
     if (task === "test" && testbenches(p).length === 0) {
       fileError =
         "This project has no testbenches. Testbench file names end with _tb.v or _tb.sv.";
@@ -800,7 +846,12 @@
     consoleLines = [];
     showOutput("command");
     const which = testbench ? ` (${testbench})` : "";
-    log(`${VERB[task]} ${p.name}${which} for ${boardName(board)}…`);
+    const summary = boardInfo ? variantSummary(boardInfo, variant) : "";
+    log(
+      `${VERB[task]} ${p.name}${which} for ${boardName(board)}${summary ? ` (${summary})` : ""}…`,
+    );
+    const notes = boardInfo && configurationOf(boardInfo, variant)?.userNotes;
+    if (task === "upload" && notes) log(`Note: ${notes}`);
     try {
       const outcome = await backend.runTask(
         task,
@@ -810,6 +861,7 @@
         p.dir,
         filesForSave(p),
         board,
+        variant,
         (event) => {
           if (event.kind === "line") log(event.line);
           else taskStep = { message: event.message, percent: event.percent };
@@ -874,8 +926,14 @@
    */
   const welcome = $derived(project === null);
   let homeBoard = $state<string | null>(null);
+  /** The variant of `homeBoard` ({} for its default). */
+  let homeVariant = $state<Variant>({});
   /** The board in the toolbar: the project's, or else `homeBoard`. */
   const currentBoard = $derived(project ? project.board : homeBoard);
+  /** The toolbar board's catalog entry (null if the engine doesn't list it). */
+  const currentBoardInfo = $derived(boards.find((b) => b.id === currentBoard) ?? null);
+  /** The toolbar board's variant, as stored ({} for its default). */
+  const currentVariant = $derived<Variant>(project ? project.variant : homeVariant);
   /** The current board's pin file extension, e.g. "pcf" (null if unknown). */
   const pinExtension = $derived(
     boards.find((b) => b.id === currentBoard)?.pinExtension ?? null,
@@ -902,6 +960,7 @@
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && simulationTestbench(project) !== null,
     testbenchOpen: project !== null && isTestbench(activeFile),
+    variantMenus: variantMenus(currentBoardInfo, currentVariant),
   });
 
   $effect(() => {
@@ -1059,6 +1118,11 @@
     return true;
   }
 
+  /** The variant the toolbar had for `board` before a project replaced it. */
+  function currentVariantOf(board: string | null): Variant {
+    return board !== null && board === homeBoard ? homeVariant : {};
+  }
+
   /** File > New Project > Empty Project: the board's pins and an empty
    * design (its Bare Minimum). */
   async function newProject() {
@@ -1066,6 +1130,11 @@
     if (!(await confirmLeave())) return;
     try {
       loadDoc(await during("Creating a new project…", () => backend.newProject(board)));
+      // It starts with the toolbar's variant, as with its board.
+      if (project && project.board === board) {
+        project.variant = { ...currentVariantOf(board) };
+        project.savedVariant = { ...project.variant };
+      }
       finish("New project.");
     } catch (e) {
       commandFailed(e);
@@ -1075,7 +1144,10 @@
   /** File > Close Project: back to the start screen (asks to save first). */
   async function closeProject() {
     if (!project || !(await confirmLeave())) return;
-    homeBoard = project.board ?? homeBoard;
+    if (project.board) {
+      homeBoard = project.board;
+      homeVariant = project.variant;
+    }
     project = null;
     fileProblems = new Map();
     fileError = null;
@@ -1167,11 +1239,12 @@
     const dir = project.dir;
     const files = filesForSave(p);
     const board = p.board;
+    const variant = { ...p.variant };
     try {
       await during("Saving…", () =>
-        backend.saveProject(dir, files, [...p.removed], board),
+        backend.saveProject(dir, files, [...p.removed], board, variant),
       );
-      markSaved(p, dir, p.name, files, board);
+      markSaved(p, dir, p.name, files, board, variant);
       fileError = null;
       finish(`Saved ${dir}.`);
       return true;
@@ -1186,6 +1259,7 @@
     const p = project;
     const files = filesForSave(p);
     const board = p.board;
+    const variant = { ...p.variant };
     const suggested = p.dir ? `${p.name} copy` : p.name;
     try {
       const doc = await backend.saveProjectAsDialog(
@@ -1194,10 +1268,11 @@
         files,
         [...p.removed],
         board,
+        variant,
       );
       if (!doc || !doc.dir) return false;
       // Keep the editor (and its undo history) as is.
-      markSaved(p, doc.dir, doc.name, files, board);
+      markSaved(p, doc.dir, doc.name, files, board, variant);
       fileError = null;
       finish(`Saved ${doc.dir}.`);
       return true;
@@ -1219,6 +1294,11 @@
   }
 
   function onMenu(id: MenuId) {
+    const variantChoice = parseMenuId(id);
+    if (variantChoice) {
+      setVariant(variantChoice.dim, variantChoice.value);
+      return;
+    }
     // Builds run alongside file operations (e.g. saving while building).
     const tasks: Partial<Record<MenuId, Task>> = {
       verify: "build",
@@ -1405,6 +1485,7 @@
     await loadPrefs();
     try {
       homeBoard = await backend.lastBoard();
+      homeVariant = await backend.lastVariant();
     } catch {
       // The board picker then starts empty.
     }
@@ -1553,6 +1634,14 @@
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}
     />
+    {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0 && !pendingBoard}
+      <VariantPanel
+        board={currentBoardInfo}
+        variant={currentVariant}
+        disabled={running !== null}
+        onChoose={setVariant}
+      />
+    {/if}
     {#if ready && currentBoard}
       {@const boardConnected = isConnected(currentBoard)}
       <span

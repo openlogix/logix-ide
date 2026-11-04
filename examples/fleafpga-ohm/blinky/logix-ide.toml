@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "fleafpga-ohm"
+description = "Blinks an LED (untested)"

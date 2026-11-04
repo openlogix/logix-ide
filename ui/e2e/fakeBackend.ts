@@ -65,6 +65,7 @@ function blinkyDoc(board: string): ProjectDoc {
       { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
     ],
     board,
+    variant: {},
   };
 }
 
@@ -79,6 +80,7 @@ function bareDoc(board: string): ProjectDoc {
       { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
     ],
     board,
+    variant: {},
   };
 }
 
@@ -115,6 +117,10 @@ const fake = {
   editorMenu: null as Real.MenuState | null,
   /** How often the output pane's right-click menu was shown. */
   outputMenu: 0,
+  /** The variant of the last task run (`runTask`). */
+  taskVariant: null as Real.Variant | null,
+  /** The board and variant last saved (`saveProject`, Save As). */
+  saved: null as { board: string | null; variant: Real.Variant } | null,
   /** Ends a setup held at the engine's package install (`/?engineSetup`). */
   finishSetup: () => handlers.finishSetup?.(),
 };
@@ -240,7 +246,8 @@ export const backend: typeof Real.backend = {
   openBareMinimum: async (board) => bareDoc(board),
   openExample: async (board) => blinkyDoc(board),
 
-  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, onEvent) => {
+  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, onEvent) => {
+    fake.taskVariant = variant;
     const onLine = (line: string) => onEvent({ kind: "line", line });
     const { lines: buildLines, outcome } = buildOutcome(files, board);
     let lines = buildLines;
@@ -293,21 +300,28 @@ export const backend: typeof Real.backend = {
 
   newProject: async (board) => bareDoc(board ?? "alhambra-ii"),
   lastBoard: async () => "alhambra-ii",
+  lastVariant: async () => ({}),
   recentProjects: async () => fake.recents,
   // The fake's recent projects are all UPduino v2 projects (openProjectAt).
   recentProjectsForBoard: async (board) => (board === "upduino2" ? fake.recents : []),
   setLastBoard: async () => {},
   closeProject: async () => {},
   openProjectDialog: async () => null,
-  saveProject: async () => {},
+  saveProject: async (_dir, _files, _removed, board, variant) => {
+    fake.saved = { board, variant };
+  },
 
-  saveProjectAsDialog: async (_source, suggestedName, files, _removed, board) => ({
-    dir: `/fake/projects/${suggestedName}`,
-    templateDir: null,
-    name: suggestedName,
-    files,
-    board,
-  }),
+  saveProjectAsDialog: async (_source, suggestedName, files, _removed, board, variant) => {
+    fake.saved = { board, variant };
+    return {
+      dir: `/fake/projects/${suggestedName}`,
+      templateDir: null,
+      name: suggestedName,
+      files,
+      board,
+      variant,
+    };
+  },
 
   // A saved project for the UPduino v2 (any folder), so tests can check that
   // opening it brings its own board.

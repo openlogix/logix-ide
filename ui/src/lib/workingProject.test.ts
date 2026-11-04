@@ -23,6 +23,7 @@ const savedDoc: ProjectDoc = {
   templateDir: null,
   name: "blinky",
   board: null,
+  variant: {},
   files: [
     { name: "main.v", text: "m" },
     { name: "pinout.pcf", text: "p" },
@@ -84,7 +85,7 @@ describe("workingProject", () => {
       { name: "main.v", text: "m" },
       { name: "b.v", text: "x" },
     ]);
-    markSaved(p, "/p/copy", "copy", filesForSave(p), p.board);
+    markSaved(p, "/p/copy", "copy", filesForSave(p), p.board, {});
     expect(isDirty(p)).toBe(false);
     expect(p.removed).toEqual([]);
     expect(p.dir).toBe("/p/copy");
@@ -95,7 +96,7 @@ describe("workingProject", () => {
     p.files[0].text = "v1";
     const snapshot = filesForSave(p);
     p.files[0].text = "v2";
-    markSaved(p, "/p/blinky", "blinky", snapshot, p.board);
+    markSaved(p, "/p/blinky", "blinky", snapshot, p.board, {});
     expect(isDirty(p)).toBe(true);
   });
 
@@ -103,15 +104,25 @@ describe("workingProject", () => {
     const p = fromDoc(savedDoc);
     p.board = "alhambra-ii";
     expect(isDirty(p)).toBe(true);
-    markSaved(p, "/p/blinky", "blinky", filesForSave(p), "alhambra-ii");
+    markSaved(p, "/p/blinky", "blinky", filesForSave(p), "alhambra-ii", {});
     expect(isDirty(p)).toBe(false);
+  });
+
+  it("treats a variant change as unsaved", () => {
+    const p = fromDoc({ ...savedDoc, board: "icesugar-pro" });
+    p.variant = { memory: "ram" };
+    expect(isDirty(p)).toBe(true);
+    markSaved(p, "/p/blinky", "blinky", filesForSave(p), p.board, p.variant);
+    expect(isDirty(p)).toBe(false);
+    p.variant = {};
+    expect(isDirty(p)).toBe(true);
   });
 
   it("copies an example's files on the first save only", () => {
     const p = fromDoc({ ...savedDoc, dir: null, templateDir: "/tmp/ex" });
     expect(isDirty(p)).toBe(false);
     expect(copySource(p)).toBe("/tmp/ex");
-    markSaved(p, "/p/blinky", "blinky", filesForSave(p), p.board);
+    markSaved(p, "/p/blinky", "blinky", filesForSave(p), p.board, {});
     expect(copySource(p)).toBe("/p/blinky");
   });
 

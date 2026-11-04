@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { BARE_MINIMUM, examplesSummary, groupExamples } from "./examples";
 
 const boards = [
-  { id: "alhambra-ii", description: "Alhambra II (Lattice, iCE40)", arch: "ice40", pinExtension: null },
-  { id: "icebreaker", description: "iCEBreaker (Lattice, iCE40)", arch: "ice40", pinExtension: null },
-  { id: "no-examples", description: "Lonely Board", arch: "", pinExtension: null },
+  { id: "alhambra-ii", description: "Alhambra II (Lattice, iCE40)", arch: "ice40", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "icebreaker", description: "iCEBreaker (Lattice, iCE40)", arch: "ice40", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "no-examples", description: "Lonely Board", arch: "", pinExtension: null, dimensions: [], configurations: [] },
 ];
 const examples = [
   { board: "alhambra-ii", name: "blinky", description: "Blinks an LED" },

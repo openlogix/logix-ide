@@ -1,13 +1,14 @@
 //! Connected USB devices (the engine's `list_devices`), and which boards
 //! they are, for the board list's "Connected" group: the USB filters of
-//! the boards' default programming variants (from `get_catalog`) matched
-//! against the devices. (Which device Upload uses is the engine's decision.)
+//! every configuration of every board (from `get_catalog`) matched against
+//! the devices. (Which device Upload uses is the engine's decision.)
 
 use anyhow::{Context, Result};
 use regex::Regex;
 use serde::Serialize;
 use serde_json::{json, Value};
 
+use super::catalog::Variant;
 use super::client::{tool_error, Engine};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -48,10 +49,12 @@ fn parse_devices(result: &Value) -> Result<Vec<UsbDevice>> {
         .collect())
 }
 
-/// One board's USB filter, from its default programming variant.
+/// The USB filter of one configuration of a board.
 #[derive(Debug, Clone)]
 pub struct UsbRule {
     pub board: String,
+    /// The configuration's dimension values (empty for most boards).
+    pub variant: Variant,
     vid: String,
     pid: String,
     product: Option<Regex>,
@@ -65,6 +68,10 @@ pub struct ConnectedBoard {
     /// The board's product name matched too, not just the USB chip's ids
     /// (which many boards share).
     pub exact: bool,
+    /// The configurations whose filter matched, e.g. `{"connection":
+    /// "ft232h"}` for a board with several cables (one empty variant for
+    /// most boards).
+    pub variants: Vec<Variant>,
 }
 
 /// A device whose chip fits more boards than this (and none by product
@@ -80,25 +87,30 @@ pub fn usb_rules(boards: &Value) -> Vec<UsbRule> {
     };
     let mut rules = Vec::new();
     for (board, def) in boards {
-        let variant = def["default_variant"].as_str().unwrap_or("");
-        let usb = &def["variants"][variant]["usb"];
-        let text = |key: &str| usb[key].as_str().map(str::to_lowercase);
-        let (Some(vid), Some(pid)) = (text("vid"), text("pid")) else {
+        let Some(configurations) = def["variants"]["configurations"].as_array() else {
             continue;
         };
-        let product = match usb["product_regex"].as_str() {
-            Some(pattern) => match Regex::new(pattern) {
-                Ok(re) => Some(re),
-                Err(_) => continue,
-            },
-            None => None,
-        };
-        rules.push(UsbRule {
-            board: board.clone(),
-            vid,
-            pid,
-            product,
-        });
+        for c in configurations {
+            let usb = &c["usb"];
+            let text = |key: &str| usb[key].as_str().map(str::to_lowercase);
+            let (Some(vid), Some(pid)) = (text("vid"), text("pid")) else {
+                continue;
+            };
+            let product = match usb["product_regex"].as_str() {
+                Some(pattern) => match Regex::new(pattern) {
+                    Ok(re) => Some(re),
+                    Err(_) => continue,
+                },
+                None => None,
+            };
+            rules.push(UsbRule {
+                board: board.clone(),
+                variant: serde_json::from_value(c["when"].clone()).unwrap_or_default(),
+                vid,
+                pid,
+                product,
+            });
+        }
     }
     rules
 }
@@ -122,19 +134,27 @@ pub fn match_boards(rules: &[UsbRule], devices: &[UsbDevice]) -> Vec<ConnectedBo
             })
             .collect();
         let generic: Vec<&UsbRule> = same_chip.filter(|r| r.product.is_none()).collect();
+        let mut generic_boards: Vec<&str> = generic.iter().map(|r| r.board.as_str()).collect();
+        generic_boards.dedup();
         let (chosen, is_exact) = if !exact.is_empty() {
             (exact, true)
-        } else if generic.len() <= MAX_GENERIC_MATCHES {
+        } else if generic_boards.len() <= MAX_GENERIC_MATCHES {
             (generic, false)
         } else {
             continue;
         };
         for rule in chosen {
             match found.iter_mut().find(|c| c.board == rule.board) {
-                Some(c) => c.exact |= is_exact,
+                Some(c) => {
+                    c.exact |= is_exact;
+                    if !c.variants.contains(&rule.variant) {
+                        c.variants.push(rule.variant.clone());
+                    }
+                }
                 None => found.push(ConnectedBoard {
                     board: rule.board.clone(),
                     exact: is_exact,
+                    variants: vec![rule.variant.clone()],
                 }),
             }
         }
@@ -153,7 +173,7 @@ mod tests {
             if let Some(r) = regex {
                 usb["product_regex"] = json!(r);
             }
-            json!({"default_variant": "flash", "variants": {"flash": {"usb": usb}}})
+            json!({"variants": {"configurations": [{"usb": usb}]}})
         };
         json!({
             "alhambra-ii": board("0403", "6010", Some("^Alhambra II.*")),
@@ -161,7 +181,11 @@ mod tests {
             "generic-a": board("0403", "6010", None),
             "generic-b": board("0403", "6010", None),
             "tinyfpga": board("1D50", "6130", None),
-            "no-usb": {"default_variant": "flash", "variants": {"flash": {}}},
+            "no-usb": {"variants": {"configurations": [{}]}},
+            "stick": {"variants": {"configurations": [
+                {"when": {"connection": "dfu"}, "usb": {"vid": "1209", "pid": "5af1"}},
+                {"when": {"connection": "ft232h"}, "usb": {"vid": "0403", "pid": "6014"}}
+            ]}},
             "bad-regex": board("1234", "5678", Some("(")),
         })
     }
@@ -195,6 +219,8 @@ mod tests {
                 "generic-a",
                 "generic-b",
                 "icebreaker",
+                "stick",
+                "stick",
                 "tinyfpga"
             ]
         );
@@ -238,6 +264,18 @@ mod tests {
                 ("tinyfpga".to_string(), false)
             ]
         );
+    }
+
+    #[test]
+    fn says_which_configuration_matched() {
+        let found = match_boards(&usb_rules(&boards()), &[device("0403", "6014", "")]);
+        assert_eq!(found[0].board, "stick");
+        assert_eq!(
+            found[0].variants,
+            [Variant::from([("connection".into(), "ft232h".into())])]
+        );
+        let plain = match_boards(&usb_rules(&boards()), &[device("1d50", "6130", "")]);
+        assert_eq!(plain[0].variants, [Variant::new()]);
     }
 
     #[test]

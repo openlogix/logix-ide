@@ -49,11 +49,15 @@ code while typing** is on in **Settings**.
 
 ## My board isn't in the list
 
-Logix's build engine, Logix Engine, supports 95 boards so far: iCE40,
+Logix's build engine, Logix Engine, supports 84 boards so far: iCE40,
 ECP5, Gowin and Xilinx boards that program with openFPGALoader, iceprog,
 dfu-util or icesprog. More boards are added as their programmers are
 supported. A project for a board that isn't supported yet opens, but
 Verify and Upload ask you to choose another board.
+
+A board that can be programmed with different cables, or into flash or
+RAM, is listed once: choose the cable or memory next to the board (see
+[Board options](using-logix.md#board-options)).
 
 ## An example isn't in the list
 

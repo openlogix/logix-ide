@@ -19,7 +19,7 @@ you write **Verilog**, which describes hardware, instead of C++.
 - **The FPGA tools come by themselves.** On its first start, Logix downloads
   the open source FPGA tools it needs. You never have to learn or install
   them yourself.
-- **Learn by example.** More than 130 examples for almost 100 boards.
+- **Learn by example.** More than 120 examples for over 80 boards.
 
 To get it, see [Installing Logix](installing.md).
 

@@ -18,6 +18,9 @@ pub struct Settings {
     /// The board last chosen; new projects start with it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_board: Option<String>,
+    /// The variant of the last chosen board (empty: its default).
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub last_variant: std::collections::BTreeMap<String, String>,
     /// User preferences (File > Settings). Unset means the default.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub projects_dir: Option<PathBuf>,
@@ -206,10 +209,15 @@ pub fn clear_recent(path: &Path) -> Result<()> {
     save(path, &settings)
 }
 
-/// Records `board` as the last chosen board.
-pub fn remember_board(path: &Path, board: &str) -> Result<()> {
+/// Records `board` and its variant as the last chosen board.
+pub fn remember_board(
+    path: &Path,
+    board: &str,
+    variant: &std::collections::BTreeMap<String, String>,
+) -> Result<()> {
     let mut settings = load(path);
     settings.last_board = Some(board.to_string());
+    settings.last_variant = variant.clone();
     save(path, &settings)
 }
 
@@ -239,9 +247,13 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let path = tmp.path().join("settings.json");
         remember_project(&path, Path::new("/p/a")).unwrap();
-        remember_board(&path, "alhambra-ii").unwrap();
+        remember_board(&path, "alhambra-ii", &Default::default()).unwrap();
         let s = load(&path);
         assert_eq!(s.last_board.as_deref(), Some("alhambra-ii"));
+        assert!(s.last_variant.is_empty());
+        let ram = std::collections::BTreeMap::from([("memory".to_string(), "ram".to_string())]);
+        remember_board(&path, "icesugar-pro", &ram).unwrap();
+        assert_eq!(load(&path).last_variant, ram);
         assert_eq!(s.last_project.as_deref(), Some(Path::new("/p/a")));
     }
 

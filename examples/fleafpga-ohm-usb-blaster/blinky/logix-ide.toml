@@ -1,3 +1,0 @@
-# Logix IDE project settings.
-board = "fleafpga-ohm-usb-blaster"
-description = "Blinks an LED (untested)"

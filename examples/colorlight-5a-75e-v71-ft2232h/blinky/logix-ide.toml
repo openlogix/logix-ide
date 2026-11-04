@@ -1,3 +1,0 @@
-# Logix IDE project settings.
-board = "colorlight-5a-75e-v71-ft2232h"
-description = "Blinks an LED"

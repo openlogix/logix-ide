@@ -31,6 +31,8 @@ pub const NO_CONSTRAINT_FILE: &str = "No constraint file (pin file) for the boar
 /// What to run the task on.
 pub struct TaskInput<'a> {
     pub board: &'a str,
+    /// The board's variant (dimension values; empty for its default).
+    pub variant: &'a super::Variant,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
     /// The prepared build folder: the project's files and other contents.
@@ -186,6 +188,7 @@ where
                     "lint",
                     json!({
                         "board": input.board,
+                        "variant": input.variant,
                         "top_module": TOP_MODULE,
                         "source_folder": self.folder,
                         "source_files": self.sources,
@@ -208,6 +211,7 @@ where
                 "build",
                 json!({
                     "board": input.board,
+                    "variant": input.variant,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
@@ -271,6 +275,7 @@ where
                 "test",
                 json!({
                     "board": input.board,
+                    "variant": input.variant,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -305,6 +310,7 @@ where
                 "simulate",
                 json!({
                     "board": input.board,
+                    "variant": input.variant,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -596,6 +602,9 @@ where
 mod tests {
     use super::*;
 
+    /// The default configuration of the test boards.
+    const NO_VARIANT: &super::super::Variant = &super::super::Variant::new();
+
     #[test]
     fn picks_design_files() {
         let files: Vec<String> = ["main.v", "main_tb.v", "uart.sv", "defs.vh", "pinout.pcf"]
@@ -759,6 +768,7 @@ mod tests {
         };
         let mut input = TaskInput {
             board: "alhambra-ii",
+            variant: NO_VARIANT,
             arch: "ice40",
             source_folder: &dir,
             files: &files,
@@ -926,6 +936,7 @@ mod tests {
                 let constraint = crate::build_dir::constraint_file_name(&files).map(str::to_owned);
                 let mut input = TaskInput {
                     board: &board,
+                    variant: NO_VARIANT,
                     arch: &arch,
                     source_folder: &dir,
                     files: &files,
@@ -1030,6 +1041,7 @@ mod tests {
             };
             let input = TaskInput {
                 board: "alhambra-ii",
+                variant: NO_VARIANT,
                 arch: "ice40",
                 source_folder: &dir,
                 files: &files,

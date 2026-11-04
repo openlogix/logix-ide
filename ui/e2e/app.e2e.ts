@@ -119,13 +119,13 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
   await start(page);
-  await expect(output(page)).toContainText("135 examples available.");
-  // Logix Engine's 95 boards, grouped by FPGA architecture. Only the current
+  await expect(output(page)).toContainText("124 examples available.");
+  // Logix Engine's 84 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
   await expect(page.locator(".group")).toHaveText([
     /Lattice iCE40\s*31/,
-    /Lattice ECP5\s*33/,
+    /Lattice ECP5\s*22/,
     /Gowin\s*8/,
     /Xilinx\s*23/,
   ]);
@@ -233,6 +233,62 @@ test("picking the current board offers its examples too", async ({ page }) => {
   await expect(dialog.getByRole("heading")).toContainText("Examples for Alhambra II");
   await dialog.getByRole("button", { name: "Keep Current Files" }).click();
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
+});
+
+test("a board's variant: shown next to it, changed there or in Tools, saved and built with", async ({
+  page,
+}) => {
+  const fake = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __fake: { menuState: unknown; taskVariant: unknown; saved: unknown } })
+          .__fake,
+    ) as Promise<{
+      menuState: { variantMenus: { label: string; values: { label: string; checked: boolean }[] }[] };
+      taskVariant: unknown;
+      saved: { board: string; variant: unknown } | null;
+    }>;
+  const summary = page.locator(".variant .summary");
+  await start(page);
+  // Most boards have no variants.
+  await expect(summary).toHaveCount(0);
+  expect((await fake()).menuState.variantMenus).toEqual([]);
+
+  // The iCESugar-Pro can be programmed to flash or to RAM.
+  await pickBoard(page, "Icesugar Pro");
+  await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
+  await expect(summary).toHaveText(/^\s*Flash/);
+  const memory = (await fake()).menuState.variantMenus[0];
+  expect(memory.label).toBe("Memory");
+  expect(memory.values.map((v) => [v.label, v.checked])).toEqual([
+    ["Flash", true],
+    ["RAM", false],
+  ]);
+
+  // The summary opens a panel to change it.
+  await summary.click();
+  const panel = page.getByRole("dialog", { name: "Icesugar Pro options" });
+  await panel.getByRole("radio", { name: "RAM" }).click();
+  await expect(summary).toHaveText(/^\s*RAM/);
+  await expect(status(page)).toContainText("Icesugar Pro: RAM.");
+  await page.keyboard.press("Escape");
+  await expect(panel).toBeHidden();
+
+  // Builds use it, and saving stores it.
+  await menu(page, "verify");
+  await expect(output(page)).toContainText("for Icesugar Pro (RAM)");
+  await expect(output(page)).toContainText("Ready.");
+  expect((await fake()).taskVariant).toEqual({ memory: "ram" });
+  await menu(page, "save-as");
+  await expect(status(page)).toContainText("Saved");
+  expect((await fake()).saved).toEqual({ board: "icesugar-pro", variant: { memory: "ram" } });
+
+  // Tools > Memory > Flash: back to the default, stored as nothing.
+  await menu(page, "variant:memory:flash");
+  await expect(summary).toHaveText(/^\s*Flash/);
+  await menu(page, "save");
+  await expect(status(page)).toContainText("Saved");
+  expect((await fake()).saved).toEqual({ board: "icesugar-pro", variant: {} });
 });
 
 test("changing the board offers its examples, or keeps the files", async ({ page }) => {
@@ -346,6 +402,7 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
     testbenches: true,
     simulate: true,
     testbenchOpen: false,
+    variantMenus: [],
   });
   const first = page.locator(".cm-line").first();
   const before = (await first.textContent()) ?? "";
@@ -406,6 +463,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
     testbenches: false,
     simulate: false,
     testbenchOpen: false,
+    variantMenus: [],
   });
 });
 

@@ -66,6 +66,32 @@ export interface ProjectDoc {
   /** The project's source files, main.v first. */
   files: ProjectFile[];
   board: string | null;
+  /** The board's variant (`[variant]` in logix-ide.toml); {} for its default. */
+  variant: Variant;
+}
+
+/**
+ * A board's variant: values of its dimensions by dimension id, e.g.
+ * `{ memory: "ram" }`. The engine uses the first configuration with these
+ * values; {} means the board's first (default) configuration.
+ */
+export type Variant = Record<string, string>;
+
+/** One kind of choice a board offers for programming it, e.g. "Memory". */
+export interface Dimension {
+  id: string;
+  label: string;
+  values: { id: string; label: string; help?: string }[];
+}
+
+/** One combination of dimension values that exists for a board. */
+export interface Configuration {
+  /** The value of every dimension. */
+  when: Variant;
+  /** Whether programming this way was tried on hardware. */
+  tested: boolean;
+  /** Warnings for users, e.g. to hold a button while plugging the board in. */
+  userNotes?: string;
 }
 
 export type SaveChoice = "save" | "discard" | "cancel";
@@ -79,6 +105,10 @@ export interface Board {
   arch: string;
   /** The extension of the board's pin files, e.g. "pcf" (null if unknown). */
   pinExtension: string | null;
+  /** The board's choices for programming it (none for most boards). */
+  dimensions: Dimension[];
+  /** The combinations that exist; the first is the default. */
+  configurations: Configuration[];
 }
 
 export interface Example {
@@ -161,6 +191,8 @@ export interface ConnectedBoard {
   board: string;
   /** Its product name matched too, not just the USB chip's ids. */
   exact: boolean;
+  /** The configurations whose USB filter matched ({} for most boards). */
+  variants: Variant[];
 }
 
 export type Theme = "system" | "light" | "dark";
@@ -211,6 +243,15 @@ export interface MenuState {
   simulate: boolean;
   /** The open tab is a testbench (the editor menu's Run This Test, Simulate). */
   testbenchOpen: boolean;
+  /** One Tools submenu per dimension of the board's variants. */
+  variantMenus: VariantMenu[];
+}
+
+/** A Tools submenu for one dimension; its items send "variant:<dim>:<value>". */
+export interface VariantMenu {
+  id: string;
+  label: string;
+  values: { id: string; label: string; checked: boolean; enabled: boolean }[];
 }
 
 /** Ids of native menu items the UI handles (see `menu.rs`). */
@@ -241,7 +282,9 @@ export type MenuId =
   | "run-this-test"
   | "simulate-this-test"
   // Not a menu item: the recent projects list changed (Clear Menu).
-  | "recents-changed";
+  | "recents-changed"
+  // Tools > <dimension> > <value>: the board's variant.
+  | `variant:${string}`;
 
 export const backend = {
   appInfo: (): Promise<AppInfo> => invoke<AppInfo>("app_info"),
@@ -295,6 +338,7 @@ export const backend = {
     projectDir: string | null,
     files: ProjectFile[],
     board: string,
+    variant: Variant,
     onEvent: (event: TaskEvent) => void,
   ): Promise<TaskOutcome> => {
     const channel = new Channel<TaskEvent>();
@@ -307,6 +351,7 @@ export const backend = {
       projectDir,
       files,
       board,
+      variant,
       onEvent: channel,
     });
   },
@@ -344,9 +389,12 @@ export const backend = {
   recentProjectsForBoard: (board: string): Promise<string[]> =>
     invoke<string[]>("recent_projects_for_board", { board }),
 
-  /** Remembers the board the user chose, for new projects. */
-  setLastBoard: (board: string): Promise<void> =>
-    invoke<void>("set_last_board", { board }),
+  /** The variant of the last chosen board ({} for its default). */
+  lastVariant: (): Promise<Variant> => invoke<Variant>("last_variant"),
+
+  /** Remembers the board and variant the user chose, for new projects. */
+  setLastBoard: (board: string, variant: Variant): Promise<void> =>
+    invoke<void>("set_last_board", { board, variant }),
 
   /** Forgets the last project, so the next start shows the start screen. */
   closeProject: (): Promise<void> => invoke<void>("close_project"),
@@ -364,8 +412,9 @@ export const backend = {
     files: ProjectFile[],
     removed: string[],
     board: string | null,
+    variant: Variant,
   ): Promise<void> =>
-    invoke<void>("save_project", { dir, files, removed, board }),
+    invoke<void>("save_project", { dir, files, removed, board, variant }),
 
   /**
    * Asks for a name and location, then creates the project there (copying
@@ -377,6 +426,7 @@ export const backend = {
     files: ProjectFile[],
     removed: string[],
     board: string | null,
+    variant: Variant,
   ): Promise<ProjectDoc | null> =>
     invoke<ProjectDoc | null>("save_project_as_dialog", {
       sourceDir,
@@ -384,6 +434,7 @@ export const backend = {
       files,
       removed,
       board,
+      variant,
     }),
 
   /** Opens the project in `dir` (File > Open Recent). */

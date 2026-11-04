@@ -4,7 +4,10 @@
 
 use std::path::{Path, PathBuf};
 
-use tauri::menu::{AboutMetadata, ContextMenu, Menu, MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+use tauri::menu::{
+    AboutMetadata, CheckMenuItemBuilder, ContextMenu, Menu, MenuBuilder, MenuItemBuilder,
+    SubmenuBuilder,
+};
 use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 
 use crate::{platform, settings};
@@ -115,7 +118,39 @@ pub struct MenuState {
     /// The open tab is a testbench: the editor's right-click menu adds Run
     /// This Test and Simulate (hidden otherwise, to keep it short).
     pub testbench_open: bool,
+    /// One Tools submenu per dimension of the current board's variants,
+    /// e.g. Tools > Memory ▸ Flash / RAM. Empty for most boards.
+    #[serde(default)]
+    pub variant_menus: Vec<VariantMenu>,
 }
+
+/// A Tools submenu for one dimension of the board's variants.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VariantMenu {
+    /// The dimension's id, e.g. "memory".
+    pub id: String,
+    /// Its name, e.g. "Memory".
+    pub label: String,
+    pub values: Vec<VariantMenuValue>,
+}
+
+/// One value in a variant submenu.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VariantMenuValue {
+    pub id: String,
+    pub label: String,
+    /// The project's current value.
+    pub checked: bool,
+    /// False for a value that has no configuration with the other current
+    /// values (choosing it would change them, so it's greyed out).
+    pub enabled: bool,
+}
+
+/// Variant submenu items are "variant:<dimension>:<value>"; the UI applies
+/// them.
+pub const VARIANT_PREFIX: &str = "variant:";
 
 /// Whether the item `id` can be used in `state`.
 pub fn is_enabled(id: &str, state: &MenuState) -> bool {
@@ -256,10 +291,30 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         )?)
         .build()?;
 
-    // As in the Arduino IDE: Tools > Auto Format, Cmd+T.
-    let tools = SubmenuBuilder::new(app, "Tools")
+    // As in the Arduino IDE: Tools > Auto Format, Cmd+T; then the board's
+    // options, as Arduino's board options.
+    let mut tools = SubmenuBuilder::new(app, "Tools")
         .item(&item(AUTO_FORMAT, "Auto Format", "CmdOrCtrl+T")?)
-        .separator()
+        .separator();
+    for dim in &state.variant_menus {
+        let mut sub = SubmenuBuilder::new(app, &dim.label);
+        for v in &dim.values {
+            sub = sub.item(
+                &CheckMenuItemBuilder::with_id(
+                    format!("{VARIANT_PREFIX}{}:{}", dim.id, v.id),
+                    &v.label,
+                )
+                .checked(v.checked)
+                .enabled(v.enabled)
+                .build(app)?,
+            );
+        }
+        tools = tools.item(&sub.build()?);
+    }
+    if !state.variant_menus.is_empty() {
+        tools = tools.separator();
+    }
+    let tools = tools
         .item(&MenuItemBuilder::with_id(DEVICES, "Connected Devices…").build(app)?)
         .build()?;
 
@@ -334,6 +389,9 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
             }
             refresh(app);
             let _ = app.emit("menu", RECENTS_CHANGED);
+        }
+        _ if id.starts_with(VARIANT_PREFIX) => {
+            let _ = app.emit("menu", id);
         }
         _ if id.starts_with(HELP_PREFIX) => {
             let url = id[HELP_PREFIX.len()..]
@@ -507,6 +565,7 @@ mod tests {
             testbenches: true,
             simulate: true,
             testbench_open: true,
+            variant_menus: Vec::new(),
         };
         for id in [
             AUTO_FORMAT,

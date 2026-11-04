@@ -1,0 +1,123 @@
+import { describe, expect, it } from "vitest";
+import type { Board } from "./backend";
+import {
+  choose,
+  configurationOf,
+  isAvailable,
+  isConnected,
+  menus,
+  parseMenuId,
+  resolve,
+  summary,
+  toStore,
+} from "./variants";
+
+const plain: Board = {
+  id: "alhambra-ii",
+  description: "Alhambra II",
+  arch: "ice40",
+  pinExtension: "pcf",
+  dimensions: [],
+  configurations: [{ when: {}, tested: true }],
+};
+
+// Like ButterStick: the bootloader writes flash only, the cable both.
+const stick: Board = {
+  id: "stick",
+  description: "Stick",
+  arch: "ecp5",
+  pinExtension: "lpf",
+  dimensions: [
+    {
+      id: "connection",
+      label: "Connection",
+      values: [
+        { id: "dfu", label: "USB bootloader" },
+        { id: "ft232h", label: "FT232H cable" },
+      ],
+    },
+    {
+      id: "memory",
+      label: "Memory",
+      values: [
+        { id: "flash", label: "Flash" },
+        { id: "ram", label: "RAM", help: "Lost at power-off." },
+      ],
+    },
+  ],
+  configurations: [
+    { when: { connection: "dfu", memory: "flash" }, tested: true },
+    { when: { connection: "ft232h", memory: "flash" }, tested: true },
+    { when: { connection: "ft232h", memory: "ram" }, tested: false },
+  ],
+};
+
+describe("variants", () => {
+  it("defaults to the first configuration", () => {
+    expect(resolve(stick, {})).toEqual({ connection: "dfu", memory: "flash" });
+    expect(summary(stick, {})).toBe("USB bootloader · Flash");
+    expect(summary(plain, {})).toBe("");
+    expect(configurationOf(plain, {})).toBe(plain.configurations[0]);
+  });
+
+  it("picks the first configuration with the given values", () => {
+    expect(resolve(stick, { memory: "ram" })).toEqual({ connection: "ft232h", memory: "ram" });
+    expect(configurationOf(stick, { memory: "ram" })?.tested).toBe(false);
+    // Values the board doesn't have are ignored.
+    expect(resolve(stick, { size: "85k", memory: "ram" })).toEqual({
+      connection: "ft232h",
+      memory: "ram",
+    });
+    expect(resolve(stick, { connection: "jtag" })).toEqual({ connection: "dfu", memory: "flash" });
+  });
+
+  it("stores nothing for the default", () => {
+    expect(toStore(stick, { connection: "dfu" })).toEqual({});
+    expect(toStore(stick, { memory: "ram" })).toEqual({ connection: "ft232h", memory: "ram" });
+  });
+
+  it("greys out values that don't exist with the others", () => {
+    expect(isAvailable(stick, {}, "memory", "ram")).toBe(false);
+    expect(isAvailable(stick, { connection: "ft232h" }, "memory", "ram")).toBe(true);
+    expect(isAvailable(stick, { memory: "ram" }, "connection", "dfu")).toBe(false);
+  });
+
+  it("choosing a greyed value switches the other dimensions too", () => {
+    const ram = choose(stick, {}, "memory", "ram");
+    expect(ram.variant).toEqual({ connection: "ft232h", memory: "ram" });
+    expect(ram.changed).toEqual(["Connection: FT232H cable"]);
+    const back = choose(stick, ram.variant, "connection", "dfu");
+    expect(back.variant).toEqual({});
+    expect(back.changed).toEqual(["Memory: Flash"]);
+    const cable = choose(stick, {}, "connection", "ft232h");
+    expect(cable.variant).toEqual({ connection: "ft232h", memory: "flash" });
+    expect(cable.changed).toEqual([]);
+  });
+
+  it("makes one Tools submenu per dimension", () => {
+    expect(menus(plain, {})).toEqual([]);
+    expect(menus(null, {})).toEqual([]);
+    const [connection, memory] = menus(stick, { connection: "ft232h" });
+    expect(connection.label).toBe("Connection");
+    expect(connection.values.map((v) => v.checked)).toEqual([false, true]);
+    expect(memory.values).toEqual([
+      { id: "flash", label: "Flash", checked: true, enabled: true },
+      { id: "ram", label: "RAM", checked: false, enabled: true },
+    ]);
+    expect(menus(stick, {})[1].values[1].enabled).toBe(false);
+    expect(parseMenuId("variant:memory:ram")).toEqual({ dim: "memory", value: "ram" });
+    expect(parseMenuId("verify")).toBeNull();
+  });
+
+  it("is connected only the way the variant programs it", () => {
+    const viaCable = [{ board: "stick", exact: false, variants: [{ connection: "ft232h", memory: "flash" }] }];
+    expect(isConnected(stick, "stick", {}, viaCable)).toBe(false);
+    expect(isConnected(stick, "stick", { connection: "ft232h" }, viaCable)).toBe(true);
+    // The cable reaches RAM too: same device.
+    const both = [{ board: "stick", exact: false, variants: [
+      { connection: "ft232h", memory: "flash" }, { connection: "ft232h", memory: "ram" }] }];
+    expect(isConnected(stick, "stick", { memory: "ram" }, both)).toBe(true);
+    expect(isConnected(plain, "alhambra-ii", {}, [{ board: "alhambra-ii", exact: true, variants: [{}] }])).toBe(true);
+    expect(isConnected(plain, "alhambra-ii", {}, [])).toBe(false);
+  });
+});

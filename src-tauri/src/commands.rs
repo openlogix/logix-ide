@@ -132,6 +132,8 @@ pub struct ProjectDoc {
     /// `main.v` first.
     files: Vec<ProjectFile>,
     board: Option<String>,
+    /// The board's variant (empty: the board's default).
+    variant: project::Variant,
 }
 
 impl From<project::Project> for ProjectDoc {
@@ -142,6 +144,7 @@ impl From<project::Project> for ProjectDoc {
             name: p.name,
             files: p.files,
             board: p.board,
+            variant: p.variant,
         }
     }
 }
@@ -240,6 +243,7 @@ async fn example_doc(
         name: doc_name,
         files: loaded.files,
         board: Some(board),
+        variant: project::Variant::new(),
     })
 }
 
@@ -265,6 +269,7 @@ pub async fn run_task(
     project_dir: Option<String>,
     files: Vec<ProjectFile>,
     board: String,
+    variant: engine::Variant,
     on_event: Channel<outcome::TaskEvent>,
 ) -> Result<outcome::TaskOutcome, UserError> {
     let Ok(_running) = state.task.try_lock() else {
@@ -338,6 +343,7 @@ pub async fn run_task(
     *state.task_cancel.lock().unwrap() = Some(cancel.clone());
     let input = engine::TaskInput {
         board: &board,
+        variant: &variant,
         arch: &arch,
         source_folder: &dir,
         files: &names,
@@ -745,6 +751,7 @@ pub async fn open_bare_minimum(board: String) -> Result<ProjectDoc, UserError> {
             name: "untitled".into(),
             files,
             board: Some(board),
+            variant: project::Variant::new(),
         },
         None => no_pins_doc(board),
     })
@@ -761,6 +768,7 @@ fn no_pins_doc(board: String) -> ProjectDoc {
             text: bare::NO_PINS_MAIN.into(),
         }],
         board: Some(board),
+        variant: project::Variant::new(),
     }
 }
 
@@ -798,11 +806,20 @@ pub fn last_board() -> String {
         .unwrap_or_else(|| examples::DEFAULT_BOARD.to_string())
 }
 
-/// Remembers the board the user chose, for new projects.
+/// The variant of the last chosen board (empty: its default).
 #[tauri::command]
-pub fn set_last_board(board: String) {
+pub fn last_variant() -> project::Variant {
+    settings_path()
+        .ok()
+        .map(|p| settings::load(&p).last_variant)
+        .unwrap_or_default()
+}
+
+/// Remembers the board and variant the user chose, for new projects.
+#[tauri::command]
+pub fn set_last_board(board: String, variant: project::Variant) {
     if let Ok(path) = settings_path() {
-        if let Err(e) = settings::remember_board(&path, &board) {
+        if let Err(e) = settings::remember_board(&path, &board, &variant) {
             crate::log!("Can't save settings: {e:#}");
         }
     }
@@ -847,11 +864,18 @@ pub async fn save_project(
     files: Vec<ProjectFile>,
     removed: Vec<String>,
     board: Option<String>,
+    variant: project::Variant,
 ) -> Result<(), UserError> {
     let saved_dir = std::path::PathBuf::from(&dir);
     blocking(move || {
-        project::save(Path::new(&dir), &files, &removed, board.as_deref())
-            .context("Couldn't save the project.")
+        project::save(
+            Path::new(&dir),
+            &files,
+            &removed,
+            board.as_deref(),
+            &variant,
+        )
+        .context("Couldn't save the project.")
     })
     .await??;
     remember_project(&app, &saved_dir);
@@ -905,6 +929,7 @@ pub async fn save_project_as_dialog(
     files: Vec<ProjectFile>,
     removed: Vec<String>,
     board: Option<String>,
+    variant: project::Variant,
 ) -> Result<Option<ProjectDoc>, UserError> {
     let mut dialog = app
         .dialog()
@@ -939,6 +964,7 @@ pub async fn save_project_as_dialog(
             &files,
             &removed,
             board.as_deref(),
+            &variant,
         )
         .context("Couldn't save the project.")?;
         project::load(&target)

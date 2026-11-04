@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import { archLabel, boardGroups, groupByArch } from "./boards";
 
 const boards = [
-  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", pinExtension: null },
-  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", pinExtension: null },
-  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", pinExtension: null },
-  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", pinExtension: null },
-  { id: "mystery", description: "Mystery Board", arch: "", pinExtension: null },
-  { id: "tang", description: "Tang Nano 9K", arch: "gowin", pinExtension: null },
+  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "mystery", description: "Mystery Board", arch: "", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "tang", description: "Tang Nano 9K", arch: "gowin", pinExtension: null, dimensions: [], configurations: [] },
 ];
 
 const summary = (connected: string[], q: string) =>
