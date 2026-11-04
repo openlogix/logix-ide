@@ -2,7 +2,9 @@
   // The toolbar's variant summary (e.g. "FT232H adapter · RAM" or
   // "USB · Flash"), for every board, and the small panel it opens to change
   // it: one section per dimension, even one with a single value, its values
-  // as radio buttons and the selected value's help text. Values that don't
+  // as radio buttons and the selected value's help text. Whether the choice
+  // is untested shows only in the panel's Note, in normal text (a tag on the
+  // toolbar was too intrusive, the user's decision). Values that don't
   // exist with the other current values are dimmed; choosing one changes
   // the others too (`choose` in variants.ts). The same choices are in
   // Tools > <dimension>.
@@ -56,7 +58,6 @@
     onclick={() => (open = !open)}
   >
     {summary(board, variant)}
-    {#if configuration && !configuration.tested}<span class="tag">untested</span>{/if}
     <span class="caret" aria-hidden="true">▾</span>
   </button>
   {#if open}
@@ -130,13 +131,6 @@
   .caret {
     font-size: 10px;
     opacity: 0.8;
-  }
-  .tag {
-    padding: 0 5px;
-    border-radius: 3px;
-    background: var(--warning-mark);
-    color: #1f2328;
-    font-size: 10px;
   }
   .panel {
     position: absolute;

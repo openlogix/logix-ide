@@ -107,11 +107,11 @@ project remembers it.
 - **RAM** uploads faster, but the design is lost when the board is powered
   off.
 
-An option marked **untested** hasn't been tried on a real board yet. If you
-try it, please report whether it works.
+If an option hasn't been tried on a real board yet, the panel says so under
+**Note**. If you try it, please report whether it works.
 
 Boards that can upload to flash do so unless you choose **RAM**. On many
-boards, such as the Xilinx boards, flash is still marked **untested**. A few
+boards, such as the Xilinx boards, flash hasn't been tried yet. A few
 upload to RAM only, such as the Zybo and PYNQ boards and the ULX3S. After
 **Upload**, the output says where the design went.
 
