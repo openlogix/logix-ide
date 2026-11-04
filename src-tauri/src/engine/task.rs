@@ -48,11 +48,11 @@ pub struct TaskInput<'a> {
     pub target: Option<&'a str>,
 }
 
-/// The engine's build folder inside the prepared folder. The engine wants
-/// "build" in one of its last two names; `_build` is kept between builds
-/// of the same project (`build_dir`), so up-to-date builds are fast.
+/// The engine's build folder inside the prepared folder: `_build` (the
+/// engine wants "build" in one of its last two names). It is kept between
+/// builds of the same project (`build_dir`), so up-to-date builds are fast.
 pub fn build_folder(source_folder: &Path) -> PathBuf {
-    source_folder.join("_build").join("logix")
+    source_folder.join("_build")
 }
 
 /// The design files: Verilog and SystemVerilog sources, without

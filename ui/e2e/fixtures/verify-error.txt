@@ -5,5 +5,5 @@
         ... See the manual at https://verilator.org/verilator_doc.html?v=5.053 for more assistance.
 [31m%Error: Cannot continue[0m
         ... This fatal error may be caused by the earlier error(s); resolve those first.
-[2m$ yosys -q -l ~/.logix/build/_build/logix/synth.log -p 'synth_ice40 -top main -json "~/.logix/build/_build/logix/hardware.json"' -DSYNTHESIZE main.v[0m
+[2m$ yosys -q -l ~/.logix/build/_build/synth.log -p 'synth_ice40 -top main -json "~/.logix/build/_build/hardware.json"' -DSYNTHESIZE main.v[0m
 [31mmain.v:8: ERROR: syntax error, unexpected TOK_ENDMODULE[0m
