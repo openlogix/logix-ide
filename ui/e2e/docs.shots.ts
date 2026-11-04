@@ -24,9 +24,7 @@ async function startWithBoard(page: Page) {
   await expect(page.locator(".tab", { hasText: "pinout.pcf" })).toBeVisible();
   // The board is plugged in, as when following the quick start.
   await page.evaluate(() => {
-    const w = window as unknown as {
-      __fake: { connected: { board: string; exact: boolean }[] };
-    };
+    const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
       { board: "alhambra-ii", exact: true, suggested: true, variants: [{}] },
     ];
