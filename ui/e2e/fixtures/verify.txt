@@ -1,4 +1,4 @@
-[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DAPIO_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40 ~/.logix/engine/tmp/models-5a9d469f1f2fdc51.vlt ~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40/cells_sim.v main.v[0m
+[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DLOGIX_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40 ~/.logix/engine/tmp/models-5a9d469f1f2fdc51.vlt ~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40/cells_sim.v main.v[0m
 [2m$ yosys -q -l ~/.logix/build/_build/synth.log -p 'synth_ice40 -top main -json "~/.logix/build/_build/hardware.json"' -DSYNTHESIZE main.v[0m
 [2m$ nextpnr-ice40 --hx8k --package tq144:4k --json hardware.json --asc hardware.asc --report hardware.pnr --pcf ~/.logix/build/pinout.pcf --log pnr.log -q[0m
 [2m$ icepack hardware.asc hardware.bin[0m
