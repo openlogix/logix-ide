@@ -56,15 +56,20 @@ export function deviceBoardsLine(
   boardName: (id: string) => string,
 ): string | null {
   const likely = likelyBoards(d);
-  const names = (ids: string[]) => ids.map(boardName).join(", ");
+  // "this board: A" or "one of these boards: A, B or C".
+  const boards = (ids: string[]) => {
+    const names = ids.map(boardName);
+    if (names.length === 1) return `this board: ${names[0]}`;
+    return `one of these boards: ${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
+  };
   if (selected && likely.includes(selected)) {
     const others = likely.filter((b) => b !== selected);
-    const or = others.length > 0 ? ` Or: ${names(others)}.` : "";
-    return `Looks like the selected board, ${boardName(selected)}.${or}`;
+    const or = others.length > 0 ? `, or ${boards(others)}` : "";
+    return `Looks like the selected board, ${boardName(selected)}${or}.`;
   }
   const fits = mayBeBoard(d, selected);
   if (likely.length > 0) {
-    return `Looks like: ${names(likely)}.${fits ? " It may also be the selected board." : ""}`;
+    return `Looks like ${boards(likely)}.${fits ? " It may also be the selected board." : ""}`;
   }
   if (fits && selected) return `May be the selected board, ${boardName(selected)}.`;
   return null;

@@ -74,13 +74,26 @@ describe("devices", () => {
       ],
     };
     expect(deviceBoardsLine(digilent, "arty-a7-35t", name)).toBe(
-      "Looks like the selected board, Arty A7-35T (Xilinx, Artix7). Or: Basys3 (Xilinx, Artix7).",
+      "Looks like the selected board, Arty A7-35T (Xilinx, Artix7), or this board: Basys3 (Xilinx, Artix7).",
     );
     expect(deviceBoardsLine(digilent, "icestick", name)).toBe(
-      "Looks like: Arty A7-35T (Xilinx, Artix7), Basys3 (Xilinx, Artix7). It may also be the selected board.",
+      "Looks like one of these boards: Arty A7-35T (Xilinx, Artix7) or Basys3 (Xilinx, Artix7). It may also be the selected board.",
     );
     expect(deviceBoardsLine(digilent, "alhambra-ii", name)).toBe(
-      "Looks like: Arty A7-35T (Xilinx, Artix7), Basys3 (Xilinx, Artix7).",
+      "Looks like one of these boards: Arty A7-35T (Xilinx, Artix7) or Basys3 (Xilinx, Artix7).",
+    );
+    const three = {
+      ...digilent,
+      boards: [...digilent.boards.slice(0, 2), { board: "icestick", confidence: 3 }],
+    };
+    expect(deviceBoardsLine(three, "arty-a7-35t", name)).toBe(
+      "Looks like the selected board, Arty A7-35T (Xilinx, Artix7), or one of these boards: Basys3 (Xilinx, Artix7) or iCEstick Eval Kit.",
+    );
+    expect(deviceBoardsLine(three, null, name)).toBe(
+      "Looks like one of these boards: Arty A7-35T (Xilinx, Artix7), Basys3 (Xilinx, Artix7) or iCEstick Eval Kit.",
+    );
+    expect(deviceBoardsLine({ ...digilent, boards: [{ board: "basys3", confidence: 3 }] }, null, name)).toBe(
+      "Looks like this board: Basys3 (Xilinx, Artix7).",
     );
     const generic = { ...alhambra, boards: [{ board: "icestick", confidence: 1 }] };
     expect(deviceBoardsLine(generic, "icestick", name)).toBe(
