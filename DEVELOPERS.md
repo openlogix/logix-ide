@@ -165,9 +165,8 @@ again; delete `~/.logix/engine-bin` to get it.
 ### Examples
 
 The examples are in `examples/<board>/<name>/`, each a Logix project with
-a `logix-ide.toml` holding its board and description. They were imported from
-Apio's examples with `scripts/import-apio-examples.py` (see its header);
-they're Logix's own now, so edit them here.
+a `logix-ide.toml` holding its board and description. They're Logix's own,
+maintained here: edit them in place.
 
 ### Previewing the documentation site
 
