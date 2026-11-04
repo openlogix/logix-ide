@@ -1,9 +1,10 @@
 <script lang="ts">
   // The toolbar's variant summary (e.g. "FT232H adapter · RAM"), for boards
-  // with choices, and the small panel it opens to change them: one row per
-  // dimension. Values that don't exist with the other current values are
-  // greyed out; choosing one changes the others too (`choose` in
-  // variants.ts). The same choices are in Tools > <dimension>.
+  // with choices, and the small panel it opens to change them: one section
+  // per dimension, its values as radio buttons. Values that don't exist
+  // with the other current values are dimmed; choosing one changes the
+  // others too (`choose` in variants.ts). The same choices are in
+  // Tools > <dimension>.
   import type { Board, Variant } from "./backend";
   import { configurationOf, isAvailable, resolve, summary } from "./variants";
 
@@ -55,21 +56,25 @@
     <div class="panel" role="dialog" aria-label={`${board.description} options`}>
       {#each board.dimensions as dim (dim.id)}
         <div class="row" role="radiogroup" aria-label={dim.label}>
-          <span class="label">{dim.label}</span>
-          <div class="values">
-            {#each dim.values as v (v.id)}
-              {@const available = isAvailable(board, variant, dim.id, v.id)}
-              <button
-                role="radio"
-                aria-checked={when[dim.id] === v.id}
-                class:checked={when[dim.id] === v.id}
+          <div class="label">{dim.label}</div>
+          {#each dim.values as v (v.id)}
+            {@const available = isAvailable(board, variant, dim.id, v.id)}
+            <label
+              class="choice"
+              class:unavailable={!available}
+              title={(v.help ?? v.label) +
+                (available ? "" : " Not available with the current choices: choosing it changes them.")}
+            >
+              <input
+                type="radio"
+                name={`variant-${dim.id}`}
                 class:unavailable={!available}
-                title={(v.help ?? v.label) +
-                  (available ? "" : ` Not available with the current choices: choosing it changes them.`)}
-                onclick={() => onChoose(dim.id, v.id)}>{v.label}</button
-              >
-            {/each}
-          </div>
+                checked={when[dim.id] === v.id}
+                onchange={() => onChoose(dim.id, v.id)}
+              />
+              {v.label}
+            </label>
+          {/each}
         </div>
       {/each}
       {#if configuration && !configuration.tested}
@@ -124,51 +129,50 @@
     top: calc(100% + 6px);
     left: 0;
     z-index: 20;
-    min-width: 260px;
-    max-width: 380px;
-    padding: 10px 12px;
+    width: max-content;
+    min-width: 200px;
+    max-width: min(420px, 90vw);
+    padding: 4px 14px 12px;
     background: var(--bg);
     color: var(--fg);
     border: 1px solid var(--border);
     border-radius: 6px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   }
+  /* One section per dimension: its label, then its values as radio buttons. */
   .row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 0;
+    padding: 10px 0 6px;
+  }
+  .row + .row {
+    border-top: 1px solid var(--border);
   }
   .label {
-    min-width: 80px;
+    margin-bottom: 4px;
     color: var(--muted);
     font-size: 12px;
   }
-  .values {
+  .choice {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .values button {
-    padding: 3px 8px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--bg);
-    color: var(--fg);
-    font: inherit;
-    font-size: 12px;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 0;
+    font-size: 13px;
+    white-space: nowrap;
     cursor: pointer;
   }
-  .values button.checked {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #ffffff;
+  .choice input {
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
   }
-  .values button.unavailable {
-    opacity: 0.45;
+  /* Values that don't go with the other choices: still clickable (choosing
+     one changes the others), but dimmed. */
+  .choice.unavailable {
+    color: var(--muted);
   }
   .note {
-    margin: 8px 0 0;
+    max-width: 360px;
+    margin: 4px 0 0;
     color: var(--muted);
     font-size: 12px;
     line-height: 1.4;
