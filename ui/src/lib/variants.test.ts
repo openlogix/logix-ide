@@ -21,7 +21,7 @@ const plain: Board = {
   configurations: [{ when: {}, tested: true }],
 };
 
-// Like ButterStick: the bootloader writes flash only, the cable both.
+// Like ButterStick: the bootloader writes flash only, the adapter both.
 const stick: Board = {
   id: "stick",
   description: "Stick",
@@ -33,7 +33,7 @@ const stick: Board = {
       label: "Connection",
       values: [
         { id: "dfu", label: "USB bootloader" },
-        { id: "ft232h", label: "FT232H cable" },
+        { id: "ft232h", label: "FT232H adapter" },
       ],
     },
     {
@@ -85,13 +85,13 @@ describe("variants", () => {
   it("choosing a greyed value switches the other dimensions too", () => {
     const ram = choose(stick, {}, "memory", "ram");
     expect(ram.variant).toEqual({ connection: "ft232h", memory: "ram" });
-    expect(ram.changed).toEqual(["Connection: FT232H cable"]);
+    expect(ram.changed).toEqual(["Connection: FT232H adapter"]);
     const back = choose(stick, ram.variant, "connection", "dfu");
     expect(back.variant).toEqual({});
     expect(back.changed).toEqual(["Memory: Flash"]);
-    const cable = choose(stick, {}, "connection", "ft232h");
-    expect(cable.variant).toEqual({ connection: "ft232h", memory: "flash" });
-    expect(cable.changed).toEqual([]);
+    const adapter = choose(stick, {}, "connection", "ft232h");
+    expect(adapter.variant).toEqual({ connection: "ft232h", memory: "flash" });
+    expect(adapter.changed).toEqual([]);
   });
 
   it("makes one Tools submenu per dimension", () => {
@@ -113,7 +113,7 @@ describe("variants", () => {
     const viaCable = [{ board: "stick", exact: false, variants: [{ connection: "ft232h", memory: "flash" }] }];
     expect(isConnected(stick, "stick", {}, viaCable)).toBe(false);
     expect(isConnected(stick, "stick", { connection: "ft232h" }, viaCable)).toBe(true);
-    // The cable reaches RAM too: same device.
+    // The adapter reaches RAM too: same device.
     const both = [{ board: "stick", exact: false, variants: [
       { connection: "ft232h", memory: "flash" }, { connection: "ft232h", memory: "ram" }] }];
     expect(isConnected(stick, "stick", { memory: "ram" }, both)).toBe(true);

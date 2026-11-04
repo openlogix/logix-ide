@@ -93,10 +93,10 @@ finds them.
 
 ### Board options
 
-A few boards can be programmed in more than one way: with different cables
-(such as the ColorLight i9 or the ButterStick), or into flash or RAM (such
-as the iCESugar-Pro). For these boards, the options in use show next to the
-board, for example **FT232H cable** or **RAM**. Click them to change them;
+A few boards can be programmed in more than one way: through different USB
+adapters (such as the ColorLight i9 or the ButterStick), or into flash or
+RAM (such as the iCESugar-Pro). For these boards, the options in use show next to the
+board, for example **FT232H adapter** or **RAM**. Click them to change them;
 they're also under **Tools**. The project remembers them.
 
 ![The iCESugar-Pro set to upload to RAM, with its options open next to the board](images/board-options.png)

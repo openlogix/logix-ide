@@ -69,7 +69,7 @@ pub struct ConnectedBoard {
     /// (which many boards share).
     pub exact: bool,
     /// The configurations whose filter matched, e.g. `{"connection":
-    /// "ft232h"}` for a board with several cables (one empty variant for
+    /// "ft232h"}` for a board with several adapters (one empty variant for
     /// most boards).
     pub variants: Vec<Variant>,
 }

@@ -296,7 +296,7 @@ test("a value that doesn't go with the others is greyed out, and choosing it swi
 }) => {
   const summary = page.locator(".variant .summary");
   await start(page);
-  // The ButterStick's USB bootloader writes flash, its cables RAM.
+  // The ButterStick's USB bootloader writes flash, its JTAG adapters RAM.
   await pickBoard(page, "butterstick r1.0");
   await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
   await expect(summary).toHaveText(/^\s*USB bootloader · Flash/);
@@ -305,8 +305,8 @@ test("a value that doesn't go with the others is greyed out, and choosing it swi
   const ram = panel.getByRole("radio", { name: "RAM" });
   await expect(ram).toHaveClass(/unavailable/);
   await ram.click();
-  await expect(summary).toHaveText(/^\s*FT2232H cable · RAM/);
-  await expect(status(page)).toContainText("Connection: FT2232H cable changed with it");
+  await expect(summary).toHaveText(/^\s*FT2232H adapter · RAM/);
+  await expect(status(page)).toContainText("Connection: FT2232H adapter changed with it");
   await expect(panel.getByRole("radio", { name: "USB bootloader" })).toHaveClass(/unavailable/);
 });
 

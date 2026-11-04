@@ -55,8 +55,9 @@ dfu-util or icesprog. More boards are added as their programmers are
 supported. A project for a board that isn't supported yet opens, but
 Verify and Upload ask you to choose another board.
 
-A board that can be programmed with different cables, or into flash or
-RAM, is listed once: choose the cable or memory next to the board (see
+A board that can be programmed through different USB adapters, or into
+flash or RAM, is listed once: choose the adapter or memory next to the
+board (see
 [Board options](using-logix.md#board-options)).
 
 ## An example isn't in the list

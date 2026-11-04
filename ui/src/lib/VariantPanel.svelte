@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The toolbar's variant summary (e.g. "FT232H cable · RAM"), for boards
+  // The toolbar's variant summary (e.g. "FT232H adapter · RAM"), for boards
   // with choices, and the small panel it opens to change them: one row per
   // dimension. Values that don't exist with the other current values are
   // greyed out; choosing one changes the others too (`choose` in

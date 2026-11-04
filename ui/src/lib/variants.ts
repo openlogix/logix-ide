@@ -59,7 +59,7 @@ export function valueLabel(board: Board, dim: string, value: string): string {
 
 /**
  * The toolbar's summary: the value of every dimension, e.g.
- * "FT232H cable · RAM". Empty for a board without dimensions.
+ * "FT232H adapter · RAM". Empty for a board without dimensions.
  */
 export function summary(board: Board, variant: Variant): string {
   const when = resolve(board, variant);
@@ -82,7 +82,7 @@ export function isAvailable(
 /**
  * Chooses `value` for `dim`. If it doesn't exist with the other current
  * values, the first configuration that has it is used, and `changed` names
- * the other dimensions that changed, e.g. ["Connection: FT232H cable"].
+ * the other dimensions that changed, e.g. ["Connection: FT232H adapter"].
  * Returns the variant to store.
  */
 export function choose(
