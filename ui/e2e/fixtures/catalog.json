@@ -205,25 +205,44 @@
        "label": "FT232H cable"
       }
      ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      },
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
     }
    ],
    "configurations": [
     {
      "when": {
-      "connection": "dfu"
+      "connection": "dfu",
+      "memory": "flash"
      },
      "tested": true,
      "userNotes": "Programming needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     },
     {
      "when": {
-      "connection": "ft2232h"
+      "connection": "ft2232h",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "ft232h"
+      "connection": "ft232h",
+      "memory": "ram"
      },
      "tested": true
     }
