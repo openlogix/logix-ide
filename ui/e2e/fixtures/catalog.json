@@ -5,10 +5,36 @@
    "description": "Alchitry Au (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -18,10 +44,36 @@
    "description": "Alchitry Au+ (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -31,10 +83,36 @@
    "description": "Alchitry Cu Development Board",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -44,10 +122,36 @@
    "description": "Alhambra II",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -57,10 +161,36 @@
    "description": "Alinx ARTIX-7 AX7035",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT232H chip, connected to the board's JTAG pins.",
+       "id": "ft232h",
+       "label": "FT232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft232h",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -70,10 +200,36 @@
    "description": "ARiCE v1",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -83,10 +239,36 @@
    "description": "Arty A7-100T (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -96,10 +278,36 @@
    "description": "Arty A7-35T (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -109,10 +317,36 @@
    "description": "Arty S7-25 (Xilinx, Spartan7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -122,10 +356,36 @@
    "description": "Arty S7-50 (Xilinx, Spartan7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -135,10 +395,36 @@
    "description": "AZUKAR v2",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -148,10 +434,36 @@
    "description": "Basys3 (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -161,10 +473,36 @@
    "description": "BrisbaneSilicon 9k",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -174,10 +512,36 @@
    "description": "BrisbaneSilicon EPM11",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -194,7 +558,7 @@
      "values": [
       {
        "help": "The board's own USB port, with the board in its bootloader mode.",
-       "id": "dfu",
+       "id": "bootloader",
        "label": "USB bootloader"
       },
       {
@@ -229,7 +593,7 @@
    "configurations": [
     {
      "when": {
-      "connection": "dfu",
+      "connection": "bootloader",
       "memory": "flash"
      },
      "tested": true,
@@ -256,10 +620,36 @@
    "description": "Cmod A7-35T (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -269,10 +659,36 @@
    "description": "Colorlight i9+ (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -282,10 +698,36 @@
    "description": "ColorLight-5A-75B-V61",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
+       "id": "ft2232h",
+       "label": "FT2232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -295,10 +737,36 @@
    "description": "ColorLight-5A-75B-V7",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
+       "id": "ft2232h",
+       "label": "FT2232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -308,10 +776,36 @@
    "description": "ColorLight-5A-75B-V8",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
+       "id": "ft2232h",
+       "label": "FT2232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -321,10 +815,36 @@
    "description": "ColorLight-5A-75E-V6",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
+       "id": "ft2232h",
+       "label": "FT2232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -355,24 +875,38 @@
        "label": "USB-Blaster"
       }
      ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
     }
    ],
    "configurations": [
     {
      "when": {
-      "connection": "ft2232h"
+      "connection": "ft2232h",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "ft232h"
+      "connection": "ft232h",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "usb-blaster"
+      "connection": "usb-blaster",
+      "memory": "ram"
      },
      "tested": true
     }
@@ -384,6 +918,17 @@
    "arch": "ecp5",
    "pinExtension": "lpf",
    "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
     {
      "id": "memory",
      "label": "Memory",
@@ -404,12 +949,14 @@
    "configurations": [
     {
      "when": {
+      "connection": "usb",
       "memory": "flash"
      },
      "tested": true
     },
     {
      "when": {
+      "connection": "usb",
       "memory": "ram"
      },
      "tested": true
@@ -427,11 +974,6 @@
      "label": "Connection",
      "values": [
       {
-       "help": "A CMSIS-DAP (DAPLink) USB adapter, connected to the board's JTAG pins.",
-       "id": "cmsis-dap",
-       "label": "CMSIS-DAP adapter"
-      },
-      {
        "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
        "id": "ft2232h",
        "label": "FT2232H adapter"
@@ -442,9 +984,25 @@
        "label": "FT232H adapter"
       },
       {
+       "help": "A CMSIS-DAP (DAPLink) USB adapter, connected to the board's JTAG pins.",
+       "id": "cmsis-dap",
+       "label": "CMSIS-DAP adapter"
+      },
+      {
        "help": "An Altera USB-Blaster or compatible adapter, connected to the board's JTAG pins.",
        "id": "usb-blaster",
        "label": "USB-Blaster"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
       }
      ]
     }
@@ -452,25 +1010,29 @@
    "configurations": [
     {
      "when": {
-      "connection": "cmsis-dap"
+      "connection": "cmsis-dap",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "ft2232h"
+      "connection": "ft2232h",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "ft232h"
+      "connection": "ft232h",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "usb-blaster"
+      "connection": "usb-blaster",
+      "memory": "ram"
      },
      "tested": true
     }
@@ -481,10 +1043,36 @@
    "description": "ECP5 Versa",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -494,10 +1082,36 @@
    "description": "ECP5-Evaluation-Board",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -507,10 +1121,36 @@
    "description": "ECP5-Mini-12",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
+       "id": "ft2232h",
+       "label": "FT2232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -520,10 +1160,36 @@
    "description": "ECP5-Mini-25",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
+       "id": "ft2232h",
+       "label": "FT2232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -533,10 +1199,36 @@
    "description": "EDU-CIAA-FPGA",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -567,24 +1259,38 @@
        "label": "USB-Blaster"
       }
      ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
     }
    ],
    "configurations": [
     {
      "when": {
-      "connection": "ft2232h"
+      "connection": "ft2232h",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "ft232h"
+      "connection": "ft232h",
+      "memory": "ram"
      },
      "tested": true
     },
     {
      "when": {
-      "connection": "usb-blaster"
+      "connection": "usb-blaster",
+      "memory": "ram"
      },
      "tested": true
     }
@@ -595,10 +1301,36 @@
    "description": "Fomu",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
@@ -609,10 +1341,36 @@
    "description": "FPGA 101 - Workshop Badge",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -622,10 +1380,36 @@
    "description": "iCE40 UltraPlus Breakout",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -635,10 +1419,36 @@
    "description": "iCE40-HX8K Breakout Board",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -648,10 +1458,36 @@
    "description": "iCEBreaker",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -661,10 +1497,36 @@
    "description": "iCEBreaker bitsy v0",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
@@ -675,10 +1537,36 @@
    "description": "iCEBreaker bitsy v1",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
@@ -689,10 +1577,36 @@
    "description": "ICENode",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -702,10 +1616,36 @@
    "description": "Icepi Zero",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -715,10 +1655,36 @@
    "description": "iCEstick Eval Kit",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -729,6 +1695,17 @@
    "arch": "ecp5",
    "pinExtension": "lpf",
    "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
     {
      "id": "memory",
      "label": "Memory",
@@ -749,12 +1726,14 @@
    "configurations": [
     {
      "when": {
+      "connection": "usb",
       "memory": "flash"
      },
      "tested": true
     },
     {
      "when": {
+      "connection": "usb",
       "memory": "ram"
      },
      "tested": true
@@ -766,10 +1745,36 @@
    "description": "iCESugar v1.5",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Connect only this iCESugar when programming: its programmer can't tell iCESugar boards apart, so the engine refuses when another board with the same USB IDs, such as an iCESugar-Pro, is connected."
     }
@@ -780,10 +1785,36 @@
    "description": "iCESugar-nano",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Connect only this iCESugar when programming: its programmer can't tell iCESugar boards apart, so the engine refuses when another board with the same USB IDs, such as an iCESugar-Pro, is connected."
     }
@@ -794,10 +1825,36 @@
    "description": "Icezum Alhambra",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -807,10 +1864,36 @@
    "description": "Kéfir I iCE40-HX4K",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -820,10 +1903,36 @@
    "description": "MicroPhase A7-Lite (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "Programmed through USB; see the board's documentation for how to connect it.",
+       "id": "unspecified",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "unspecified",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -833,10 +1942,36 @@
    "description": "Mimas A7 (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -846,10 +1981,36 @@
    "description": "Mimas ECP5 Mini",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "Programmed through USB; see the board's documentation for how to connect it.",
+       "id": "unspecified",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "unspecified",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -859,10 +2020,36 @@
    "description": "Nexys A7-100T / Nexys 4 DDR (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -872,10 +2059,36 @@
    "description": "Nexys A7-50T (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -885,10 +2098,36 @@
    "description": "ODT_IcyBlue_Feather",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": false,
      "userNotes": "Its USB filter matches any device with an FTDI FT232H chip."
     }
@@ -899,10 +2138,36 @@
    "description": "OK-iCE40Pro",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -912,10 +2177,36 @@
    "description": "OrangeCrab r0.2 25K",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
     }
@@ -926,10 +2217,36 @@
    "description": "OrangeCrab r0.2 85K",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the other OrangeCrab r0.2 size (25K or 85K), so the engine can't tell which one is connected."
     }
@@ -940,10 +2257,36 @@
    "description": "pico-ice",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
@@ -954,10 +2297,36 @@
    "description": "Pynq-Z1 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -967,10 +2336,36 @@
    "description": "Pynq-Z2 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -980,10 +2375,36 @@
    "description": "QMTECH XC7A100T core board (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "A USB adapter with an FTDI FT2232H chip, connected to the board's JTAG pins.",
+       "id": "ft2232h",
+       "label": "FT2232H adapter"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "ft2232h",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -993,10 +2414,36 @@
    "description": "Sipeed Tang Nano",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -1006,10 +2453,36 @@
    "description": "Sipeed Tang Nano 1k",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1019,10 +2492,36 @@
    "description": "Sipeed Tang Nano 20k",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1032,10 +2531,36 @@
    "description": "Sipeed Tang Nano 4k",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1045,10 +2570,36 @@
    "description": "Sipeed Tang Nano 9k",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1058,10 +2609,36 @@
    "description": "Sipeed Tang Primer 20k",
    "arch": "gowin",
    "pinExtension": "cst",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1071,10 +2648,36 @@
    "description": "Soan-Papdi",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in. Its USB filter also matches the Soan-Papdi-Mini."
     }
@@ -1085,10 +2688,36 @@
    "description": "Soan-Papdi-Mini",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, with the board in its bootloader mode.",
+       "id": "bootloader",
+       "label": "USB bootloader"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "bootloader",
+      "memory": "flash"
+     },
      "tested": true,
      "userNotes": "Programming through the USB bootloader needs the board in its bootloader (DFU) mode; on many boards, hold its button while plugging it in."
     }
@@ -1099,10 +2728,36 @@
    "description": "The Go Board",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1112,10 +2767,36 @@
    "description": "Theta Machines ETH4K",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1125,10 +2806,36 @@
    "description": "ULX3S 12K",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": false,
      "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
     }
@@ -1139,10 +2846,36 @@
    "description": "ULX3S 25K",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": false,
      "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
     }
@@ -1153,10 +2886,36 @@
    "description": "ULX3S 45K",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": false,
      "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
     }
@@ -1167,10 +2926,36 @@
    "description": "ULX3S 85K",
    "arch": "ecp5",
    "pinExtension": "lpf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": false,
      "userNotes": "Programming writes the FPGA's SRAM, so the design is lost at power-off. Its USB filter matches every ULX3S size and any device with an FTDI FT231X chip."
     }
@@ -1181,10 +2966,36 @@
    "description": "UPDuino v1.0",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1194,10 +3005,36 @@
    "description": "UPDuino v2.0",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1207,10 +3044,36 @@
    "description": "UPduino v2.1",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1220,10 +3083,36 @@
    "description": "UPduino v3.0",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1233,10 +3122,36 @@
    "description": "UPduino v3.1",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1246,10 +3161,36 @@
    "description": "VSDSquadron FPGA Mini",
    "arch": "ice40",
    "pinExtension": "pcf",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Kept when the board is powered off.",
+       "id": "flash",
+       "label": "Flash"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "flash"
+     },
      "tested": true
     }
    ]
@@ -1259,10 +3200,36 @@
    "description": "ZedBoard (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -1272,10 +3239,36 @@
    "description": "ZXTRES (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "An Altera USB-Blaster or compatible adapter, connected to the board's JTAG pins.",
+       "id": "usb-blaster",
+       "label": "USB-Blaster"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -1285,10 +3278,36 @@
    "description": "ZXTRES+ (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "An Altera USB-Blaster or compatible adapter, connected to the board's JTAG pins.",
+       "id": "usb-blaster",
+       "label": "USB-Blaster"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -1298,10 +3317,36 @@
    "description": "ZXTRES++ (Xilinx, Artix7)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "An Altera USB-Blaster or compatible adapter, connected to the board's JTAG pins.",
+       "id": "usb-blaster",
+       "label": "USB-Blaster"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb-blaster",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -1311,10 +3356,36 @@
    "description": "Zybo Z7-10 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]
@@ -1324,10 +3395,36 @@
    "description": "Zybo Z7-20 (Xilinx, Zynq7 PL)",
    "arch": "xilinx",
    "pinExtension": "xdc",
-   "dimensions": [],
+   "dimensions": [
+    {
+     "id": "connection",
+     "label": "Connection",
+     "values": [
+      {
+       "help": "The board's own USB port, through the programmer chip on the board.",
+       "id": "usb",
+       "label": "USB"
+      }
+     ]
+    },
+    {
+     "id": "memory",
+     "label": "Memory",
+     "values": [
+      {
+       "help": "Faster to upload; lost when the board is powered off.",
+       "id": "ram",
+       "label": "RAM"
+      }
+     ]
+    }
+   ],
    "configurations": [
     {
-     "when": {},
+     "when": {
+      "connection": "usb",
+      "memory": "ram"
+     },
      "tested": true
     }
    ]

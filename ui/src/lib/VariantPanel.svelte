@@ -7,7 +7,7 @@
   // others too (`choose` in variants.ts). The same choices are in
   // Tools > <dimension>.
   import type { Board, Variant } from "./backend";
-  import { configurationOf, isAvailable, resolve, summary } from "./variants";
+  import { choices, configurationOf, isAvailable, resolve, summary } from "./variants";
 
   let {
     board,
@@ -61,7 +61,7 @@
   </button>
   {#if open}
     <div class="panel" role="dialog" aria-label={`${board.description} options`}>
-      {#each board.dimensions as dim (dim.id)}
+      {#each choices(board) as dim (dim.id)}
         <div class="row" role="radiogroup" aria-label={dim.label}>
           <div class="label">{dim.label}</div>
           {#each dim.values as v (v.id)}

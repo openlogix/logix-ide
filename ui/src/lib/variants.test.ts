@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Board } from "./backend";
 import {
+  afterUpload,
   choose,
   configurationOf,
+  hasChoice,
   isAvailable,
   isConnected,
   menus,
@@ -10,6 +12,7 @@ import {
   resolve,
   summary,
   toStore,
+  uploadFact,
 } from "./variants";
 
 const plain: Board = {
@@ -17,8 +20,23 @@ const plain: Board = {
   description: "Alhambra II",
   arch: "ice40",
   pinExtension: "pcf",
-  dimensions: [],
-  configurations: [{ when: {}, tested: true }],
+  // Every board has both standard dimensions; one value each is no choice.
+  dimensions: [
+    { id: "connection", label: "Connection", values: [{ id: "usb", label: "USB" }] },
+    { id: "memory", label: "Memory", values: [{ id: "flash", label: "Flash" }] },
+  ],
+  configurations: [{ when: { connection: "usb", memory: "flash" }, tested: true }],
+};
+
+// Like the Arty A7: its own USB port, RAM only.
+const arty: Board = {
+  ...plain,
+  id: "arty",
+  dimensions: [
+    { id: "connection", label: "Connection", values: [{ id: "usb", label: "USB" }] },
+    { id: "memory", label: "Memory", values: [{ id: "ram", label: "RAM" }] },
+  ],
+  configurations: [{ when: { connection: "usb", memory: "ram" }, tested: true }],
 };
 
 // Like ButterStick: the bootloader writes flash only, the adapter both.
@@ -32,7 +50,7 @@ const stick: Board = {
       id: "connection",
       label: "Connection",
       values: [
-        { id: "dfu", label: "USB bootloader" },
+        { id: "bootloader", label: "USB bootloader" },
         { id: "ft232h", label: "FT232H adapter" },
       ],
     },
@@ -46,7 +64,7 @@ const stick: Board = {
     },
   ],
   configurations: [
-    { when: { connection: "dfu", memory: "flash" }, tested: true },
+    { when: { connection: "bootloader", memory: "flash" }, tested: true },
     { when: { connection: "ft232h", memory: "flash" }, tested: true },
     { when: { connection: "ft232h", memory: "ram" }, tested: false },
   ],
@@ -54,10 +72,21 @@ const stick: Board = {
 
 describe("variants", () => {
   it("defaults to the first configuration", () => {
-    expect(resolve(stick, {})).toEqual({ connection: "dfu", memory: "flash" });
+    expect(resolve(stick, {})).toEqual({ connection: "bootloader", memory: "flash" });
     expect(summary(stick, {})).toBe("USB bootloader · Flash");
     expect(summary(plain, {})).toBe("");
     expect(configurationOf(plain, {})).toBe(plain.configurations[0]);
+  });
+
+  it("shows only dimensions with a choice; one value is a fact", () => {
+    expect(hasChoice(plain)).toBe(false);
+    expect(hasChoice(stick)).toBe(true);
+    expect(summary(arty, {})).toBe("");
+    expect(uploadFact(arty, {})).toBe("Uploads to RAM.");
+    expect(uploadFact(plain, {})).toBe("Uploads to Flash.");
+    expect(uploadFact(stick, { memory: "ram" })).toBe("Uploads to RAM through the FT232H adapter.");
+    expect(afterUpload(arty, {})).toBe("Uploaded to RAM: the design is lost when the board is powered off.");
+    expect(afterUpload(plain, {})).toBeNull();
   });
 
   it("picks the first configuration with the given values", () => {
@@ -68,25 +97,25 @@ describe("variants", () => {
       connection: "ft232h",
       memory: "ram",
     });
-    expect(resolve(stick, { connection: "jtag" })).toEqual({ connection: "dfu", memory: "flash" });
+    expect(resolve(stick, { connection: "jtag" })).toEqual({ connection: "bootloader", memory: "flash" });
   });
 
   it("stores nothing for the default", () => {
-    expect(toStore(stick, { connection: "dfu" })).toEqual({});
+    expect(toStore(stick, { connection: "bootloader" })).toEqual({});
     expect(toStore(stick, { memory: "ram" })).toEqual({ connection: "ft232h", memory: "ram" });
   });
 
   it("greys out values that don't exist with the others", () => {
     expect(isAvailable(stick, {}, "memory", "ram")).toBe(false);
     expect(isAvailable(stick, { connection: "ft232h" }, "memory", "ram")).toBe(true);
-    expect(isAvailable(stick, { memory: "ram" }, "connection", "dfu")).toBe(false);
+    expect(isAvailable(stick, { memory: "ram" }, "connection", "bootloader")).toBe(false);
   });
 
   it("choosing a greyed value switches the other dimensions too", () => {
     const ram = choose(stick, {}, "memory", "ram");
     expect(ram.variant).toEqual({ connection: "ft232h", memory: "ram" });
     expect(ram.changed).toEqual(["Connection: FT232H adapter"]);
-    const back = choose(stick, ram.variant, "connection", "dfu");
+    const back = choose(stick, ram.variant, "connection", "bootloader");
     expect(back.variant).toEqual({});
     expect(back.changed).toEqual(["Memory: Flash"]);
     const adapter = choose(stick, {}, "connection", "ft232h");

@@ -1,5 +1,8 @@
-// A board's variants: its dimensions (e.g. Connection, Memory) and the
-// configurations that exist. Pure functions, unit-tested in variants.test.ts.
+// A board's variants: its dimensions (every board has the engine's two
+// standard ones, Connection and Memory) and the configurations that exist.
+// A dimension with more than one value is a choice, shown next to the board
+// and in Tools; one with a single value is a fact (e.g. "uploads to RAM").
+// Pure functions, unit-tested in variants.test.ts.
 //
 // A project stores the values the user chose (`[variant]` in
 // logix-ide.toml), only when they aren't the board's default. As in the
@@ -57,15 +60,49 @@ export function valueLabel(board: Board, dim: string, value: string): string {
   return d?.values.find((v) => v.id === value)?.label ?? value;
 }
 
+/** The dimensions the user can choose in: those with more than one value. */
+export function choices(board: Board | null) {
+  return board ? board.dimensions.filter((d) => d.values.length > 1) : [];
+}
+
+/** Whether the board has anything to choose (the toolbar's option button). */
+export function hasChoice(board: Board | null): boolean {
+  return choices(board).length > 0;
+}
+
 /**
- * The toolbar's summary: the value of every dimension, e.g.
- * "FT232H adapter · RAM". Empty for a board without dimensions.
+ * The toolbar's summary: the value of every dimension with a choice, e.g.
+ * "FT232H adapter · RAM". Empty for a board without choices.
  */
 export function summary(board: Board, variant: Variant): string {
   const when = resolve(board, variant);
-  return board.dimensions
+  return choices(board)
     .map((d) => valueLabel(board, d.id, when[d.id]))
     .join(" · ");
+}
+
+/**
+ * How an upload reaches the board, as a fact, e.g. "Uploads to RAM through
+ * the FT232H adapter.". The connection is left out when it's the board's
+ * own USB port or not known.
+ */
+export function uploadFact(board: Board, variant: Variant): string {
+  const when = resolve(board, variant);
+  const memory = when.memory ? valueLabel(board, "memory", when.memory) : null;
+  if (!memory) return "";
+  const connection = when.connection;
+  const through =
+    connection && !["usb", "unspecified"].includes(connection)
+      ? ` through the ${valueLabel(board, "connection", connection)}`
+      : "";
+  return `Uploads to ${memory}${through}.`;
+}
+
+/** After a successful upload: what to know, e.g. that RAM is lost at power-off. */
+export function afterUpload(board: Board, variant: Variant): string | null {
+  return resolve(board, variant).memory === "ram"
+    ? "Uploaded to RAM: the design is lost when the board is powered off."
+    : null;
 }
 
 /** Whether `value` exists with the variant's other current values. */
@@ -97,17 +134,17 @@ export function choose(
     board.configurations.find((x) => matches(x, wanted)) ??
     board.configurations.find((x) => x.when[dim] === value);
   if (!c) return { variant: toStore(board, variant), changed: [] };
-  const changed = board.dimensions
+  const changed = choices(board)
     .filter((d) => d.id !== dim && c.when[d.id] !== current[d.id])
     .map((d) => `${d.label}: ${valueLabel(board, d.id, c.when[d.id])}`);
   return { variant: toStore(board, c.when), changed };
 }
 
-/** The Tools submenus for the board's dimensions (none for most boards). */
+/** The Tools submenus for the board's choices (none for most boards). */
 export function menus(board: Board | null, variant: Variant): VariantMenu[] {
   if (!board) return [];
   const when = resolve(board, variant);
-  return board.dimensions.map((d) => ({
+  return choices(board).map((d) => ({
     id: d.id,
     label: d.label,
     values: d.values.map((v) => ({
@@ -129,7 +166,7 @@ export function isConnected(
   if (!boardId) return false;
   const found = connected.find((c) => c.board === boardId);
   if (!found) return false;
-  if (!board || board.dimensions.length === 0) return true;
+  if (!board || !hasChoice(board)) return true;
   const when = resolve(board, variant);
   return found.variants.some((v) =>
     Object.entries(when).every(([k, x]) => v[k] === x),

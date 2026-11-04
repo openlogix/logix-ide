@@ -278,10 +278,18 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
   await menu(page, "verify");
   await expect(output(page)).toContainText("for Icesugar Pro (RAM)");
   await expect(output(page)).toContainText("Ready.");
-  expect((await fake()).taskVariant).toEqual({ memory: "ram" });
+  expect((await fake()).taskVariant).toEqual({ connection: "usb", memory: "ram" });
+  // After an upload to RAM, a reminder that it's lost at power-off.
+  await menu(page, "upload");
+  await expect(output(page)).toContainText(
+    "Uploaded to RAM: the design is lost when the board is powered off.",
+  );
   await menu(page, "save-as");
   await expect(status(page)).toContainText("Saved");
-  expect((await fake()).saved).toEqual({ board: "icesugar-pro", variant: { memory: "ram" } });
+  expect((await fake()).saved).toEqual({
+    board: "icesugar-pro",
+    variant: { connection: "usb", memory: "ram" },
+  });
 
   // Tools > Memory > Flash: back to the default, stored as nothing.
   await menu(page, "variant:memory:flash");

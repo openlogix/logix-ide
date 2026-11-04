@@ -25,8 +25,11 @@
   import BoardPicker from "./lib/BoardPicker.svelte";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
+    afterUpload,
     choose as chooseVariant,
     configurationOf,
+    hasChoice,
+    uploadFact,
     isConnected as variantConnected,
     menus as variantMenus,
     parseMenuId,
@@ -871,6 +874,9 @@
       if (project !== p) return; // Another project was opened meanwhile.
       if (task === "test") log("", ...testbenchLines(outcome));
       if (outcome.ok && outcome.report) log("", ...reportLines(outcome.report));
+      // E.g. that a design uploaded to RAM is lost at power-off.
+      const note = task === "upload" && outcome.ok && boardInfo && afterUpload(boardInfo, variant);
+      if (note) log(note);
       if (
         task === "upload" &&
         !outcome.ok &&
@@ -1634,7 +1640,7 @@
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}
     />
-    {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0 && !pendingBoard}
+    {#if currentBoardInfo && hasChoice(currentBoardInfo) && !pendingBoard}
       <VariantPanel
         board={currentBoardInfo}
         variant={currentVariant}
@@ -1647,9 +1653,10 @@
       <span
         class="board-link"
         class:connected={boardConnected}
-        title={boardConnected
+        title={(boardConnected
           ? `${boardName(currentBoard)} is connected.`
-          : `${boardName(currentBoard)} isn't connected (no matching USB device found).`}
+          : `${boardName(currentBoard)} isn't connected (no matching USB device found).`) +
+          (currentBoardInfo ? ` ${uploadFact(currentBoardInfo, currentVariant)}` : "")}
         >{boardConnected ? "Connected" : "Not connected"}</span
       >
     {/if}
