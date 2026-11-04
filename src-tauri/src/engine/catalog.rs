@@ -57,10 +57,15 @@ pub struct DimensionValue {
     pub help: Option<String>,
 }
 
-/// One combination of dimension values that exists.
+/// One of the board's variants (the engine's name): one combination of
+/// dimension values that exists, and how it was tested.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
+    /// The engine's variant ID, e.g. "usb-ram", sent as `board_variant`.
+    /// The UI works with `when` only.
+    #[serde(skip)]
+    pub id: String,
     /// The value of every dimension.
     pub when: Variant,
     /// Whether programming this way was tried on hardware.
@@ -82,6 +87,26 @@ pub fn constraint_extension(arch: &str) -> Option<&'static str> {
         "xilinx" => Some("xdc"),
         _ => None,
     }
+}
+
+/// The engine's ID of the variant the IDE's choice picks: the first
+/// configuration with all the chosen dimension values ({} = the default).
+/// `None` when the board has no such configuration.
+pub fn variant_id(board: &Board, variant: &Variant) -> Option<String> {
+    board
+        .configurations
+        .iter()
+        .find(|c| variant.iter().all(|(k, v)| c.when.get(k) == Some(v)))
+        .map(|c| c.id.clone())
+}
+
+/// The dimension values of a board's variant, by the engine's variant ID.
+pub fn variant_values(board: &Board, id: &str) -> Option<Variant> {
+    board
+        .configurations
+        .iter()
+        .find(|c| c.id == id)
+        .map(|c| c.when.clone())
 }
 
 /// The engine's boards.
@@ -119,15 +144,19 @@ fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 .and_then(|fpga| fpgas[fpga]["architecture"].as_str())
                 .unwrap_or("")
                 .to_string();
-            let variants = &b["variants"];
-            let dimensions =
-                serde_json::from_value(variants["dimensions"].clone()).unwrap_or_default();
-            let configurations = variants["configurations"]
+            let dimensions = serde_json::from_value(b["dimensions"].clone()).unwrap_or_default();
+            let configurations = b["variants"]
                 .as_array()
                 .map(|list| {
                     list.iter()
                         .map(|c| Configuration {
-                            when: serde_json::from_value(c["when"].clone()).unwrap_or_default(),
+                            id: c["id"].as_str().unwrap_or_default().to_string(),
+                            when: ["connection", "memory"]
+                                .iter()
+                                .filter_map(|d| {
+                                    c[*d].as_str().map(|v| (d.to_string(), v.to_string()))
+                                })
+                                .collect(),
                             tested: c["tested"].as_bool().unwrap_or(true),
                             user_notes: c["user_notes"].as_str().map(String::from),
                         })
@@ -179,14 +208,14 @@ mod tests {
     fn parses_variants() {
         let catalog = json!({
             "boards": {
-                "sugar": {"description": "Sugar", "fpga_id": "f", "variants": {
+                "sugar": {"description": "Sugar", "fpga_id": "f",
                     "dimensions": [{"id": "memory", "label": "Memory", "values": [
                         {"id": "flash", "label": "Flash"},
                         {"id": "ram", "label": "RAM", "help": "Lost at power-off."}]}],
-                    "configurations": [
-                        {"when": {"memory": "flash"}, "programmer": "p", "args": "a", "usb": {}, "tested": true},
-                        {"when": {"memory": "ram"}, "programmer": "p", "args": "a", "usb": {}, "tested": false,
-                         "user_notes": "Try it."}]}}
+                    "variants": [
+                        {"id": "usb-flash", "connection": "usb", "memory": "flash", "programmer": "p", "args": "a", "usb": {}, "tested": true},
+                        {"id": "usb-ram", "connection": "usb", "memory": "ram", "programmer": "p", "args": "a", "usb": {}, "tested": false,
+                         "user_notes": "Try it."}]}
             },
             "fpgas": {"f": {"architecture": "ecp5"}}
         });
@@ -198,6 +227,13 @@ mod tests {
         assert_eq!(b.configurations.len(), 2);
         assert_eq!(b.configurations[1].when["memory"], "ram");
         assert!(!b.configurations[1].tested);
+        assert_eq!(b.configurations[1].id, "usb-ram");
+        // The IDE's choice, possibly partial, picks the engine's variant ID.
+        let pick = |v: serde_json::Value| variant_id(b, &serde_json::from_value(v).unwrap());
+        assert_eq!(pick(json!({})).as_deref(), Some("usb-flash"));
+        assert_eq!(pick(json!({"memory": "ram"})).as_deref(), Some("usb-ram"));
+        assert_eq!(pick(json!({"memory": "eeprom"})), None);
+        assert_eq!(variant_values(b, "usb-ram").unwrap()["memory"], "ram");
         assert_eq!(b.configurations[1].user_notes.as_deref(), Some("Try it."));
     }
 

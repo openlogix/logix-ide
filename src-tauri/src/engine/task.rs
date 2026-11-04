@@ -76,8 +76,9 @@ enum Choice {
 /// What to run the task on.
 pub struct TaskInput<'a> {
     pub board: &'a str,
-    /// The board's variant (dimension values; empty for its default).
-    pub variant: &'a super::Variant,
+    /// The board variant, as the engine's variant ID (e.g. "usb-ram"); `None`
+    /// for the board's default.
+    pub board_variant: Option<&'a str>,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
     /// The prepared build folder: the project's files and other contents.
@@ -237,7 +238,7 @@ where
                     "lint",
                     json!({
                         "board": input.board,
-                        "board_variant": input.variant,
+                        "board_variant": input.board_variant,
                         "top_module": TOP_MODULE,
                         "source_folder": self.folder,
                         "source_files": self.sources,
@@ -260,7 +261,7 @@ where
                 "build",
                 json!({
                     "board": input.board,
-                    "board_variant": input.variant,
+                    "board_variant": input.board_variant,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
@@ -361,7 +362,7 @@ where
                 "test",
                 json!({
                     "board": input.board,
-                    "board_variant": input.variant,
+                    "board_variant": input.board_variant,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -396,7 +397,7 @@ where
                 "simulate",
                 json!({
                     "board": input.board,
-                    "board_variant": input.variant,
+                    "board_variant": input.board_variant,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -713,7 +714,6 @@ mod tests {
     }
 
     /// The default configuration of the test boards.
-    const NO_VARIANT: &super::super::Variant = &super::super::Variant::new();
 
     #[test]
     fn picks_design_files() {
@@ -879,7 +879,7 @@ mod tests {
         };
         let mut input = TaskInput {
             board: "alhambra-ii",
-            variant: NO_VARIANT,
+            board_variant: None,
             arch: "ice40",
             source_folder: &dir,
             files: &files,
@@ -1048,7 +1048,7 @@ mod tests {
                 let constraint = crate::build_dir::constraint_file_name(&files).map(str::to_owned);
                 let mut input = TaskInput {
                     board: &board,
-                    variant: NO_VARIANT,
+                    board_variant: None,
                     arch: &arch,
                     source_folder: &dir,
                     files: &files,
@@ -1154,7 +1154,7 @@ mod tests {
             };
             let input = TaskInput {
                 board: "alhambra-ii",
-                variant: NO_VARIANT,
+                board_variant: None,
                 arch: "ice40",
                 source_folder: &dir,
                 files: &files,

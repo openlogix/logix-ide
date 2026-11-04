@@ -8,7 +8,7 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 use serde_json::{json, Value};
 
-use super::catalog::Variant;
+use super::catalog::{variant_values, Board, Variant};
 use super::client::{tool_error, Engine};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -36,9 +36,10 @@ pub struct DeviceBoard {
     pub board: String,
     /// The best confidence of its variants (1 to 3, higher is surer).
     pub confidence: u8,
-    /// The variants the device fits, with their confidence.
+    /// The variants the device fits (the engine's variant IDs), with their
+    /// confidence.
     #[serde(skip)]
-    pub variants: Vec<(Variant, u8)>,
+    pub variants: Vec<(String, u8)>,
 }
 
 /// A device the engine sees but can't open (a missing driver or
@@ -122,14 +123,14 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
 }
 
 fn parse_board(b: &Value) -> DeviceBoard {
-    let variants: Vec<(Variant, u8)> = b["variants"]
+    let variants: Vec<(String, u8)> = b["variants"]
         .as_array()
         .map(|vs| {
             vs.iter()
                 .map(|v| {
-                    let when = serde_json::from_value(v["when"].clone()).unwrap_or_default();
+                    let id = v["id"].as_str().unwrap_or_default().to_string();
                     let c = v["confidence"].as_u64().unwrap_or(1).clamp(1, 3) as u8;
-                    (when, c)
+                    (id, c)
                 })
                 .collect()
         })
@@ -171,7 +172,7 @@ const NAMED: u8 = 2;
 /// Each board is listed once, suggested ones first: per device, the boards
 /// whose name matched, or else (if only a few) the boards with the same
 /// chip ids.
-pub fn connected_boards(devices: &[UsbDevice]) -> Vec<ConnectedBoard> {
+pub fn connected_boards(devices: &[UsbDevice], boards: &[Board]) -> Vec<ConnectedBoard> {
     // Catalog boards only: the IDE sends no custom boards.
     let mut found: Vec<ConnectedBoard> = Vec::new();
     for dev in devices {
@@ -184,7 +185,13 @@ pub fn connected_boards(devices: &[UsbDevice]) -> Vec<ConnectedBoard> {
             } else {
                 generic <= MAX_GENERIC_MATCHES
             };
-            let variants: Vec<Variant> = b.variants.iter().map(|(v, _)| v.clone()).collect();
+            // The engine reports variant IDs; the UI works with their values.
+            let info = boards.iter().find(|x| x.id == b.board);
+            let variants: Vec<Variant> = b
+                .variants
+                .iter()
+                .filter_map(|(id, _)| info.and_then(|i| variant_values(i, id)))
+                .collect();
             match found.iter_mut().find(|c| c.board == b.board) {
                 Some(c) => {
                     c.exact |= is_exact;
@@ -216,11 +223,7 @@ mod tests {
     fn device(product: &str, boards: &[(&str, u8)]) -> Value {
         let boards: Vec<Value> = boards
             .iter()
-            .map(|(b, c)| {
-                json!({"board": b, "variants": [
-                    {"when": {"connection": "usb", "memory": "flash"}, "confidence": c}
-                ]})
-            })
+            .map(|(b, c)| json!({"board": b, "variants": [{"id": "usb-flash", "confidence": c}]}))
             .collect();
         json!({
             "id": format!("usb:1-1:0403:6010:{product}"), "kind": "usb",
@@ -229,9 +232,41 @@ mod tests {
         })
     }
 
+    /// Catalog boards whose variant usb-flash is USB and flash.
+    fn boards() -> Vec<Board> {
+        [
+            "alhambra-ii",
+            "generic-a",
+            "generic-b",
+            "icestick",
+            "a",
+            "b",
+            "c",
+            "d",
+        ]
+        .iter()
+        .map(|id| Board {
+            id: id.to_string(),
+            description: id.to_string(),
+            arch: "ice40".into(),
+            pin_extension: None,
+            dimensions: Vec::new(),
+            configurations: vec![super::super::catalog::Configuration {
+                id: "usb-flash".into(),
+                when: Variant::from([
+                    ("connection".into(), "usb".into()),
+                    ("memory".into(), "flash".into()),
+                ]),
+                tested: true,
+                user_notes: None,
+            }],
+        })
+        .collect()
+    }
+
     fn connected(devices: Vec<Value>) -> Vec<(String, bool)> {
         let list = parse_devices(&json!({ "devices": devices })).unwrap();
-        connected_boards(&list.devices)
+        connected_boards(&list.devices, &boards())
             .into_iter()
             .filter(|c| c.suggested)
             .map(|c| (c.board, c.exact))
@@ -282,7 +317,7 @@ mod tests {
             device("Alhambra II", &[("alhambra-ii", 3), ("generic-a", 1)])
         ]}))
         .unwrap();
-        let all = connected_boards(&list.devices);
+        let all = connected_boards(&list.devices, &boards());
         assert_eq!(all.len(), 2);
         assert!(!all[1].suggested);
         assert_eq!(
@@ -302,9 +337,7 @@ mod tests {
                 "vid": "0403", "pid": "6010", "manufacturer": "AlhambraBits",
                 "product": "Alhambra II v1.0A", "serial_number": "FTATANKC",
                 "bus": 1, "device": 7, "build_confidence": 3,
-                "boards": [{"board": "alhambra-ii", "variants": [
-                    {"when": {"connection": "usb", "memory": "flash"}, "confidence": 3}
-                ]}]
+                "boards": [{"board": "alhambra-ii", "variants": [{"id": "usb-flash", "confidence": 3}]}]
             }],
             "unreachable": [{
                 "kind": "usb", "vid": "0403", "pid": "6014", "bus": 1, "device": 9,

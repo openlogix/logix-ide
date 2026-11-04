@@ -274,13 +274,18 @@ pub async fn run_task(
     };
     let engine = ready_engine(&state).await?;
     let boards = catalog(&state).await?.boards;
-    let Some(arch) = boards
-        .iter()
-        .find(|b| b.id == board)
-        .map(|b| b.arch.clone())
-    else {
+    let Some(info) = boards.iter().find(|b| b.id == board) else {
         return Err(anyhow!(
             "Logix doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
+        )
+        .into());
+    };
+    let arch = info.arch.clone();
+    // The engine picks a variant by ID: the first one with the chosen values.
+    let Some(board_variant) = engine::variant_id(info, &variant) else {
+        return Err(anyhow!(
+            "The {} can't be programmed that way. Choose another option next to the board.",
+            info.description
         )
         .into());
     };
@@ -340,7 +345,7 @@ pub async fn run_task(
     *state.task_cancel.lock().unwrap() = Some(cancel.clone());
     let input = engine::TaskInput {
         board: &board,
-        variant: &variant,
+        board_variant: Some(&board_variant),
         arch: &arch,
         source_folder: &dir,
         files: &names,
@@ -504,7 +509,8 @@ pub async fn connected_boards(
     let list = engine::list_devices(&engine, None)
         .await
         .context("Couldn't list the connected devices.")?;
-    let found = engine::connected_boards(&list.devices);
+    let boards = catalog(&state).await?.boards;
+    let found = engine::connected_boards(&list.devices, &boards);
     // Polled every few seconds: log only changes, not every scan.
     static LAST: std::sync::Mutex<Option<Vec<engine::ConnectedBoard>>> =
         std::sync::Mutex::new(None);
