@@ -4,7 +4,7 @@ import type { Board } from "./backend";
 export interface BoardGroup {
   label: string;
   boards: Board[];
-  /** Architecture groups can be collapsed; "Connected" can't. */
+  /** Architecture groups can be collapsed; "Possibly connected" can't. */
   collapsible: boolean;
 }
 
@@ -68,7 +68,7 @@ export function boardGroups(
     .map((id) => shown.find((b) => b.id === id))
     .filter((b): b is Board => b !== undefined);
   if (plugged.length > 0)
-    groups.push({ label: "Connected", boards: plugged, collapsible: false });
+    groups.push({ label: "Possibly connected", boards: plugged, collapsible: false });
   for (const g of groupByArch(shown, (b) => b.arch)) {
     groups.push({ label: g.label, boards: g.items, collapsible: true });
   }

@@ -30,7 +30,7 @@ async function startWithBoard(page: Page) {
     ];
     window.dispatchEvent(new Event("focus"));
   });
-  await expect(page.locator(".board-link")).toHaveText("Connected");
+  await expect(page.locator(".board-link")).toHaveText("Possibly connected");
 }
 
 async function verify(page: Page, expected: RegExp) {

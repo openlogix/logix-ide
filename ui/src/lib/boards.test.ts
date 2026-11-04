@@ -27,7 +27,7 @@ describe("boardGroups", () => {
   });
 
   it("lists connected boards first, and in their group too", () => {
-    expect(summary(["tang", "unknown-board"], "")[0]).toBe("Connected: tang");
+    expect(summary(["tang", "unknown-board"], "")[0]).toBe("Possibly connected: tang");
     expect(summary(["tang"], "")).toContain("Gowin: tang");
   });
 

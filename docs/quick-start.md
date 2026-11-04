@@ -34,7 +34,8 @@ missing at the end of line 7, so the tools stop at the next line:
 ## 3. Upload
 
 Connect your board with a USB cable. Next to the board list, Logix shows
-**Connected** when it recognizes the board. Click the **Upload** button
+**Possibly connected** when a connected device fits the board (Logix can't
+always tell boards apart, so it doesn't claim more). Click the **Upload** button
 ![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix builds the design and programs the board. The LED should
 start blinking.
 

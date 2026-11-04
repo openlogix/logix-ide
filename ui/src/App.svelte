@@ -329,7 +329,7 @@
     }
   }
 
-  // ---- Connected boards (the board list's "Connected" group) ----
+  // ---- Connected boards (the board list's "Possibly connected" group) ----
 
   /** Boards that match the connected USB devices, polled while idle. */
   let connected = $state<ConnectedBoard[]>([]);
@@ -1688,10 +1688,10 @@
         class="board-link"
         class:connected={boardConnected}
         title={`${boardConnected
-          ? `${boardName(currentBoard)} is connected.`
+          ? `A connected device may be the ${boardName(currentBoard)} (it fits the board's USB filter).`
           : `${boardName(currentBoard)} isn't connected (no matching USB device found).`} Click to see the connected devices.`}
         onclick={showDevices}
-        >{boardConnected ? "Connected" : "Not connected"}</button
+        >{boardConnected ? "Possibly connected" : "Not connected"}</button
       >
     {/if}
   </header>
