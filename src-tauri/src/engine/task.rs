@@ -237,7 +237,7 @@ where
                     "lint",
                     json!({
                         "board": input.board,
-                        "variant": input.variant,
+                        "board_variant": input.variant,
                         "top_module": TOP_MODULE,
                         "source_folder": self.folder,
                         "source_files": self.sources,
@@ -260,7 +260,7 @@ where
                 "build",
                 json!({
                     "board": input.board,
-                    "variant": input.variant,
+                    "board_variant": input.variant,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
@@ -361,7 +361,7 @@ where
                 "test",
                 json!({
                     "board": input.board,
-                    "variant": input.variant,
+                    "board_variant": input.variant,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -396,7 +396,7 @@ where
                 "simulate",
                 json!({
                     "board": input.board,
-                    "variant": input.variant,
+                    "board_variant": input.variant,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
