@@ -99,7 +99,7 @@ RAM (such as the iCESugar-Pro). For these boards, the options in use show next t
 board, for example **FT232H adapter** or **RAM**. Click them to change them;
 they're also under **Tools**. The project remembers them.
 
-![The iCESugar-Pro set to upload to RAM, with its options open next to the board](images/board-options.png)
+![The ButterStick's options, open next to the board: Connection (USB bootloader, FT2232H adapter, FT232H adapter) and Memory (Flash, RAM), with a note about the bootloader](images/board-options.png)
 
 - **Flash** keeps your design when the board is powered off.
 - **RAM** uploads faster, but the design is lost when the board is powered
