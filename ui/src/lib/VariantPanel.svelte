@@ -85,14 +85,20 @@
           {#if helpOf(dim.id)}<p class="hint">{helpOf(dim.id)}</p>{/if}
         </div>
       {/each}
-      {#if configuration && !configuration.tested}
-        <p class="note">
-          This way of programming the board hasn't been tried on a real board yet. If it works (or
-          doesn't), please report it.
-        </p>
-      {/if}
-      {#if configuration?.userNotes}
-        <p class="note">{configuration.userNotes}</p>
+      {#if configuration && (!configuration.tested || configuration.userNotes)}
+        <!-- About the whole choice, not one dimension: its own section. -->
+        <div class="row">
+          <div class="label">Note</div>
+          {#if !configuration.tested}
+            <p class="note">
+              This way of programming the board hasn't been tried on a real board yet. If it works
+              (or doesn't), please report it.
+            </p>
+          {/if}
+          {#if configuration.userNotes}
+            <p class="note">{configuration.userNotes}</p>
+          {/if}
+        </div>
       {/if}
     </div>
   {/if}
@@ -205,15 +211,15 @@
   /* The selected value's help, e.g. what RAM means. */
   .hint {
     max-width: 300px;
-    margin: 4px 0 0 21px;
+    margin: 6px 0 0;
     color: var(--muted);
     font-size: 12px;
     line-height: 1.4;
   }
   .note {
-    max-width: 360px;
-    margin: 4px 0 0;
-    color: var(--muted);
+    max-width: 300px;
+    margin: 0;
+    color: var(--fg);
     font-size: 12px;
     line-height: 1.4;
   }
