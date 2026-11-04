@@ -32,7 +32,7 @@ pub const EDITABLE_EXTENSIONS: &[&str] = &[
 ];
 
 /// Names that belong to the IDE or the build, never project files.
-pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "apio.ini", "_build"];
+pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "_build"];
 
 /// The first lines of a new project file.
 const SETTINGS_HEADER: &str = "# Logix IDE project settings.\n";
@@ -540,7 +540,7 @@ mod tests {
             "alpha.pcf",
             "notes.txt",
             ".hidden.v",
-            "apio.ini",
+            "settings.ini",
         ] {
             write(tmp.path(), name, "x");
         }
@@ -796,7 +796,6 @@ mod tests {
             ("main.v", "old"),
             ("pinout.pcf", "pins"),
             ("removed.v", "r"),
-            ("apio.ini", "ini"),
             ("logix-ide.toml", "# mine\nboard = \"x\"\n"),
             (".DS_Store", "x"),
             ("_build/hardware.bin", "bin"),
@@ -826,7 +825,7 @@ mod tests {
             std::fs::read_to_string(dst.join("docs/readme.txt")).unwrap(),
             "doc"
         );
-        for gone in ["removed.v", "apio.ini", ".DS_Store", "_build"] {
+        for gone in ["removed.v", ".DS_Store", "_build"] {
             assert!(!dst.join(gone).exists(), "{gone} should not be copied");
         }
     }
@@ -859,7 +858,6 @@ mod tests {
         assert!(check_new_file_name("notes.txt", &existing).is_err());
         assert!(check_new_file_name("a/b.v", &existing).is_err());
         assert!(check_new_file_name(".x.v", &existing).is_err());
-        assert!(check_new_file_name("apio.ini", &existing).is_err());
         assert!(check_new_file_name("my file.v", &existing).is_err());
         assert!(check_new_file_name("main.sv", &existing).is_err());
     }

@@ -70,7 +70,6 @@ pub async fn setup(
     let _ = on_event.send(SetupEvent::Stage {
         stage: SetupStage::Checking,
     });
-    remove_old_apio_data().await;
     let mut engine_slot = state.engine.lock().await;
     if engine_slot.is_none() {
         let channel = on_event.clone();
@@ -93,27 +92,6 @@ pub async fn setup(
         stage: SetupStage::Ready,
     });
     Ok(())
-}
-
-/// Logix used Apio before Logix Engine; its private copy (about 3 GB of
-/// FPGA tools in `~/.logix/apio`) isn't used anymore. Best effort.
-async fn remove_old_apio_data() {
-    let Ok(dir) = platform::current_implemented().and_then(|p| p.data_dir()) else {
-        return;
-    };
-    let old = dir.join("apio");
-    if old.is_dir() {
-        // remove_dir_all doesn't follow symbolic links, so a linked folder
-        // (e.g. a developer's own Apio packages) is only unlinked.
-        match tokio::task::spawn_blocking(move || std::fs::remove_dir_all(&old)).await {
-            Ok(Ok(())) => crate::log!(
-                "Removed the old Apio data in {}",
-                dir.join("apio").display()
-            ),
-            Ok(Err(e)) => crate::log!("Can't remove the old Apio data: {e}"),
-            Err(e) => crate::log!("Can't remove the old Apio data: {e}"),
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------

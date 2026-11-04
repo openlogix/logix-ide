@@ -239,7 +239,6 @@ mod tests {
         for (name, text) in [
             ("main.v", "on disk"),
             ("rom.hex", "00"),
-            ("apio.ini", "old"),
             ("logix-ide.toml", "board = \"b\""),
             (".hidden", "x"),
         ] {
@@ -261,7 +260,6 @@ mod tests {
             "in memory"
         );
         assert_eq!(std::fs::read_to_string(root.join("rom.hex")).unwrap(), "00");
-        assert!(!root.join("apio.ini").exists());
         assert!(!root.join("logix-ide.toml").exists());
         assert!(!root.join(".hidden").exists());
         assert!(!root.join("_build").exists());
