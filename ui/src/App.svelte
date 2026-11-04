@@ -1684,13 +1684,14 @@
     {/if}
     {#if ready && currentBoard}
       {@const boardConnected = isConnected(currentBoard)}
-      <span
+      <button
         class="board-link"
         class:connected={boardConnected}
-        title={boardConnected
+        title={`${boardConnected
           ? `${boardName(currentBoard)} is connected.`
-          : `${boardName(currentBoard)} isn't connected (no matching USB device found).`}
-        >{boardConnected ? "Connected" : "Not connected"}</span
+          : `${boardName(currentBoard)} isn't connected (no matching USB device found).`} Click to see the connected devices.`}
+        onclick={showDevices}
+        >{boardConnected ? "Connected" : "Not connected"}</button
       >
     {/if}
   </header>
@@ -1988,6 +1989,15 @@
     font-size: 12px;
     color: rgba(255, 255, 255, 0.65);
     white-space: nowrap;
+    padding: 2px 6px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .board-link:hover {
+    background: rgba(255, 255, 255, 0.12);
   }
   .board-link::before {
     content: "";

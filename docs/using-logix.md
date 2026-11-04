@@ -87,7 +87,7 @@ to its examples.
 
 Boards plugged in by USB are listed first, under **Connected**, and the word
 next to the list (**Connected** or **Not connected**) tells whether the
-selected board is plugged in. Some boards use a common USB chip that can't
+selected board is plugged in. Click it to see the connected devices. Some boards use a common USB chip that can't
 tell which board it is; they're not listed under Connected, but Upload still
 finds them.
 

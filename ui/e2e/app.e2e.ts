@@ -709,6 +709,9 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toContainText("Looks like the selected board, Alhambra II.");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
+  // The toolbar's Connected / Not connected status opens it too.
+  await page.getByRole("button", { name: /^(Connected|Not connected)$/ }).click();
+  await expect(dialog).toBeVisible();
 });
 
 test("settings change the theme and font size", async ({ page }) => {
