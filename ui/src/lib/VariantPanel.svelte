@@ -160,10 +160,34 @@
     white-space: nowrap;
     cursor: pointer;
   }
+  /* Drawn here, not by the system: the app's web view ignores accent-color
+     and draws the selected radio as a faint dot. */
   .choice input {
+    appearance: none;
+    display: grid;
+    place-content: center;
+    flex: none;
+    width: 15px;
+    height: 15px;
     margin: 0;
-    accent-color: var(--accent);
+    border: 1.5px solid var(--muted);
+    border-radius: 50%;
+    background: var(--bg);
     cursor: pointer;
+  }
+  .choice input:checked {
+    border-color: var(--accent);
+  }
+  .choice input:checked::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .choice input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
   /* Values that don't go with the other choices: still clickable (choosing
      one changes the others), but dimmed. */
