@@ -306,6 +306,9 @@ test("a value that doesn't go with the others is greyed out, and choosing it swi
   await expect(ram).toHaveClass(/unavailable/);
   await ram.click();
   await expect(summary).toHaveText(/^\s*FT2232H adapter · RAM/);
+  // The selected values explain themselves.
+  await expect(panel).toContainText("lost when the board is powered off");
+  await expect(panel).toContainText("FT2232H chip");
   await expect(status(page)).toContainText("Connection: FT2232H adapter changed with it");
   await expect(panel.getByRole("radio", { name: "USB bootloader" })).toHaveClass(/unavailable/);
 });

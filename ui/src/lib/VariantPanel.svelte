@@ -1,7 +1,8 @@
 <script lang="ts">
   // The toolbar's variant summary (e.g. "FT232H adapter · RAM"), for boards
   // with choices, and the small panel it opens to change them: one section
-  // per dimension, its values as radio buttons. Values that don't exist
+  // per dimension, its values as radio buttons and the selected value's
+  // help text. Values that don't exist
   // with the other current values are dimmed; choosing one changes the
   // others too (`choose` in variants.ts). The same choices are in
   // Tools > <dimension>.
@@ -25,6 +26,12 @@
 
   const when = $derived(resolve(board, variant));
   const configuration = $derived(configurationOf(board, variant));
+
+  /** The help text of a dimension's selected value, if it has one. */
+  function helpOf(dim: string): string | undefined {
+    return board.dimensions.find((d) => d.id === dim)?.values.find((v) => v.id === when[dim])
+      ?.help;
+  }
 
   function onWindowPointer(e: PointerEvent) {
     if (open && root && !root.contains(e.target as Node)) open = false;
@@ -75,6 +82,7 @@
               {v.label}
             </label>
           {/each}
+          {#if helpOf(dim.id)}<p class="hint">{helpOf(dim.id)}</p>{/if}
         </div>
       {/each}
       {#if configuration && !configuration.tested}
@@ -193,6 +201,14 @@
      one changes the others), but dimmed. */
   .choice.unavailable {
     color: var(--muted);
+  }
+  /* The selected value's help, e.g. what RAM means. */
+  .hint {
+    max-width: 300px;
+    margin: 4px 0 0 21px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
   }
   .note {
     max-width: 360px;
