@@ -23,6 +23,7 @@ export * from "../src/lib/backend";
 
 // Real engine data and output (see e2e/fixtures/README.md).
 import catalog from "./fixtures/catalog.json";
+import { resolve } from "../src/lib/variants";
 import verifyOutput from "./fixtures/verify.txt?raw";
 import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
 import testOutput from "./fixtures/test.txt?raw";
@@ -279,9 +280,17 @@ export const backend: typeof Real.backend = {
       await pause(5);
     }
     if (phases && task === "upload" && outcome.ok) {
-      onEvent({ kind: "programming" });
-      onEvent({ kind: "progress", message: "Writing flash", percent: 42 });
+      // The engine's messages (program_board), for the board's memory.
+      const info = (catalog.boards as Real.Board[]).find((b) => b.id === board);
+      const memory = info && resolve(info, variant).memory === "ram" ? "RAM" : "flash";
+      onLine(`Programming the board's ${memory} through its USB port.`);
+      onEvent({ kind: "progress", message: `Writing ${memory}`, percent: 42 });
       onLine("Programmed Alhambra II v1.0A.");
+      onLine(
+        `Programmed the board's ${memory}: the design ${
+          memory === "RAM" ? "is lost" : "stays"
+        } when the board is powered off.`,
+      );
     }
     return outcome;
   },

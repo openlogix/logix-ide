@@ -70,6 +70,13 @@ pub enum OutputKind {
     Command,
     /// A line the tool printed.
     Output,
+    /// A line from the engine itself, e.g. how the board will be
+    /// programmed.
+    Message,
+    /// A kind this IDE doesn't know yet (the engine only adds): shown as
+    /// output.
+    #[serde(other)]
+    Other,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -440,6 +447,20 @@ mod tests {
         );
         drop(l);
         (listeners, got)
+    }
+
+    #[test]
+    fn reads_the_engines_messages_and_unknown_kinds() {
+        let line = |kind: &str| -> OutputLine {
+            serde_json::from_value(serde_json::json!({
+                "kind": kind, "level": "info", "tool": "logix-engine",
+                "text": "Programming the board's flash through its USB port."
+            }))
+            .unwrap()
+        };
+        assert_eq!(line("message").kind, OutputKind::Message);
+        // A kind added to the engine later still shows.
+        assert_eq!(line("hint").kind, OutputKind::Other);
     }
 
     #[test]

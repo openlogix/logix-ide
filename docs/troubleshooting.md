@@ -32,8 +32,8 @@ click **Retry**.
 ## My design is gone after unplugging the board
 
 The board uploads to RAM, which loses the design when the board is powered
-off; when it powers up, it runs whatever design is in its flash. Logix says
-"Uploaded to RAM" after such an upload. If the board can also upload to
+off; when it powers up, it runs whatever design is in its flash. The output
+says "Programmed the board's RAM" after such an upload. If the board can also upload to
 flash, choose **Flash** next to the board (see
 [Board options](using-logix.md#board-options)); if not, upload again after
 powering it up.

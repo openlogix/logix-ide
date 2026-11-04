@@ -25,11 +25,8 @@
   import BoardPicker from "./lib/BoardPicker.svelte";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
-    afterUpload,
     choose as chooseVariant,
-    configurationOf,
     hasChoice,
-    uploadPlan,
     isConnected as variantConnected,
     menus as variantMenus,
     parseMenuId,
@@ -853,9 +850,6 @@
     log(
       `${VERB[task]} ${p.name}${which} for ${boardName(board)}${summary ? ` (${summary})` : ""}…`,
     );
-    const notes = boardInfo && configurationOf(boardInfo, variant)?.userNotes;
-    // Said when programming starts, after the build.
-    const plan = task === "upload" && boardInfo ? uploadPlan(boardInfo, variant) : null;
     try {
       const outcome = await backend.runTask(
         task,
@@ -868,19 +862,13 @@
         variant,
         (event) => {
           if (event.kind === "line") log(event.line);
-          else if (event.kind === "programming") {
-            if (plan) log("", plan);
-            if (notes) log(`Note: ${notes}`);
-          } else taskStep = { message: event.message, percent: event.percent };
+          else taskStep = { message: event.message, percent: event.percent };
         },
       );
       taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
       if (task === "test") log("", ...testbenchLines(outcome));
       if (outcome.ok && outcome.report) log("", ...reportLines(outcome.report));
-      // E.g. that a design uploaded to RAM is lost at power-off.
-      const note = task === "upload" && outcome.ok && boardInfo && afterUpload(boardInfo, variant);
-      if (note) log(note);
       if (
         task === "upload" &&
         !outcome.ok &&

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Board } from "./backend";
 import {
-  afterUpload,
   choose,
   configurationOf,
   hasChoice,
@@ -12,7 +11,6 @@ import {
   resolve,
   summary,
   toStore,
-  uploadPlan,
 } from "./variants";
 
 const plain: Board = {
@@ -82,17 +80,6 @@ describe("variants", () => {
     expect(hasChoice(plain)).toBe(false);
     expect(hasChoice(stick)).toBe(true);
     expect(summary(arty, {})).toBe("");
-    expect(uploadPlan(plain, {})).toBe("Programming the board's flash through its USB port.");
-    expect(uploadPlan(stick, { memory: "ram" })).toBe(
-      "Programming the board's RAM through the FT232H adapter.",
-    );
-    expect(uploadPlan(stick, {})).toBe(
-      "Programming the board's flash through its USB bootloader.",
-    );
-    expect(afterUpload(arty, {})).toBe("Uploaded to RAM: the design is lost when the board is powered off.");
-    expect(afterUpload(plain, {})).toBe(
-      "Uploaded to flash: the design stays when the board is powered off.",
-    );
   });
 
   it("picks the first configuration with the given values", () => {

@@ -162,9 +162,7 @@ export interface TaskOutcome {
 /** Streamed while a task runs: console lines, and the current phase. */
 export type TaskEvent =
   | { kind: "line"; line: string }
-  | { kind: "progress"; message: string; percent: number | null }
-  // Upload's build is done; programming the board starts.
-  | { kind: "programming" };
+  | { kind: "progress"; message: string; percent: number | null };
 
 /** The result of Auto Format. */
 export interface FormatResult {
