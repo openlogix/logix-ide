@@ -98,11 +98,16 @@ export function uploadFact(board: Board, variant: Variant): string {
   return `Uploads to ${memory}${through}.`;
 }
 
-/** After a successful upload: what to know, e.g. that RAM is lost at power-off. */
+/** After a successful upload: where the design went, and what that means. */
 export function afterUpload(board: Board, variant: Variant): string | null {
-  return resolve(board, variant).memory === "ram"
-    ? "Uploaded to RAM: the design is lost when the board is powered off."
-    : null;
+  switch (resolve(board, variant).memory) {
+    case "ram":
+      return "Uploaded to RAM: the design is lost when the board is powered off.";
+    case "flash":
+      return "Uploaded to flash: the design stays when the board is powered off.";
+    default:
+      return null;
+  }
 }
 
 /** Whether `value` exists with the variant's other current values. */

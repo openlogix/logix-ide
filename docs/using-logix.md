@@ -108,9 +108,9 @@ they're also under **Tools**. The project remembers them.
 An option marked **untested** hasn't been tried on a real board yet. If you
 try it, please report whether it works.
 
-Many boards upload to RAM only, including all the Xilinx boards (such as
-the Arty A7). Logix says so after **Upload**, and hovering over
-**Connected** next to the board tells where the design goes.
+After **Upload**, Logix says where the design went: flash or RAM. Many
+boards upload to RAM only, including all the Xilinx boards (such as the
+Arty A7). Hovering over **Connected** next to the board tells it too.
 
 **File > New Project > From Example…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA type in the same way.

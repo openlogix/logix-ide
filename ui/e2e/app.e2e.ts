@@ -250,8 +250,12 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
     }>;
   const summary = page.locator(".variant .summary");
   await start(page);
-  // Most boards have no variants.
+  // Most boards have no choice, but Upload still says where the design went.
   await expect(summary).toHaveCount(0);
+  await menu(page, "upload");
+  await expect(output(page)).toContainText(
+    "Uploaded to flash: the design stays when the board is powered off.",
+  );
   expect((await fake()).menuState.variantMenus).toEqual([]);
 
   // The iCESugar-Pro can be programmed to flash or to RAM.

@@ -86,7 +86,9 @@ describe("variants", () => {
     expect(uploadFact(plain, {})).toBe("Uploads to Flash.");
     expect(uploadFact(stick, { memory: "ram" })).toBe("Uploads to RAM through the FT232H adapter.");
     expect(afterUpload(arty, {})).toBe("Uploaded to RAM: the design is lost when the board is powered off.");
-    expect(afterUpload(plain, {})).toBeNull();
+    expect(afterUpload(plain, {})).toBe(
+      "Uploaded to flash: the design stays when the board is powered off.",
+    );
   });
 
   it("picks the first configuration with the given values", () => {
