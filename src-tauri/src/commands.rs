@@ -916,10 +916,14 @@ pub fn show_project_folder(dir: String) -> Result<(), UserError> {
 
 /// Asks for a new project name and location, then creates the project
 /// there, copying the other contents of `source_dir` (except `removed`) if
-/// given. `None` if cancelled.
+/// given. The dialog starts next to `project_dir`, the project's own
+/// folder (none for a project never saved). `None` if cancelled.
 #[tauri::command]
+// A Tauri command: its arguments are the UI call's named fields.
+#[allow(clippy::too_many_arguments)]
 pub async fn save_project_as_dialog(
     app: AppHandle,
+    project_dir: Option<String>,
     source_dir: Option<String>,
     suggested_name: String,
     files: Vec<ProjectFile>,
@@ -928,11 +932,12 @@ pub async fn save_project_as_dialog(
     variant: project::Variant,
 ) -> Result<Option<ProjectDoc>, UserError> {
     let mut dialog = app.dialog().file().set_title("Save Project As");
-    // Start next to the project (or in the projects folder), never inside a
-    // project, with a name nothing there has yet.
+    // Start next to the project's own folder (a project never saved, even
+    // one copied from an example, starts in the projects folder), never
+    // inside a project, with a name nothing there has yet.
     if let Some(root) = project::default_projects_root() {
         let _ = std::fs::create_dir_all(&root);
-        let start = project::save_as_start(source_dir.as_deref().map(Path::new), &root);
+        let start = project::save_as_start(project_dir.as_deref().map(Path::new), &root);
         let name = project::unique_name(&start, &suggested_name);
         dialog = dialog.set_directory(start).set_file_name(name);
     } else {

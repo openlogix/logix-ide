@@ -390,11 +390,13 @@ pub fn default_projects_root() -> Option<PathBuf> {
     Some(chosen.unwrap_or(builtin))
 }
 
-/// Where the Save As dialog starts: next to the project being saved (the
-/// folder holding its folder), else the projects folder (`root`); never
-/// inside a Logix project, since a project can't be saved there.
-pub fn save_as_start(source: Option<&Path>, root: &Path) -> PathBuf {
-    let start = source
+/// Where the Save As dialog starts: next to the project's own folder
+/// (`project`, the folder holding it), else the projects folder (`root`),
+/// such as for a project never saved, even one copied from an example
+/// (never next to the example); never inside a Logix project, since a
+/// project can't be saved there.
+pub fn save_as_start(project: Option<&Path>, root: &Path) -> PathBuf {
+    let start = project
         .and_then(Path::parent)
         .filter(|dir| dir.is_dir())
         .unwrap_or(root);

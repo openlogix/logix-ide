@@ -493,6 +493,9 @@ export const backend = {
    * the other contents of `sourceDir` except `removed`). Null if cancelled.
    */
   saveProjectAsDialog: (
+    /** The project's own folder (null for a project never saved). */
+    projectDir: string | null,
+    /** The folder whose other files are copied (the project's, or an example's). */
     sourceDir: string | null,
     suggestedName: string,
     files: ProjectFile[],
@@ -501,6 +504,7 @@ export const backend = {
     variant: Variant,
   ): Promise<ProjectDoc | null> =>
     invoke<ProjectDoc | null>("save_project_as_dialog", {
+      projectDir,
       sourceDir,
       suggestedName,
       files,

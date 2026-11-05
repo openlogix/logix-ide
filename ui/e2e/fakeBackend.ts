@@ -371,7 +371,7 @@ export const backend: typeof Real.backend = {
     fake.saved = { board, variant };
   },
 
-  saveProjectAsDialog: async (_source, suggestedName, files, _removed, board, variant) => {
+  saveProjectAsDialog: async (_dir, _source, suggestedName, files, _removed, board, variant) => {
     if (fake.saveAsError) throw fake.saveAsError;
     fake.saved = { board, variant };
     return {

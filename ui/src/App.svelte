@@ -1298,6 +1298,7 @@
     const suggested = p.dir ? `${p.name} copy` : p.name;
     try {
       const doc = await backend.saveProjectAsDialog(
+        p.dir,
         copySource(p),
         suggested,
         files,
