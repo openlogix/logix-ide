@@ -18,6 +18,7 @@ Logix IDE is the reference frontend for Logix Engine (the rule is in the website
 - **Engine first.** Logic every frontend would need, that doesn't depend on the IDE's own model (its project folders, examples, look), belongs in the engine. When the IDE repeats engine knowledge, such as FPGA family names, pin file extensions or the toolchain's resource names (all moved to the engine on 2026-11-05: `get_catalog` architectures, `build` `resources_summary`), fill the gap in the engine and use it here.
 - **An example to read.** The engine adapter (`src-tauri/src/engine/`) and the UI helpers that turn engine results into what users see (`ui/src/lib/boards.ts`, `devices.ts`, `buildReport.ts`, `tasks.ts`, `variants.ts`) stay small, commented and tested, so another frontend can follow or copy them (Apache 2.0). The engine's `docs/tool-api.md` (Recipes for frontend developers) links to them: keep those links working when renaming or moving these files.
 - **No private knowledge.** The IDE uses only what the engine's tool API documents, never its internals, so what works here works for any frontend.
+- **Easy to explore.** The repo (code, docs, this spec) is written for people and AI agents who develop hosts and frontends, inside and outside Open Logix: clear names and layout, each module's purpose and its engine calls explained at the top of the file and in this spec, and nothing that needs Open Logix's private context to understand.
 
 ## Project goal
 
