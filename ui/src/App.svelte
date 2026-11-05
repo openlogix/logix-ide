@@ -1695,9 +1695,7 @@
         class="board-link"
         class:connected={boardConnected}
         title={`${boardConnected
-          ? connected.some((c) => c.board === currentBoard && c.exact)
-            ? `A connected device matches the ${boardName(currentBoard)} by name.`
-            : `A connected device has the ${boardName(currentBoard)}'s USB chip, but its name doesn't confirm which board it is. Upload checks.`
+          ? `A connected device may be the ${boardName(currentBoard)}. Upload checks.`
           : `${boardName(currentBoard)} isn't connected (no matching USB device found).`} Click to see the connected devices.`}
         onclick={showDevices}
         >{boardConnected ? "Connected" : "Not connected"}</button

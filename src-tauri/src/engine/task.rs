@@ -694,7 +694,7 @@ mod tests {
         let list = |devices: serde_json::Value| {
             super::super::devices::parse_devices(&json!({ "devices": devices })).unwrap()
         };
-        let dev = |id: &str| json!({"id": id, "kind": "usb", "vid": "0403", "pid": "6010", "build_confidence": 3});
+        let dev = |id: &str| json!({"id": id, "kind": "usb", "vid": "0403", "pid": "6010", "build_match": "strong"});
         assert_eq!(pick_device(&list(json!([dev("a")]))).unwrap(), "a");
 
         let (err, candidates) = pick_device(&list(json!([dev("a"), dev("b")]))).unwrap_err();

@@ -97,7 +97,7 @@
                         >{/if}{/each}{#if others.length > 0}{parts ? " It may also be one of " : "It may be one of "}<button
                         class="board-pick"
                         aria-expanded={showingOthers.has(d.id)}
-                        title="Weaker matches, such as boards with the same USB chip. Click to {showingOthers.has(d.id) ? 'hide' : 'list'} them."
+                        title="Boards it matches less well. Click to {showingOthers.has(d.id) ? 'hide' : 'list'} them."
                         onclick={() => toggleOthers(d.id)}
                         >{others.length}{parts ? " other" : ""} {others.length === 1 ? "board" : "boards"}</button
                       >.{/if}</span

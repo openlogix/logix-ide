@@ -132,14 +132,14 @@ describe("variants", () => {
   });
 
   it("is connected only the way the variant programs it", () => {
-    const viaCable = [{ board: "stick", exact: false, suggested: true, variants: [{ connection: "ft232h", memory: "flash" }] }];
+    const viaCable = [{ board: "stick", level: "possible" as const, variants: [{ connection: "ft232h", memory: "flash" }] }];
     expect(isConnected(stick, "stick", {}, viaCable)).toBe(false);
     expect(isConnected(stick, "stick", { connection: "ft232h" }, viaCable)).toBe(true);
     // The adapter reaches RAM too: same device.
-    const both = [{ board: "stick", exact: false, suggested: true, variants: [
+    const both = [{ board: "stick", level: "possible" as const, variants: [
       { connection: "ft232h", memory: "flash" }, { connection: "ft232h", memory: "ram" }] }];
     expect(isConnected(stick, "stick", { memory: "ram" }, both)).toBe(true);
-    expect(isConnected(plain, "alhambra-ii", {}, [{ board: "alhambra-ii", exact: true, suggested: true, variants: [{}] }])).toBe(true);
+    expect(isConnected(plain, "alhambra-ii", {}, [{ board: "alhambra-ii", level: "strong" as const, variants: [{}] }])).toBe(true);
     expect(isConnected(plain, "alhambra-ii", {}, [])).toBe(false);
   });
 });

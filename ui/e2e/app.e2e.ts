@@ -384,23 +384,23 @@ test("lists plugged-in boards first and shows if the board is connected", async 
         id: "usb:1-2:0403:6010:FTATANKC",
         name: "Alhambra II v1.0A",
         serial: "FTATANKC",
-        boards: [{ board: "alhambra-ii", exact: true, suggested: true, variants: [{}] }],
+        boards: [{ board: "alhambra-ii", level: "strong", variants: [{}] }],
       },
     ];
     window.dispatchEvent(new Event("focus"));
   });
   await expect(link).toHaveText("Connected");
-  await expect(link).toHaveAttribute("title", /matches the Alhambra II by name/);
+  await expect(link).toHaveAttribute("title", /may be the Alhambra II/);
   await boardButton(page).click();
   // One group per connected device, named after it.
   await expect(page.locator(".group").first()).toHaveText(/^\s*Connected: Alhambra II v1.0A \(FTATANKC\)\s*1\s*$/);
   await expect(page.getByRole("option").first()).toHaveText(/Alhambra II/);
   await page.keyboard.press("Escape");
 
-  // An Arty reports the same name as the Basys3's pattern: only the Basys3
-  // is suggested, but the Arty matches by its USB chip, so the status says
-  // Connected (erring to that side: Upload checks), and the selected Arty
-  // is listed under the device, after the Basys3.
+  // The device is a strong match for the Basys3 and a weak one for the
+  // Arty: the status still says Connected (erring to that side: Upload
+  // checks), and the selected Arty is listed under the device, after the
+  // Basys3.
   await page.evaluate(() => {
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
@@ -411,8 +411,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
         boards: [
           {
             board: "basys3",
-            exact: true,
-            suggested: true,
+            level: "strong",
             variants: [
               { connection: "usb", memory: "flash" },
               { connection: "usb", memory: "ram" },
@@ -420,8 +419,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
           },
           {
             board: "arty-a7-35t",
-            exact: false,
-            suggested: false,
+            level: "weak",
             // Both of its configurations use the same USB port.
             variants: [
               { connection: "usb", memory: "flash" },
@@ -436,7 +434,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
   await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
   await expect(link).toHaveText("Connected");
-  await expect(link).toHaveAttribute("title", /USB chip, but its name doesn't confirm/);
+  await expect(link).toHaveAttribute("title", /may be the Arty A7-35T/);
   await boardButton(page).click();
   // Both are listed under the one device, most likely first.
   await expect(page.locator(".group").first()).toHaveText(/Connected: Digilent USB Device \(210319AFEF8F\)/);
@@ -700,18 +698,18 @@ test("Upload asks which device when several fit the board", async ({ page }) => 
   await start(page);
   await page.evaluate(() => {
     const f = (window as unknown as { __fake: { uploadDevices: unknown[] } }).__fake;
-    const device = (serial: string, confidence: number) => ({
+    const device = (serial: string, level: string) => ({
       id: `usb:1-${serial}:0403:6010:${serial}`,
       vid: "0403", pid: "6010", manufacturer: "AlhambraBits",
       product: "Alhambra II v1.0A", serialNumber: serial,
-      boards: [{ board: "alhambra-ii", confidence }], buildConfidence: confidence,
+      boards: [{ board: "alhambra-ii", level }], buildMatch: level,
     });
-    f.uploadDevices = [device("A1", 3), device("B2", 3)];
+    f.uploadDevices = [device("A1", "strong"), device("B2", "strong")];
   });
   await menu(page, "upload");
   const picker = page.getByRole("dialog", { name: "Choose a Device" });
   await expect(picker).toContainText("2 connected devices could be the Alhambra II");
-  await expect(picker).toContainText("serial B2 · Matches the board's name");
+  await expect(picker).toContainText("serial B2 · Strong match");
   await expect(status(page)).toContainText("Choose the device to upload to.");
   await picker.getByRole("listitem").filter({ hasText: "serial B2" }).getByRole("button", { name: "Upload" }).click();
   await expect(picker).toBeHidden();

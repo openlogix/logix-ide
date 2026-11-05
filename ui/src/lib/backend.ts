@@ -189,14 +189,19 @@ export interface UsbDevice {
   manufacturer: string;
   product: string;
   serialNumber: string;
-  /**
-   * The boards it may be, best first, each with Logix Engine's confidence
-   * (1 to 3, higher is surer; only compare it).
-   */
-  boards: { board: string; confidence: number }[];
-  /** For Upload's candidates: the confidence that it is the build's board. */
-  buildConfidence: number | null;
+  /** The boards it may be, strongest first, each with its match level. */
+  boards: { board: string; level: MatchLevel }[];
+  /** For Upload's candidates: how well it matches the build's board. */
+  buildMatch: MatchLevel | null;
 }
+
+/**
+ * Logix Engine's match level: what a match means for the user, never its
+ * cause (the engine's criteria are internal and change without notice).
+ * "strong": very likely this board; "possible": a few other boards look the
+ * same; "weak": many boards fit. Only show and compare levels.
+ */
+export type MatchLevel = "strong" | "possible" | "weak";
 
 /** A device that may be a board but can't be opened yet. */
 export interface UnreachableDevice {
@@ -229,14 +234,8 @@ export interface ConnectedDevice {
 /** A board that a connected USB device may be. */
 export interface ConnectedBoard {
   board: string;
-  /** Its product name matched too, not just the USB chip's ids. */
-  exact: boolean;
-  /**
-   * Worth listing in the board picker under its device (a product name
-   * match, or one of only a few boards with the chip's ids). Every listed
-   * board matches the device, so the selected one shows as connected.
-   */
-  suggested: boolean;
+  /** The engine's level for this board; weak ones aren't listed by name. */
+  level: MatchLevel;
   /** The configurations whose USB filter matched ({} for most boards). */
   variants: Variant[];
 }

@@ -87,13 +87,13 @@ describe("deviceGroups", () => {
     name: "Digilent USB Device",
     serial: "210319AFEF8F",
     boards: [
-      { board: "arty-a7-35t", exact: true, suggested: true, variants: [{}] },
-      { board: "basys3", exact: true, suggested: true, variants: [{}] },
-      { board: "arty-a7-100t", exact: false, suggested: false, variants: [{}] },
+      { board: "arty-a7-35t", level: "strong", variants: [{}] },
+      { board: "basys3", level: "strong", variants: [{}] },
+      { board: "arty-a7-100t", level: "weak", variants: [{}] },
     ],
   };
 
-  it("lists a device's suggested boards, and the selected one when it fits", () => {
+  it("lists a device's boards that aren't weak, and the selected one when it fits", () => {
     expect(deviceGroups([digilent], "alhambra-ii")).toEqual([
       {
         key: digilent.id,
@@ -115,7 +115,7 @@ describe("deviceGroups", () => {
       id: "usb:1-4:0403:6010:",
       name: "Dual RS232-HS",
       serial: "",
-      boards: [{ board: "a", exact: false, suggested: false, variants: [{}] }],
+      boards: [{ board: "a", level: "weak", variants: [{}] }],
     };
     expect(deviceGroups([generic], null)).toEqual([]);
     expect(deviceGroups([generic], "a")[0].label).toBe("Connected: Dual RS232-HS");

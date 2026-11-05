@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  confidenceLabel,
+  matchLabel,
   deviceBoardsLine,
   deviceBoardsParts,
   otherBoards,
@@ -21,10 +21,10 @@ const alhambra: UsbDevice = {
   product: "Alhambra II v1.0A",
   serialNumber: "FTATANKC",
   boards: [
-    { board: "alhambra-ii", confidence: 3 },
-    { board: "alchitry-au", confidence: 1 },
+    { board: "alhambra-ii", level: "strong" as const },
+    { board: "alchitry-au", level: "weak" as const },
   ],
-  buildConfidence: null,
+  buildMatch: null,
 };
 
 const outcome = (action: string | null, devices: UsbDevice[] = []): TaskOutcome => ({
@@ -53,7 +53,7 @@ describe("devices", () => {
 
   it("names the likely boards, only for name matches", () => {
     expect(likelyBoards(alhambra)).toEqual(["alhambra-ii"]);
-    const generic = { ...alhambra, boards: [{ board: "alchitry-au", confidence: 1 }] };
+    const generic = { ...alhambra, boards: [{ board: "alchitry-au", level: "weak" as const }] };
     expect(likelyBoards(generic)).toEqual([]);
     expect(mayBeBoard(generic, "alchitry-au")).toBe(true);
     expect(mayBeBoard(generic, "icestick")).toBe(false);
@@ -70,9 +70,9 @@ describe("devices", () => {
     const digilent = {
       ...alhambra,
       boards: [
-        { board: "arty-a7-35t", confidence: 3 },
-        { board: "basys3", confidence: 3 },
-        { board: "icestick", confidence: 1 },
+        { board: "arty-a7-35t", level: "strong" as const },
+        { board: "basys3", level: "strong" as const },
+        { board: "icestick", level: "weak" as const },
       ],
     };
     expect(deviceBoardsLine(digilent, "arty-a7-35t", name)).toBe(
@@ -86,7 +86,7 @@ describe("devices", () => {
     );
     const three = {
       ...digilent,
-      boards: [...digilent.boards.slice(0, 2), { board: "icestick", confidence: 3 }],
+      boards: [...digilent.boards.slice(0, 2), { board: "icestick", level: "strong" as const }],
     };
     expect(deviceBoardsLine(three, "arty-a7-35t", name)).toBe(
       "Looks like the selected board, Arty A7-35T (Xilinx, Artix7), or one of these boards: Basys3 (Xilinx, Artix7) or iCEstick Eval Kit.",
@@ -94,10 +94,10 @@ describe("devices", () => {
     expect(deviceBoardsLine(three, null, name)).toBe(
       "Looks like one of these boards: Arty A7-35T (Xilinx, Artix7), Basys3 (Xilinx, Artix7) or iCEstick Eval Kit.",
     );
-    expect(deviceBoardsLine({ ...digilent, boards: [{ board: "basys3", confidence: 3 }] }, null, name)).toBe(
+    expect(deviceBoardsLine({ ...digilent, boards: [{ board: "basys3", level: "strong" as const }] }, null, name)).toBe(
       "Looks like this board: Basys3 (Xilinx, Artix7).",
     );
-    const generic = { ...alhambra, boards: [{ board: "icestick", confidence: 1 }] };
+    const generic = { ...alhambra, boards: [{ board: "icestick", level: "weak" as const }] };
     expect(deviceBoardsLine(generic, "icestick", name)).toBe(
       "May be the selected board, iCEstick Eval Kit.",
     );
@@ -112,8 +112,8 @@ describe("devices", () => {
     const digilent = {
       ...alhambra,
       boards: [
-        { board: "arty", confidence: 3 },
-        { board: "basys3", confidence: 3 },
+        { board: "arty", level: "strong" as const },
+        { board: "basys3", level: "strong" as const },
       ],
     };
     expect(deviceBoardsParts(digilent, "arty", name)).toEqual([
@@ -137,25 +137,25 @@ describe("devices", () => {
     const d = {
       ...alhambra,
       boards: [
-        { board: "arty", confidence: 3 },
-        { board: "basys3", confidence: 3 },
-        { board: "generic-a", confidence: 1 },
-        { board: "generic-b", confidence: 1 },
+        { board: "arty", level: "strong" as const },
+        { board: "basys3", level: "strong" as const },
+        { board: "generic-a", level: "weak" as const },
+        { board: "generic-b", level: "weak" as const },
       ],
     };
     expect(otherBoards(d, null)).toEqual(["generic-a", "generic-b"]);
     // The selected board is named in the line, so it isn't counted.
     expect(otherBoards(d, "generic-a")).toEqual(["generic-b"]);
     // With no name match, every board is a weaker match.
-    const generic = { ...alhambra, boards: [{ board: "generic-a", confidence: 1 }] };
+    const generic = { ...alhambra, boards: [{ board: "generic-a", level: "weak" as const }] };
     expect(otherBoards(generic, null)).toEqual(["generic-a"]);
   });
 
-  it("puts confidence in words, by comparing", () => {
-    expect(confidenceLabel(3)).toBe("Matches the board's name");
-    expect(confidenceLabel(2)).toBe("Likely");
-    expect(confidenceLabel(1)).toBe("Possible");
-    expect(confidenceLabel(null)).toBe("");
+  it("puts match levels in words", () => {
+    expect(matchLabel("strong")).toBe("Strong match");
+    expect(matchLabel("possible")).toBe("Possible match");
+    expect(matchLabel("weak")).toBe("Weak match");
+    expect(matchLabel(null)).toBe("");
   });
 
   it("lists connected devices or gives tips", () => {

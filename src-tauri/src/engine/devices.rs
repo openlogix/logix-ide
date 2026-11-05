@@ -1,8 +1,9 @@
 //! Connected USB devices (the engine's `list_devices`) and the boards they
-//! may be. The engine does the matching and rates each match (confidence 1
-//! to 3, higher is surer); the IDE only reads it, for Tools > Connected
-//! Devices, the board list's "Connected" group and Upload's choice of
-//! device.
+//! may be. The engine does the matching and gives each match a level,
+//! strong, possible or weak; the IDE only shows and compares levels, never
+//! guessing why a device matched (the engine's criteria are internal and
+//! change without notice), for Tools > Connected Devices, the board list's
+//! device groups and Upload's choice of device.
 
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -24,9 +25,34 @@ pub struct UsbDevice {
     pub serial_number: String,
     /// The boards it may be, best first (the engine's order).
     pub boards: Vec<DeviceBoard>,
-    /// With a build folder: how sure the engine is that it is the build's
-    /// board in the build's variant (1 to 3).
-    pub build_confidence: Option<u8>,
+    /// With a build folder: how well it matches the build's board in the
+    /// build's variant.
+    pub build_match: Option<MatchLevel>,
+}
+
+/// The engine's match level: what a match means for the user (weak <
+/// possible < strong), never its cause.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MatchLevel {
+    /// It fits, but so do many boards.
+    Weak,
+    /// It could be the board, but a few other boards look the same.
+    Possible,
+    /// It's very likely the board.
+    Strong,
+}
+
+impl MatchLevel {
+    /// The engine's `match` value; unknown values (a newer engine) count as
+    /// weak.
+    fn parse(v: &Value) -> Option<MatchLevel> {
+        Some(match v.as_str()? {
+            "strong" => MatchLevel::Strong,
+            "possible" => MatchLevel::Possible,
+            _ => MatchLevel::Weak,
+        })
+    }
 }
 
 /// A board a device may be.
@@ -34,12 +60,12 @@ pub struct UsbDevice {
 #[serde(rename_all = "camelCase")]
 pub struct DeviceBoard {
     pub board: String,
-    /// The best confidence of its variants (1 to 3, higher is surer).
-    pub confidence: u8,
+    /// The strongest level of its variants.
+    pub level: MatchLevel,
     /// The variants the device fits (the engine's variant IDs), with their
-    /// confidence.
+    /// levels.
     #[serde(skip)]
-    pub variants: Vec<(String, u8)>,
+    pub variants: Vec<(String, MatchLevel)>,
 }
 
 /// A device the engine sees but can't open (a missing driver or
@@ -82,7 +108,6 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
         .as_array()
         .context("unexpected device list from the engine")?;
     let text = |d: &Value, key: &str| d[key].as_str().unwrap_or("").trim().to_string();
-    let rating = |v: &Value| v.as_u64().map(|c| c.clamp(1, 3) as u8);
     let devices = list
         .iter()
         .filter(|d| d["kind"] == "usb")
@@ -97,7 +122,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                 .as_array()
                 .map(|boards| boards.iter().map(parse_board).collect())
                 .unwrap_or_default(),
-            build_confidence: rating(&d["build_confidence"]),
+            build_match: MatchLevel::parse(&d["build_match"]),
         })
         .collect();
     let unreachable = result["unreachable"]
@@ -123,21 +148,25 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
 }
 
 fn parse_board(b: &Value) -> DeviceBoard {
-    let variants: Vec<(String, u8)> = b["variants"]
+    let variants: Vec<(String, MatchLevel)> = b["variants"]
         .as_array()
         .map(|vs| {
             vs.iter()
                 .map(|v| {
                     let id = v["id"].as_str().unwrap_or_default().to_string();
-                    let c = v["confidence"].as_u64().unwrap_or(1).clamp(1, 3) as u8;
-                    (id, c)
+                    let level = MatchLevel::parse(&v["match"]).unwrap_or(MatchLevel::Weak);
+                    (id, level)
                 })
                 .collect()
         })
         .unwrap_or_default();
     DeviceBoard {
         board: b["board"].as_str().unwrap_or("").to_string(),
-        confidence: variants.iter().map(|(_, c)| *c).max().unwrap_or(1),
+        level: variants
+            .iter()
+            .map(|(_, l)| *l)
+            .max()
+            .unwrap_or(MatchLevel::Weak),
         variants,
     }
 }
@@ -147,14 +176,8 @@ fn parse_board(b: &Value) -> DeviceBoard {
 #[serde(rename_all = "camelCase")]
 pub struct ConnectedBoard {
     pub board: String,
-    /// The device's name matched the board's too (engine confidence 2 or
-    /// more), not just the USB chip's ids, which many boards share.
-    pub exact: bool,
-    /// Worth listing in the board picker under its device: a name match,
-    /// or one of only a few boards with the chip's ids (generic FTDI ids fit
-    /// dozens). Boards that aren't suggested still match the device, so the
-    /// selected one shows as connected.
-    pub suggested: bool,
+    /// The engine's level for this board (its strongest variant's).
+    pub level: MatchLevel,
     /// The configurations whose filter matched, e.g. `{"connection":
     /// "ft232h", "memory": "ram"}`.
     pub variants: Vec<Variant>,
@@ -172,35 +195,18 @@ pub struct ConnectedDevice {
     pub name: String,
     /// Its serial number, empty when it has none.
     pub serial: String,
-    /// The boards it may be, suggested name matches first.
+    /// The boards it may be, strongest first (the engine's order).
     pub boards: Vec<ConnectedBoard>,
 }
 
-/// A device whose chip fits more boards than this (and none by name) is
-/// too generic to suggest any of them.
-const MAX_GENERIC_MATCHES: usize = 3;
-
-/// A name match: the engine's confidence 2 (a chip's factory default name)
-/// or 3 (the board's own name).
-const NAMED: u8 = 2;
-
 /// The connected devices that fit catalog boards, each with the boards it
-/// may be, from the engine's matches: suggested are the boards whose name
-/// matched, or else (if only a few) the boards with the same chip ids.
+/// may be, strongest first, from the engine's matches and levels.
 pub fn connected_devices(devices: &[UsbDevice], boards: &[Board]) -> Vec<ConnectedDevice> {
     // Catalog boards only: the IDE sends no custom boards.
     let mut found = Vec::new();
     for dev in devices {
-        let exact = dev.boards.iter().any(|b| b.confidence >= NAMED);
-        let generic = dev.boards.iter().filter(|b| b.confidence < NAMED).count();
         let mut its: Vec<ConnectedBoard> = Vec::new();
         for b in &dev.boards {
-            let is_exact = b.confidence >= NAMED;
-            let suggested = if exact {
-                is_exact
-            } else {
-                generic <= MAX_GENERIC_MATCHES
-            };
             // The engine reports variant IDs; the UI works with their values.
             let info = boards.iter().find(|x| x.id == b.board);
             let mut variants: Vec<Variant> = Vec::new();
@@ -215,15 +221,15 @@ pub fn connected_devices(devices: &[UsbDevice], boards: &[Board]) -> Vec<Connect
             }
             its.push(ConnectedBoard {
                 board: b.board.clone(),
-                exact: is_exact,
-                suggested,
+                level: b.level,
                 variants,
             });
         }
         if its.is_empty() {
             continue;
         }
-        its.sort_by_key(|c| (!c.suggested, !c.exact));
+        // Stable: equal levels keep the engine's order.
+        its.sort_by_key(|c| std::cmp::Reverse(c.level));
         let name = [&dev.product, &dev.manufacturer]
             .into_iter()
             .find(|n| !n.is_empty())
@@ -243,11 +249,11 @@ pub fn connected_devices(devices: &[UsbDevice], boards: &[Board]) -> Vec<Connect
 mod tests {
     use super::*;
 
-    /// A device as the engine lists it, matching `boards` (id, confidence).
-    fn device(product: &str, boards: &[(&str, u8)]) -> Value {
+    /// A device as the engine lists it, matching `boards` (id, level).
+    fn device(product: &str, boards: &[(&str, &str)]) -> Value {
         let boards: Vec<Value> = boards
             .iter()
-            .map(|(b, c)| json!({"board": b, "variants": [{"id": "usb-flash", "confidence": c}]}))
+            .map(|(b, l)| json!({"board": b, "variants": [{"id": "usb-flash", "match": l}]}))
             .collect();
         json!({
             "id": format!("usb:1-1:0403:6010:{product}"), "kind": "usb",
@@ -288,59 +294,11 @@ mod tests {
         .collect()
     }
 
-    fn connected(devices: Vec<Value>) -> Vec<(String, bool)> {
-        let list = parse_devices(&json!({ "devices": devices })).unwrap();
-        connected_devices(&list.devices, &boards())
-            .into_iter()
-            .flat_map(|d| d.boards)
-            .filter(|c| c.suggested)
-            .map(|c| (c.board, c.exact))
-            .collect()
-    }
-
     #[test]
-    fn a_name_match_wins() {
-        assert_eq!(
-            connected(vec![device(
-                "Alhambra II v1.0",
-                &[("alhambra-ii", 3), ("generic-a", 1), ("generic-b", 1)]
-            )]),
-            [("alhambra-ii".to_string(), true)]
-        );
-    }
-
-    #[test]
-    fn a_factory_default_name_counts_as_a_name_match() {
-        assert_eq!(
-            connected(vec![device(
-                "Dual RS232-HS",
-                &[("icestick", 2), ("generic-a", 1)]
-            )]),
-            [("icestick".to_string(), true)]
-        );
-    }
-
-    #[test]
-    fn falls_back_to_the_chip_when_few_boards_share_it() {
-        assert_eq!(
-            connected(vec![device(
-                "Something",
-                &[("generic-a", 1), ("generic-b", 1)]
-            )]),
-            [
-                ("generic-a".to_string(), false),
-                ("generic-b".to_string(), false)
-            ]
-        );
-        let many: Vec<(&str, u8)> = ["a", "b", "c", "d"].iter().map(|b| (*b, 1)).collect();
-        assert!(connected(vec![device("Something", &many)]).is_empty());
-    }
-
-    #[test]
-    fn each_device_lists_its_own_boards() {
+    fn each_device_lists_its_boards_strongest_first() {
         let list = parse_devices(&json!({"devices": [
-            device("Alhambra II", &[("alhambra-ii", 3), ("generic-a", 1)]),
-            device("Something", &[("generic-a", 1)]),
+            device("Alhambra II", &[("generic-a", "weak"), ("alhambra-ii", "strong")]),
+            device("Something", &[("generic-a", "possible")]),
             device("Unknown", &[]),
         ]}))
         .unwrap();
@@ -348,9 +306,18 @@ mod tests {
         assert_eq!(all.len(), 2, "a device that fits no board is left out");
         assert_eq!(all[0].name, "Alhambra II");
         assert_eq!(all[0].id, "usb:1-1:0403:6010:Alhambra II");
-        // Every matching board is listed, suggested or not.
-        assert_eq!(all[0].boards.len(), 2);
-        assert!(all[0].boards[0].suggested && !all[0].boards[1].suggested);
+        let levels: Vec<_> = all[0]
+            .boards
+            .iter()
+            .map(|b| (b.board.as_str(), b.level))
+            .collect();
+        assert_eq!(
+            levels,
+            [
+                ("alhambra-ii", MatchLevel::Strong),
+                ("generic-a", MatchLevel::Weak)
+            ]
+        );
         assert_eq!(
             all[0].boards[0].variants,
             [Variant::from([
@@ -360,7 +327,13 @@ mod tests {
         );
         // The same board on two devices is listed under each.
         assert_eq!(all[1].boards[0].board, "generic-a");
-        assert!(all[1].boards[0].suggested);
+        assert_eq!(all[1].boards[0].level, MatchLevel::Possible);
+    }
+
+    #[test]
+    fn unknown_levels_count_as_weak() {
+        let list = parse_devices(&json!({"devices": [device("X", &[("a", "someday")])]})).unwrap();
+        assert_eq!(list.devices[0].boards[0].level, MatchLevel::Weak);
     }
 
     #[test]
@@ -370,8 +343,8 @@ mod tests {
                 "id": "usb:1-1:0403:6010:FTATANKC", "kind": "usb",
                 "vid": "0403", "pid": "6010", "manufacturer": "AlhambraBits",
                 "product": "Alhambra II v1.0A", "serial_number": "FTATANKC",
-                "bus": 1, "device": 7, "build_confidence": 3,
-                "boards": [{"board": "alhambra-ii", "variants": [{"id": "usb-flash", "confidence": 3}]}]
+                "bus": 1, "device": 7, "build_match": "strong",
+                "boards": [{"board": "alhambra-ii", "variants": [{"id": "usb-flash", "match": "strong"}]}]
             }],
             "unreachable": [{
                 "kind": "usb", "vid": "0403", "pid": "6014", "bus": 1, "device": 9,
@@ -383,9 +356,9 @@ mod tests {
         let d = &list.devices[0];
         assert_eq!(d.id, "usb:1-1:0403:6010:FTATANKC");
         assert_eq!(d.serial_number, "FTATANKC");
-        assert_eq!(d.build_confidence, Some(3));
+        assert_eq!(d.build_match, Some(MatchLevel::Strong));
         assert_eq!(d.boards[0].board, "alhambra-ii");
-        assert_eq!(d.boards[0].confidence, 3);
+        assert_eq!(d.boards[0].level, MatchLevel::Strong);
         assert_eq!(list.unreachable[0].action, "fix_device_permissions");
         assert!(parse_devices(&json!({})).is_err());
     }

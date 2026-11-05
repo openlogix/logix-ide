@@ -86,15 +86,14 @@ offers the recent projects for that board and the board's examples, and
 to its examples.
 
 Boards plugged in by USB are listed first, under **Connected:** and the
-name of the device they were found on. A device is one board, so several boards under one
-device are the boards it may be, most likely first: those whose name it
-reports, then those it fits only by its USB chip, since different boards
-can use the same chip. The words next
+name of the device they were found on. A device is one board, so several
+boards under one device are the boards it may be, most likely first, since
+different boards can look the same over USB. Boards that are only weak
+matches aren't listed there unless one of them is selected; Tools >
+Connected Devices counts them, and Upload still finds them. The words next
 to the list (**Connected** or **Not connected**) tell whether the selected
 board seems to be plugged in; Upload then checks. Click them to see the
-connected devices. Some boards use a common USB chip that fits dozens of
-boards; those are listed only when one of them is selected, but Upload still
-finds them.
+connected devices.
 
 ### Board options
 
@@ -165,9 +164,8 @@ signals. Choose another module in the window to draw just that one.
 
 **Tools > Connected Devices…** lists the USB devices connected to the
 computer, which helps when Upload can't find the board. Each device says
-which boards it looks like, and how many other boards it may be (such as
-boards with the same USB chip: click the number to list them). Click a
-board's name to select it.
+which boards it looks like, and how many other boards it may be (click
+the number to list them). Click a board's name to select it.
 
 ![The Connected Devices window with an Alhambra II board](images/devices.png)
 

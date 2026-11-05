@@ -20,7 +20,7 @@ export interface DeviceGroup {
   key: string;
   /** E.g. "Connected: Digilent USB Device (210319AFEF8F)". */
   label: string;
-  /** The boards it may be, most likely first (the engine's confidence). */
+  /** The boards it may be, strongest first (the engine's match levels). */
   boards: string[];
 }
 
@@ -96,15 +96,15 @@ export function boardGroups(
 
 /**
  * The board picker's device groups from the connected devices: per device,
- * its suggested boards, most likely first (the engine's order: by
- * confidence), plus `selected` when the device fits it, so the toolbar's
- * status and the list agree. No board is marked: every board of a device
- * is a candidate. Devices with none are left out.
+ * the boards it may be that aren't weak matches (weak ones fit many boards),
+ * strongest first, plus `selected` when the device fits it, so the
+ * toolbar's status and the list agree. No board is marked: every board of
+ * a device is a candidate. Devices with none are left out.
  */
 export function deviceGroups(devices: ConnectedDevice[], selected: string | null): DeviceGroup[] {
   return devices
     .map((d) => {
-      const listed = d.boards.filter((b) => b.suggested || b.board === selected);
+      const listed = d.boards.filter((b) => b.level !== "weak" || b.board === selected);
       return {
         key: d.id,
         label: `Connected: ${d.serial ? `${d.name} (${d.serial})` : d.name}`,

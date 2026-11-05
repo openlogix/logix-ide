@@ -141,10 +141,10 @@ const alhambraDevice: Real.UsbDevice = {
   product: "Alhambra II v1.0A",
   serialNumber: "FTATANKC",
   boards: [
-    { board: "alhambra-ii", confidence: 3 },
-    { board: "alchitry-au", confidence: 1 },
+    { board: "alhambra-ii", level: "strong" },
+    { board: "alchitry-au", level: "weak" },
   ],
-  buildConfidence: 3,
+  buildMatch: "strong",
 };
 
 const unlisten = async () => () => {};

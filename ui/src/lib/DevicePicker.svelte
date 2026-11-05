@@ -1,7 +1,7 @@
 <!-- Upload: choose the device when several connected devices fit the board. -->
 <script lang="ts">
   import type { UsbDevice } from "./backend";
-  import { confidenceLabel, usbLabel } from "./devices";
+  import { matchLabel, usbLabel } from "./devices";
 
   let {
     boardName,
@@ -54,7 +54,7 @@
             <div class="text">
               <span class="name">{usbLabel(d)}</span>
               <span class="muted">
-                {[d.serialNumber ? `serial ${d.serialNumber}` : "", confidenceLabel(d.buildConfidence)]
+                {[d.serialNumber ? `serial ${d.serialNumber}` : "", matchLabel(d.buildMatch)]
                   .filter(Boolean)
                   .join(" · ")}
               </span>

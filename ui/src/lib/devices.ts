@@ -1,4 +1,4 @@
-import type { Devices, TaskOutcome, UsbDevice } from "./backend";
+import type { Devices, MatchLevel, TaskOutcome, UsbDevice } from "./backend";
 
 /** A device in plain words, e.g. "Alhambra II v1.0A (AlhambraBits, 0403:6010)". */
 export function usbLabel(d: UsbDevice): string {
@@ -17,29 +17,28 @@ export function needsDeviceChoice(outcome: TaskOutcome): boolean {
   return outcome.action === "select_device" && outcome.devices.length > 1;
 }
 
-/**
- * Logix Engine's confidence (1 to 3, higher is surer) in words. Logix only
- * compares the number; the words just say "how sure".
- */
-export function confidenceLabel(confidence: number | null): string {
-  if (confidence === null) return "";
-  if (confidence >= 3) return "Matches the board's name";
-  if (confidence >= 2) return "Likely";
-  return "Possible";
+/** The engine's match level in words, saying nothing about its cause. */
+export function matchLabel(level: MatchLevel | null): string {
+  if (level === null) return "";
+  return { strong: "Strong match", possible: "Possible match", weak: "Weak match" }[level];
+}
+
+/** A level's rank, for comparing: weak < possible < strong. */
+export function levelRank(level: MatchLevel): number {
+  return { weak: 0, possible: 1, strong: 2 }[level];
 }
 
 /**
- * The boards a device most likely is: those with the best confidence,
- * when it's 2 or more (a name match). Chip-only matches fit dozens of
- * boards, so they aren't worth naming.
+ * The boards a device most likely is: those at its strongest level, unless
+ * that is weak (weak matches fit many boards, so they aren't named).
  */
 export function likelyBoards(d: UsbDevice): string[] {
-  const best = Math.max(0, ...d.boards.map((b) => b.confidence));
-  if (best < 2) return [];
-  return d.boards.filter((b) => b.confidence === best).map((b) => b.board);
+  const best = Math.max(-1, ...d.boards.map((b) => levelRank(b.level)));
+  if (best <= levelRank("weak")) return [];
+  return d.boards.filter((b) => levelRank(b.level) === best).map((b) => b.board);
 }
 
-/** Whether a device may be the given board, at any confidence. */
+/** Whether a device may be the given board, at any level. */
 export function mayBeBoard(d: UsbDevice, board: string | null): boolean {
   return board !== null && d.boards.some((b) => b.board === board);
 }
@@ -50,8 +49,9 @@ export type LinePart = string | { board: string };
 /**
  * One line on which boards a device may be, from the selected board's point
  * of view (null when there's nothing worth saying): the boards it looks like
- * by name, with the selected board first when it's one of them, or a note
- * that it may be the selected board when only the USB chip fits. Boards
+ * (its strongest matches, unless weak), with the selected board first when
+ * it's one of them, or a note that it may be the selected board when it is
+ * only a weaker match. Boards
  * other than the selected one are `{ board }` parts, which the Connected
  * Devices dialog shows as links that select the board.
  */
@@ -87,9 +87,8 @@ export function deviceBoardsParts(
 
 /**
  * The other boards a device fits, weaker matches than those its line names
- * (the likely boards and the selected one), such as the dozens of boards
- * with the same USB chip: the dialog shows how many, and lists them on a
- * click. In the engine's order (most likely first).
+ * (the likely boards and the selected one): the dialog shows how many, and
+ * lists them on a click. In the engine's order (most likely first).
  */
 export function otherBoards(d: UsbDevice, selected: string | null): string[] {
   const named = new Set(likelyBoards(d));

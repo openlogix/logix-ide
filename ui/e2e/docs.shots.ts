@@ -30,7 +30,7 @@ async function startWithBoard(page: Page) {
         id: "usb:1-2:0403:6010:FTATANKC",
         name: "Alhambra II v1.0A",
         serial: "FTATANKC",
-        boards: [{ board: "alhambra-ii", exact: true, suggested: true, variants: [{}] }],
+        boards: [{ board: "alhambra-ii", level: "strong", variants: [{}] }],
       },
     ];
     window.dispatchEvent(new Event("focus"));
