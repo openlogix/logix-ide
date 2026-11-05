@@ -2319,7 +2319,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 3px 12px;
+    padding: 6px 12px;
     background: var(--tabs-bg);
     border-top: 1px solid var(--border);
     font-size: 12px;
