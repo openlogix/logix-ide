@@ -20,7 +20,7 @@
   **Comment/Uncomment** also works in pin files, with their
   own comment mark (`#`, or `//` in `.cst` files); Auto Format is for
   Verilog files only.
-- **Status bar**: while Logix is busy (checking the tools, verifying,
+- **Status bar** (at the bottom of the window): while Logix is busy (checking the tools, verifying,
   uploading, opening an example…), a spinning circle and what it's doing.
   When it's done, the result, e.g. "Build succeeded…", or **Ready.**
 - **Output**: what the FPGA tools print. References like `main.v:12` are

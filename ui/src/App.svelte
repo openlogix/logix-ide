@@ -1868,41 +1868,6 @@
       class="console-area"
       style:height={consoleVisible && !collapsing ? `${consoleHeight}px` : undefined}
     >
-      <div
-        class="status-bar"
-        class:ok={!isBusy && !activity && status?.kind === "ok"}
-        class:error={!isBusy && status?.kind === "error"}
-      >
-        {#if isBusy}
-          <span class="spinner" aria-label="Busy"></span>
-        {/if}
-        <span class="status-text" role="status">{statusText}</span>
-        {#if running && taskStep && !activity}
-          <span class="setup-detail"
-            >{taskStep.message}{taskStep.percent != null
-              ? ` ${taskStep.percent}%`
-              : ""}</span
-          >
-          {#if taskStep.percent != null}
-            <progress value={taskStep.percent / 100} max="1"></progress>
-          {/if}
-        {:else if settingUp && !activity && !running}
-          {#if setupDetail}
-            <span class="setup-detail">{setupDetail}</span>
-          {/if}
-          <progress value={downloadFraction ?? undefined} max="1"></progress>
-        {/if}
-        {#if consoleVisible}
-          <button title="Clear the output" onclick={() => (consoleLines = [])}
-            >Clear</button
-          >
-        {/if}
-        <button
-          title="{consoleVisible ? 'Hide' : 'Show'} the output"
-          onclick={() => setConsoleVisible(!consoleVisible)}
-          >{consoleVisible ? "Hide ▾" : "Show ▴"}</button
-        >
-      </div>
       {#if consoleVisible}
       <!-- Focusable, so Select All and Copy can act on the output (and the
            keyboard can scroll it). -->
@@ -1938,6 +1903,42 @@
         {/each}
       </div>
       {/if}
+      <!-- The status line: at the bottom of the window, below the output. -->
+      <div
+        class="status-bar"
+        class:ok={!isBusy && !activity && status?.kind === "ok"}
+        class:error={!isBusy && status?.kind === "error"}
+      >
+        {#if isBusy}
+          <span class="spinner" aria-label="Busy"></span>
+        {/if}
+        <span class="status-text" role="status">{statusText}</span>
+        {#if running && taskStep && !activity}
+          <span class="setup-detail"
+            >{taskStep.message}{taskStep.percent != null
+              ? ` ${taskStep.percent}%`
+              : ""}</span
+          >
+          {#if taskStep.percent != null}
+            <progress value={taskStep.percent / 100} max="1"></progress>
+          {/if}
+        {:else if settingUp && !activity && !running}
+          {#if setupDetail}
+            <span class="setup-detail">{setupDetail}</span>
+          {/if}
+          <progress value={downloadFraction ?? undefined} max="1"></progress>
+        {/if}
+        {#if consoleVisible}
+          <button title="Clear the output" onclick={() => (consoleLines = [])}
+            >Clear</button
+          >
+        {/if}
+        <button
+          title="{consoleVisible ? 'Hide' : 'Show'} the output"
+          onclick={() => setConsoleVisible(!consoleVisible)}
+          >{consoleVisible ? "Hide ▾" : "Show ▴"}</button
+        >
+      </div>
     </section>
   </div>
 </div>
@@ -2320,7 +2321,7 @@
     gap: 8px;
     padding: 3px 12px;
     background: var(--tabs-bg);
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
     font-size: 12px;
   }
   .status-bar.ok {

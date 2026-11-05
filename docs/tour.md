@@ -34,8 +34,8 @@ To get it, see [Installing Logix](installing.md).
 | ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running |
 | | Board list | Picks your board; boards plugged in come first |
 
-Below the toolbar are a tab for each file, the editor, and the output with a
-status line that says what Logix is doing. Mistakes in the grammar, like a
+Below the toolbar are a tab for each file, the editor and the output, and at
+the bottom of the window a status line that says what Logix is doing. Mistakes in the grammar, like a
 missing `;`, are underlined as you type.
 
 ## A project is a folder
