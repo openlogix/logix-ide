@@ -196,7 +196,7 @@
               ><svg class="chevron" class:open={shown} viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
                 ><path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg
               >
-              {g.label}
+              <span class="group-label">{g.label}</span>
               <span class="count">{g.boards.length}</span></button
             >
           </li>
@@ -303,8 +303,8 @@
     position: sticky;
     top: 0;
     padding: 6px 12px 4px;
-    background: var(--tabs-bg);
-    color: var(--muted);
+    background: var(--group-bg);
+    color: var(--group-fg);
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
@@ -322,7 +322,13 @@
     font: inherit;
     letter-spacing: inherit;
     text-transform: inherit;
+    text-align: left;
     cursor: pointer;
+  }
+  /* A long device name wraps, left aligned, with the count kept right. */
+  .group-label {
+    flex: 1;
+    min-width: 0;
   }
   .chevron {
     flex: none;

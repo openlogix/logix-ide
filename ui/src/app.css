@@ -13,6 +13,9 @@
   --console-fg: #d4d4d4;
   --banner-bg: #e6f4f5;
   --tabs-bg: #f3f4f6;
+  /* Group headings in board lists: distinct from the entries. */
+  --group-bg: #dff0f1;
+  --group-fg: #005c5f;
   --status-ok-bg: #e3f4e6;
   --status-ok-fg: #1e6b34;
   --error-mark: #d32f2f;
@@ -41,6 +44,8 @@
   --console-bg: #101316;
   --banner-bg: #16323a;
   --tabs-bg: #15181b;
+  --group-bg: #1d3539;
+  --group-fg: #8fd8dc;
   --status-ok-bg: #173a24;
   --status-ok-fg: #9be3b0;
   --banner-error-bg: #b3261e;
@@ -58,6 +63,8 @@
     --console-bg: #101316;
     --banner-bg: #16323a;
     --tabs-bg: #15181b;
+    --group-bg: #1d3539;
+    --group-fg: #8fd8dc;
     --status-ok-bg: #173a24;
     --status-ok-fg: #9be3b0;
     --banner-error-bg: #b3261e;
