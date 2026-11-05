@@ -3,6 +3,7 @@
   import {
     backend,
     toUserError,
+    withReason,
     type AppInfo,
     type Board,
     type ConnectedDevice,
@@ -601,8 +602,10 @@
    * the output with its details), then "Ready.". */
   function commandFailed(e: unknown) {
     const err = toUserError(e);
-    fileError = err.message;
-    status = { text: err.message, kind: "error" };
+    // The banner says it in red, with the reason; the status line repeats
+    // the message without a second red line.
+    fileError = withReason(err);
+    status = { text: err.message, kind: "info" };
     log(`\x1b[31mError: ${err.details}\x1b[0m`);
     log("Ready.");
   }
@@ -1019,7 +1022,7 @@
 
   function showFileError(e: unknown) {
     const err = toUserError(e);
-    fileError = err.message;
+    fileError = withReason(err);
     log(`Error: ${err.details}`);
   }
 

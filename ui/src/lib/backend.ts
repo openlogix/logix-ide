@@ -34,6 +34,20 @@ export function toUserError(e: unknown): UserError {
   return { message: text, details: text };
 }
 
+/**
+ * The error's message with its reason, for a banner the user reads without
+ * opening the output: "Couldn't save the project. There's a file there…".
+ * The details hold the message, then each cause after ": ".
+ */
+export function withReason(err: UserError): string {
+  const rest = err.details.startsWith(err.message)
+    ? err.details.slice(err.message.length).replace(/^:\s*/, "").trim()
+    : "";
+  if (!rest) return err.message;
+  const reason = rest.charAt(0).toUpperCase() + rest.slice(1);
+  return `${err.message} ${/[.!?]$/.test(reason) ? reason : `${reason}.`}`;
+}
+
 export type SetupStage =
   | "checking"
   | "downloadingEngine"

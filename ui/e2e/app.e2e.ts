@@ -743,6 +743,25 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toBeVisible();
 });
 
+test("a failed command's banner says why, with one red line", async ({ page }) => {
+  await start(page);
+  await page.evaluate(() => {
+    (window as unknown as { __fake: { saveAsError: unknown } }).__fake.saveAsError = {
+      message: "Couldn't save the project.",
+      details:
+        "Couldn't save the project.: /Users/you/fpga/blinky is inside a Logix project. Choose another location.",
+    };
+  });
+  await menu(page, "save-as");
+  // The reason is in the banner, so the closed output doesn't hide it.
+  await expect(page.getByRole("alert")).toContainText(
+    "Couldn't save the project. /Users/you/fpga/blinky is inside a Logix project. Choose another location.",
+  );
+  // The status line repeats the message without a second red line.
+  await expect(status(page)).toHaveText("Couldn't save the project.");
+  await expect(page.locator(".status-bar")).not.toHaveClass(/error/);
+});
+
 test("selects a board from the connected devices", async ({ page }) => {
   await start(page);
   await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");

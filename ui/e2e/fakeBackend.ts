@@ -110,6 +110,8 @@ const fake = {
   recents: (new URLSearchParams(location.search).get("recents") ?? "")
     .split(",")
     .filter(Boolean),
+  /** When set, Save As fails with this error (`saveProjectAsDialog`). */
+  saveAsError: null as Real.UserError | null,
   /** Devices reported as plugged in, with their boards (`connectedDevices`). */
   connected: [] as Real.ConnectedDevice[],
   /** The devices Upload finds that fit the board; with several, Upload
@@ -366,6 +368,7 @@ export const backend: typeof Real.backend = {
   },
 
   saveProjectAsDialog: async (_source, suggestedName, files, _removed, board, variant) => {
+    if (fake.saveAsError) throw fake.saveAsError;
     fake.saved = { board, variant };
     return {
       dir: `/fake/projects/${suggestedName}`,
