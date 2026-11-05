@@ -6,8 +6,12 @@ export interface BoardGroup {
   key: string;
   label: string;
   boards: Board[];
-  /** Architecture groups can be collapsed; device groups can't. */
-  collapsible: boolean;
+  /**
+   * A connected device's group: starts expanded, and its state isn't kept
+   * (device ids are short-lived). Architecture groups start collapsed and
+   * are remembered. Both can be collapsed.
+   */
+  device: boolean;
 }
 
 /** A connected device's group in the board picker: the boards it may be. */
@@ -82,10 +86,10 @@ export function boardGroups(
       .map((id) => shown.find((b) => b.id === id))
       .filter((b): b is Board => b !== undefined);
     if (its.length > 0)
-      groups.push({ key: d.key, label: d.label, boards: its, collapsible: false });
+      groups.push({ key: d.key, label: d.label, boards: its, device: true });
   }
   for (const g of groupByArch(shown, (b) => b.arch)) {
-    groups.push({ key: g.label, label: g.label, boards: g.items, collapsible: true });
+    groups.push({ key: g.label, label: g.label, boards: g.items, device: false });
   }
   return groups;
 }

@@ -393,7 +393,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await expect(link).toHaveAttribute("title", /matches the Alhambra II by name/);
   await boardButton(page).click();
   // One group per connected device, named after it.
-  await expect(page.locator(".group").first()).toHaveText("Connected: Alhambra II v1.0A (FTATANKC)");
+  await expect(page.locator(".group").first()).toHaveText(/^\s*Connected: Alhambra II v1.0A \(FTATANKC\)\s*1\s*$/);
   await expect(page.getByRole("option").first()).toHaveText(/Alhambra II/);
   await page.keyboard.press("Escape");
 
@@ -439,9 +439,17 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await expect(link).toHaveAttribute("title", /USB chip, but its name doesn't confirm/);
   await boardButton(page).click();
   // Both are listed under the one device, most likely first.
-  await expect(page.locator(".group").first()).toHaveText("Connected: Digilent USB Device (210319AFEF8F)");
+  await expect(page.locator(".group").first()).toHaveText(/Connected: Digilent USB Device \(210319AFEF8F\)/);
   await expect(page.getByRole("option").nth(0)).toHaveText(/Basys3/);
   await expect(page.getByRole("option").nth(1)).toHaveText(/Arty A7-35T/);
+  // A device's group collapses like an architecture's.
+  const device = page.locator(".group").first().getByRole("button");
+  await expect(device).toHaveAttribute("aria-expanded", "true");
+  await device.click();
+  await expect(device).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("option").first()).not.toHaveText(/Basys3/);
+  await device.click();
+  await expect(page.getByRole("option").first()).toHaveText(/Basys3/);
 });
 
 test("opens a board's Bare Minimum from the examples", async ({ page }) => {

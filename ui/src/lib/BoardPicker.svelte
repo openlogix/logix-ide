@@ -1,14 +1,16 @@
 <!--
   The toolbar's board picker, like Arduino IDE 2's board selector: a button
-  with the board's name that opens a searchable list, the connected boards
-  first, then all boards by FPGA architecture (collapsible groups, shared
-  with the Examples window). Unlike a native list, picking the current
+  with the board's name that opens a searchable list, one group per
+  connected device first (expanded until collapsed), then all boards by
+  FPGA architecture (collapsed groups, their state shared with the Examples
+  window). Unlike a native list, picking the current
   board is reported too (Logix then offers its examples).
 -->
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
   import { archLabel, boardGroups, type BoardGroup, type DeviceGroup } from "./boards";
+  import { SvelteSet } from "svelte/reactivity";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
 
   let {
@@ -42,8 +44,11 @@
 
   const groups = $derived(boardGroups(boards, devices, query));
   /** Whether a group's boards are shown (all of them while searching). */
+  /** Device groups the user collapsed (they start expanded). */
+  const collapsedDevices = new SvelteSet<string>();
   const isOpen = (g: BoardGroup) =>
-    !g.collapsible || query.trim() !== "" || expanded.has(g.label);
+    query.trim() !== "" ||
+    (g.device ? !collapsedDevices.has(g.key) : expanded.has(g.label));
   /** The shown entries in order (a connected board appears twice). */
   const entries = $derived(
     groups.flatMap((g, gi) =>
@@ -126,7 +131,9 @@
   });
 
   function toggle(g: BoardGroup) {
-    toggleGroup(g.label);
+    if (!g.device) toggleGroup(g.label);
+    else if (collapsedDevices.has(g.key)) collapsedDevices.delete(g.key);
+    else collapsedDevices.add(g.key);
     // Keep the highlight on a shown entry.
     if (!entries.some((e) => e.key === active)) active = entries[0]?.key ?? null;
   }
@@ -180,22 +187,18 @@
         {#each groups as g, gi (g.key)}
           {@const shown = isOpen(g)}
           <li class="group" role="presentation">
-            {#if g.collapsible}
-              <!-- Keeps the focus in the search box. -->
-              <button
-                class="group-toggle"
-                aria-expanded={shown}
-                onmousedown={(e) => e.preventDefault()}
-                onclick={() => toggle(g)}
-                ><svg class="chevron" class:open={shown} viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
-                  ><path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg
-                >
-                {g.label}
-                <span class="count">{g.boards.length}</span></button
+            <!-- Keeps the focus in the search box. -->
+            <button
+              class="group-toggle"
+              aria-expanded={shown}
+              onmousedown={(e) => e.preventDefault()}
+              onclick={() => toggle(g)}
+              ><svg class="chevron" class:open={shown} viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
+                ><path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg
               >
-            {:else}
               {g.label}
-            {/if}
+              <span class="count">{g.boards.length}</span></button
+            >
           </li>
           {#each shown ? g.boards : [] as b (b.id)}
             {@const key = `${gi}:${b.id}`}

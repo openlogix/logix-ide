@@ -66,10 +66,10 @@ describe("groupByArch", () => {
     expect(groups).toEqual(["Lattice iCE40:c", "Xilinx:b", "ALPHA:d", "ZETA:a"]);
   });
 
-  it("marks device groups as not collapsible", () => {
+  it("marks device groups", () => {
     const [device, ice40] = boardGroups(boards, [dev(["tang"])], "");
-    expect(device.collapsible).toBe(false);
-    expect(ice40.collapsible).toBe(true);
+    expect(device.device).toBe(true);
+    expect(ice40.device).toBe(false);
   });
 });
 
