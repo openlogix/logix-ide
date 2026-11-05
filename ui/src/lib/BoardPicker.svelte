@@ -212,9 +212,8 @@
               onmousemove={() => (active = key)}
               onclick={() => pick(b.id)}
             >
-              <span class="check" aria-hidden="true"
-                >{b.id === value ? "✓" : ""}</span
-              >
+              <!-- The selected board: a dot, unlike the groups' arrows. -->
+              <span class="check" class:on={b.id === value} aria-hidden="true"></span>
               {b.description}
             </li>
           {/each}
@@ -343,6 +342,7 @@
   }
   [role="option"] {
     display: flex;
+    align-items: center;
     gap: 6px;
     padding: 5px 12px;
     font-size: 13px;
@@ -355,6 +355,18 @@
   .check {
     width: 12px;
     flex: none;
+  }
+  .check.on::before {
+    content: "";
+    display: block;
+    width: 7px;
+    height: 7px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  .active .check.on::before {
+    background: currentColor;
   }
   .empty {
     padding: 8px 12px;
