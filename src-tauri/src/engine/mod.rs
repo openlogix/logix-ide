@@ -17,7 +17,7 @@ mod task;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-pub use catalog::{catalog, constraint_extension, variant_id, Board, Catalog, Variant};
+pub use catalog::{catalog, variant_id, Board, Catalog, Variant};
 pub use client::Engine;
 pub use devices::{
     connected_devices, list_devices, ConnectedDevice, DeviceList, UnreachableDevice, UsbDevice,

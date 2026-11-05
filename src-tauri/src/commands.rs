@@ -259,6 +259,7 @@ pub async fn run_task(
         .into());
     };
     let arch = info.arch.clone();
+    let pin_extension = info.pin_extension.clone();
     // The engine picks a variant by ID: the first one with the chosen values.
     let Some(board_variant) = engine::variant_id(info, &variant) else {
         return Err(anyhow!(
@@ -289,7 +290,7 @@ pub async fn run_task(
         }
     }
     let constraint =
-        build_dir::constraint_file(&files, engine::constraint_extension(&arch)).map(str::to_owned);
+        build_dir::constraint_file(&files, pin_extension.as_deref()).map(str::to_owned);
     let log = on_line;
     let dir = blocking(move || {
         // Keep GTKWave layouts saved since the last run; preparing clears

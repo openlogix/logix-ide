@@ -590,6 +590,19 @@ fn report(arch: &str, build: &Value) -> BuildReport {
                 .collect()
         })
         .unwrap_or_default();
+    // The engine's plain-language summary: `name` is its label.
+    let summary = build["resources_summary"]
+        .as_array()
+        .map(|list| {
+            list.iter()
+                .map(|r| Resource {
+                    name: r["label"].as_str().unwrap_or_default().to_string(),
+                    used: r["used"].as_u64().unwrap_or(0),
+                    available: r["available"].as_u64().unwrap_or(0),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
     let clocks = build["timing"]
         .as_object()
         .map(|map| {
@@ -606,6 +619,7 @@ fn report(arch: &str, build: &Value) -> BuildReport {
     BuildReport {
         arch: arch.to_string(),
         resources,
+        summary,
         clocks,
     }
 }
@@ -743,9 +757,20 @@ mod tests {
     fn reads_the_build_report() {
         let build = json!({
             "resources_usage": {"ICESTORM_LC": {"available": 7680, "used": 27}},
+            "resources_summary": [
+                {"kind": "logic_cells", "label": "logic cells", "used": 27, "available": 7680}
+            ],
             "timing": {"sys_clk$SB_IO_IN_$glb_clk": 194.36}
         });
         let r = report("ice40", &build);
+        assert_eq!(
+            r.summary,
+            [Resource {
+                name: "logic cells".into(),
+                used: 27,
+                available: 7680
+            }]
+        );
         assert_eq!(r.arch, "ice40");
         assert_eq!(
             r.resources,

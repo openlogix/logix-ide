@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { archLabel, boardGroups, deviceGroups, groupByArch, type DeviceGroup } from "./boards";
+import { boardGroups, deviceGroups, groupByArch, type DeviceGroup } from "./boards";
 import type { ConnectedDevice } from "./backend";
 
 const boards = [
-  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", pinExtension: null, dimensions: [], configurations: [] },
-  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", pinExtension: null, dimensions: [], configurations: [] },
-  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", pinExtension: null, dimensions: [], configurations: [] },
-  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", pinExtension: null, dimensions: [], configurations: [] },
-  { id: "mystery", description: "Mystery Board", arch: "", pinExtension: null, dimensions: [], configurations: [] },
-  { id: "tang", description: "Tang Nano 9K", arch: "gowin", pinExtension: null, dimensions: [], configurations: [] },
+  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [] },
+  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", archLabel: "Xilinx", archOrder: 3, pinExtension: null, dimensions: [], configurations: [] },
+  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1, pinExtension: null, dimensions: [], configurations: [] },
+  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [] },
+  { id: "mystery", description: "Mystery Board", arch: "", archLabel: "Other", archOrder: 99, pinExtension: null, dimensions: [], configurations: [] },
+  { id: "tang", description: "Tang Nano 9K", arch: "gowin", archLabel: "Gowin", archOrder: 2, pinExtension: null, dimensions: [], configurations: [] },
 ];
 
 /** One device that may be `ids`. */
@@ -53,14 +53,15 @@ describe("boardGroups", () => {
 });
 
 describe("groupByArch", () => {
-  it("keeps the fixed order and puts unknown architectures last", () => {
+  it("keeps the engine's order and puts unknown architectures last", () => {
+    const arch = (arch: string, archLabel: string, archOrder: number) => ({ arch, archLabel, archOrder });
     const items = [
-      { n: "a", arch: "zeta" },
-      { n: "b", arch: "xilinx" },
-      { n: "c", arch: "ice40" },
-      { n: "d", arch: "alpha" },
+      { n: "a", ...arch("zeta", "ZETA", 99) },
+      { n: "b", ...arch("xilinx", "Xilinx", 3) },
+      { n: "c", ...arch("ice40", "Lattice iCE40", 0) },
+      { n: "d", ...arch("alpha", "ALPHA", 99) },
     ];
-    const groups = groupByArch(items, (i) => i.arch).map(
+    const groups = groupByArch(items, (i) => i).map(
       (g) => `${g.label}:${g.items.map((i) => i.n).join("")}`,
     );
     expect(groups).toEqual(["Lattice iCE40:c", "Xilinx:b", "ALPHA:d", "ZETA:a"]);
@@ -73,13 +74,6 @@ describe("groupByArch", () => {
   });
 });
 
-describe("archLabel", () => {
-  it("names known architectures and keeps others recognizable", () => {
-    expect(archLabel("ecp5")).toBe("Lattice ECP5");
-    expect(archLabel("nexus")).toBe("NEXUS");
-    expect(archLabel("")).toBe("Other");
-  });
-});
 
 describe("deviceGroups", () => {
   const digilent: ConnectedDevice = {

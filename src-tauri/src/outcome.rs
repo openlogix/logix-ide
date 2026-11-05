@@ -95,6 +95,10 @@ pub struct BuildReport {
     pub arch: String,
     /// The FPGA's resources, with the toolchain's (family-specific) names.
     pub resources: Vec<Resource>,
+    /// The main resources in plain words, from the engine's
+    /// `resources_summary` (main capacity measure first), so the IDE needs
+    /// no family names of its own. Empty from an engine without it.
+    pub summary: Vec<Resource>,
     pub clocks: Vec<Clock>,
 }
 

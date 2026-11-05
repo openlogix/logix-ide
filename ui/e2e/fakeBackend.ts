@@ -225,6 +225,10 @@ function buildOutcome(files: ProjectFile[], board: string): {
           { name: "SB_GB", used: 1, available: 8 },
           { name: "SB_IO", used: 2, available: 107 },
         ],
+        summary: [
+          { name: "logic cells", used: 27, available: 7680 },
+          { name: "I/O pins", used: 2, available: 107 },
+        ],
         clocks: [{ name: "sys_clk", fmaxMhz: 194.36 }],
       },
       cancelled: false,

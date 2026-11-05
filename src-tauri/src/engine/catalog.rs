@@ -17,12 +17,16 @@ pub struct Board {
     pub id: String,
     /// Human-readable name, e.g. "Alhambra II (Lattice, iCE40)".
     pub description: String,
-    /// The FPGA architecture: "ice40", "ecp5", "gowin" or "xilinx", for
-    /// grouping the board list and naming resources in the build report.
+    /// The FPGA architecture's ID, such as "ice40", as the engine names it.
     pub arch: String,
-    /// The extension of the board's pin files, e.g. "pcf" (see
-    /// `constraint_extension`), so the UI can tell which pin file is used.
-    /// `None` for an architecture the engine doesn't list.
+    /// The architecture's name for people, such as "Lattice iCE40", from
+    /// the engine's catalog (`architectures`), for grouping the board list.
+    pub arch_label: String,
+    /// The architecture's place in the engine's order, for the board list.
+    pub arch_order: u32,
+    /// The extension of the board's pin files, such as "pcf", from the
+    /// engine's catalog, so the UI can tell which pin file is used. `None`
+    /// when the engine doesn't say.
     pub pin_extension: Option<String>,
     /// The board's choices for programming it, such as the connection or
     /// the memory, in the order to show them. Empty for most boards.
@@ -75,20 +79,6 @@ pub struct Configuration {
     pub user_notes: Option<String>,
 }
 
-/// The pin constraint file extension the engine's build accepts for an FPGA
-/// architecture (its `docs/tool-api.md`, build tool): each family's tools
-/// read only their own format, and the engine refuses another extension.
-/// `None` for an architecture it doesn't list.
-pub fn constraint_extension(arch: &str) -> Option<&'static str> {
-    match arch {
-        "ice40" => Some("pcf"),
-        "ecp5" => Some("lpf"),
-        "gowin" => Some("cst"),
-        "xilinx" => Some("xdc"),
-        _ => None,
-    }
-}
-
 /// The engine's ID of the variant the IDE's choice picks: the first
 /// configuration with all the chosen dimension values ({} = the default).
 /// `None` when the board has no such configuration.
@@ -121,7 +111,11 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
     let catalog = engine
         .call(
             "get_catalog",
-            json!({"boards": {"fetch": true}, "fpgas": {"fetch": true}}),
+            json!({
+                "boards": {"fetch": true},
+                "fpgas": {"fetch": true},
+                "architectures": {"fetch": true}
+            }),
             None,
         )
         .await?
@@ -136,6 +130,9 @@ fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
         .as_object()
         .context("unexpected board list from the engine")?;
     let fpgas = &catalog["fpgas"];
+    // The engine's facts about each FPGA family; an engine without them
+    // (older) leaves the label as the ID and the order last.
+    let archs = &catalog["architectures"];
     let mut list: Vec<Board> = boards
         .iter()
         .map(|(id, b)| {
@@ -163,10 +160,19 @@ fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                         .collect()
                 })
                 .unwrap_or_default();
+            let info = &archs[arch.as_str()];
             Board {
                 id: id.clone(),
                 description: b["description"].as_str().unwrap_or(id).to_string(),
-                pin_extension: constraint_extension(&arch).map(String::from),
+                arch_label: info["label"].as_str().map(String::from).unwrap_or_else(|| {
+                    if arch.is_empty() {
+                        "Other".into()
+                    } else {
+                        arch.to_uppercase()
+                    }
+                }),
+                arch_order: info["order"].as_u64().map_or(u32::MAX, |o| o as u32),
+                pin_extension: info["constraint_extension"].as_str().map(String::from),
                 arch,
                 dimensions,
                 configurations,
@@ -238,11 +244,39 @@ mod tests {
     }
 
     #[test]
-    fn constraint_extensions_follow_the_family() {
-        assert_eq!(constraint_extension("ice40"), Some("pcf"));
-        assert_eq!(constraint_extension("ecp5"), Some("lpf"));
-        assert_eq!(constraint_extension("gowin"), Some("cst"));
-        assert_eq!(constraint_extension("xilinx"), Some("xdc"));
-        assert_eq!(constraint_extension("other"), None);
+    fn architectures_come_from_the_engine() {
+        let catalog = json!({
+            "boards": {
+                "arty": {"description": "Arty", "fpga_id": "xc7a35t"},
+                "odd": {"description": "Odd", "fpga_id": "other"},
+            },
+            "fpgas": {
+                "xc7a35t": {"architecture": "xilinx"},
+                "other": {"architecture": "newfamily"},
+            },
+            "architectures": {
+                "xilinx": {"label": "Xilinx", "short_label": "Xilinx", "constraint_extension": "xdc", "order": 3},
+            },
+        });
+        let boards = parse_boards(&catalog).unwrap();
+        let arty = boards.iter().find(|b| b.id == "arty").unwrap();
+        assert_eq!(
+            (
+                arty.arch_label.as_str(),
+                arty.arch_order,
+                arty.pin_extension.as_deref()
+            ),
+            ("Xilinx", 3, Some("xdc"))
+        );
+        // A family the engine doesn't describe: its ID, last, no extension.
+        let odd = boards.iter().find(|b| b.id == "odd").unwrap();
+        assert_eq!(
+            (
+                odd.arch_label.as_str(),
+                odd.arch_order,
+                odd.pin_extension.as_deref()
+            ),
+            ("NEWFAMILY", u32::MAX, None)
+        );
     }
 }

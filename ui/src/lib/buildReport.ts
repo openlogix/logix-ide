@@ -1,53 +1,8 @@
 // Turns the build report into a short status bar summary, e.g. "0.4% of
 // logic cells, max clock 194.4 MHz", and console lines, as Arduino's
-// "Sketch uses ...". The toolchain names resources per FPGA family; this
-// maps the main ones to plain names.
+// "Sketch uses ...". Logix Engine names the resources in plain words
+// (`resources_summary`), so the IDE keeps no FPGA family names of its own.
 import type { BuildReport } from "./backend";
-
-interface Kind {
-  /** Plain name, plural. */
-  label: string;
-  /** The toolchain's names for it (their counts are added up). */
-  names: string[];
-}
-
-/**
- * Per FPGA family: the main capacity measure first (always shown), then
- * other resources (shown when used).
- */
-const KINDS: Record<string, Kind[]> = {
-  ice40: [
-    { label: "logic cells", names: ["ICESTORM_LC"] },
-    { label: "RAM blocks", names: ["ICESTORM_RAM"] },
-    { label: "multipliers", names: ["ICESTORM_DSP"] },
-    { label: "PLLs", names: ["ICESTORM_PLL"] },
-    { label: "I/O pins", names: ["SB_IO"] },
-  ],
-  ecp5: [
-    { label: "LUTs", names: ["TRELLIS_COMB"] },
-    { label: "flip-flops", names: ["TRELLIS_FF"] },
-    { label: "RAM blocks", names: ["DP16KD"] },
-    { label: "multipliers", names: ["MULT18X18D"] },
-    { label: "PLLs", names: ["EHXPLLL"] },
-    { label: "I/O pins", names: ["TRELLIS_IO"] },
-  ],
-  gowin: [
-    { label: "LUTs", names: ["LUT4"] },
-    { label: "flip-flops", names: ["DFF"] },
-    { label: "RAM blocks", names: ["BSRAM"] },
-    { label: "multipliers", names: ["MULT18X18"] },
-    { label: "PLLs", names: ["rPLL", "PLLVR"] },
-    { label: "I/O pins", names: ["IOB"] },
-  ],
-  xilinx: [
-    { label: "LUTs", names: ["SLICE_LUTX"] },
-    { label: "flip-flops", names: ["SLICE_FFX"] },
-    { label: "RAM blocks", names: ["RAMB36E1", "RAMB18E1"] },
-    { label: "multipliers", names: ["DSP48E1"] },
-    { label: "PLLs", names: ["PLLE2_ADV", "MMCME2_ADV"] },
-    { label: "I/O pins", names: ["PAD"] },
-  ],
-};
 
 export interface Usage {
   label: string;
@@ -55,33 +10,17 @@ export interface Usage {
   available: number;
 }
 
-/** The resources worth showing: the main one always, others if used. */
+/**
+ * The resources worth showing: the engine's main one always, others if
+ * used. From an older engine without a summary, the toolchain's own names
+ * of what's used.
+ */
 export function usages(report: BuildReport): Usage[] {
-  const byName = new Map(report.resources.map((r) => [r.name, r]));
-  const kinds = KINDS[report.arch];
-  if (!kinds) {
-    // Unknown family: the toolchain's own names, for what's used.
-    return report.resources
-      .filter((r) => r.used > 0)
-      .map((r) => ({ label: r.name, used: r.used, available: r.available }));
-  }
-  const result: Usage[] = [];
-  kinds.forEach((kind, i) => {
-    let used = 0;
-    let available = 0;
-    let found = false;
-    for (const name of kind.names) {
-      const r = byName.get(name);
-      if (!r) continue;
-      found = true;
-      used += r.used;
-      available += r.available;
-    }
-    if (found && (i === 0 || used > 0)) {
-      result.push({ label: kind.label, used, available });
-    }
-  });
-  return result;
+  const list = report.summary.length > 0 ? report.summary : report.resources;
+  const fromSummary = report.summary.length > 0;
+  return list
+    .filter((r, i) => (fromSummary && i === 0) || r.used > 0)
+    .map((r) => ({ label: r.name, used: r.used, available: r.available }));
 }
 
 export function percent(used: number, available: number): string {

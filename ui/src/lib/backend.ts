@@ -119,7 +119,11 @@ export interface Board {
   description: string;
   /** FPGA architecture, e.g. "ice40", "ecp5", "gowin", "xilinx" ("" if unknown). */
   arch: string;
-  /** The extension of the board's pin files, e.g. "pcf" (null if unknown). */
+  /** The architecture's name for people, from Logix Engine, e.g. "Lattice iCE40". */
+  archLabel: string;
+  /** The architecture's place in Logix Engine's order, for the board list. */
+  archOrder: number;
+  /** The extension of the board's pin files, from Logix Engine, e.g. "pcf" (null if unknown). */
   pinExtension: string | null;
   /** How the board is programmed: Connection and Memory, for every board. */
   dimensions: Dimension[];
@@ -156,6 +160,11 @@ export interface BuildReport {
   arch: string;
   /** With the toolchain's family-specific names, e.g. "ICESTORM_LC". */
   resources: { name: string; used: number; available: number }[];
+  /**
+   * Logix Engine's plain-language summary, main capacity measure first:
+   * `name` is its label, e.g. "logic cells". Empty from an older engine.
+   */
+  summary: { name: string; used: number; available: number }[];
   clocks: { name: string; fmaxMhz: number }[];
 }
 

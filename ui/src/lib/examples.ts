@@ -63,6 +63,8 @@ export function groupExamples(
         id,
         description: id,
         arch: "",
+        archLabel: "Other",
+        archOrder: Number.MAX_SAFE_INTEGER,
         pinExtension: null,
         dimensions: [],
         configurations: [],

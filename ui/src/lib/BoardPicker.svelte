@@ -9,7 +9,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
-  import { archLabel, boardGroups, type BoardGroup, type DeviceGroup } from "./boards";
+  import { boardGroups, type BoardGroup, type DeviceGroup } from "./boards";
   import { SvelteSet } from "svelte/reactivity";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
 
@@ -65,7 +65,7 @@
     open = true;
     query = "";
     const current = boards.find((b) => b.id === value);
-    if (current) expandGroup(archLabel(current.arch));
+    if (current) expandGroup(current.archLabel);
     await tick();
     // Start at the current board, in its architecture's group.
     const here = entries.filter((e) => e.board.id === value);

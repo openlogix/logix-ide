@@ -7,7 +7,7 @@
 <script lang="ts">
   import type { Board, Example } from "./backend";
   import { groupExamples, type ExampleEntry } from "./examples";
-  import { archLabel, groupByArch } from "./boards";
+  import { groupByArch } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
 
@@ -56,14 +56,14 @@
     ),
   );
   /** The boards column, by FPGA architecture (collapsible groups). */
-  const archGroups = $derived(groupByArch(groups, (g) => g.board.arch));
+  const archGroups = $derived(groupByArch(groups, (g) => g.board));
   const searching = $derived(query.trim() !== "");
 
   // Show the initial board's group expanded (once, when opened).
   {
     // svelte-ignore state_referenced_locally
     const first = boards.find((b) => b.id === initialBoard);
-    if (first) expandGroup(archLabel(first.arch));
+    if (first) expandGroup(first.archLabel);
   }
 
   const onlyBoardName = $derived(

@@ -15,7 +15,7 @@ import {
 const plain: Board = {
   id: "alhambra-ii",
   description: "Alhambra II",
-  arch: "ice40",
+  arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0,
   pinExtension: "pcf",
   // Every board has both standard dimensions; one value each is no choice.
   dimensions: [
@@ -40,7 +40,7 @@ const arty: Board = {
 const stick: Board = {
   id: "stick",
   description: "Stick",
-  arch: "ecp5",
+  arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1,
   pinExtension: "lpf",
   dimensions: [
     {

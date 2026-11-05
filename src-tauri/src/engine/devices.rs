@@ -279,6 +279,8 @@ mod tests {
             id: id.to_string(),
             description: id.to_string(),
             arch: "ice40".into(),
+            arch_label: String::new(),
+            arch_order: 0,
             pin_extension: None,
             dimensions: Vec::new(),
             configurations: vec![super::super::catalog::Configuration {
