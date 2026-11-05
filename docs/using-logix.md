@@ -86,9 +86,9 @@ offers the recent projects for that board and the board's examples, and
 to its examples.
 
 Boards plugged in by USB are listed first, under **Possibly connected**, and
-the words next to the list (**Possibly connected** or **Not connected**) tell
-whether the selected board seems to be plugged in. "Possibly", because
-different boards can look the same over USB. Click it to see the connected devices. Some boards use a common USB chip that can't
+the words next to the list (**Connected** or **Not connected**) tell
+whether the selected board seems to be plugged in. The list says "Possibly",
+because different boards can look the same over USB. Click it to see the connected devices. Some boards use a common USB chip that can't
 tell which board it is; they're not listed under Connected, but Upload still
 finds them.
 

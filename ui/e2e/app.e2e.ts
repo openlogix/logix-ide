@@ -384,7 +384,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
     ];
     window.dispatchEvent(new Event("focus"));
   });
-  await expect(link).toHaveText("Possibly connected");
+  await expect(link).toHaveText("Connected");
   await boardButton(page).click();
   await expect(page.locator(".group").first()).toHaveText("Possibly connected");
   await expect(page.getByRole("option").first()).toHaveText(/Alhambra II/);
@@ -419,7 +419,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   });
   await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
   await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
-  await expect(link).toHaveText("Possibly connected");
+  await expect(link).toHaveText("Connected");
   await boardButton(page).click();
   await expect(page.locator(".group").first()).toHaveText("Possibly connected");
   await expect(page.getByRole("option").first()).toHaveText(/Basys3/);
@@ -710,7 +710,7 @@ test("lists the connected devices", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   // The toolbar's Connected / Not connected status opens it too.
-  await page.getByRole("button", { name: /^(Possibly connected|Not connected)$/ }).click();
+  await page.getByRole("button", { name: /^(Connected|Not connected)$/ }).click();
   await expect(dialog).toBeVisible();
 });
 

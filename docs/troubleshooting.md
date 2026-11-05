@@ -22,7 +22,7 @@ click **Retry**.
 
 - Check that the board is plugged in and powered.
 - Try another USB cable: some cables only charge and don't carry data.
-- Look next to the board list: **Possibly connected** means a connected
+- Look next to the board list: **Connected** means a connected
   device fits the selected board. If the board appears under **Possibly
   connected** in the list but isn't the selected one, select it. (Boards with a common USB chip are never
   listed there; Upload still finds them.)

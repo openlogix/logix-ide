@@ -1691,7 +1691,7 @@
           ? `A connected device may be the ${boardName(currentBoard)} (it fits the board's USB filter).`
           : `${boardName(currentBoard)} isn't connected (no matching USB device found).`} Click to see the connected devices.`}
         onclick={showDevices}
-        >{boardConnected ? "Possibly connected" : "Not connected"}</button
+        >{boardConnected ? "Connected" : "Not connected"}</button
       >
     {/if}
   </header>

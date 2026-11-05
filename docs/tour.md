@@ -80,7 +80,7 @@ is marked on its line; hover over the mark to read it, or click the
 
 ## Upload: put it on the board
 
-Plug the board in by USB. Next to the board list, Logix says **Possibly connected**.
+Plug the board in by USB. Next to the board list, Logix says **Connected**.
 Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix builds the design, shows how much of the FPGA it
 uses, and programs the board. If it can't find the board,
 **Tools > Connected Devices…** shows what's plugged in, and
