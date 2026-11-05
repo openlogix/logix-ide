@@ -85,6 +85,18 @@ export function deviceBoardsParts(
   return null;
 }
 
+/**
+ * The other boards a device fits, weaker matches than those its line names
+ * (the likely boards and the selected one), such as the dozens of boards
+ * with the same USB chip: the dialog shows how many, and lists them on a
+ * click. In the engine's order (most likely first).
+ */
+export function otherBoards(d: UsbDevice, selected: string | null): string[] {
+  const named = new Set(likelyBoards(d));
+  if (selected) named.add(selected);
+  return d.boards.map((b) => b.board).filter((b) => !named.has(b));
+}
+
 /** The same line as plain text. */
 export function deviceBoardsLine(
   d: UsbDevice,

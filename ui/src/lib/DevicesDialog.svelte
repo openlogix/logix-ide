@@ -1,7 +1,8 @@
 <!-- Tools > Connected Devices: the USB devices connected. -->
 <script lang="ts">
   import type { Devices } from "./backend";
-  import { deviceBoardsParts, usbLabel } from "./devices";
+  import { SvelteSet } from "svelte/reactivity";
+  import { deviceBoardsParts, otherBoards, usbLabel } from "./devices";
 
   let {
     devices,
@@ -27,6 +28,13 @@
     onPick: (board: string) => void;
     onClose: () => void;
   } = $props();
+
+  /** Devices whose other boards are listed (by device id). */
+  const showingOthers = new SvelteSet<string>();
+  function toggleOthers(id: string) {
+    if (showingOthers.has(id)) showingOthers.delete(id);
+    else showingOthers.add(id);
+  }
 
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -74,19 +82,35 @@
           <ul>
             {#each devices.usb as d, i (i)}
               {@const parts = deviceBoardsParts(d, board, boardName)}
+              {@const others = otherBoards(d, board)}
               <li>
                 <span class="name">{usbLabel(d)}</span>
                 {#if d.serialNumber}
                   <span class="muted">serial {d.serialNumber}</span>
                 {/if}
-                {#if parts}
+                {#if parts || others.length > 0}
                   <span class="muted"
-                    >{#each parts as p, pi (pi)}{#if typeof p === "string"}{p}{:else}<button
+                    >{#each parts ?? [] as p, pi (pi)}{#if typeof p === "string"}{p}{:else}<button
                           class="board-pick"
                           title="Select the {boardName(p.board)}"
                           onclick={() => onPick(p.board)}>{boardName(p.board)}</button
-                        >{/if}{/each}</span
+                        >{/if}{/each}{#if others.length > 0}{parts ? " It may also be one of " : "It may be one of "}<button
+                        class="board-pick"
+                        aria-expanded={showingOthers.has(d.id)}
+                        title="Weaker matches, such as boards with the same USB chip. Click to {showingOthers.has(d.id) ? 'hide' : 'list'} them."
+                        onclick={() => toggleOthers(d.id)}
+                        >{others.length}{parts ? " other" : ""} {others.length === 1 ? "board" : "boards"}</button
+                      >.{/if}</span
                   >
+                  {#if showingOthers.has(d.id)}
+                    <span class="muted others"
+                      >{#each [...others].sort((a, b) => boardName(a).localeCompare(boardName(b))) as o, oi (o)}{oi > 0 ? ", " : ""}<button
+                          class="board-pick"
+                          title="Select the {boardName(o)}"
+                          onclick={() => onPick(o)}>{boardName(o)}</button
+                        >{/each}</span
+                    >
+                  {/if}
                 {/if}
               </li>
             {/each}

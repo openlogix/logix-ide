@@ -734,6 +734,10 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toContainText("Alhambra II v1.0A (AlhambraBits, 0403:6010)");
   // The engine's matches: the board it looks like, and the selected one.
   await expect(dialog).toContainText("Looks like the selected board, Alhambra II.");
+  // Weaker matches as a count, listed on a click.
+  await expect(dialog).toContainText("It may also be one of 1 other board.");
+  await dialog.getByRole("button", { name: "1 other board" }).click();
+  await expect(dialog.getByRole("button", { name: /^Alchitry Au/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   // The toolbar's Connected / Not connected status opens it too.

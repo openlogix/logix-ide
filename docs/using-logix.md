@@ -165,7 +165,9 @@ signals. Choose another module in the window to draw just that one.
 
 **Tools > Connected Devices…** lists the USB devices connected to the
 computer, which helps when Upload can't find the board. Each device says
-which boards it looks like; click a board's name to select it.
+which boards it looks like, and how many other boards it may be (such as
+boards with the same USB chip: click the number to list them). Click a
+board's name to select it.
 
 ![The Connected Devices window with an Alhambra II board](images/devices.png)
 

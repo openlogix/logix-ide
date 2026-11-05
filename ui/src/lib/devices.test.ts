@@ -3,6 +3,7 @@ import {
   confidenceLabel,
   deviceBoardsLine,
   deviceBoardsParts,
+  otherBoards,
   deviceSummaryLines,
   isBoardNotFound,
   likelyBoards,
@@ -130,6 +131,24 @@ describe("devices", () => {
       { board: "basys3" },
       ".",
     ]);
+  });
+
+  it("counts the weaker matches apart", () => {
+    const d = {
+      ...alhambra,
+      boards: [
+        { board: "arty", confidence: 3 },
+        { board: "basys3", confidence: 3 },
+        { board: "generic-a", confidence: 1 },
+        { board: "generic-b", confidence: 1 },
+      ],
+    };
+    expect(otherBoards(d, null)).toEqual(["generic-a", "generic-b"]);
+    // The selected board is named in the line, so it isn't counted.
+    expect(otherBoards(d, "generic-a")).toEqual(["generic-b"]);
+    // With no name match, every board is a weaker match.
+    const generic = { ...alhambra, boards: [{ board: "generic-a", confidence: 1 }] };
+    expect(otherBoards(generic, null)).toEqual(["generic-a"]);
   });
 
   it("puts confidence in words, by comparing", () => {
