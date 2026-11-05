@@ -213,9 +213,6 @@
                 >{b.id === value ? "✓" : ""}</span
               >
               {b.description}
-              {#if g.maybe.includes(b.id)}
-                <span class="maybe" title="The device fits this board only by its USB chip, which other boards use too.">maybe</span>
-              {/if}
             </li>
           {/each}
         {:else}
@@ -298,11 +295,6 @@
     padding: 0 0 6px;
     list-style: none;
     overflow: auto;
-  }
-  .maybe {
-    margin-left: 8px;
-    color: var(--muted);
-    font-size: 11px;
   }
   .group {
     position: sticky;

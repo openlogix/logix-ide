@@ -6,8 +6,6 @@ export interface BoardGroup {
   key: string;
   label: string;
   boards: Board[];
-  /** Ids of the boards shown as "maybe": their device fits only by its USB chip. */
-  maybe: string[];
   /** Architecture groups can be collapsed; device groups can't. */
   collapsible: boolean;
 }
@@ -18,10 +16,8 @@ export interface DeviceGroup {
   key: string;
   /** E.g. "Connected: Digilent USB Device (210319AFEF8F)". */
   label: string;
-  /** Its boards in order, name matches first. */
+  /** The boards it may be, most likely first (the engine's confidence). */
   boards: string[];
-  /** Those it fits only by its USB chip. */
-  maybe: string[];
 }
 
 /** FPGA architectures (the engine's ids), in the picker's order, with names. */
@@ -86,19 +82,20 @@ export function boardGroups(
       .map((id) => shown.find((b) => b.id === id))
       .filter((b): b is Board => b !== undefined);
     if (its.length > 0)
-      groups.push({ key: d.key, label: d.label, boards: its, maybe: d.maybe, collapsible: false });
+      groups.push({ key: d.key, label: d.label, boards: its, collapsible: false });
   }
   for (const g of groupByArch(shown, (b) => b.arch)) {
-    groups.push({ key: g.label, label: g.label, boards: g.items, maybe: [], collapsible: true });
+    groups.push({ key: g.label, label: g.label, boards: g.items, collapsible: true });
   }
   return groups;
 }
 
 /**
  * The board picker's device groups from the connected devices: per device,
- * its suggested boards (name matches first, then those it fits only by
- * chip, as "maybe"), plus `selected` when the device fits it, so the
- * toolbar's status and the list agree. Devices with none are left out.
+ * its suggested boards, most likely first (the engine's order: by
+ * confidence), plus `selected` when the device fits it, so the toolbar's
+ * status and the list agree. No board is marked: every board of a device
+ * is a candidate. Devices with none are left out.
  */
 export function deviceGroups(devices: ConnectedDevice[], selected: string | null): DeviceGroup[] {
   return devices
@@ -108,7 +105,6 @@ export function deviceGroups(devices: ConnectedDevice[], selected: string | null
         key: d.id,
         label: `Connected: ${d.serial ? `${d.name} (${d.serial})` : d.name}`,
         boards: listed.map((b) => b.board),
-        maybe: listed.filter((b) => !b.exact).map((b) => b.board),
       };
     })
     .filter((g) => g.boards.length > 0);

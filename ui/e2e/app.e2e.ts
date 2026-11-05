@@ -400,7 +400,7 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   // An Arty reports the same name as the Basys3's pattern: only the Basys3
   // is suggested, but the Arty matches by its USB chip, so the status says
   // Connected (erring to that side: Upload checks), and the selected Arty
-  // is listed under the device as maybe.
+  // is listed under the device, after the Basys3.
   await page.evaluate(() => {
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
@@ -438,10 +438,10 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await expect(link).toHaveText("Connected");
   await expect(link).toHaveAttribute("title", /USB chip, but its name doesn't confirm/);
   await boardButton(page).click();
-  // Both are listed under the one device, the Arty as maybe.
+  // Both are listed under the one device, most likely first.
   await expect(page.locator(".group").first()).toHaveText("Connected: Digilent USB Device (210319AFEF8F)");
   await expect(page.getByRole("option").nth(0)).toHaveText(/Basys3/);
-  await expect(page.getByRole("option").nth(1)).toHaveText(/Arty A7-35T.*maybe/);
+  await expect(page.getByRole("option").nth(1)).toHaveText(/Arty A7-35T/);
 });
 
 test("opens a board's Bare Minimum from the examples", async ({ page }) => {

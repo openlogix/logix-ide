@@ -11,12 +11,11 @@ const boards = [
   { id: "tang", description: "Tang Nano 9K", arch: "gowin", pinExtension: null, dimensions: [], configurations: [] },
 ];
 
-/** One device that may be `ids`, the `maybe` ones only by its USB chip. */
-const dev = (ids: string[], maybe: string[] = [], key = "usb:1"): DeviceGroup => ({
+/** One device that may be `ids`. */
+const dev = (ids: string[], key = "usb:1"): DeviceGroup => ({
   key,
   label: `Device ${key}`,
   boards: ids,
-  maybe,
 });
 
 const summary = (devices: DeviceGroup[], q: string) =>
@@ -41,7 +40,7 @@ describe("boardGroups", () => {
   });
 
   it("keeps two devices apart, even with the same boards", () => {
-    const groups = boardGroups(boards, [dev(["arty"], [], "usb:1"), dev(["arty"], [], "usb:2")], "");
+    const groups = boardGroups(boards, [dev(["arty"], "usb:1"), dev(["arty"], "usb:2")], "");
     expect(groups.slice(0, 2).map((g) => g.key)).toEqual(["usb:1", "usb:2"]);
   });
 
@@ -68,9 +67,8 @@ describe("groupByArch", () => {
   });
 
   it("marks device groups as not collapsible", () => {
-    const [device, ice40] = boardGroups(boards, [dev(["tang"], ["tang"])], "");
+    const [device, ice40] = boardGroups(boards, [dev(["tang"])], "");
     expect(device.collapsible).toBe(false);
-    expect(device.maybe).toEqual(["tang"]);
     expect(ice40.collapsible).toBe(true);
   });
 });
@@ -101,15 +99,15 @@ describe("deviceGroups", () => {
         key: digilent.id,
         label: "Connected: Digilent USB Device (210319AFEF8F)",
         boards: ["arty-a7-35t", "basys3"],
-        maybe: [],
       },
     ]);
     // An Arty A7-100T selected with an Arty A7-35T plugged in: its filter
-    // has only the USB ids, so it is listed as maybe.
-    expect(deviceGroups([digilent], "arty-a7-100t")[0]).toMatchObject({
-      boards: ["arty-a7-35t", "basys3", "arty-a7-100t"],
-      maybe: ["arty-a7-100t"],
-    });
+    // has only the USB ids, so it comes last.
+    expect(deviceGroups([digilent], "arty-a7-100t")[0].boards).toEqual([
+      "arty-a7-35t",
+      "basys3",
+      "arty-a7-100t",
+    ]);
   });
 
   it("leaves out devices with nothing to list, and names without a serial", () => {
