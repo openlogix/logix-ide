@@ -110,6 +110,8 @@ const fake = {
   recents: (new URLSearchParams(location.search).get("recents") ?? "")
     .split(",")
     .filter(Boolean),
+  /** The USB devices Tools > Connected Devices lists (`scanDevices`); one Alhambra II by default. */
+  usb: null as Real.UsbDevice[] | null,
   /** When set, Save As fails with this error (`saveProjectAsDialog`). */
   saveAsError: null as Real.UserError | null,
   /** Devices reported as plugged in, with their boards (`connectedDevices`). */
@@ -416,7 +418,7 @@ export const backend: typeof Real.backend = {
   },
   chooseFolderDialog: async () => "/Users/you/fpga",
 
-  scanDevices: async () => ({ usb: [alhambraDevice], unreachable: [] }),
+  scanDevices: async () => ({ usb: fake.usb ?? [alhambraDevice], unreachable: [] }),
   onOpenRecent: unlisten,
 
   checkFileName: async (name, existing) => {

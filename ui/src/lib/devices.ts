@@ -87,10 +87,14 @@ export function deviceBoardsParts(
 
 /**
  * The other boards a device fits, weaker matches than those its line names
- * (the likely boards and the selected one): the dialog shows how many, and
- * lists them on a click. In the engine's order (most likely first).
+ * (the likely boards and the selected one), when it has no strong match:
+ * the dialog shows how many, and lists them on a click. In the engine's order (most likely first).
  */
 export function otherBoards(d: UsbDevice, selected: string | null): string[] {
+  // A strong match already says which board it most likely is: the weaker
+  // ones would only be noise (the user's decision). The selected board is
+  // still named in the line when it fits.
+  if (d.boards.some((b) => b.level === "strong")) return [];
   const named = new Set(likelyBoards(d));
   if (selected) named.add(selected);
   return d.boards.map((b) => b.board).filter((b) => !named.has(b));

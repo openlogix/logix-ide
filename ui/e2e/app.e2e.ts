@@ -732,9 +732,23 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toContainText("Alhambra II v1.0A (AlhambraBits, 0403:6010)");
   // The engine's matches: the board it looks like, and the selected one.
   await expect(dialog).toContainText("Looks like the selected board, Alhambra II.");
-  // Weaker matches as a count, listed on a click.
-  await expect(dialog).toContainText("It may also be one of 1 other board.");
-  await dialog.getByRole("button", { name: "1 other board" }).click();
+  // A strong match: the weaker ones aren't counted.
+  await expect(dialog).not.toContainText("other board");
+  await page.keyboard.press("Escape");
+
+  // A device with no strong match: its boards as a count, listed on a click.
+  await page.evaluate(() => {
+    (window as unknown as { __fake: { usb: unknown[] } }).__fake.usb = [
+      {
+        id: "usb:1-4:0403:6010:", vid: "0403", pid: "6010", manufacturer: "FTDI",
+        product: "Dual RS232-HS", serialNumber: "", buildMatch: null,
+        boards: [{ board: "alchitry-au", level: "weak" }, { board: "icestick", level: "weak" }],
+      },
+    ];
+    (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu("devices");
+  });
+  await expect(dialog).toContainText("It may be one of 2 boards.");
+  await dialog.getByRole("button", { name: "2 boards" }).click();
   await expect(dialog.getByRole("button", { name: /^Alchitry Au/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();

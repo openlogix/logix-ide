@@ -137,8 +137,8 @@ describe("devices", () => {
     const d = {
       ...alhambra,
       boards: [
-        { board: "arty", level: "strong" as const },
-        { board: "basys3", level: "strong" as const },
+        { board: "arty", level: "possible" as const },
+        { board: "basys3", level: "possible" as const },
         { board: "generic-a", level: "weak" as const },
         { board: "generic-b", level: "weak" as const },
       ],
@@ -146,6 +146,9 @@ describe("devices", () => {
     expect(otherBoards(d, null)).toEqual(["generic-a", "generic-b"]);
     // The selected board is named in the line, so it isn't counted.
     expect(otherBoards(d, "generic-a")).toEqual(["generic-b"]);
+    // With a strong match, the weaker ones aren't counted at all.
+    const strong = { ...d, boards: [{ board: "arty", level: "strong" as const }, ...d.boards.slice(2)] };
+    expect(otherBoards(strong, null)).toEqual([]);
     // With no name match, every board is a weaker match.
     const generic = { ...alhambra, boards: [{ board: "generic-a", level: "weak" as const }] };
     expect(otherBoards(generic, null)).toEqual(["generic-a"]);
