@@ -390,6 +390,43 @@ pub fn default_projects_root() -> Option<PathBuf> {
     Some(chosen.unwrap_or(builtin))
 }
 
+/// Where the Save As dialog starts: next to the project being saved (the
+/// folder holding its folder), else the projects folder (`root`); never
+/// inside a Logix project, since a project can't be saved there.
+pub fn save_as_start(source: Option<&Path>, root: &Path) -> PathBuf {
+    let start = source
+        .and_then(Path::parent)
+        .filter(|dir| dir.is_dir())
+        .unwrap_or(root);
+    // Step out of any project: to the folder that holds it, until no
+    // project is around.
+    let mut dir = start.to_path_buf();
+    loop {
+        let project = if is_project_dir(&dir) {
+            Some(dir.clone())
+        } else {
+            enclosing_project(&dir)
+        };
+        match project.as_deref().and_then(Path::parent) {
+            Some(outside) => dir = outside.to_path_buf(),
+            None => return dir,
+        }
+    }
+}
+
+/// A name for a new project in `dir` that nothing there has yet: `base`,
+/// else "`base` 2", "`base` 3"..., so accepting the suggestion never
+/// replaces anything.
+pub fn unique_name(dir: &Path, base: &str) -> String {
+    if !dir.join(base).exists() {
+        return base.to_string();
+    }
+    (2..)
+        .map(|n| format!("{base} {n}"))
+        .find(|name| !dir.join(name).exists())
+        .unwrap_or_else(|| base.to_string())
+}
+
 /// Strips a `.v` the user may have typed in a "Save As" name.
 pub fn normalize_new_project_path(path: &Path) -> PathBuf {
     match path.extension() {
@@ -775,6 +812,43 @@ mod tests {
         let inner = parent.join("data");
         std::fs::create_dir(&inner).unwrap();
         assert!(check_replace(&parent, Some(&inner)).is_err());
+    }
+
+    #[test]
+    fn save_as_suggests_a_free_name_outside_any_project() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("Logix");
+        let files = [file("main.v", "m")];
+        create(&root.join("untitled"), None, &files, &[], None, NO_VARIANT).unwrap();
+        create(
+            &root.join("untitled copy"),
+            None,
+            &files,
+            &[],
+            None,
+            NO_VARIANT,
+        )
+        .unwrap();
+
+        // A new project: the projects folder, with a name nothing has yet.
+        assert_eq!(save_as_start(None, &root), root);
+        assert_eq!(unique_name(&root, "untitled"), "untitled 2");
+        assert_eq!(unique_name(&root, "untitled copy"), "untitled copy 2");
+        assert_eq!(unique_name(&root, "blinky"), "blinky");
+
+        // A saved project: next to it.
+        let work = tmp.path().join("work");
+        create(&work.join("pll"), None, &files, &[], None, NO_VARIANT).unwrap();
+        assert_eq!(save_as_start(Some(&work.join("pll")), &root), work);
+
+        // Never inside a project: a project folder in another project's
+        // folder (a projects folder set inside a project) steps out.
+        let outer = tmp.path().join("outer");
+        create(&outer, None, &files, &[], None, NO_VARIANT).unwrap();
+        let inner = outer.join("sub");
+        std::fs::create_dir(&inner).unwrap();
+        assert_eq!(save_as_start(None, &inner), tmp.path());
+        assert_eq!(save_as_start(None, &outer), tmp.path());
     }
 
     #[test]

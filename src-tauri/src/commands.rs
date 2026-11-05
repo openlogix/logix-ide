@@ -927,14 +927,16 @@ pub async fn save_project_as_dialog(
     board: Option<String>,
     variant: project::Variant,
 ) -> Result<Option<ProjectDoc>, UserError> {
-    let mut dialog = app
-        .dialog()
-        .file()
-        .set_title("Save Project As")
-        .set_file_name(suggested_name);
+    let mut dialog = app.dialog().file().set_title("Save Project As");
+    // Start next to the project (or in the projects folder), never inside a
+    // project, with a name nothing there has yet.
     if let Some(root) = project::default_projects_root() {
         let _ = std::fs::create_dir_all(&root);
-        dialog = dialog.set_directory(root);
+        let start = project::save_as_start(source_dir.as_deref().map(Path::new), &root);
+        let name = project::unique_name(&start, &suggested_name);
+        dialog = dialog.set_directory(start).set_file_name(name);
+    } else {
+        dialog = dialog.set_file_name(suggested_name);
     }
     let Some(picked) = blocking(move || dialog.blocking_save_file()).await? else {
         return Ok(None);
