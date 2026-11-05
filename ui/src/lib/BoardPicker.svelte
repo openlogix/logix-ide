@@ -14,14 +14,17 @@
   let {
     boards,
     connected,
+    maybeConnected,
     value,
     disabled = false,
     placeholder,
     onPick,
   }: {
     boards: Board[];
-    /** Ids of the boards plugged in now. */
+    /** Ids of the boards a connected device matches by name. */
     connected: string[];
+    /** Ids of the boards a connected device may be: only its USB chip fits. */
+    maybeConnected: string[];
     /** The selected board's id. */
     value: string | null;
     disabled?: boolean;
@@ -40,7 +43,7 @@
   let input = $state<HTMLInputElement | null>(null);
   let list = $state<HTMLElement | null>(null);
 
-  const groups = $derived(boardGroups(boards, connected, query));
+  const groups = $derived(boardGroups(boards, connected, maybeConnected, query));
   /** Whether a group's boards are shown (all of them while searching). */
   const isOpen = (g: BoardGroup) =>
     !g.collapsible || query.trim() !== "" || expanded.has(g.label);

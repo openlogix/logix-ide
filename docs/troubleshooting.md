@@ -23,8 +23,8 @@ click **Retry**.
 - Check that the board is plugged in and powered.
 - Try another USB cable: some cables only charge and don't carry data.
 - Look next to the board list: **Connected** means a connected
-  device fits the selected board. If the board appears under **Possibly
-  connected** in the list but isn't the selected one, select it. (Boards with a common USB chip are never
+  device fits the selected board. If the board appears under **Connected**
+  or **Maybe connected** in the list but isn't the selected one, select it. (Boards with a common USB chip are never
   listed there; Upload still finds them.)
 - Open **Tools > Connected Devices…** to see what the computer finds, and
   which boards each device looks like. If the board is listed, check that

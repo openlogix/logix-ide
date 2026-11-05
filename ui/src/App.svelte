@@ -329,7 +329,7 @@
     }
   }
 
-  // ---- Connected boards (the board list's "Possibly connected" group) ----
+  // ---- Connected boards (the board list's "Connected" and "Maybe connected" groups) ----
 
   /** Boards that match the connected USB devices, polled while idle. */
   let connected = $state<ConnectedBoard[]>([]);
@@ -1668,7 +1668,10 @@
     >
     <BoardPicker
       {boards}
-      connected={connected.filter((c) => c.suggested).map((c) => c.board)}
+      connected={connected.filter((c) => c.suggested && c.exact).map((c) => c.board)}
+      maybeConnected={connected
+        .filter((c) => !c.exact && (c.suggested || c.board === currentBoard))
+        .map((c) => c.board)}
       value={pendingBoard ?? currentBoard}
       disabled={boards.length === 0}
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
@@ -1688,7 +1691,9 @@
         class="board-link"
         class:connected={boardConnected}
         title={`${boardConnected
-          ? `A connected device may be the ${boardName(currentBoard)} (it fits the board's USB filter).`
+          ? connected.some((c) => c.board === currentBoard && c.exact)
+            ? `A connected device matches the ${boardName(currentBoard)} by name.`
+            : `A connected device has the ${boardName(currentBoard)}'s USB chip, but its name doesn't confirm which board it is. Upload checks.`
           : `${boardName(currentBoard)} isn't connected (no matching USB device found).`} Click to see the connected devices.`}
         onclick={showDevices}
         >{boardConnected ? "Connected" : "Not connected"}</button

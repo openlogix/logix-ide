@@ -4,7 +4,7 @@ import type { Board } from "./backend";
 export interface BoardGroup {
   label: string;
   boards: Board[];
-  /** Architecture groups can be collapsed; "Possibly connected" can't. */
+  /** Architecture groups can be collapsed; "Connected" and "Maybe connected" can't. */
   collapsible: boolean;
 }
 
@@ -46,13 +46,15 @@ export function groupByArch<T>(
 }
 
 /**
- * The board picker's groups: the connected boards first, then all boards
- * by FPGA architecture. With a search query, only boards whose name, id or
- * architecture contains it; empty groups are left out.
+ * The board picker's groups: the connected boards first ("Connected": a
+ * device matches them by name; "Maybe connected": only by its USB chip),
+ * then all boards by FPGA architecture. With a search query, only boards
+ * whose name, id or architecture contains it; empty groups are left out.
  */
 export function boardGroups(
   boards: Board[],
   connected: string[],
+  maybeConnected: string[],
   query: string,
 ): BoardGroup[] {
   const q = query.trim().toLowerCase();
@@ -64,11 +66,15 @@ export function boardGroups(
   const shown = boards.filter(matches);
 
   const groups: BoardGroup[] = [];
-  const plugged = connected
-    .map((id) => shown.find((b) => b.id === id))
-    .filter((b): b is Board => b !== undefined);
-  if (plugged.length > 0)
-    groups.push({ label: "Possibly connected", boards: plugged, collapsible: false });
+  const pick = (ids: string[]) =>
+    ids
+      .map((id) => shown.find((b) => b.id === id))
+      .filter((b): b is Board => b !== undefined);
+  const plugged = pick(connected);
+  const maybe = pick(maybeConnected.filter((id) => !connected.includes(id)));
+  if (plugged.length > 0) groups.push({ label: "Connected", boards: plugged, collapsible: false });
+  if (maybe.length > 0)
+    groups.push({ label: "Maybe connected", boards: maybe, collapsible: false });
   for (const g of groupByArch(shown, (b) => b.arch)) {
     groups.push({ label: g.label, boards: g.items, collapsible: true });
   }

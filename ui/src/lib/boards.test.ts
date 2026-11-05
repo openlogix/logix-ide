@@ -10,8 +10,8 @@ const boards = [
   { id: "tang", description: "Tang Nano 9K", arch: "gowin", pinExtension: null, dimensions: [], configurations: [] },
 ];
 
-const summary = (connected: string[], q: string) =>
-  boardGroups(boards, connected, q).map(
+const summary = (connected: string[], q: string, maybe: string[] = []) =>
+  boardGroups(boards, connected, maybe, q).map(
     (g) => `${g.label}: ${g.boards.map((b) => b.id).join(",")}`,
   );
 
@@ -27,8 +27,16 @@ describe("boardGroups", () => {
   });
 
   it("lists connected boards first, and in their group too", () => {
-    expect(summary(["tang", "unknown-board"], "")[0]).toBe("Possibly connected: tang");
+    expect(summary(["tang", "unknown-board"], "")[0]).toBe("Connected: tang");
     expect(summary(["tang"], "")).toContain("Gowin: tang");
+  });
+
+  it("lists boards that fit only by USB chip under Maybe connected", () => {
+    expect(summary(["tang"], "", ["arty", "tang"]).slice(0, 2)).toEqual([
+      "Connected: tang",
+      "Maybe connected: arty",
+    ]);
+    expect(summary([], "", ["arty"])[0]).toBe("Maybe connected: arty");
   });
 
   it("searches names, ids and architectures", () => {
@@ -53,9 +61,10 @@ describe("groupByArch", () => {
     expect(groups).toEqual(["Lattice iCE40:c", "Xilinx:b", "ALPHA:d", "ZETA:a"]);
   });
 
-  it("marks Connected as not collapsible", () => {
-    const [connected, ice40] = boardGroups(boards, ["tang"], "");
+  it("marks Connected and Maybe connected as not collapsible", () => {
+    const [connected, maybe, ice40] = boardGroups(boards, ["tang"], ["arty"], "");
     expect(connected.collapsible).toBe(false);
+    expect(maybe.collapsible).toBe(false);
     expect(ice40.collapsible).toBe(true);
   });
 });

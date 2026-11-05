@@ -85,11 +85,13 @@ offers the recent projects for that board and the board's examples, and
 **Keep Current Files** just switches the board. Choosing the current board again is a quick way to get
 to its examples.
 
-Boards plugged in by USB are listed first, under **Possibly connected**, and
-the words next to the list (**Connected** or **Not connected**) tell
-whether the selected board seems to be plugged in. The list says "Possibly",
-because different boards can look the same over USB. Click it to see the connected devices. Some boards use a common USB chip that can't
-tell which board it is; they're not listed under Connected, but Upload still
+Boards plugged in by USB are listed first: under **Connected** when the
+device reports the board's name, and under **Maybe connected** when only its
+USB chip fits, since different boards can use the same chip. The words next
+to the list (**Connected** or **Not connected**) tell whether the selected
+board seems to be plugged in; Upload then checks. Click them to see the
+connected devices. Some boards use a common USB chip that fits dozens of
+boards; those are listed only when one of them is selected, but Upload still
 finds them.
 
 ### Board options

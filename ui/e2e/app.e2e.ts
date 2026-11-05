@@ -385,13 +385,16 @@ test("lists plugged-in boards first and shows if the board is connected", async 
     window.dispatchEvent(new Event("focus"));
   });
   await expect(link).toHaveText("Connected");
+  await expect(link).toHaveAttribute("title", /matches the Alhambra II by name/);
   await boardButton(page).click();
-  await expect(page.locator(".group").first()).toHaveText("Possibly connected");
+  await expect(page.locator(".group").first()).toHaveText("Connected");
   await expect(page.getByRole("option").first()).toHaveText(/Alhambra II/);
   await page.keyboard.press("Escape");
 
   // An Arty reports the same name as the Basys3's pattern: only the Basys3
-  // is suggested, but the Arty matches too, so it shows as connected.
+  // is suggested, but the Arty matches by its USB chip, so the status says
+  // Connected (erring to that side: Upload checks), and the selected Arty
+  // is listed under Maybe connected.
   await page.evaluate(() => {
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
@@ -420,9 +423,13 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
   await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
   await expect(link).toHaveText("Connected");
+  await expect(link).toHaveAttribute("title", /USB chip, but its name doesn't confirm/);
   await boardButton(page).click();
-  await expect(page.locator(".group").first()).toHaveText("Possibly connected");
-  await expect(page.getByRole("option").first()).toHaveText(/Basys3/);
+  const groups = page.locator(".group");
+  await expect(groups.nth(0)).toHaveText("Connected");
+  await expect(groups.nth(1)).toHaveText("Maybe connected");
+  await expect(page.getByRole("option").nth(0)).toHaveText(/Basys3/);
+  await expect(page.getByRole("option").nth(1)).toHaveText(/Arty A7-35T/);
 });
 
 test("opens a board's Bare Minimum from the examples", async ({ page }) => {
