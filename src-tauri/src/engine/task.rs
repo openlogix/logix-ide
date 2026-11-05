@@ -603,19 +603,36 @@ fn report(arch: &str, build: &Value) -> BuildReport {
                 .collect()
         })
         .unwrap_or_default();
-    let clocks = build["timing"]
-        .as_object()
-        .map(|map| {
-            map.iter()
-                .filter_map(|(name, mhz)| {
-                    Some(Clock {
-                        name: name.clone(),
-                        fmax_mhz: mhz.as_f64()?,
-                    })
+    // The engine's clocks with plain names (`clocks_summary`), such as
+    // "sys_clk" for the net sys_clk$SB_IO_IN_$glb_clk.
+    let clocks = match build["clocks_summary"].as_array() {
+        Some(list) => list
+            .iter()
+            .filter_map(|c| {
+                Some(Clock {
+                    name: c["name"].as_str()?.to_string(),
+                    fmax_mhz: c["max_mhz"].as_f64()?,
                 })
-                .collect()
-        })
-        .unwrap_or_default();
+            })
+            .collect(),
+        // TODO(revisit): an engine without clocks_summary (before
+        // 2026-11-05): the net name up to its first `$`. Drop this once the
+        // pinned engine has it.
+        None => build["timing"]
+            .as_object()
+            .map(|map| {
+                map.iter()
+                    .filter_map(|(net, mhz)| {
+                        let name = net.split('$').next().filter(|n| !n.is_empty());
+                        Some(Clock {
+                            name: name.unwrap_or(net).to_string(),
+                            fmax_mhz: mhz.as_f64()?,
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default(),
+    };
     BuildReport {
         arch: arch.to_string(),
         resources,
@@ -760,7 +777,10 @@ mod tests {
             "resources_summary": [
                 {"kind": "logic_cells", "label": "logic cells", "used": 27, "available": 7680}
             ],
-            "timing": {"sys_clk$SB_IO_IN_$glb_clk": 194.36}
+            "timing": {"sys_clk$SB_IO_IN_$glb_clk": 194.36},
+            "clocks_summary": [
+                {"name": "sys_clk", "net": "sys_clk$SB_IO_IN_$glb_clk", "max_mhz": 194.36}
+            ]
         });
         let r = report("ice40", &build);
         assert_eq!(
@@ -780,7 +800,21 @@ mod tests {
                 available: 7680
             }]
         );
-        assert_eq!(r.clocks[0].name, "sys_clk$SB_IO_IN_$glb_clk");
+        assert_eq!(
+            r.clocks,
+            [Clock {
+                name: "sys_clk".into(),
+                fmax_mhz: 194.36
+            }]
+        );
+        // An engine without clocks_summary: the net name up to its first $.
+        let old = json!({"timing": {"sys_clk$SB_IO_IN_$glb_clk": 194.36, "$abc$1$o100": 300.0}});
+        let names: Vec<_> = report("ice40", &old)
+            .clocks
+            .into_iter()
+            .map(|c| c.name)
+            .collect();
+        assert_eq!(names, ["$abc$1$o100", "sys_clk"]);
     }
 
     #[test]

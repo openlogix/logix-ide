@@ -64,7 +64,7 @@ describe("build report", () => {
   it("gives console lines, as Arduino's \"Sketch uses ...\"", () => {
     const report = {
       ...ice40,
-      clocks: [{ name: "sys_clk$SB_IO_IN_$glb_clk", fmaxMhz: 194.36 }],
+      clocks: [{ name: "sys_clk", fmaxMhz: 194.36 }],
     };
     expect(reportLines(report)).toEqual([
       "The design uses 27 of 7680 logic cells (0.4%).",

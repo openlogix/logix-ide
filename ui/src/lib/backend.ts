@@ -165,6 +165,7 @@ export interface BuildReport {
    * `name` is its label, e.g. "logic cells". Empty from an older engine.
    */
   summary: { name: string; used: number; available: number }[];
+  /** Each clock with its plain name from the engine, e.g. "sys_clk". */
   clocks: { name: string; fmaxMhz: number }[];
 }
 

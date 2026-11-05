@@ -56,12 +56,7 @@ export function reportLines(report: BuildReport): string[] {
       `The design uses ${u.used} of ${u.available} ${u.label} (${percent(u.used, u.available)}).`,
   );
   for (const c of report.clocks) {
-    lines.push(`Maximum clock speed: ${mhz(c.fmaxMhz)} (${clockName(c.name)}).`);
+    lines.push(`Maximum clock speed: ${mhz(c.fmaxMhz)} (${c.name}).`);
   }
   return lines;
-}
-
-/** nextpnr's clock net name without its suffix, e.g. "sys_clk" for "sys_clk$SB_IO_IN_$glb_clk". */
-function clockName(name: string): string {
-  return name.split("$")[0] || name;
 }
