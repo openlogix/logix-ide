@@ -44,35 +44,55 @@ export function mayBeBoard(d: UsbDevice, board: string | null): boolean {
   return board !== null && d.boards.some((b) => b.board === board);
 }
 
+/** A piece of a device's boards line: text, or a board to show as a link. */
+export type LinePart = string | { board: string };
+
 /**
  * One line on which boards a device may be, from the selected board's point
  * of view (null when there's nothing worth saying): the boards it looks like
  * by name, with the selected board first when it's one of them, or a note
- * that it may be the selected board when only the USB chip fits.
+ * that it may be the selected board when only the USB chip fits. Boards
+ * other than the selected one are `{ board }` parts, which the Connected
+ * Devices dialog shows as links that select the board.
  */
+export function deviceBoardsParts(
+  d: UsbDevice,
+  selected: string | null,
+  boardName: (id: string) => string,
+): LinePart[] | null {
+  const likely = likelyBoards(d);
+  const link = (id: string): LinePart => ({ board: id });
+  // "this board: A" or "one of these boards: A, B or C".
+  const boards = (ids: string[]): LinePart[] => {
+    if (ids.length === 1) return ["this board: ", link(ids[0])];
+    const out: LinePart[] = ["one of these boards: "];
+    ids.forEach((id, i) => {
+      if (i > 0) out.push(i === ids.length - 1 ? " or " : ", ");
+      out.push(link(id));
+    });
+    return out;
+  };
+  if (selected && likely.includes(selected)) {
+    const others = likely.filter((b) => b !== selected);
+    const or: LinePart[] = others.length > 0 ? [", or ", ...boards(others)] : [];
+    return [`Looks like the selected board, ${boardName(selected)}`, ...or, "."];
+  }
+  const fits = mayBeBoard(d, selected);
+  if (likely.length > 0) {
+    return ["Looks like ", ...boards(likely), fits ? ". It may also be the selected board." : "."];
+  }
+  if (fits && selected) return [`May be the selected board, ${boardName(selected)}.`];
+  return null;
+}
+
+/** The same line as plain text. */
 export function deviceBoardsLine(
   d: UsbDevice,
   selected: string | null,
   boardName: (id: string) => string,
 ): string | null {
-  const likely = likelyBoards(d);
-  // "this board: A" or "one of these boards: A, B or C".
-  const boards = (ids: string[]) => {
-    const names = ids.map(boardName);
-    if (names.length === 1) return `this board: ${names[0]}`;
-    return `one of these boards: ${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}`;
-  };
-  if (selected && likely.includes(selected)) {
-    const others = likely.filter((b) => b !== selected);
-    const or = others.length > 0 ? `, or ${boards(others)}` : "";
-    return `Looks like the selected board, ${boardName(selected)}${or}.`;
-  }
-  const fits = mayBeBoard(d, selected);
-  if (likely.length > 0) {
-    return `Looks like ${boards(likely)}.${fits ? " It may also be the selected board." : ""}`;
-  }
-  if (fits && selected) return `May be the selected board, ${boardName(selected)}.`;
-  return null;
+  const parts = deviceBoardsParts(d, selected, boardName);
+  return parts && parts.map((p) => (typeof p === "string" ? p : boardName(p.board))).join("");
 }
 
 /** Console lines listing what's connected, with tips when nothing is. */

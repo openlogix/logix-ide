@@ -741,6 +741,24 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toBeVisible();
 });
 
+test("selects a board from the connected devices", async ({ page }) => {
+  await start(page);
+  await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
+  await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
+  await page.evaluate(() =>
+    (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu(
+      "devices",
+    ),
+  );
+  const dialog = page.getByRole("dialog", { name: "Connected Devices" });
+  await expect(dialog).toContainText("Looks like this board: Alhambra II.");
+  // The board's name is a link that selects it, as the board picker does.
+  await dialog.getByRole("button", { name: "Alhambra II", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
+  await expect(boardButton(page)).toHaveText(/Alhambra II/);
+});
+
 test("settings change the theme and font size", async ({ page }) => {
   await start(page);
   const menu = (id: string) =>

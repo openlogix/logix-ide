@@ -1,7 +1,7 @@
 <!-- Tools > Connected Devices: the USB devices connected. -->
 <script lang="ts">
   import type { Devices } from "./backend";
-  import { deviceBoardsLine, usbLabel } from "./devices";
+  import { deviceBoardsParts, usbLabel } from "./devices";
 
   let {
     devices,
@@ -10,6 +10,7 @@
     board,
     boardName,
     onRefresh,
+    onPick,
     onClose,
   }: {
     /** The board selected in the toolbar, if any. */
@@ -22,6 +23,8 @@
     error: string | null;
     busy: boolean;
     onRefresh: () => void;
+    /** A board name in a device's line was clicked: select that board. */
+    onPick: (board: string) => void;
     onClose: () => void;
   } = $props();
 
@@ -70,13 +73,20 @@
         {:else}
           <ul>
             {#each devices.usb as d, i (i)}
+              {@const parts = deviceBoardsParts(d, board, boardName)}
               <li>
                 <span class="name">{usbLabel(d)}</span>
                 {#if d.serialNumber}
                   <span class="muted">serial {d.serialNumber}</span>
                 {/if}
-                {#if deviceBoardsLine(d, board, boardName)}
-                  <span class="muted">{deviceBoardsLine(d, board, boardName)}</span>
+                {#if parts}
+                  <span class="muted"
+                    >{#each parts as p, pi (pi)}{#if typeof p === "string"}{p}{:else}<button
+                          class="board-pick"
+                          title="Select the {boardName(p.board)}"
+                          onclick={() => onPick(p.board)}>{boardName(p.board)}</button
+                        >{/if}{/each}</span
+                  >
                 {/if}
               </li>
             {/each}
@@ -107,6 +117,16 @@
 </div>
 
 <style>
+  /* A board name that selects the board: a link, inline in the line. */
+  .board-pick {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
   .overlay {
     position: fixed;
     inset: 0;

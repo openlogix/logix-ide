@@ -1564,6 +1564,10 @@
     board={currentBoard}
     {boardName}
     onRefresh={refreshDevices}
+    onPick={(id) => {
+      devicesOpen = false;
+      setBoard(id);
+    }}
     onClose={() => (devicesOpen = false)}
   />
 {/if}

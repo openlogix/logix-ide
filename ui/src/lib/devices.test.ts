@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   confidenceLabel,
   deviceBoardsLine,
+  deviceBoardsParts,
   deviceSummaryLines,
   isBoardNotFound,
   likelyBoards,
@@ -103,6 +104,32 @@ describe("devices", () => {
     expect(deviceBoardsLine(alhambra, "alhambra-ii", name)).toBe(
       "Looks like the selected board, alhambra-ii.",
     );
+  });
+
+  it("makes the boards other than the selected one links", () => {
+    const name = (id: string) => id.toUpperCase();
+    const digilent = {
+      ...alhambra,
+      boards: [
+        { board: "arty", confidence: 3 },
+        { board: "basys3", confidence: 3 },
+      ],
+    };
+    expect(deviceBoardsParts(digilent, "arty", name)).toEqual([
+      "Looks like the selected board, ARTY",
+      ", or ",
+      "this board: ",
+      { board: "basys3" },
+      ".",
+    ]);
+    expect(deviceBoardsParts(digilent, null, name)).toEqual([
+      "Looks like ",
+      "one of these boards: ",
+      { board: "arty" },
+      " or ",
+      { board: "basys3" },
+      ".",
+    ]);
   });
 
   it("puts confidence in words, by comparing", () => {
