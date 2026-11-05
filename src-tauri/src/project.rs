@@ -306,6 +306,33 @@ pub fn create(
     save(target, files, &[], board, variant)
 }
 
+/// Save As into `target`: the project's own folder (`source`) is saved in
+/// place, as Save does (the user's decision: trashing it first would lose
+/// the files Save As copies, such as data files, and in place gives the
+/// same result); another existing folder, which the save dialog already
+/// asked to replace, is checked (`check_replace`) and moved away with
+/// `trash` first; then the project is created there with `source`'s other
+/// files.
+pub fn save_as(
+    target: &Path,
+    source: Option<&Path>,
+    files: &[ProjectFile],
+    removed: &[String],
+    board: Option<&str>,
+    variant: &Variant,
+    trash: impl FnOnce(&Path) -> Result<()>,
+) -> Result<()> {
+    let real = |p: &Path| p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+    if target.exists() && source.is_some_and(|source| real(target) == real(source)) {
+        return save(target, files, removed, board, variant).context("Couldn't save the project.");
+    }
+    if target.exists() {
+        check_replace(target, source)?;
+        trash(target)?;
+    }
+    create(target, source, files, removed, board, variant).context("Couldn't save the project.")
+}
+
 /// Checks that Save As may replace the existing `target`, which the user
 /// agreed to in the save dialog (the caller moves it to the Trash first).
 /// Only a Logix project or an empty folder is replaced, so a mistyped name
@@ -748,6 +775,83 @@ mod tests {
         let inner = parent.join("data");
         std::fs::create_dir(&inner).unwrap();
         assert!(check_replace(&parent, Some(&inner)).is_err());
+    }
+
+    #[test]
+    fn save_as_onto_its_own_folder_saves_in_place() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project = tmp.path().join("untitled copy");
+        let files = [file("main.v", "old"), file("old.v", "x")];
+        create(&project, None, &files, &[], Some("b"), NO_VARIANT).unwrap();
+        write(&project, "data.hex", "00");
+        std::fs::create_dir(project.join("docs")).unwrap();
+        write(&project.join("docs"), "notes.md", "hi");
+
+        // The same folder: saved as Save does, never trashed; other files stay.
+        let edited = [file("main.v", "new")];
+        save_as(
+            &project,
+            Some(&project),
+            &edited,
+            &["old.v".to_string()],
+            Some("b"),
+            NO_VARIANT,
+            |_| panic!("the project's own folder must not be trashed"),
+        )
+        .unwrap();
+        assert_eq!(
+            std::fs::read_to_string(project.join("main.v")).unwrap(),
+            "new"
+        );
+        assert!(!project.join("old.v").exists(), "removed in the IDE");
+        assert!(project.join("data.hex").exists());
+        assert!(project.join("docs/notes.md").exists());
+
+        // Another project folder: replaced (trashed first), with the source's
+        // other files copied.
+        let other = tmp.path().join("blinky");
+        create(
+            &other,
+            None,
+            &[file("main.v", "theirs")],
+            &[],
+            None,
+            NO_VARIANT,
+        )
+        .unwrap();
+        let mut trashed = None;
+        save_as(
+            &other,
+            Some(&project),
+            &edited,
+            &[],
+            Some("b"),
+            NO_VARIANT,
+            |old| {
+                trashed = Some(old.to_path_buf());
+                std::fs::remove_dir_all(old)?;
+                Ok(())
+            },
+        )
+        .unwrap();
+        assert_eq!(trashed.as_deref(), Some(other.as_path()));
+        assert_eq!(
+            std::fs::read_to_string(other.join("main.v")).unwrap(),
+            "new"
+        );
+        assert!(other.join("data.hex").exists());
+
+        // A folder holding the project is still refused.
+        assert!(save_as(
+            tmp.path(),
+            Some(&project),
+            &edited,
+            &[],
+            None,
+            NO_VARIANT,
+            |_| Ok(())
+        )
+        .is_err());
     }
 
     #[test]
