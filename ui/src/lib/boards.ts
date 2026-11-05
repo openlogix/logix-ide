@@ -1,11 +1,27 @@
-import type { Board } from "./backend";
+import type { Board, ConnectedDevice } from "./backend";
 
 /** A titled group of boards in the board picker. */
 export interface BoardGroup {
+  /** Unique among the groups (a device's id, or the label). */
+  key: string;
   label: string;
   boards: Board[];
-  /** Architecture groups can be collapsed; "Connected" and "Maybe connected" can't. */
+  /** Ids of the boards shown as "maybe": their device fits only by its USB chip. */
+  maybe: string[];
+  /** Architecture groups can be collapsed; device groups can't. */
   collapsible: boolean;
+}
+
+/** A connected device's group in the board picker: the boards it may be. */
+export interface DeviceGroup {
+  /** The device's id. */
+  key: string;
+  /** E.g. "Connected: Digilent USB Device (210319AFEF8F)". */
+  label: string;
+  /** Its boards in order, name matches first. */
+  boards: string[];
+  /** Those it fits only by its USB chip. */
+  maybe: string[];
 }
 
 /** FPGA architectures (the engine's ids), in the picker's order, with names. */
@@ -46,15 +62,14 @@ export function groupByArch<T>(
 }
 
 /**
- * The board picker's groups: the connected boards first ("Connected": a
- * device matches them by name; "Maybe connected": only by its USB chip),
- * then all boards by FPGA architecture. With a search query, only boards
- * whose name, id or architecture contains it; empty groups are left out.
+ * The board picker's groups: one per connected device, with the boards it
+ * may be (one device is one board), then all boards by FPGA architecture.
+ * With a search query, only boards whose name, id or architecture contains
+ * it; empty groups are left out.
  */
 export function boardGroups(
   boards: Board[],
-  connected: string[],
-  maybeConnected: string[],
+  devices: DeviceGroup[],
   query: string,
 ): BoardGroup[] {
   const q = query.trim().toLowerCase();
@@ -66,17 +81,35 @@ export function boardGroups(
   const shown = boards.filter(matches);
 
   const groups: BoardGroup[] = [];
-  const pick = (ids: string[]) =>
-    ids
+  for (const d of devices) {
+    const its = d.boards
       .map((id) => shown.find((b) => b.id === id))
       .filter((b): b is Board => b !== undefined);
-  const plugged = pick(connected);
-  const maybe = pick(maybeConnected.filter((id) => !connected.includes(id)));
-  if (plugged.length > 0) groups.push({ label: "Connected", boards: plugged, collapsible: false });
-  if (maybe.length > 0)
-    groups.push({ label: "Maybe connected", boards: maybe, collapsible: false });
+    if (its.length > 0)
+      groups.push({ key: d.key, label: d.label, boards: its, maybe: d.maybe, collapsible: false });
+  }
   for (const g of groupByArch(shown, (b) => b.arch)) {
-    groups.push({ label: g.label, boards: g.items, collapsible: true });
+    groups.push({ key: g.label, label: g.label, boards: g.items, maybe: [], collapsible: true });
   }
   return groups;
+}
+
+/**
+ * The board picker's device groups from the connected devices: per device,
+ * its suggested boards (name matches first, then those it fits only by
+ * chip, as "maybe"), plus `selected` when the device fits it, so the
+ * toolbar's status and the list agree. Devices with none are left out.
+ */
+export function deviceGroups(devices: ConnectedDevice[], selected: string | null): DeviceGroup[] {
+  return devices
+    .map((d) => {
+      const listed = d.boards.filter((b) => b.suggested || b.board === selected);
+      return {
+        key: d.id,
+        label: `Connected: ${d.serial ? `${d.name} (${d.serial})` : d.name}`,
+        boards: listed.map((b) => b.board),
+        maybe: listed.filter((b) => !b.exact).map((b) => b.board),
+      };
+    })
+    .filter((g) => g.boards.length > 0);
 }

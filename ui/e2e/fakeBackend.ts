@@ -110,8 +110,8 @@ const fake = {
   recents: (new URLSearchParams(location.search).get("recents") ?? "")
     .split(",")
     .filter(Boolean),
-  /** Boards reported as plugged in (`connectedBoards`). */
-  connected: [] as Real.ConnectedBoard[],
+  /** Devices reported as plugged in, with their boards (`connectedDevices`). */
+  connected: [] as Real.ConnectedDevice[],
   /** The devices Upload finds that fit the board; with several, Upload
    * asks which one (`select_device`). One Alhambra II by default. */
   uploadDevices: null as Real.UsbDevice[] | null,
@@ -430,7 +430,7 @@ export const backend: typeof Real.backend = {
   setDocumentState: async () => {},
   closeWindow: async () => {},
   logOutput: async () => {},
-  connectedBoards: async () => fake.connected,
+  connectedDevices: async () => fake.connected,
   showOutputMenu: async () => {
     fake.outputMenu += 1;
   },

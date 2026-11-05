@@ -142,7 +142,7 @@ fn parse_board(b: &Value) -> DeviceBoard {
     }
 }
 
-/// A board that matches a connected device.
+/// A board that a connected device may be.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConnectedBoard {
@@ -150,7 +150,7 @@ pub struct ConnectedBoard {
     /// The device's name matched the board's too (engine confidence 2 or
     /// more), not just the USB chip's ids, which many boards share.
     pub exact: bool,
-    /// Worth listing in the board picker's "Connected" group: a name match,
+    /// Worth listing in the board picker under its device: a name match,
     /// or one of only a few boards with the chip's ids (generic FTDI ids fit
     /// dozens). Boards that aren't suggested still match the device, so the
     /// selected one shows as connected.
@@ -158,6 +158,22 @@ pub struct ConnectedBoard {
     /// The configurations whose filter matched, e.g. `{"connection":
     /// "ft232h", "memory": "ram"}`.
     pub variants: Vec<Variant>,
+}
+
+/// A connected device that fits at least one board, with the boards it may
+/// be (one device is one board, so these are alternatives).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectedDevice {
+    /// The engine's device ID: unique among the connected devices.
+    pub id: String,
+    /// Its name for people: the product name, else the manufacturer, else
+    /// "USB device <vid>:<pid>".
+    pub name: String,
+    /// Its serial number, empty when it has none.
+    pub serial: String,
+    /// The boards it may be, suggested name matches first.
+    pub boards: Vec<ConnectedBoard>,
 }
 
 /// A device whose chip fits more boards than this (and none by name) is
@@ -168,16 +184,16 @@ const MAX_GENERIC_MATCHES: usize = 3;
 /// or 3 (the board's own name).
 const NAMED: u8 = 2;
 
-/// The boards that match the connected devices, from the engine's matches.
-/// Each board is listed once, suggested ones first: per device, the boards
-/// whose name matched, or else (if only a few) the boards with the same
-/// chip ids.
-pub fn connected_boards(devices: &[UsbDevice], boards: &[Board]) -> Vec<ConnectedBoard> {
+/// The connected devices that fit catalog boards, each with the boards it
+/// may be, from the engine's matches: suggested are the boards whose name
+/// matched, or else (if only a few) the boards with the same chip ids.
+pub fn connected_devices(devices: &[UsbDevice], boards: &[Board]) -> Vec<ConnectedDevice> {
     // Catalog boards only: the IDE sends no custom boards.
-    let mut found: Vec<ConnectedBoard> = Vec::new();
+    let mut found = Vec::new();
     for dev in devices {
         let exact = dev.boards.iter().any(|b| b.confidence >= NAMED);
         let generic = dev.boards.iter().filter(|b| b.confidence < NAMED).count();
+        let mut its: Vec<ConnectedBoard> = Vec::new();
         for b in &dev.boards {
             let is_exact = b.confidence >= NAMED;
             let suggested = if exact {
@@ -187,31 +203,39 @@ pub fn connected_boards(devices: &[UsbDevice], boards: &[Board]) -> Vec<Connecte
             };
             // The engine reports variant IDs; the UI works with their values.
             let info = boards.iter().find(|x| x.id == b.board);
-            let variants: Vec<Variant> = b
+            let mut variants: Vec<Variant> = Vec::new();
+            for v in b
                 .variants
                 .iter()
                 .filter_map(|(id, _)| info.and_then(|i| variant_values(i, id)))
-                .collect();
-            match found.iter_mut().find(|c| c.board == b.board) {
-                Some(c) => {
-                    c.exact |= is_exact;
-                    c.suggested |= suggested;
-                    for v in variants {
-                        if !c.variants.contains(&v) {
-                            c.variants.push(v);
-                        }
-                    }
+            {
+                if !variants.contains(&v) {
+                    variants.push(v);
                 }
-                None => found.push(ConnectedBoard {
-                    board: b.board.clone(),
-                    exact: is_exact,
-                    suggested,
-                    variants,
-                }),
             }
+            its.push(ConnectedBoard {
+                board: b.board.clone(),
+                exact: is_exact,
+                suggested,
+                variants,
+            });
         }
+        if its.is_empty() {
+            continue;
+        }
+        its.sort_by_key(|c| (!c.suggested, !c.exact));
+        let name = [&dev.product, &dev.manufacturer]
+            .into_iter()
+            .find(|n| !n.is_empty())
+            .cloned()
+            .unwrap_or_else(|| format!("USB device {}:{}", dev.vid, dev.pid));
+        found.push(ConnectedDevice {
+            id: dev.id.clone(),
+            name,
+            serial: dev.serial_number.clone(),
+            boards: its,
+        });
     }
-    found.sort_by_key(|c| (!c.suggested, !c.exact));
     found
 }
 
@@ -266,8 +290,9 @@ mod tests {
 
     fn connected(devices: Vec<Value>) -> Vec<(String, bool)> {
         let list = parse_devices(&json!({ "devices": devices })).unwrap();
-        connected_boards(&list.devices, &boards())
+        connected_devices(&list.devices, &boards())
             .into_iter()
+            .flat_map(|d| d.boards)
             .filter(|c| c.suggested)
             .map(|c| (c.board, c.exact))
             .collect()
@@ -312,21 +337,30 @@ mod tests {
     }
 
     #[test]
-    fn every_matching_board_is_listed_suggested_or_not() {
+    fn each_device_lists_its_own_boards() {
         let list = parse_devices(&json!({"devices": [
-            device("Alhambra II", &[("alhambra-ii", 3), ("generic-a", 1)])
+            device("Alhambra II", &[("alhambra-ii", 3), ("generic-a", 1)]),
+            device("Something", &[("generic-a", 1)]),
+            device("Unknown", &[]),
         ]}))
         .unwrap();
-        let all = connected_boards(&list.devices, &boards());
-        assert_eq!(all.len(), 2);
-        assert!(!all[1].suggested);
+        let all = connected_devices(&list.devices, &boards());
+        assert_eq!(all.len(), 2, "a device that fits no board is left out");
+        assert_eq!(all[0].name, "Alhambra II");
+        assert_eq!(all[0].id, "usb:1-1:0403:6010:Alhambra II");
+        // Every matching board is listed, suggested or not.
+        assert_eq!(all[0].boards.len(), 2);
+        assert!(all[0].boards[0].suggested && !all[0].boards[1].suggested);
         assert_eq!(
-            all[0].variants,
+            all[0].boards[0].variants,
             [Variant::from([
                 ("connection".into(), "usb".into()),
                 ("memory".into(), "flash".into())
             ])]
         );
+        // The same board on two devices is listed under each.
+        assert_eq!(all[1].boards[0].board, "generic-a");
+        assert!(all[1].boards[0].suggested);
     }
 
     #[test]

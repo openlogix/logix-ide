@@ -214,13 +214,25 @@ export interface Devices {
   unreachable: UnreachableDevice[];
 }
 
-/** A board that matches a connected USB device. */
+/** A connected USB device that fits catalog boards. */
+export interface ConnectedDevice {
+  /** The engine's device id: unique among the connected devices. */
+  id: string;
+  /** Its name for people, e.g. "Digilent USB Device". */
+  name: string;
+  /** Its serial number, "" when it has none. */
+  serial: string;
+  /** The boards it may be (one device is one board), name matches first. */
+  boards: ConnectedBoard[];
+}
+
+/** A board that a connected USB device may be. */
 export interface ConnectedBoard {
   board: string;
   /** Its product name matched too, not just the USB chip's ids. */
   exact: boolean;
   /**
-   * Worth listing in the board picker's Connected group (a product name
+   * Worth listing in the board picker under its device (a product name
    * match, or one of only a few boards with the chip's ids). Every listed
    * board matches the device, so the selected one shows as connected.
    */
@@ -526,9 +538,9 @@ export const backend = {
   /** The connected USB devices. */
   scanDevices: (): Promise<Devices> => invoke<Devices>("scan_devices"),
 
-  /** The boards that match the connected USB devices (silent). */
-  connectedBoards: (): Promise<ConnectedBoard[]> =>
-    invoke<ConnectedBoard[]>("connected_boards"),
+  /** The connected USB devices that fit boards, with their boards (silent). */
+  connectedDevices: (): Promise<ConnectedDevice[]> =>
+    invoke<ConnectedDevice[]>("connected_devices"),
 
   /** Stops the running build, upload, test or simulation. */
   cancelTask: (): Promise<boolean> => invoke<boolean>("cancel_task"),

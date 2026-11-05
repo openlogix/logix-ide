@@ -477,25 +477,32 @@ pub async fn scan_devices(state: State<'_, AppState>) -> Result<Devices, UserErr
     })
 }
 
-/// The boards that match the connected USB devices, for the board list's
-/// "Connected" group. Silent; polled by the UI while it's idle.
+/// The connected USB devices that fit catalog boards, each with the boards
+/// it may be, for the board list's device groups. Silent; polled by the UI
+/// while it's idle.
 #[tauri::command]
-pub async fn connected_boards(
+pub async fn connected_devices(
     state: State<'_, AppState>,
-) -> Result<Vec<engine::ConnectedBoard>, UserError> {
+) -> Result<Vec<engine::ConnectedDevice>, UserError> {
     let engine = ready_engine(&state).await?;
     let list = engine::list_devices(&engine, None)
         .await
         .context("Couldn't list the connected devices.")?;
     let boards = catalog(&state).await?.boards;
-    let found = engine::connected_boards(&list.devices, &boards);
+    let found = engine::connected_devices(&list.devices, &boards);
     // Polled every few seconds: log only changes, not every scan.
-    static LAST: std::sync::Mutex<Option<Vec<engine::ConnectedBoard>>> =
+    static LAST: std::sync::Mutex<Option<Vec<engine::ConnectedDevice>>> =
         std::sync::Mutex::new(None);
     let mut last = LAST.lock().unwrap_or_else(|e| e.into_inner());
     if last.as_ref() != Some(&found) {
-        let names: Vec<_> = found.iter().map(|c| c.board.as_str()).collect();
-        crate::log!("Connected boards: {names:?}");
+        let names: Vec<String> = found
+            .iter()
+            .map(|d| {
+                let boards: Vec<_> = d.boards.iter().map(|c| c.board.as_str()).collect();
+                format!("{}: {}", d.name, boards.join(", "))
+            })
+            .collect();
+        crate::log!("Connected devices: {names:?}");
         *last = Some(found.clone());
     }
     Ok(found)

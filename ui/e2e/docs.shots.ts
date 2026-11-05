@@ -26,7 +26,12 @@ async function startWithBoard(page: Page) {
   await page.evaluate(() => {
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
-      { board: "alhambra-ii", exact: true, suggested: true, variants: [{}] },
+      {
+        id: "usb:1-2:0403:6010:FTATANKC",
+        name: "Alhambra II v1.0A",
+        serial: "FTATANKC",
+        boards: [{ board: "alhambra-ii", exact: true, suggested: true, variants: [{}] }],
+      },
     ];
     window.dispatchEvent(new Event("focus"));
   });

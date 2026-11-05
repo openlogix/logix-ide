@@ -5,7 +5,7 @@
     toUserError,
     type AppInfo,
     type Board,
-    type ConnectedBoard,
+    type ConnectedDevice,
     type Example,
     type Devices,
     type UsbDevice,
@@ -24,6 +24,7 @@
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
+  import { deviceGroups } from "./lib/boards";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
     choose as chooseVariant,
@@ -329,10 +330,12 @@
     }
   }
 
-  // ---- Connected boards (the board list's "Connected" and "Maybe connected" groups) ----
+  // ---- Connected devices (the board list's device groups) ----
 
-  /** Boards that match the connected USB devices, polled while idle. */
-  let connected = $state<ConnectedBoard[]>([]);
+  /** The connected USB devices that fit boards, polled while idle. */
+  let connectedDevices = $state<ConnectedDevice[]>([]);
+  /** Every board a connected device may be (a board may fit several). */
+  const connected = $derived(connectedDevices.flatMap((d) => d.boards));
   let scanning = false;
 
   async function refreshConnected() {
@@ -340,8 +343,8 @@
     if (scanning || !ready || isBusy) return;
     scanning = true;
     try {
-      const found = await backend.connectedBoards();
-      if (JSON.stringify(found) !== JSON.stringify(connected)) connected = found;
+      const found = await backend.connectedDevices();
+      if (JSON.stringify(found) !== JSON.stringify(connectedDevices)) connectedDevices = found;
     } catch {
       // Keep the last result; Tools > Connected Devices shows errors.
     } finally {
@@ -1668,10 +1671,7 @@
     >
     <BoardPicker
       {boards}
-      connected={connected.filter((c) => c.suggested && c.exact).map((c) => c.board)}
-      maybeConnected={connected
-        .filter((c) => !c.exact && (c.suggested || c.board === currentBoard))
-        .map((c) => c.board)}
+      devices={deviceGroups(connectedDevices, currentBoard)}
       value={pendingBoard ?? currentBoard}
       disabled={boards.length === 0}
       placeholder={boards.length ? "Select board…" : "Loading boards…"}

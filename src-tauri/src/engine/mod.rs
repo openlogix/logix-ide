@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 pub use catalog::{catalog, constraint_extension, variant_id, Board, Catalog, Variant};
 pub use client::Engine;
 pub use devices::{
-    connected_boards, list_devices, ConnectedBoard, DeviceList, UnreachableDevice, UsbDevice,
+    connected_devices, list_devices, ConnectedDevice, DeviceList, UnreachableDevice, UsbDevice,
 };
 pub use format::format_file;
 pub use info::program_path;

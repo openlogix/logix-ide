@@ -85,9 +85,11 @@ offers the recent projects for that board and the board's examples, and
 **Keep Current Files** just switches the board. Choosing the current board again is a quick way to get
 to its examples.
 
-Boards plugged in by USB are listed first: under **Connected** when the
-device reports the board's name, and under **Maybe connected** when only its
-USB chip fits, since different boards can use the same chip. The words next
+Boards plugged in by USB are listed first, under **Connected:** and the
+name of the device they were found on. A device is one board, so several boards under one
+device are the boards it may be: first those whose name it reports, then
+those it fits only by its USB chip, marked **maybe**, since different boards
+can use the same chip. The words next
 to the list (**Connected** or **Not connected**) tell whether the selected
 board seems to be plugged in; Upload then checks. Click them to see the
 connected devices. Some boards use a common USB chip that fits dozens of

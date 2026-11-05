@@ -97,7 +97,7 @@ pub fn run() {
             commands::run_task,
             commands::cancel_task,
             commands::scan_devices,
-            commands::connected_boards,
+            commands::connected_devices,
             commands::lsp_start,
             commands::lsp_send,
             commands::lsp_stop,

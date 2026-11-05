@@ -8,23 +8,20 @@
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
-  import { archLabel, boardGroups, type BoardGroup } from "./boards";
+  import { archLabel, boardGroups, type BoardGroup, type DeviceGroup } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
 
   let {
     boards,
-    connected,
-    maybeConnected,
+    devices,
     value,
     disabled = false,
     placeholder,
     onPick,
   }: {
     boards: Board[];
-    /** Ids of the boards a connected device matches by name. */
-    connected: string[];
-    /** Ids of the boards a connected device may be: only its USB chip fits. */
-    maybeConnected: string[];
+    /** The connected devices, each with the boards it may be. */
+    devices: DeviceGroup[];
     /** The selected board's id. */
     value: string | null;
     disabled?: boolean;
@@ -43,7 +40,7 @@
   let input = $state<HTMLInputElement | null>(null);
   let list = $state<HTMLElement | null>(null);
 
-  const groups = $derived(boardGroups(boards, connected, maybeConnected, query));
+  const groups = $derived(boardGroups(boards, devices, query));
   /** Whether a group's boards are shown (all of them while searching). */
   const isOpen = (g: BoardGroup) =>
     !g.collapsible || query.trim() !== "" || expanded.has(g.label);
@@ -180,7 +177,7 @@
         onkeydown={onKey}
       />
       <ul id="board-list" role="listbox" aria-label="Boards" bind:this={list}>
-        {#each groups as g, gi (g.label)}
+        {#each groups as g, gi (g.key)}
           {@const shown = isOpen(g)}
           <li class="group" role="presentation">
             {#if g.collapsible}
@@ -216,6 +213,9 @@
                 >{b.id === value ? "✓" : ""}</span
               >
               {b.description}
+              {#if g.maybe.includes(b.id)}
+                <span class="maybe" title="The device fits this board only by its USB chip, which other boards use too.">maybe</span>
+              {/if}
             </li>
           {/each}
         {:else}
@@ -298,6 +298,11 @@
     padding: 0 0 6px;
     list-style: none;
     overflow: auto;
+  }
+  .maybe {
+    margin-left: 8px;
+    color: var(--muted);
+    font-size: 11px;
   }
   .group {
     position: sticky;

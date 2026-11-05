@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { archLabel, boardGroups, groupByArch } from "./boards";
+import { archLabel, boardGroups, deviceGroups, groupByArch, type DeviceGroup } from "./boards";
+import type { ConnectedDevice } from "./backend";
 
 const boards = [
   { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", pinExtension: null, dimensions: [], configurations: [] },
@@ -10,8 +11,16 @@ const boards = [
   { id: "tang", description: "Tang Nano 9K", arch: "gowin", pinExtension: null, dimensions: [], configurations: [] },
 ];
 
-const summary = (connected: string[], q: string, maybe: string[] = []) =>
-  boardGroups(boards, connected, maybe, q).map(
+/** One device that may be `ids`, the `maybe` ones only by its USB chip. */
+const dev = (ids: string[], maybe: string[] = [], key = "usb:1"): DeviceGroup => ({
+  key,
+  label: `Device ${key}`,
+  boards: ids,
+  maybe,
+});
+
+const summary = (devices: DeviceGroup[], q: string) =>
+  boardGroups(boards, devices, q).map(
     (g) => `${g.label}: ${g.boards.map((b) => b.id).join(",")}`,
   );
 
@@ -26,23 +35,20 @@ describe("boardGroups", () => {
     ]);
   });
 
-  it("lists connected boards first, and in their group too", () => {
-    expect(summary(["tang", "unknown-board"], "")[0]).toBe("Connected: tang");
-    expect(summary(["tang"], "")).toContain("Gowin: tang");
+  it("lists each connected device's boards first, and in their group too", () => {
+    expect(summary([dev(["tang", "unknown-board"])], "")[0]).toBe("Device usb:1: tang");
+    expect(summary([dev(["tang"])], "")).toContain("Gowin: tang");
   });
 
-  it("lists boards that fit only by USB chip under Maybe connected", () => {
-    expect(summary(["tang"], "", ["arty", "tang"]).slice(0, 2)).toEqual([
-      "Connected: tang",
-      "Maybe connected: arty",
-    ]);
-    expect(summary([], "", ["arty"])[0]).toBe("Maybe connected: arty");
+  it("keeps two devices apart, even with the same boards", () => {
+    const groups = boardGroups(boards, [dev(["arty"], [], "usb:1"), dev(["arty"], [], "usb:2")], "");
+    expect(groups.slice(0, 2).map((g) => g.key)).toEqual(["usb:1", "usb:2"]);
   });
 
   it("searches names, ids and architectures", () => {
     expect(summary([], "ICE40")).toEqual(["Lattice iCE40: alhambra-ii,icebreaker"]);
     expect(summary([], "gowin")).toEqual(["Gowin: tang"]);
-    expect(summary(["alhambra-ii"], "tang")).toEqual(["Gowin: tang"]);
+    expect(summary([dev(["alhambra-ii"])], "tang")).toEqual(["Gowin: tang"]);
     expect(summary([], "zzz")).toEqual([]);
   });
 });
@@ -61,10 +67,10 @@ describe("groupByArch", () => {
     expect(groups).toEqual(["Lattice iCE40:c", "Xilinx:b", "ALPHA:d", "ZETA:a"]);
   });
 
-  it("marks Connected and Maybe connected as not collapsible", () => {
-    const [connected, maybe, ice40] = boardGroups(boards, ["tang"], ["arty"], "");
-    expect(connected.collapsible).toBe(false);
-    expect(maybe.collapsible).toBe(false);
+  it("marks device groups as not collapsible", () => {
+    const [device, ice40] = boardGroups(boards, [dev(["tang"], ["tang"])], "");
+    expect(device.collapsible).toBe(false);
+    expect(device.maybe).toEqual(["tang"]);
     expect(ice40.collapsible).toBe(true);
   });
 });
@@ -74,5 +80,46 @@ describe("archLabel", () => {
     expect(archLabel("ecp5")).toBe("Lattice ECP5");
     expect(archLabel("nexus")).toBe("NEXUS");
     expect(archLabel("")).toBe("Other");
+  });
+});
+
+describe("deviceGroups", () => {
+  const digilent: ConnectedDevice = {
+    id: "usb:1-3:0403:6010:210319AFEF8F",
+    name: "Digilent USB Device",
+    serial: "210319AFEF8F",
+    boards: [
+      { board: "arty-a7-35t", exact: true, suggested: true, variants: [{}] },
+      { board: "basys3", exact: true, suggested: true, variants: [{}] },
+      { board: "arty-a7-100t", exact: false, suggested: false, variants: [{}] },
+    ],
+  };
+
+  it("lists a device's suggested boards, and the selected one when it fits", () => {
+    expect(deviceGroups([digilent], "alhambra-ii")).toEqual([
+      {
+        key: digilent.id,
+        label: "Connected: Digilent USB Device (210319AFEF8F)",
+        boards: ["arty-a7-35t", "basys3"],
+        maybe: [],
+      },
+    ]);
+    // An Arty A7-100T selected with an Arty A7-35T plugged in: its filter
+    // has only the USB ids, so it is listed as maybe.
+    expect(deviceGroups([digilent], "arty-a7-100t")[0]).toMatchObject({
+      boards: ["arty-a7-35t", "basys3", "arty-a7-100t"],
+      maybe: ["arty-a7-100t"],
+    });
+  });
+
+  it("leaves out devices with nothing to list, and names without a serial", () => {
+    const generic: ConnectedDevice = {
+      id: "usb:1-4:0403:6010:",
+      name: "Dual RS232-HS",
+      serial: "",
+      boards: [{ board: "a", exact: false, suggested: false, variants: [{}] }],
+    };
+    expect(deviceGroups([generic], null)).toEqual([]);
+    expect(deviceGroups([generic], "a")[0].label).toBe("Connected: Dual RS232-HS");
   });
 });

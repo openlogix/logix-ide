@@ -131,12 +131,13 @@ export function isConnected(
   connected: ConnectedBoard[],
 ): boolean {
   if (!boardId) return false;
-  const found = connected.find((c) => c.board === boardId);
-  if (!found) return false;
+  // The board may fit several devices: any of them will do.
+  const found = connected.filter((c) => c.board === boardId);
+  if (found.length === 0) return false;
   if (!board || board.dimensions.every((d) => d.values.length < 2)) return true;
   const when = resolve(board, variant);
-  return found.variants.some((v) =>
-    Object.entries(when).every(([k, x]) => v[k] === x),
+  return found.some((f) =>
+    f.variants.some((v) => Object.entries(when).every(([k, x]) => v[k] === x)),
   );
 }
 
