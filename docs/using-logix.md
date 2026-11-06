@@ -78,12 +78,13 @@ Gowin, Xilinx), and type to search. Click a group's name to open or close
 it; the group of the current board opens by itself. The keyboard works
 too.
 
-![The board list: connected boards first, then all boards by FPGA type](images/boards.png)
+![The board list: recently used boards first, then all boards by FPGA type](images/boards.png)
 
 As in the Arduino IDE, choosing a board doesn't change your files: Logix
 offers the recent projects for that board and the board's examples, and
-**Keep Current Files** just switches the board. Choosing the current board again is a quick way to get
-to its examples.
+**Use Board in Current Project** switches your project to that board,
+files unchanged. Choosing the current board again is a quick way to get to
+its examples.
 
 The boards you picked most recently are listed first, under **Recently
 used**, then all boards by FPGA family. The words next to the list

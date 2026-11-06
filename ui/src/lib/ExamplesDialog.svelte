@@ -244,7 +244,7 @@
 
     <footer>
       <button class="secondary" onclick={onClose}
-        >{onlyBoard ? "Keep Current Files" : "Cancel"}</button
+        >{onlyBoard ? "Use Board in Current Project" : "Cancel"}</button
       >
       <button class="primary" disabled={!canOpen} onclick={open}
         >Open</button

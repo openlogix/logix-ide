@@ -407,8 +407,8 @@
 
   /**
    * Toolbar board change. As in the Arduino IDE, it never changes the
-   * files by itself; the board's examples are offered, with "Keep Current
-   * Files" as the default.
+   * files by itself; the board's examples are offered, with "Use Board in
+   * Current Project" as the default.
    */
   function setBoard(id: string) {
     if (!id) return;
