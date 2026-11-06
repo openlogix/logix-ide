@@ -119,6 +119,7 @@ pub fn run() {
             commands::close_project,
             commands::new_project,
             commands::set_last_board,
+            commands::recent_boards,
             commands::last_board,
             commands::last_variant,
             commands::recent_projects,

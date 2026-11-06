@@ -372,7 +372,7 @@ test("changing the board offers your recent projects for it", async ({ page }) =
   await expect(boardButton(page)).toHaveText(/UPDuino/);
 });
 
-test("lists plugged-in boards first and shows if the board is connected", async ({ page }) => {
+test("shows if the board is connected, and lists recently used boards first", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
   const link = page.locator(".board-link");
@@ -392,9 +392,9 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await expect(link).toHaveText("Connected");
   await expect(link).toHaveAttribute("title", /may be the Alhambra II/);
   await boardButton(page).click();
-  // One group per connected device, named after it.
-  await expect(page.locator(".group").first()).toHaveText(/^\s*Connected: Alhambra II v1.0A \(FTATANKC\)\s*1\s*$/);
-  await expect(page.getByRole("option").first()).toHaveText(/Alhambra II/);
+  // No groups from connected devices: only the architectures.
+  await expect(page.locator(".group", { hasText: "Connected" })).toHaveCount(0);
+  await expect(page.locator(".group").first()).toHaveText(/Lattice iCE40/);
   await page.keyboard.press("Escape");
 
   // The device is a strong match for the Basys3 and a weak one for the
@@ -435,19 +435,24 @@ test("lists plugged-in boards first and shows if the board is connected", async 
   await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
   await expect(link).toHaveText("Connected");
   await expect(link).toHaveAttribute("title", /may be the Arty A7-35T/);
+  await page.keyboard.press("Escape");
+
+  // The boards picked come first, under "Recently used", newest first.
+  await pickBoard(page, "iCEBreaker");
+  await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
   await boardButton(page).click();
-  // Both are listed under the one device, most likely first.
-  await expect(page.locator(".group").first()).toHaveText(/Connected: Digilent USB Device \(210319AFEF8F\)/);
-  await expect(page.getByRole("option").nth(0)).toHaveText(/Basys3/);
+  const recent = page.locator(".group").first();
+  await expect(recent).toHaveText(/^\s*Recently used\s*2\s*$/);
+  await expect(page.getByRole("option").nth(0)).toHaveText(/iCEBreaker/);
   await expect(page.getByRole("option").nth(1)).toHaveText(/Arty A7-35T/);
-  // A device's group collapses like an architecture's.
-  const device = page.locator(".group").first().getByRole("button");
-  await expect(device).toHaveAttribute("aria-expanded", "true");
-  await device.click();
-  await expect(device).toHaveAttribute("aria-expanded", "false");
-  await expect(page.getByRole("option").first()).not.toHaveText(/Basys3/);
-  await device.click();
-  await expect(page.getByRole("option").first()).toHaveText(/Basys3/);
+  // It collapses like an architecture's group.
+  const toggle = recent.getByRole("button");
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("option").first()).not.toHaveText(/iCEBreaker/);
+  await toggle.click();
+  await expect(page.getByRole("option").first()).toHaveText(/iCEBreaker/);
 });
 
 test("opens a board's Bare Minimum from the examples", async ({ page }) => {
@@ -787,10 +792,12 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
   await page.getByRole("button", { name: /mine/ }).click();
   await expect(tab(page, "custom-boards.json")).toBeVisible();
 
-  // Listed first, in its own group; picking it asks nothing.
+  // Listed in its architecture's group, first; picking it asks nothing.
   await boardButton(page).click();
-  const group = page.locator(".group", { hasText: "This project's boards" });
-  await expect(group).toBeVisible();
+  // (The current board's group, iCE40, opens by itself.)
+  await expect(
+    page.locator(".group", { hasText: "Lattice iCE40" }).locator("xpath=following-sibling::li[1]"),
+  ).toHaveText(/My UPduino/);
   await page.getByRole("combobox").fill("My UPduino");
   await page.getByRole("option", { name: "My UPduino", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);

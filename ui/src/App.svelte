@@ -25,7 +25,7 @@
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
-  import { deviceGroups, withProjectBoards } from "./lib/boards";
+  import { withProjectBoards } from "./lib/boards";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
     choose as chooseVariant,
@@ -318,6 +318,16 @@
 
   /** Logix Engine's catalog boards. */
   let catalogBoards = $state<Board[]>([]);
+  /** The boards chosen most recently, newest first ("Recently used"). */
+  let recentBoards = $state<string[]>([]);
+
+  /** Remembers the board the user chose, for new projects and "Recently used". */
+  function rememberBoard(id: string, variant: Variant) {
+    backend
+      .setLastBoard(id, variant)
+      .then((recent) => (recentBoards = recent))
+      .catch(() => {});
+  }
   /** The project's own boards (custom-boards.json), as the engine reads them. */
   let projectBoards = $state<Board[]>([]);
   /** Why the project's custom-boards.json can't be used, if it can't. */
@@ -334,6 +344,7 @@
         backend.getExamples(),
       ]);
       catalogBoards = boardList;
+      recentBoards = await backend.recentBoards();
       examples = exampleList.examples;
       log(examplesSummary(exampleList.examples.length, exampleList.hidden));
     } catch (e) {
@@ -408,7 +419,7 @@
     }
     // Another board starts with its default variant.
     const variant = id === currentBoard ? currentVariant : {};
-    backend.setLastBoard(id, variant);
+    rememberBoard(id, variant);
     // No project (the start screen): it's the board for the next one.
     if (!project) {
       homeBoard = id;
@@ -456,7 +467,7 @@
     const { variant, changed } = chooseVariant(info, currentVariant, dim, value);
     if (project) project.variant = variant;
     else homeVariant = variant;
-    backend.setLastBoard(info.id, variant);
+    rememberBoard(info.id, variant);
     const now = variantSummary(info, variant);
     status = {
       text: changed.length
@@ -1756,7 +1767,7 @@
     >
     <BoardPicker
       {boards}
-      devices={deviceGroups(connectedDevices, currentBoard)}
+      recent={recentBoards}
       value={pendingBoard ?? currentBoard}
       disabled={boards.length === 0}
       placeholder={boards.length ? "Select board…" : "Loading boards…"}

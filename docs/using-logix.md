@@ -85,15 +85,11 @@ offers the recent projects for that board and the board's examples, and
 **Keep Current Files** just switches the board. Choosing the current board again is a quick way to get
 to its examples.
 
-Boards plugged in by USB are listed first, under **Connected:** and the
-name of the device they were found on. A device is one board, so several
-boards under one device are the boards it may be, most likely first, since
-different boards can look the same over USB. Boards that are only weak
-matches aren't listed there unless one of them is selected; Tools >
-Connected Devices counts them, and Upload still finds them. The words next
-to the list (**Connected** or **Not connected**) tell whether the selected
-board seems to be plugged in; Upload then checks. Click them to see the
-connected devices.
+The boards you picked most recently are listed first, under **Recently
+used**, then all boards by FPGA family. The words next to the list
+(**Connected** or **Not connected**) tell whether the selected board seems
+to be plugged in; Upload then checks. Click them to see the connected
+devices and the boards each may be.
 
 ### Board options
 

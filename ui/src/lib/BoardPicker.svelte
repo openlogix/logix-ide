@@ -1,29 +1,29 @@
 <!--
   The toolbar's board picker, like Arduino IDE 2's board selector: a button
-  with the board's name that opens a searchable list, one group per
-  connected device first (expanded until collapsed), then all boards by
-  FPGA architecture (collapsed groups, their state shared with the Examples
-  window). Unlike a native list, picking the current
+  with the board's name that opens a searchable list: the boards chosen
+  most recently first ("Recently used", expanded until collapsed), then all
+  boards by FPGA architecture (collapsed groups, their state shared with the
+  Examples window). No groups from connected devices: the user's decision,
+  since which boards a device may be is a guess. Unlike a native list, picking the current
   board is reported too (Logix then offers its examples).
 -->
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
-  import { boardGroups, type BoardGroup, type DeviceGroup } from "./boards";
-  import { SvelteSet } from "svelte/reactivity";
+  import { boardGroups, RECENT_GROUP, type BoardGroup } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
 
   let {
     boards,
-    devices,
+    recent,
     value,
     disabled = false,
     placeholder,
     onPick,
   }: {
     boards: Board[];
-    /** The connected devices, each with the boards it may be. */
-    devices: DeviceGroup[];
+    /** The boards chosen most recently, newest first. */
+    recent: string[];
     /** The selected board's id. */
     value: string | null;
     disabled?: boolean;
@@ -42,14 +42,13 @@
   let input = $state<HTMLInputElement | null>(null);
   let list = $state<HTMLElement | null>(null);
 
-  const groups = $derived(boardGroups(boards, devices, query));
+  const groups = $derived(boardGroups(boards, recent, query));
+  /** Whether "Recently used" was collapsed (it starts expanded). */
+  let recentCollapsed = $state(false);
   /** Whether a group's boards are shown (all of them while searching). */
-  /** Device groups the user collapsed (they start expanded). */
-  const collapsedDevices = new SvelteSet<string>();
   const isOpen = (g: BoardGroup) =>
-    query.trim() !== "" ||
-    (g.device ? !collapsedDevices.has(g.key) : expanded.has(g.label));
-  /** The shown entries in order (a connected board appears twice). */
+    query.trim() !== "" || (g.recent ? !recentCollapsed : expanded.has(g.label));
+  /** The shown entries in order (a recent board appears twice). */
   const entries = $derived(
     groups.flatMap((g, gi) =>
       isOpen(g) ? g.boards.map((b) => ({ key: `${gi}:${b.id}`, board: b })) : [],
@@ -131,9 +130,8 @@
   });
 
   function toggle(g: BoardGroup) {
-    if (!g.device) toggleGroup(g.label);
-    else if (collapsedDevices.has(g.key)) collapsedDevices.delete(g.key);
-    else collapsedDevices.add(g.key);
+    if (g.key === RECENT_GROUP) recentCollapsed = !recentCollapsed;
+    else toggleGroup(g.label);
     // Keep the highlight on a shown entry.
     if (!entries.some((e) => e.key === active)) active = entries[0]?.key ?? null;
   }
@@ -324,7 +322,7 @@
     text-align: left;
     cursor: pointer;
   }
-  /* A long device name wraps, left aligned, with the count kept right. */
+  /* A long group name wraps, left aligned, with the count kept right. */
   .group-label {
     flex: 1;
     min-width: 0;

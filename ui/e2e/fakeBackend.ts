@@ -202,6 +202,8 @@ const fake = {
   editorMenu: null as Real.MenuState | null,
   /** How often the output pane's right-click menu was shown. */
   outputMenu: 0,
+  /** The boards chosen most recently, newest first (`setLastBoard`). */
+  recentBoards: [] as string[],
   /** More files for the projects `openProjectAt` opens, such as custom-boards.json. */
   projectFiles: [] as ProjectFile[],
   /** The custom boards of the last task run (`runTask`). */
@@ -458,7 +460,11 @@ export const backend: typeof Real.backend = {
   recentProjects: async () => fake.recents,
   // The fake's recent projects are all UPduino v2 projects (openProjectAt).
   recentProjectsForBoard: async (board) => (board === "upduino2" ? fake.recents : []),
-  setLastBoard: async () => {},
+  setLastBoard: async (board) => {
+    fake.recentBoards = [board, ...fake.recentBoards.filter((b) => b !== board)].slice(0, 5);
+    return fake.recentBoards;
+  },
+  recentBoards: async () => fake.recentBoards,
   closeProject: async () => {},
   openProjectDialog: async () => null,
   saveProject: async (_dir, _files, _removed, board, variant) => {

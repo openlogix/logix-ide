@@ -477,9 +477,15 @@ export const backend = {
   /** The variant of the last chosen board ({} for its default). */
   lastVariant: (): Promise<Variant> => invoke<Variant>("last_variant"),
 
-  /** Remembers the board and variant the user chose, for new projects. */
-  setLastBoard: (board: string, variant: Variant): Promise<void> =>
-    invoke<void>("set_last_board", { board, variant }),
+  /**
+   * Remembers the board and variant the user chose, for new projects and
+   * "Recently used". Resolves with the recent boards, newest first.
+   */
+  setLastBoard: (board: string, variant: Variant): Promise<string[]> =>
+    invoke<string[]>("set_last_board", { board, variant }),
+
+  /** The boards chosen most recently, newest first ("Recently used"). */
+  recentBoards: (): Promise<string[]> => invoke<string[]>("recent_boards"),
 
   /** Forgets the last project, so the next start shows the start screen. */
   closeProject: (): Promise<void> => invoke<void>("close_project"),

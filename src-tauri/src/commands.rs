@@ -936,12 +936,27 @@ pub fn last_variant() -> project::Variant {
 
 /// Remembers the board and variant the user chose, for new projects.
 #[tauri::command]
-pub fn set_last_board(board: String, variant: project::Variant) {
-    if let Ok(path) = settings_path() {
-        if let Err(e) = settings::remember_board(&path, &board, &variant) {
+pub fn set_last_board(board: String, variant: project::Variant) -> Vec<String> {
+    let Ok(path) = settings_path() else {
+        return Vec::new();
+    };
+    match settings::remember_board(&path, &board, &variant) {
+        Ok(recent) => recent,
+        Err(e) => {
             crate::log!("Can't save settings: {e:#}");
+            settings::load(&path).recent_boards
         }
     }
+}
+
+/// The boards chosen most recently, newest first (the board picker's
+/// "Recently used" group).
+#[tauri::command]
+pub fn recent_boards() -> Vec<String> {
+    settings_path()
+        .ok()
+        .map(|p| settings::load(&p).recent_boards)
+        .unwrap_or_default()
 }
 
 /// File > Close Project: the next start shows the start screen instead of

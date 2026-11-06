@@ -21,6 +21,10 @@ pub struct Settings {
     /// The variant of the last chosen board (empty: its default).
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
     pub last_variant: std::collections::BTreeMap<String, String>,
+    /// The boards chosen most recently, newest first, for the board
+    /// picker's "Recently used" group.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub recent_boards: Vec<String>,
     /// User preferences (File > Settings). Unset means the default.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub projects_dir: Option<PathBuf>,
@@ -209,16 +213,24 @@ pub fn clear_recent(path: &Path) -> Result<()> {
     save(path, &settings)
 }
 
-/// Records `board` and its variant as the last chosen board.
+/// How many boards the board picker's "Recently used" group lists.
+pub const MAX_RECENT_BOARDS: usize = 5;
+
+/// Records `board` and its variant as the last chosen board, first among
+/// the recent boards. Returns the recent boards, newest first.
 pub fn remember_board(
     path: &Path,
     board: &str,
     variant: &std::collections::BTreeMap<String, String>,
-) -> Result<()> {
+) -> Result<Vec<String>> {
     let mut settings = load(path);
     settings.last_board = Some(board.to_string());
     settings.last_variant = variant.clone();
-    save(path, &settings)
+    settings.recent_boards.retain(|b| b != board);
+    settings.recent_boards.insert(0, board.to_string());
+    settings.recent_boards.truncate(MAX_RECENT_BOARDS);
+    save(path, &settings)?;
+    Ok(settings.recent_boards)
 }
 
 #[cfg(test)]
@@ -349,5 +361,18 @@ mod tests {
         let path = tmp.path().join("settings.json");
         std::fs::write(&path, "not json").unwrap();
         assert!(load(&path).last_project.is_none());
+    }
+
+    #[test]
+    fn keeps_recent_boards_newest_first_without_repeats() {
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("settings.json");
+        let none = std::collections::BTreeMap::new();
+        for b in ["a", "b", "c", "a", "d", "e", "f"] {
+            remember_board(&path, b, &none).unwrap();
+        }
+        let recent = remember_board(&path, "e", &none).unwrap();
+        assert_eq!(recent, ["e", "f", "d", "a", "c"]);
+        assert_eq!(load(&path).recent_boards, recent);
     }
 }
