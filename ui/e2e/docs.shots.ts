@@ -20,7 +20,7 @@ async function startWithBoard(page: Page) {
   await page.getByRole("button", { name: "From Example…" }).click();
   const examples = page.getByRole("dialog", { name: "Examples" });
   await examples.getByRole("button", { name: /^blinky/ }).click();
-  await examples.getByRole("button", { name: "Open" }).click();
+  await examples.getByRole("button", { name: "Open Example" }).click();
   await expect(page.locator(".tab", { hasText: "pinout.pcf" })).toBeVisible();
   // The board is plugged in, as when following the quick start.
   await page.evaluate(() => {

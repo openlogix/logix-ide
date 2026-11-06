@@ -82,8 +82,8 @@ too.
 
 As in the Arduino IDE, choosing a board doesn't change your files: Logix
 offers the recent projects for that board and the board's examples, and
-**Use Board in Current Project** switches your project to that board,
-files unchanged. Choosing the current board again is a quick way to get to
+**Change the Board** switches your project to that board, files
+unchanged. Choosing the current board again is a quick way to get to
 its examples.
 
 The boards you picked most recently are listed first, under **Recently

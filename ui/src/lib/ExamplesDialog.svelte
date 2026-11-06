@@ -1,12 +1,14 @@
 <!--
   Browse the examples by board and open one. With `onlyBoard` (after a
   board change in the toolbar), only that board's examples are shown,
-  after the recent projects for that board (`recents`), and closing
-  keeps the current files.
+  after the recent projects for that board (`recents`), and Change the
+  Board (or closing) keeps the current project, on the new board. The open
+  button says what opens: Open Example, Open Project, or New Project for
+  Bare Minimum (the user's wording).
 -->
 <script lang="ts">
   import type { Board, Example } from "./backend";
-  import { groupExamples, type ExampleEntry } from "./examples";
+  import { BARE_MINIMUM, groupExamples, type ExampleEntry } from "./examples";
   import { groupByArch } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
@@ -100,6 +102,14 @@
   }
 
   const canOpen = $derived(selectedRecent !== null || selectedExample !== null);
+  /** The open button: what it opens. */
+  const openLabel = $derived(
+    selectedRecent !== null
+      ? "Open Project"
+      : selectedExample?.name === BARE_MINIMUM
+        ? "New Project"
+        : "Open Example",
+  );
 
   function open() {
     if (selectedRecent) onOpenRecent(selectedRecent);
@@ -164,8 +174,8 @@
     {#if onlyBoard}
       <p class="hint">
         {recents.length > 0
-          ? "Open a recent project for this board, start from one of its examples, or keep your current files."
-          : "Start from one of the board's examples, or keep your current files."}
+          ? "Open a recent project for this board, start from one of its examples, or change the board of your current project."
+          : "Start from one of the board's examples, or change the board of your current project."}
       </p>
     {/if}
 
@@ -244,10 +254,10 @@
 
     <footer>
       <button class="secondary" onclick={onClose}
-        >{onlyBoard ? "Use Board in Current Project" : "Cancel"}</button
+        >{onlyBoard ? "Change the Board" : "Cancel"}</button
       >
       <button class="primary" disabled={!canOpen} onclick={open}
-        >Open</button
+        >{openLabel}</button
       >
     </footer>
   </div>
