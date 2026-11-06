@@ -116,40 +116,32 @@ describe("boardChangeNote", () => {
     fpga: { id: "lfe5u-25f", partNumber: "LFE5U-25F-6BG256C", size: "25k" },
   };
 
-  it("says what a board change means, a group per level crossed", () => {
-    const show = (groups: { title: string; points: { text: string; risky: boolean }[] }[]) =>
-      groups.map((g) => [g.title, ...g.points.map((p) => (p.risky ? `! ${p.text}` : p.text))]);
-    // Same FPGA: only the board change, things to check.
-    const same = show(boardChangeNote(alhambra, kefir, "pinout.pcf"));
-    expect(same.map((g) => g[0])).toEqual(["Board change"]);
-    expect(same[0]).toEqual([
-      "Board change",
+  it("names the change at its highest level, then its implications", () => {
+    const show = (points: { text: string; kind: string }[]) =>
+      points.map((p) => `${p.kind === "risky" ? "! " : p.kind === "change" ? "> " : ""}${p.text}`);
+    expect(show(boardChangeNote(alhambra, kefir, "pinout.pcf"))).toEqual([
+      "> Board change, same FPGA (ICE40HX4K-TQ144).",
       "The pins may differ: check pinout.pcf.",
-      "The clock frequency may differ: check rates such as blinking and baud rates.",
-      "LEDs and buttons may be active-low instead of active-high, or the other way.",
+      "The clock frequency and the LED and button wiring may differ: check the design.",
     ]);
-    // Another FPGA of the family: and the FPGA change, risky.
-    const fpga = show(boardChangeNote(alhambra, icebreaker, "pinout.pcf"));
-    expect(fpga.map((g) => g[0])).toEqual([
-      "Board change",
-      "FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48",
-    ]);
-    expect(fpga[1].slice(1)).toEqual([
+    expect(show(boardChangeNote(alhambra, icebreaker, "pinout.pcf"))).toEqual([
+      "> FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
       "! FPGA-specific parts, such as PLLs and special cells, may need changes.",
       "! The design may not fit, or may not reach its clock speed.",
+      "The pins, clock frequency and LED and button wiring may differ: check pinout.pcf and the design.",
     ]);
-    // Another family: all three levels.
-    const arch = show(boardChangeNote(alhambra, colorlight, "pinout.pcf"));
-    expect(arch.map((g) => g[0])).toEqual([
-      "Board change",
-      "FPGA change: ICE40HX4K-TQ144 → LFE5U-25F-6BG256C",
-      "Architecture change: Lattice iCE40 → Lattice ECP5",
-    ]);
-    expect(arch[2].slice(1)).toEqual([
-      "! Needs a .lpf pin file instead of pinout.pcf.",
+    expect(show(boardChangeNote(alhambra, colorlight, "pinout.pcf"))).toEqual([
+      "> Architecture change: Lattice iCE40 → Lattice ECP5.",
+      "! Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
       "! Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
+      "The clock frequency and the LED and button wiring may differ: check the design.",
     ]);
-    expect(boardChangeNote(alhambra, colorlight, null)[2].points[0].text).toBe("Needs a .lpf pin file.");
+    // 2 to 4 points each.
+    for (const to of [kefir, icebreaker, colorlight]) {
+      const n = boardChangeNote(alhambra, to, "pinout.pcf").length;
+      expect(n >= 2 && n <= 4).toBe(true);
+    }
+    expect(boardChangeNote(alhambra, colorlight, null)[1].text).toBe("Needs a .lpf pin file, with this board's pins.");
     expect(boardChangeNote(null, colorlight, null)).toEqual([]);
     expect(boardChangeNote(alhambra, alhambra, "pinout.pcf")).toEqual([]);
   });

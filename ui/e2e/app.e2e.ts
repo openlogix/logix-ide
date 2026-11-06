@@ -356,12 +356,13 @@ test("changing the board offers project options: the current project first", asy
   const current = dialog.getByRole("button", { name: /^Change the board of “blinky” to iCEBreaker/ });
   await expect(current).not.toHaveClass(/selected/);
   await expect(dialog.locator("button.selected")).toHaveCount(0);
-  // A group per level of change: here the board and the FPGA.
-  await expect(current.locator(".note-group")).toHaveText([
-    "Board change",
-    "FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48",
+  // The change, then its implications, the risky ones red.
+  await expect(current.locator(".note .point")).toHaveText([
+    "FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
+    /^FPGA-specific parts/,
+    /^The design may not fit/,
+    /^The pins, clock frequency and LED and button wiring may differ/,
   ]);
-  await expect(current.locator(".note .point")).toHaveCount(5);
   await expect(current.locator(".note .point.risky")).toHaveCount(2);
   await expect(dialog.getByText("Example projects", { exact: true })).toBeVisible();
   // The main button waits for a choice, then follows it; Enter does
@@ -383,16 +384,11 @@ test("changing the board offers project options: the current project first", asy
   // Another family: another kind of pin file, and probably more.
   await pickBoard(page, "ColorLight-5A-75B-V8");
   const other = dialog.getByRole("button", { name: /^Change the board of/ });
-  await expect(other.locator(".note-group")).toHaveText([
-    "Board change",
-    "FPGA change: ICE40HX4K-TQ144 → LFE5U-25F-6BG256C",
-    "Architecture change: Lattice iCE40 → Lattice ECP5",
-  ]);
-  // The FPGA and architecture changes' points are risky, in red.
+  await expect(other.locator(".note .point").first()).toHaveText(
+    "Architecture change: Lattice iCE40 → Lattice ECP5.",
+  );
   await expect(other.locator(".note .point.risky")).toHaveText([
-    /^FPGA-specific parts/,
-    /^The design may not fit/,
-    "Needs a .lpf pin file instead of pinout.pcf.",
+    "Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
     /^Probably significant changes/,
   ]);
   await page.keyboard.press("Escape");

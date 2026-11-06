@@ -100,65 +100,51 @@ export function boardsWithFpga(boards: Board[], b: Board): Board[] {
   return same.sort((x, y) => x.description.localeCompare(y.description));
 }
 
-/** One point of a board-change note: `risky` ones are shown in red. */
+/**
+ * One point of a board-change note: the change itself (the first point),
+ * something to check, or a risky implication (shown in red).
+ */
 export interface NotePoint {
   text: string;
-  risky: boolean;
-}
-
-/** One level of a board-change note: its title and its points (2 to 4). */
-export interface NoteGroup {
-  /** E.g. "FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48". */
-  title: string;
-  points: NotePoint[];
+  kind: "change" | "check" | "risky";
 }
 
 /**
- * What changing a project from board `from` to board `to` means, by level
- * (the user's design): "Board change" for any other board, then "FPGA
- * change" when the FPGA differs, then "Architecture change" when the FPGA
- * family differs, each crossed level adding its group. Empty for the same
- * board. `pinFile` is the project's pin file, such as "pinout.pcf". The
- * board-change points are things to check (not red); the FPGA and
- * architecture changes' are risky (red). From the catalog's facts only.
+ * What changing a project from board `from` to board `to` means: 2 to 4
+ * points (the user's design), the first naming the change at its highest
+ * level (board, FPGA, or architecture, each including the ones below), the
+ * rest its implications. Empty for the same board. `pinFile` is the
+ * project's pin file, such as "pinout.pcf". From the catalog's facts only.
  */
-export function boardChangeNote(from: Board | null, to: Board, pinFile: string | null): NoteGroup[] {
+export function boardChangeNote(from: Board | null, to: Board, pinFile: string | null): NotePoint[] {
   if (!from || from.id === to.id) return [];
-  const check = (text: string): NotePoint => ({ text, risky: false });
-  const risk = (text: string): NotePoint => ({ text, risky: true });
+  const change = (text: string): NotePoint => ({ text, kind: "change" });
+  const check = (text: string): NotePoint => ({ text, kind: "check" });
+  const risk = (text: string): NotePoint => ({ text, kind: "risky" });
   const pins = pinFile ?? "the pin file";
-  const groups: NoteGroup[] = [
-    {
-      title: "Board change",
-      points: [
-        check(`The pins may differ: check ${pins}.`),
-        check("The clock frequency may differ: check rates such as blinking and baud rates."),
-        check("LEDs and buttons may be active-low instead of active-high, or the other way."),
-      ],
-    },
-  ];
   const otherArch = !!from.arch && !!to.arch && from.arch !== to.arch;
   const otherFpga = otherArch || (!!from.fpga && !!to.fpga && from.fpga.id !== to.fpga.id);
-  if (otherFpga) {
-    const parts =
-      from.fpga && to.fpga ? `: ${from.fpga.partNumber} → ${to.fpga.partNumber}` : "";
-    groups.push({
-      title: `FPGA change${parts}`,
-      points: [
-        risk("FPGA-specific parts, such as PLLs and special cells, may need changes."),
-        risk("The design may not fit, or may not reach its clock speed."),
-      ],
-    });
-  }
   if (otherArch) {
     const ext = to.pinExtension ? `a .${to.pinExtension} pin file` : "another kind of pin file";
-    groups.push({
-      title: `Architecture change: ${from.archLabel} → ${to.archLabel}`,
-      points: [
-        risk(`Needs ${ext}${pinFile ? ` instead of ${pinFile}` : ""}.`),
-        risk(`Probably significant changes: ${from.archLabel} parts, such as I/O cells and PLLs, won't build.`),
-      ],
-    });
+    return [
+      change(`Architecture change: ${from.archLabel} → ${to.archLabel}.`),
+      risk(`Needs ${ext}${pinFile ? ` instead of ${pinFile}` : ""}, with this board's pins.`),
+      risk(`Probably significant changes: ${from.archLabel} parts, such as I/O cells and PLLs, won't build.`),
+      check("The clock frequency and the LED and button wiring may differ: check the design."),
+    ];
   }
-  return groups;
+  if (otherFpga) {
+    const parts = from.fpga && to.fpga ? `: ${from.fpga.partNumber} → ${to.fpga.partNumber}` : "";
+    return [
+      change(`FPGA change${parts}.`),
+      risk("FPGA-specific parts, such as PLLs and special cells, may need changes."),
+      risk("The design may not fit, or may not reach its clock speed."),
+      check(`The pins, clock frequency and LED and button wiring may differ: check ${pins} and the design.`),
+    ];
+  }
+  return [
+    change(`Board change, same FPGA${to.fpga ? ` (${to.fpga.partNumber})` : ""}.`),
+    check(`The pins may differ: check ${pins}.`),
+    check("The clock frequency and the LED and button wiring may differ: check the design."),
+  ];
 }
