@@ -57,9 +57,12 @@
   let selectedKey = $state<string | null>(null);
   /** Selected recent project folder (instead of an example). */
   let selectedRecent = $state<string | null>(null);
-  /** The current project on the new board is selected (the default). */
-  // svelte-ignore state_referenced_locally
-  let selectedCurrent = $state(onlyBoard !== null && currentProject !== null);
+  /**
+   * The current project on the new board is selected. Nothing is selected
+   * at first (the user's decision: changing the board, especially to
+   * another FPGA or family, should be a choice, not a default).
+   */
+  let selectedCurrent = $state(false);
   const folderName = (dir: string) => dir.split(/[\\/]/).pop() ?? dir;
   /** Recent projects shown: all of them, or those matching the search. */
   const shownRecents = $derived(
@@ -104,7 +107,8 @@
   const selectedExample = $derived.by(() => {
     if (selectedRecent || selectedCurrent) return null;
     const clicked = group?.examples.find((e) => key(e) === selectedKey);
-    if (clicked || !group) return clicked ?? null;
+    // Project options select nothing by themselves.
+    if (clicked || !group || onlyBoard) return clicked ?? null;
     const real = group.examples.filter((e) => !e.bare);
     if (real.length === 1 && group.count === 1) return real[0];
     return group.count === 0 && group.examples.length === 1
@@ -144,7 +148,13 @@
    * Minimum, starts a new, unsaved project.
    */
   const openLabel = $derived(
-    selectedCurrent ? "Change the Board" : selectedRecent !== null ? "Open Project" : "New Project",
+    selectedCurrent
+      ? "Change the Board"
+      : selectedRecent !== null
+        ? "Open Project"
+        : selectedExample !== null || !onlyBoard
+          ? "New Project"
+          : "Choose an Option",
   );
 
   function open() {
@@ -473,13 +483,20 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* Section headings stand out from the entries, like the board picker's
+     group headings (the user's request). */
   .section {
-    padding: 10px 14px 4px;
-    color: var(--muted);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    margin-top: 6px;
+    padding: 6px 14px 5px;
+    background: var(--group-bg);
+    color: var(--group-fg);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
+  }
+  .section:first-child {
+    margin-top: 0;
   }
   .example-name {
     font-weight: 600;

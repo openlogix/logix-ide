@@ -80,9 +80,8 @@ too.
 
 ![The board list: recently used boards first, then all boards by FPGA type](images/boards.png)
 
-Choosing a board opens **Project options** for it. The first choice,
-selected already, changes the board of your current project, files
-unchanged; a note says what that means, such as when the new board has
+Choosing a board opens **Project options** for it. The first choice
+changes the board of your current project, files unchanged; a note says what that means, such as when the new board has
 another FPGA and needs another pin file. Or open one of your recent
 projects for that board, or start a new project from one of its example
 projects. **Cancel** keeps the board you had. Choosing the current board
