@@ -1795,14 +1795,6 @@
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}
     />
-    {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0 && !pendingBoard}
-      <VariantPanel
-        board={currentBoardInfo}
-        variant={currentVariant}
-        disabled={running !== null}
-        onChoose={setVariant}
-      />
-    {/if}
     {#if currentBoardInfo && !pendingBoard}
       <button
         class="board-info"
@@ -1810,6 +1802,14 @@
         aria-label="Board info"
         onclick={() => (boardInfoOpen = true)}>ⓘ</button
       >
+    {/if}
+    {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0 && !pendingBoard}
+      <VariantPanel
+        board={currentBoardInfo}
+        variant={currentVariant}
+        disabled={running !== null}
+        onChoose={setVariant}
+      />
     {/if}
     {#if ready && currentBoard}
       {@const boardConnected = isConnected(currentBoard)}
@@ -2126,7 +2126,7 @@
   .toolbar .board-info {
     width: auto;
     height: auto;
-    margin-left: 6px;
+    margin-left: -4px;
     padding: 2px 6px;
     font-size: 16px;
     line-height: 1;
@@ -2145,7 +2145,7 @@
     gap: 6px;
     width: auto;
     height: auto;
-    margin-left: 10px;
+    margin-left: 0;
     padding: 2px 6px;
     font-size: 12px;
     font-family: inherit;
