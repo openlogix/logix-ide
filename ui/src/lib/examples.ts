@@ -68,6 +68,7 @@ export function groupExamples(
         pinExtension: null,
         dimensions: [],
         configurations: [],
+        custom: false,
       })),
   );
 

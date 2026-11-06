@@ -31,7 +31,49 @@ import graphOutput from "./fixtures/graph.txt?raw";
 import graphSvg from "./fixtures/graph.svg?raw";
 import packageJson from "../../package.json";
 
-const BOARDS = catalog.boards;
+const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }));
+
+/**
+ * The project's own boards as the fake engine reads them: enough of Logix
+ * Engine's rules to test the UI (an id, a description, an FPGA, variants
+ * with a connection and memory), with the FPGA's family taken from its ID.
+ */
+function fakeProjectBoards(list: unknown[]): Real.Board[] {
+  const fail = (message: string): never => {
+    throw { message, details: message };
+  };
+  const family = (fpga: string) =>
+    fpga.startsWith("ice40") ? "ice40" : fpga.startsWith("lfe5") ? "ecp5" : fpga.startsWith("gw") ? "gowin" : "xilinx";
+  // Value labels, as the catalog's boards have them.
+  const labels = new Map<string, Real.Dimension["values"][number]>();
+  for (const b of BOARDS) for (const d of b.dimensions) for (const v of d.values) labels.set(`${d.id}:${v.id}`, v);
+  return list.map((item) => {
+    const b = item as { id?: string; description?: string; fpga_id?: string; variants?: { connection: string; memory: string; tested: boolean }[] };
+    if (!b.id || !/^[a-z0-9-]+$/.test(b.id)) fail(`custom_boards: ${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
+    if (!b.fpga_id) fail(`custom_boards: ${b.id}: give exactly one of fpga_id and fpga.`);
+    if (!b.variants?.length) fail(`custom_boards: ${b.id}: invalid board definition: it has no variants.`);
+    const arch = family(b.fpga_id!);
+    const like = BOARDS.find((x) => x.arch === arch)!;
+    const dims = ["connection", "memory"].map((id) => ({
+      id,
+      label: id === "connection" ? "Connection" : "Memory",
+      values: [...new Set(b.variants!.map((v) => (id === "connection" ? v.connection : v.memory)))].map(
+        (v) => labels.get(`${id}:${v}`) ?? { id: v, label: v },
+      ),
+    }));
+    return {
+      ...like,
+      id: b.id!,
+      description: b.description ?? b.id!,
+      dimensions: dims,
+      configurations: b.variants!.map((v) => ({
+        when: { connection: v.connection, memory: v.memory },
+        tested: v.tested,
+      })),
+      custom: true,
+    };
+  });
+}
 const outputLines = (text: string) => text.replace(/\n$/, "").split("\n");
 
 const BLINKY_MAIN = `module main (
@@ -127,6 +169,12 @@ const fake = {
   editorMenu: null as Real.MenuState | null,
   /** How often the output pane's right-click menu was shown. */
   outputMenu: 0,
+  /** More files for the projects `openProjectAt` opens, such as custom-boards.json. */
+  projectFiles: [] as ProjectFile[],
+  /** The custom boards of the last task run (`runTask`). */
+  taskCustomBoards: null as unknown[] | null,
+  /** The custom boards of the last connected-devices scan. */
+  scannedCustomBoards: null as unknown[] | null,
   /** The variant of the last task run (`runTask`). */
   taskVariant: null as Real.Variant | null,
   /** The board and variant last saved (`saveProject`, Save As). */
@@ -282,8 +330,9 @@ export const backend: typeof Real.backend = {
   openBareMinimum: async (board) => bareDoc(board),
   openExample: async (board) => blinkyDoc(board),
 
-  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, device, onEvent) => {
+  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, customBoards, device, onEvent) => {
     fake.taskVariant = variant;
+    fake.taskCustomBoards = customBoards;
     const onLine = (line: string) => onEvent({ kind: "line", line });
     const { lines: buildLines, outcome } = buildOutcome(files, board);
     let lines = buildLines;
@@ -331,7 +380,7 @@ export const backend: typeof Real.backend = {
     if (phases && task === "upload" && outcome.ok) {
       fake.uploadedDevice = device ?? fits[0].id;
       // The engine's messages (program_board), for the board's memory.
-      const info = (catalog.boards as Real.Board[]).find((b) => b.id === board);
+      const info = [...fakeProjectBoards(customBoards), ...BOARDS].find((b) => b.id === board);
       const memory = info && resolve(info, variant).memory === "ram" ? "RAM" : "flash";
       const name = info?.description ?? board;
       const untested = info && configurationOf(info, variant)?.tested === false ? " (untested)" : "";
@@ -388,11 +437,15 @@ export const backend: typeof Real.backend = {
 
   // A saved project for the UPduino v2 (any folder), so tests can check that
   // opening it brings its own board.
-  openProjectAt: async (dir) => ({
-    ...bareDoc("upduino2"),
-    dir,
-    name: dir.split("/").pop() ?? dir,
-  }),
+  openProjectAt: async (dir) => {
+    const doc = bareDoc("upduino2");
+    return {
+      ...doc,
+      files: [...doc.files, ...fake.projectFiles],
+      dir,
+      name: dir.split("/").pop() ?? dir,
+    };
+  },
   showProjectFolder: async () => {},
   saveGtkwaveLayouts: async () => [],
   cancelTask: async () => false,
@@ -439,7 +492,11 @@ export const backend: typeof Real.backend = {
   setDocumentState: async () => {},
   closeWindow: async () => {},
   logOutput: async () => {},
-  connectedDevices: async () => fake.connected,
+  connectedDevices: async (customBoards) => {
+    fake.scannedCustomBoards = customBoards;
+    return fake.connected;
+  },
+  projectBoards: async (customBoards) => fakeProjectBoards(customBoards),
   showOutputMenu: async () => {
     fake.outputMenu += 1;
   },

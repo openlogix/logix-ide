@@ -129,6 +129,8 @@ export interface Board {
   dimensions: Dimension[];
   /** The combinations that exist; the first is the default. */
   configurations: Configuration[];
+  /** One of the project's own boards (custom-boards.json), not a catalog board. */
+  custom: boolean;
 }
 
 export interface Example {
@@ -410,6 +412,8 @@ export const backend = {
     files: ProjectFile[],
     board: string,
     variant: Variant,
+    /** The project's own boards (custom-boards.json), sent unchanged. */
+    customBoards: unknown[],
     device: string | null,
     onEvent: (event: TaskEvent) => void,
   ): Promise<TaskOutcome> => {
@@ -424,6 +428,7 @@ export const backend = {
       files,
       board,
       variant,
+      customBoards,
       device,
       onEvent: channel,
     });
@@ -562,12 +567,24 @@ export const backend = {
   onLspClosed: (handler: () => void): Promise<UnlistenFn> =>
     listen("lsp-closed", () => handler()),
 
-  /** The connected USB devices. */
-  scanDevices: (): Promise<Devices> => invoke<Devices>("scan_devices"),
+  /** The connected USB devices, matched to the catalog's and `customBoards`. */
+  scanDevices: (customBoards: unknown[]): Promise<Devices> =>
+    invoke<Devices>("scan_devices", { customBoards }),
 
-  /** The connected USB devices that fit boards, with their boards (silent). */
-  connectedDevices: (): Promise<ConnectedDevice[]> =>
-    invoke<ConnectedDevice[]>("connected_devices"),
+  /**
+   * The connected USB devices that fit boards (the catalog's and
+   * `customBoards`), with their boards (silent).
+   */
+  connectedDevices: (customBoards: unknown[]): Promise<ConnectedDevice[]> =>
+    invoke<ConnectedDevice[]>("connected_devices", { customBoards }),
+
+  /**
+   * The project's own boards (custom-boards.json's list, sent unchanged), as
+   * Logix Engine reads them. Rejects with the engine's reason for a list it
+   * refuses.
+   */
+  projectBoards: (customBoards: unknown[]): Promise<Board[]> =>
+    invoke<Board[]>("project_boards", { customBoards }),
 
   /** Stops the running build, upload, test or simulation. */
   cancelTask: (): Promise<boolean> => invoke<boolean>("cancel_task"),

@@ -1,5 +1,5 @@
-//! The boards the engine supports, from its `get_catalog` tool, and their
-//! USB filters (for the board list's "Connected" group).
+//! The boards the engine supports, from its `get_catalog` tool, and the
+//! project's own boards (`custom-boards.json`) as the engine reads them.
 
 use std::collections::BTreeMap;
 
@@ -34,6 +34,9 @@ pub struct Board {
     /// The combinations of dimension values that exist; the first is the
     /// board's default. Every one has the board's FPGA and pin file.
     pub configurations: Vec<Configuration>,
+    /// One of the project's own boards (`custom-boards.json`), rather than
+    /// a catalog board.
+    pub custom: bool,
 }
 
 /// A board's variant: dimension values by dimension id, e.g.
@@ -125,7 +128,43 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
     })
 }
 
-fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
+/// The project's own boards (`custom-boards.json`, sent unchanged as
+/// `custom_boards`), as the engine reads them: `Err` with the engine's
+/// message for a list it refuses, such as a board without a valid FPGA.
+pub async fn project_boards(
+    engine: &Engine,
+    custom_boards: &[Value],
+) -> Result<std::result::Result<Vec<Board>, String>> {
+    if custom_boards.is_empty() {
+        return Ok(Ok(Vec::new()));
+    }
+    let answer = engine
+        .call(
+            "get_catalog",
+            json!({
+                "boards": {"fetch": true},
+                "fpgas": {"fetch": true},
+                "architectures": {"fetch": true},
+                "custom_boards": custom_boards,
+            }),
+            None,
+        )
+        .await?;
+    Ok(match answer {
+        Ok(catalog) => Ok(custom_only(parse_boards(&catalog)?)),
+        Err(e) => Err(e["message"]
+            .as_str()
+            .unwrap_or("Logix Engine refused the custom boards.")
+            .to_string()),
+    })
+}
+
+/// The custom boards of a board list.
+fn custom_only(boards: Vec<Board>) -> Vec<Board> {
+    boards.into_iter().filter(|b| b.custom).collect()
+}
+
+pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
     let boards = catalog["boards"]
         .as_object()
         .context("unexpected board list from the engine")?;
@@ -176,6 +215,7 @@ fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 arch,
                 dimensions,
                 configurations,
+                custom: b["custom"].as_bool().unwrap_or(false),
             }
         })
         .collect();
@@ -241,6 +281,21 @@ mod tests {
         assert_eq!(pick(json!({"memory": "eeprom"})), None);
         assert_eq!(variant_values(b, "usb-ram").unwrap()["memory"], "ram");
         assert_eq!(b.configurations[1].user_notes.as_deref(), Some("Try it."));
+    }
+
+    #[test]
+    fn custom_boards_are_marked() {
+        let catalog = json!({
+            "boards": {
+                "mine": {"description": "Mine", "fpga_id": "f", "custom": true},
+                "alhambra-ii": {"description": "Alhambra II", "fpga_id": "f"},
+            },
+            "fpgas": {"f": {"architecture": "ice40"}}
+        });
+        let mine = custom_only(parse_boards(&catalog).unwrap());
+        assert_eq!(mine.len(), 1);
+        assert_eq!(mine[0].id, "mine");
+        assert!(mine[0].custom);
     }
 
     #[test]

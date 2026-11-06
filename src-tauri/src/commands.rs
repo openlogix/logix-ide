@@ -183,6 +183,22 @@ pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<engine::Board>
     Ok(catalog(&state).await?.boards)
 }
 
+/// The project's own boards from `custom-boards.json` (its parsed list,
+/// sent unchanged), as Logix Engine reads them, for the board list. A list
+/// the engine refuses is an error with its reason.
+#[tauri::command]
+pub async fn project_boards(
+    state: State<'_, AppState>,
+    custom_boards: Vec<serde_json::Value>,
+) -> Result<Vec<engine::Board>, UserError> {
+    let engine = ready_engine(&state).await?;
+    let boards = engine::project_boards(&engine, &custom_boards)
+        .await
+        .context("Couldn't read the project's custom boards.")?
+        .map_err(|e| anyhow!("{} has a problem: {e}", project::CUSTOM_BOARDS_FILE))?;
+    Ok(boards)
+}
+
 /// The examples Logix supports, and how many unsupported ones were hidden.
 #[tauri::command]
 pub async fn get_examples(state: State<'_, AppState>) -> Result<examples::ExampleList, UserError> {
@@ -244,6 +260,7 @@ pub async fn run_task(
     files: Vec<ProjectFile>,
     board: String,
     variant: engine::Variant,
+    custom_boards: Vec<serde_json::Value>,
     device: Option<String>,
     on_event: Channel<outcome::TaskEvent>,
 ) -> Result<outcome::TaskOutcome, UserError> {
@@ -251,8 +268,18 @@ pub async fn run_task(
         return Err(anyhow!("A build or upload is already running.").into());
     };
     let engine = ready_engine(&state).await?;
-    let boards = catalog(&state).await?.boards;
-    let Some(info) = boards.iter().find(|b| b.id == board) else {
+    // The project's own boards come first: one with a catalog board's ID
+    // replaces it, as in the engine.
+    let own = engine::project_boards(&engine, &custom_boards)
+        .await
+        .context("Couldn't read the project's custom boards.")?
+        .map_err(|e| anyhow!("{} has a problem: {e}", project::CUSTOM_BOARDS_FILE))?;
+    let catalog_boards = catalog(&state).await?.boards;
+    let Some(info) = own
+        .iter()
+        .chain(catalog_boards.iter())
+        .find(|b| b.id == board)
+    else {
         return Err(anyhow!(
             "Logix doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
         )
@@ -325,6 +352,7 @@ pub async fn run_task(
     let input = engine::TaskInput {
         board: &board,
         board_variant: Some(&board_variant),
+        custom_boards: &custom_boards,
         arch: &arch,
         source_folder: &dir,
         files: &names,
@@ -467,9 +495,12 @@ pub struct Devices {
 /// The connected USB devices, for Tools > Connected Devices and hints when
 /// Upload can't find the board.
 #[tauri::command]
-pub async fn scan_devices(state: State<'_, AppState>) -> Result<Devices, UserError> {
+pub async fn scan_devices(
+    state: State<'_, AppState>,
+    custom_boards: Vec<serde_json::Value>,
+) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
-    let list = engine::list_devices(&engine, None)
+    let list = engine::list_devices(&engine, &custom_boards)
         .await
         .context("Couldn't list the connected devices.")?;
     Ok(Devices {
@@ -484,12 +515,19 @@ pub async fn scan_devices(state: State<'_, AppState>) -> Result<Devices, UserErr
 #[tauri::command]
 pub async fn connected_devices(
     state: State<'_, AppState>,
+    custom_boards: Vec<serde_json::Value>,
 ) -> Result<Vec<engine::ConnectedDevice>, UserError> {
     let engine = ready_engine(&state).await?;
-    let list = engine::list_devices(&engine, None)
+    let list = engine::list_devices(&engine, &custom_boards)
         .await
         .context("Couldn't list the connected devices.")?;
-    let boards = catalog(&state).await?.boards;
+    // The project's boards first, as the engine matched them.
+    let mut boards = engine::project_boards(&engine, &custom_boards)
+        .await
+        .ok()
+        .and_then(Result::ok)
+        .unwrap_or_default();
+    boards.extend(catalog(&state).await?.boards);
     let found = engine::connected_devices(&list.devices, &boards);
     // Polled every few seconds: log only changes, not every scan.
     static LAST: std::sync::Mutex<Option<Vec<engine::ConnectedDevice>>> =

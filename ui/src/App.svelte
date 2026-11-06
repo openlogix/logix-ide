@@ -25,7 +25,7 @@
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
-  import { deviceGroups } from "./lib/boards";
+  import { deviceGroups, withProjectBoards } from "./lib/boards";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
     choose as chooseVariant,
@@ -58,6 +58,8 @@
     isFileDirty,
     MAIN_FILE,
     mainFile,
+    customBoardsOf,
+    CUSTOM_BOARDS_FILE,
     markSaved,
     renameFile,
     projectModules,
@@ -313,7 +315,14 @@
 
   // ---- Boards and examples ----
 
-  let boards = $state<Board[]>([]);
+  /** Logix Engine's catalog boards. */
+  let catalogBoards = $state<Board[]>([]);
+  /** The project's own boards (custom-boards.json), as the engine reads them. */
+  let projectBoards = $state<Board[]>([]);
+  /** Why the project's custom-boards.json can't be used, if it can't. */
+  let projectBoardsError = $state<string | null>(null);
+  /** The boards to offer: the project's own first, then the catalog's. */
+  const boards = $derived(withProjectBoards(catalogBoards, projectBoards));
   let examples = $state<Example[]>([]);
   let examplesOpen = $state(false);
 
@@ -323,7 +332,7 @@
         backend.getBoards(),
         backend.getExamples(),
       ]);
-      boards = boardList;
+      catalogBoards = boardList;
       examples = exampleList.examples;
       log(examplesSummary(exampleList.examples.length, exampleList.hidden));
     } catch (e) {
@@ -344,7 +353,7 @@
     if (scanning || !ready || isBusy) return;
     scanning = true;
     try {
-      const found = await backend.connectedDevices();
+      const found = await backend.connectedDevices(customBoards);
       if (JSON.stringify(found) !== JSON.stringify(connectedDevices)) connectedDevices = found;
     } catch {
       // Keep the last result; Tools > Connected Devices shows errors.
@@ -390,6 +399,12 @@
    */
   function setBoard(id: string) {
     if (!id) return;
+    // One of the project's own boards: no examples, and not a board for new
+    // projects (they don't have its definition).
+    if (project && projectBoards.some((b) => b.id === id)) {
+      applyBoard(project, id);
+      return;
+    }
     // Another board starts with its default variant.
     const variant = id === currentBoard ? currentVariant : {};
     backend.setLastBoard(id, variant);
@@ -787,7 +802,7 @@
   async function refreshDevices() {
     devicesBusy = true;
     try {
-      devices = await backend.scanDevices();
+      devices = await backend.scanDevices(customBoards);
       devicesError = null;
     } catch (e) {
       devicesError = toUserError(e).message;
@@ -804,7 +819,7 @@
   /** After Upload couldn't find the board: say what is connected. */
   async function logConnectedDevices() {
     try {
-      log("", ...deviceSummaryLines(await backend.scanDevices()));
+      log("", ...deviceSummaryLines(await backend.scanDevices(customBoards)));
     } catch {
       // Only a hint; the upload error is already shown.
     }
@@ -890,6 +905,7 @@
         filesForSave(p),
         board,
         variant,
+        customBoards,
         task === "upload" ? device : null,
         (event) => {
           if (event.kind === "line") log(event.line);
@@ -954,6 +970,50 @@
   let busy = false;
 
   const dirty = $derived(project !== null && isDirty(project));
+
+  /** The project's custom-boards.json, parsed (unsaved edits included). */
+  const parsedCustomBoards = $derived(
+    project ? customBoardsOf(project) : { boards: [], error: null },
+  );
+  /** The list sent as `custom_boards` with every engine call. */
+  const customBoards = $derived(parsedCustomBoards.boards);
+  /** The list as text, so the engine is asked again only when it changes. */
+  const customBoardsKey = $derived(JSON.stringify(customBoards));
+
+  // The project's own boards, as Logix Engine reads them, for the board
+  // list; a list it can't use is shown in a banner and left out.
+  $effect(() => {
+    const key = customBoardsKey;
+    const parseError = parsedCustomBoards.error;
+    if (!ready) return;
+    if (parseError) {
+      projectBoards = [];
+      projectBoardsError = parseError;
+      return;
+    }
+    const list = untrack(() => customBoards);
+    if (list.length === 0) {
+      projectBoards = [];
+      projectBoardsError = null;
+      return;
+    }
+    // Wait for typing to pause.
+    const timer = setTimeout(() => {
+      backend
+        .projectBoards(list)
+        .then((found) => {
+          if (customBoardsKey !== key) return;
+          projectBoards = found;
+          projectBoardsError = null;
+        })
+        .catch((e) => {
+          if (customBoardsKey !== key) return;
+          projectBoards = [];
+          projectBoardsError = toUserError(e).message;
+        });
+    }, 400);
+    return () => clearTimeout(timer);
+  });
   /**
    * No project open (first start, or after Close Project): the editor area
    * shows the start screen. The toolbar still has a board, `homeBoard`
@@ -1713,6 +1773,15 @@
         >Using a local Logix Engine, for diagnosis: {devEngine}. Start Logix
         normally to use the regular engine.</span
       >
+    </div>
+  {/if}
+
+  {#if project && projectBoardsError}
+    <div class="banner error custom-boards-error" role="alert">
+      <span>{projectBoardsError} Its boards aren't offered until it's fixed.</span>
+      {#if activeFile !== CUSTOM_BOARDS_FILE}
+        <button onclick={() => (activeFile = CUSTOM_BOARDS_FILE)}>Show File</button>
+      {/if}
     </div>
   {/if}
 

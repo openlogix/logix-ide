@@ -88,14 +88,10 @@ pub struct DeviceList {
     pub unreachable: Vec<UnreachableDevice>,
 }
 
-/// The connected USB devices, with the boards they may be. With
-/// `build_folder`, only the devices that fit that build's board and variant,
-/// best first.
-pub async fn list_devices(engine: &Engine, build_folder: Option<&str>) -> Result<DeviceList> {
-    let args = match build_folder {
-        Some(folder) => json!({ "build_folder": folder }),
-        None => json!({}),
-    };
+/// The connected USB devices, with the boards they may be: the catalog's
+/// and the project's own (`custom_boards`, from `custom-boards.json`).
+pub async fn list_devices(engine: &Engine, custom_boards: &[Value]) -> Result<DeviceList> {
+    let args = json!({ "custom_boards": custom_boards });
     let result = engine
         .call("list_devices", args, None)
         .await?
@@ -202,7 +198,6 @@ pub struct ConnectedDevice {
 /// The connected devices that fit catalog boards, each with the boards it
 /// may be, strongest first, from the engine's matches and levels.
 pub fn connected_devices(devices: &[UsbDevice], boards: &[Board]) -> Vec<ConnectedDevice> {
-    // Catalog boards only: the IDE sends no custom boards.
     let mut found = Vec::new();
     for dev in devices {
         let mut its: Vec<ConnectedBoard> = Vec::new();
@@ -282,6 +277,7 @@ mod tests {
             arch_label: String::new(),
             arch_order: 0,
             pin_extension: None,
+            custom: false,
             dimensions: Vec::new(),
             configurations: vec![super::super::catalog::Configuration {
                 id: "usb-flash".into(),

@@ -79,6 +79,9 @@ pub struct TaskInput<'a> {
     /// The board variant, as the engine's variant ID (e.g. "usb-ram"); `None`
     /// for the board's default.
     pub board_variant: Option<&'a str>,
+    /// The project's own boards (`custom-boards.json`), sent unchanged as
+    /// `custom_boards` with every engine call that deals with boards.
+    pub custom_boards: &'a [Value],
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
     /// The prepared build folder: the project's files and other contents.
@@ -146,6 +149,7 @@ where
         on_event,
         cancel,
         sources: design_files(input.files),
+        custom_boards: Value::from(input.custom_boards.to_vec()),
         folder: input.source_folder.to_string_lossy().into_owned(),
         build_folder: build_folder(input.source_folder),
     };
@@ -185,6 +189,8 @@ struct Runner<'a, F> {
     sources: Vec<String>,
     /// The prepared folder, as the engine's `source_folder`.
     folder: String,
+    /// The project's own boards, for program_board and list_devices.
+    custom_boards: Value,
     build_folder: PathBuf,
 }
 
@@ -239,6 +245,7 @@ where
                     json!({
                         "board": input.board,
                         "board_variant": input.board_variant,
+                        "custom_boards": input.custom_boards,
                         "top_module": TOP_MODULE,
                         "source_folder": self.folder,
                         "source_files": self.sources,
@@ -262,6 +269,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
+                        "custom_boards": input.custom_boards,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
@@ -292,7 +300,11 @@ where
             let result = self
                 .call(
                     "program_board",
-                    json!({ "build_folder": self.build_folder(), "device": device }),
+                    json!({
+                        "build_folder": self.build_folder(),
+                        "device": device,
+                        "custom_boards": self.custom_boards,
+                    }),
                 )
                 .await?;
             match result {
@@ -319,7 +331,10 @@ where
         let result = self
             .call(
                 "list_devices",
-                json!({ "build_folder": self.build_folder() }),
+                json!({
+                    "build_folder": self.build_folder(),
+                    "custom_boards": self.custom_boards,
+                }),
             )
             .await?;
         let list = match result {
@@ -363,6 +378,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
+                        "custom_boards": input.custom_boards,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -398,6 +414,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
+                        "custom_boards": input.custom_boards,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -939,6 +956,7 @@ mod tests {
         let mut input = TaskInput {
             board: "alhambra-ii",
             board_variant: None,
+            custom_boards: &[],
             arch: "ice40",
             source_folder: &dir,
             files: &files,
@@ -1108,6 +1126,7 @@ mod tests {
                 let mut input = TaskInput {
                     board: &board,
                     board_variant: None,
+                    custom_boards: &[],
                     arch: &arch,
                     source_folder: &dir,
                     files: &files,
@@ -1214,6 +1233,7 @@ mod tests {
             let input = TaskInput {
                 board: "alhambra-ii",
                 board_variant: None,
+                custom_boards: &[],
                 arch: "ice40",
                 source_folder: &dir,
                 files: &files,

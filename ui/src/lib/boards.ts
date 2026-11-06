@@ -48,9 +48,24 @@ export function groupByArch<T>(
     }));
 }
 
+/** The board picker's group for the project's own boards (custom-boards.json). */
+export const PROJECT_BOARDS_GROUP = "This project's boards";
+
+/**
+ * The boards to offer: the project's own boards (custom-boards.json) first,
+ * then the catalog's; one with a catalog board's ID replaces it, as in
+ * Logix Engine.
+ */
+export function withProjectBoards(catalog: Board[], own: Board[]): Board[] {
+  if (own.length === 0) return catalog;
+  const ids = new Set(own.map((b) => b.id));
+  return [...own, ...catalog.filter((b) => !ids.has(b.id))];
+}
+
 /**
  * The board picker's groups: one per connected device, with the boards it
- * may be (one device is one board), then all boards by FPGA architecture.
+ * may be (one device is one board), then the project's own boards, then
+ * the catalog's by FPGA architecture.
  * With a search query, only boards whose name, id or architecture contains
  * it; empty groups are left out.
  */
@@ -75,7 +90,13 @@ export function boardGroups(
     if (its.length > 0)
       groups.push({ key: d.key, label: d.label, boards: its, device: true });
   }
-  for (const g of groupByArch(shown, (b) => b)) {
+  const own = shown.filter((b) => b.custom);
+  if (own.length > 0)
+    groups.push({ key: PROJECT_BOARDS_GROUP, label: PROJECT_BOARDS_GROUP, boards: own, device: false });
+  for (const g of groupByArch(
+    shown.filter((b) => !b.custom),
+    (b) => b,
+  )) {
     groups.push({ key: g.label, label: g.label, boards: g.items, device: false });
   }
   return groups;

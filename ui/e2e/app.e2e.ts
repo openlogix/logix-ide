@@ -757,6 +757,67 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toBeVisible();
 });
 
+test("a project's custom-boards.json adds its own boards, sent with every task", async ({ page }) => {
+  type Fake = {
+    projectFiles: { name: string; text: string }[];
+    taskCustomBoards: unknown[] | null;
+    scannedCustomBoards: unknown[] | null;
+    taskVariant: unknown;
+  };
+  const myBoards = [
+    {
+      id: "my-upduino",
+      description: "My UPduino",
+      fpga_id: "ice40up5k-sg48",
+      variants: [
+        {
+          id: "usb-flash", connection: "usb", memory: "flash", programmer: "iceprog",
+          args: "-d d:${BUS}/${DEV} ${BITSTREAM}",
+          usb: { vid: "0403", pid: "6014" }, tested: false,
+        },
+      ],
+    },
+  ];
+  await page.goto("/?recents=/Users/you/Documents/Logix/mine");
+  await page.evaluate((text) => {
+    (window as unknown as { __fake: Fake }).__fake.projectFiles = [
+      { name: "custom-boards.json", text },
+    ];
+  }, JSON.stringify(myBoards, null, 2));
+  await expect(output(page)).toContainText("Ready.");
+  await page.getByRole("button", { name: /mine/ }).click();
+  await expect(tab(page, "custom-boards.json")).toBeVisible();
+
+  // Listed first, in its own group; picking it asks nothing.
+  await boardButton(page).click();
+  const group = page.locator(".group", { hasText: "This project's boards" });
+  await expect(group).toBeVisible();
+  await page.getByRole("combobox").fill("My UPduino");
+  await page.getByRole("option", { name: "My UPduino", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(boardButton(page)).toHaveText(/My UPduino/);
+
+  // Sent with every task and every device scan.
+  await menu(page, "verify");
+  await expect(status(page)).toContainText("Build succeeded");
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  expect((await fake()).taskCustomBoards).toEqual(myBoards);
+  await expect.poll(async () => (await fake()).scannedCustomBoards).toEqual(myBoards);
+
+  // A file that isn't valid JSON: a banner, and its boards are left out.
+  await tab(page, "custom-boards.json").click();
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("Meta+A");
+  await page.keyboard.type("oops");
+  const banner = page.locator(".custom-boards-error");
+  await expect(banner).toContainText("custom-boards.json isn't valid JSON");
+  await expect(banner.getByRole("button", { name: "Show File" })).toHaveCount(0);
+  await page.keyboard.press("Meta+A");
+  // The editor closes brackets itself: this gives [1].
+  await page.keyboard.type("[1");
+  await expect(banner).toContainText("isn't a board ID");
+});
+
 test("a failed command's banner says why, with one red line", async ({ page }) => {
   await start(page);
   await page.evaluate(() => {

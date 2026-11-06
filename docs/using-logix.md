@@ -169,6 +169,43 @@ may be (click the number to list them). Click a board's name to select it.
 
 ![The Connected Devices window with an Alhambra II board](images/devices.png)
 
+## Your own boards
+
+A board that isn't in Logix's board list can be added to a project. Add a
+file named **custom-boards.json** to the project (File > New File…, or any
+text editor) and describe the board in it. The file holds a list, so it
+can have one board or several:
+
+```json
+[
+  {
+    "id": "my-upduino",
+    "description": "My UPduino",
+    "fpga_id": "ice40up5k-sg48",
+    "variants": [
+      {
+        "id": "usb-flash",
+        "connection": "usb",
+        "memory": "flash",
+        "programmer": "iceprog",
+        "args": "-d d:${BUS}/${DEV} ${BITSTREAM}",
+        "usb": { "vid": "0403", "pid": "6014" },
+        "tested": false
+      }
+    ]
+  }
+]
+```
+
+The boards in it are listed first in the board list, under **This
+project's boards**, and Verify, Upload and the other commands use them like
+any other board. A board with the same `id` as a board in Logix's list
+replaces it in this project. The format is Logix Engine's custom board
+format, described in its
+[tool documentation](https://github.com/openlogix/logix-engine/blob/main/docs/tool-api.md#board-specification).
+If the file has a mistake, a red banner says what's wrong, and its boards
+aren't offered until it's fixed.
+
 ## Help
 
 The **Help** menu links to these pages, the keyboard shortcuts and

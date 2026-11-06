@@ -111,6 +111,7 @@ pub fn run() {
             commands::save_gtkwave_layouts,
             commands::format_file,
             commands::get_boards,
+            commands::project_boards,
             commands::get_examples,
             commands::open_example,
             commands::open_bare_minimum,

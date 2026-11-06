@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { boardGroups, deviceGroups, groupByArch, type DeviceGroup } from "./boards";
+import { boardGroups, deviceGroups, groupByArch, withProjectBoards, type DeviceGroup } from "./boards";
 import type { ConnectedDevice } from "./backend";
 
 const boards = [
-  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [] },
-  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", archLabel: "Xilinx", archOrder: 3, pinExtension: null, dimensions: [], configurations: [] },
-  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1, pinExtension: null, dimensions: [], configurations: [] },
-  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [] },
-  { id: "mystery", description: "Mystery Board", arch: "", archLabel: "Other", archOrder: 99, pinExtension: null, dimensions: [], configurations: [] },
-  { id: "tang", description: "Tang Nano 9K", arch: "gowin", archLabel: "Gowin", archOrder: 2, pinExtension: null, dimensions: [], configurations: [] },
+  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false },
+  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", archLabel: "Xilinx", archOrder: 3, pinExtension: null, dimensions: [], configurations: [], custom: false },
+  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1, pinExtension: null, dimensions: [], configurations: [], custom: false },
+  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false },
+  { id: "mystery", description: "Mystery Board", arch: "", archLabel: "Other", archOrder: 99, pinExtension: null, dimensions: [], configurations: [], custom: false },
+  { id: "tang", description: "Tang Nano 9K", arch: "gowin", archLabel: "Gowin", archOrder: 2, pinExtension: null, dimensions: [], configurations: [], custom: false },
 ];
 
 /** One device that may be `ids`. */
@@ -42,6 +42,18 @@ describe("boardGroups", () => {
   it("keeps two devices apart, even with the same boards", () => {
     const groups = boardGroups(boards, [dev(["arty"], "usb:1"), dev(["arty"], "usb:2")], "");
     expect(groups.slice(0, 2).map((g) => g.key)).toEqual(["usb:1", "usb:2"]);
+  });
+
+  it("lists the project's own boards first, replacing catalog boards with their IDs", () => {
+    const mine = { ...boards[0], id: "mine", description: "Mine", custom: true };
+    const over = { ...boards[1], description: "My Arty", custom: true };
+    const all = withProjectBoards(boards, [mine, over]);
+    expect(all.slice(0, 2)).toEqual([mine, over]);
+    expect(all.filter((b) => b.id === "arty")).toEqual([over]);
+    expect(withProjectBoards(boards, [])).toBe(boards);
+    const groups = boardGroups(all, [], "").map((g) => `${g.label}: ${g.boards.map((b) => b.id).join(",")}`);
+    expect(groups[0]).toBe("This project's boards: mine,arty");
+    expect(groups).not.toContain("Xilinx: arty");
   });
 
   it("searches names, ids and architectures", () => {
