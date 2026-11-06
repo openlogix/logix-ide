@@ -208,15 +208,20 @@
       <h2>
         {onlyBoard ? `Project options for ${onlyBoardName}` : "Examples"}
       </h2>
-      <!-- svelte-ignore a11y_autofocus -->
-      <input
-        type="search"
-        placeholder={onlyBoard ? "Search projects" : "Search boards and examples"}
-        bind:value={query}
-        spellcheck="false"
-        autocomplete="off"
-        autofocus
-      />
+      {#if onlyBoard}
+        <!-- Project options are few: no search (the user's decision). -->
+        <span class="header-space"></span>
+      {:else}
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          type="search"
+          placeholder="Search boards and examples"
+          bind:value={query}
+          spellcheck="false"
+          autocomplete="off"
+          autofocus
+        />
+      {/if}
       <button
         class="close"
         title={onlyBoard ? "Cancel: keep the board as it was" : "Close"}
@@ -318,14 +323,13 @@
                 ondblclick={() => onOpen(ex)}
               >
                 <span class="example-name">{ex.name}</span>
-                <!-- The summary, and the notes of the selected example: a
-                     bullet each (spans as list items: a button can't hold
-                     a list). -->
+                <!-- The summary and the notes, a bullet each, always shown
+                     (a note such as "Not yet tried on the board." matters
+                     before choosing; spans as list items: a button can't
+                     hold a list). -->
                 <span class="example-desc note">
                   <span class="point">{ex.summary}</span>
-                  {#if selectedExample !== null && key(ex) === key(selectedExample)}
-                    {#each ex.notes as n, i (i)}<span class="point">{n}</span>{/each}
-                  {/if}
+                  {#each ex.notes as n, i (i)}<span class="point">{n}</span>{/each}
                 </span>
               </button>
             </li>
@@ -541,6 +545,9 @@
   .note .point {
     display: list-item;
     list-style: disc;
+  }
+  .header-space {
+    flex: 1;
   }
   /* The first point: the change itself. */
   .note .point.change {

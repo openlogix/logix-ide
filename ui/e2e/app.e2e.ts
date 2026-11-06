@@ -351,6 +351,8 @@ test("changing the board offers project options: the current project first", asy
   const dialog = page.getByRole("dialog", { name: "Examples" });
   await expect(dialog.getByRole("heading")).toHaveText("Project options for iCEBreaker");
   await expect(dialog.getByRole("list", { name: "Boards" })).toHaveCount(0);
+  // Few choices: no search.
+  await expect(dialog.getByRole("searchbox")).toHaveCount(0);
   // The current project, with what the change means; nothing is selected
   // until the user chooses.
   const current = dialog.getByRole("button", { name: /^Change the board of “blinky” to iCEBreaker/ });
@@ -959,19 +961,17 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await expect(boardButton(page)).toHaveText(/Kéfir I/);
 });
 
-test("examples show their summary, and the selected one its notes", async ({ page }) => {
+test("examples show their summary and notes, selected or not", async ({ page }) => {
   await page.goto("/");
   await expect(output(page)).toContainText("Ready.");
   await page.getByRole("button", { name: "From Example…" }).click();
   const dialog = page.getByRole("dialog", { name: "Examples" });
   await dialog.getByRole("searchbox").fill("icenode");
-  // The board's only example is selected already: its note shows.
   const blinky = dialog.getByRole("button", { name: /^blinky/ });
   await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
-  // Another one selected: only the summary.
+  // Not selected: the note still shows.
   await dialog.getByRole("button", { name: /^Bare Minimum/ }).click();
-  await expect(blinky.locator(".point")).toHaveText(["Blinks an LED"]);
-  await blinky.click();
+  await expect(blinky).not.toHaveClass(/selected/);
   await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
 });
 
