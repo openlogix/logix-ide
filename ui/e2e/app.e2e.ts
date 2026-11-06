@@ -800,8 +800,11 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
   await menu(page, "verify");
   await expect(status(page)).toContainText("Build succeeded");
   const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
-  expect((await fake()).taskCustomBoards).toEqual(myBoards);
-  await expect.poll(async () => (await fake()).scannedCustomBoards).toEqual(myBoards);
+  // The file's text, as it is, goes with tasks and device scans.
+  expect(JSON.parse((await fake()).taskCustomBoards as string)).toEqual(myBoards);
+  await expect
+    .poll(async () => JSON.parse(((await fake()).scannedCustomBoards as string) ?? "null"))
+    .toEqual(myBoards);
 
   // Highlighted as JSON, and Auto Format pretty-prints it.
   await tab(page, "custom-boards.json").click();
@@ -812,21 +815,32 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
   await menu(page, "auto-format");
   await expect(status(page)).toHaveText("No changes necessary for Auto Format.");
 
-  // A file that isn't valid JSON: a banner, and its boards are left out.
+  // A file with problems is still sent: Logix Engine's problems show in a
+  // banner and as markers in the file, and its boards are left out.
   await page.locator(".cm-content").click();
   await page.keyboard.press("Meta+A");
   await page.keyboard.type("oops");
   const banner = page.locator(".custom-boards-error");
-  await expect(banner).toContainText("custom-boards.json isn't valid JSON");
+  await expect(banner).toContainText("The custom boards file has problems. custom-boards.json:1:1");
   await expect(banner.getByRole("button", { name: "Show File" })).toHaveCount(0);
-  // The editor closes brackets and quotes itself: these give [1] and
-  // {"Bad":1}.
-  await page.keyboard.press("Meta+A");
-  await page.keyboard.type("[1");
-  await expect(banner).toContainText("must hold its boards by ID");
+  await expect(tab(page, "custom-boards.json")).toHaveClass(/has-error/);
+  await expect(page.locator(".cm-lint-marker-error")).toBeVisible();
+  // The editor closes brackets and quotes itself: this gives {"Bad":1}.
   await page.keyboard.press("Meta+A");
   await page.keyboard.type('{"Bad":1');
   await expect(banner).toContainText("isn't a board ID");
+  // A task for the file's board fails with the same problems, marked.
+  await menu(page, "verify");
+  await expect(status(page)).toContainText("isn't a board ID");
+  await expect(tab(page, "custom-boards.json")).toHaveClass(/has-error/);
+  // Fixed: the banner and the markers go.
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("Meta+A");
+  // Typing a bracket over a selection would wrap it: delete it first.
+  await page.keyboard.press("Backspace");
+  await page.keyboard.type("{");
+  await expect(banner).toHaveCount(0);
+  await expect(tab(page, "custom-boards.json")).not.toHaveClass(/has-error/);
 });
 
 test("a failed command's banner says why, with one red line", async ({ page }) => {

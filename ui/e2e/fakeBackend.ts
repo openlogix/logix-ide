@@ -34,13 +34,45 @@ import packageJson from "../../package.json";
 const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }));
 
 /**
- * The project's own boards as the fake engine reads them: enough of Logix
- * Engine's rules to test the UI (an id, a description, an FPGA, variants
- * with a connection and memory), with the FPGA's family taken from its ID.
+ * The project's own boards as the fake engine reads them from the text of
+ * custom-boards.json: enough of Logix Engine's rules to test the UI (valid
+ * JSON, an object, board IDs, an FPGA, variants with a connection and
+ * memory), with each problem at the line of the board's key (line 1 for
+ * invalid JSON), and the FPGA's family taken from its ID.
  */
-function fakeProjectBoards(boards: Real.CustomBoards): Real.Board[] {
+function fakeProjectBoards(text: string | null): Real.ProjectBoards {
+  if (text === null || text.trim() === "") return { boards: [], problem: null };
+  const problem = (message: string, line = 1): Real.ProjectBoards => ({
+    boards: [],
+    problem: {
+      message: `The custom boards file has problems. custom-boards.json:${line}:1: ${message}`,
+      diagnostics: [
+        { severity: "error", file: "custom-boards.json", line, column: 1, message },
+      ],
+    },
+  });
+  let boards: unknown;
+  try {
+    boards = JSON.parse(text);
+  } catch {
+    return problem("Expected value.");
+  }
+  if (typeof boards !== "object" || boards === null || Array.isArray(boards)) {
+    return problem("Invalid type: expected a map.");
+  }
+  const lineOf = (id: string) => text.split("\n").findIndex((l) => l.includes(`"${id}"`)) + 1 || 1;
+  try {
+    return { boards: fakeBoards(boards as Record<string, unknown>), problem: null };
+  } catch (e) {
+    const { message, id } = e as { message: string; id: string };
+    return problem(message, lineOf(id));
+  }
+}
+
+function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
+  let current = "";
   const fail = (message: string): never => {
-    throw { message, details: message };
+    throw { message, id: current };
   };
   const family = (fpga: string) =>
     fpga.startsWith("ice40") ? "ice40" : fpga.startsWith("lfe5") ? "ecp5" : fpga.startsWith("gw") ? "gowin" : "xilinx";
@@ -48,10 +80,11 @@ function fakeProjectBoards(boards: Real.CustomBoards): Real.Board[] {
   const labels = new Map<string, Real.Dimension["values"][number]>();
   for (const b of BOARDS) for (const d of b.dimensions) for (const v of d.values) labels.set(`${d.id}:${v.id}`, v);
   return Object.entries(boards).map(([id, item]) => {
+    current = id;
     const b = { ...(item as object), id } as { id: string; description?: string; fpga_id?: string; variants?: { connection: string; memory: string; tested: boolean }[] };
-    if (!/^[a-z0-9-]+$/.test(b.id)) fail(`custom_boards: ${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
-    if (!b.fpga_id) fail(`custom_boards: ${b.id}: give exactly one of fpga_id and fpga.`);
-    if (!b.variants?.length) fail(`custom_boards: ${b.id}: invalid board definition: it has no variants.`);
+    if (!/^[a-z0-9-]+$/.test(b.id)) fail(`${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
+    if (!b.fpga_id) fail(`Board ${JSON.stringify(b.id)}: give exactly one of fpga_id and fpga.`);
+    if (!b.variants?.length) fail("A board needs at least one variant.");
     const arch = family(b.fpga_id!);
     const like = BOARDS.find((x) => x.arch === arch)!;
     const dims = ["connection", "memory"].map((id) => ({
@@ -172,9 +205,9 @@ const fake = {
   /** More files for the projects `openProjectAt` opens, such as custom-boards.json. */
   projectFiles: [] as ProjectFile[],
   /** The custom boards of the last task run (`runTask`). */
-  taskCustomBoards: null as Real.CustomBoards | null,
+  taskCustomBoards: null as string | null,
   /** The custom boards of the last connected-devices scan. */
-  scannedCustomBoards: null as Real.CustomBoards | null,
+  scannedCustomBoards: null as string | null,
   /** The variant of the last task run (`runTask`). */
   taskVariant: null as Real.Variant | null,
   /** The board and variant last saved (`saveProject`, Save As). */
@@ -330,9 +363,19 @@ export const backend: typeof Real.backend = {
   openBareMinimum: async (board) => bareDoc(board),
   openExample: async (board) => blinkyDoc(board),
 
-  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, customBoards, device, onEvent) => {
+  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, device, onEvent) => {
     fake.taskVariant = variant;
+    const customBoards = files.find((f) => f.name === "custom-boards.json")?.text ?? null;
     fake.taskCustomBoards = customBoards;
+    // As the engine: a file with problems fails the task, at its lines.
+    const own = fakeProjectBoards(customBoards);
+    if (own.problem) {
+      onEvent({ kind: "line", line: `\x1b[31m${own.problem.message}\x1b[0m` });
+      return {
+        ok: false, diagnostics: own.problem.diagnostics, testbenches: [], report: null,
+        cancelled: false, graphSvg: null, seconds: 0.1, action: null, devices: [],
+      };
+    }
     const onLine = (line: string) => onEvent({ kind: "line", line });
     const { lines: buildLines, outcome } = buildOutcome(files, board);
     let lines = buildLines;
@@ -380,7 +423,7 @@ export const backend: typeof Real.backend = {
     if (phases && task === "upload" && outcome.ok) {
       fake.uploadedDevice = device ?? fits[0].id;
       // The engine's messages (program_board), for the board's memory.
-      const info = [...fakeProjectBoards(customBoards), ...BOARDS].find((b) => b.id === board);
+      const info = [...own.boards, ...BOARDS].find((b) => b.id === board);
       const memory = info && resolve(info, variant).memory === "ram" ? "RAM" : "flash";
       const name = info?.description ?? board;
       const untested = info && configurationOf(info, variant)?.tested === false ? " (untested)" : "";

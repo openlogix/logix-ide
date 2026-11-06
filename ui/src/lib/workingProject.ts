@@ -1,6 +1,6 @@
 // The project being edited, held in memory. Creating, renaming and deleting
 // files only take effect on disk when the project is saved.
-import type { CustomBoards, ProjectDoc, Variant } from "./backend";
+import type { ProjectDoc, Variant } from "./backend";
 
 /** The main file of new projects. */
 export const MAIN_FILE = "main.v";
@@ -146,27 +146,11 @@ export function formatJson(text: string): { text: string } | { error: string } {
 }
 
 /**
- * The project's own boards, from its custom-boards.json (unsaved edits
- * included): the boards to send as `custom_boards`, unchanged, or why the
- * file can't be used. No file, or an empty one, means none.
+ * The text of the project's custom-boards.json (unsaved edits included), as
+ * Logix Engine gets it, errors and all, or null when the project has none.
  */
-export function customBoardsOf(p: WorkingProject): { boards: CustomBoards; error: string | null } {
-  const text = findFile(p, CUSTOM_BOARDS_FILE)?.text.trim() ?? "";
-  if (!text) return { boards: {}, error: null };
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch (e) {
-    const why = (e as Error).message.replace(/[.\s]*$/, "");
-    return { boards: {}, error: `${CUSTOM_BOARDS_FILE} isn't valid JSON: ${why}.` };
-  }
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    return {
-      boards: {},
-      error: `${CUSTOM_BOARDS_FILE} must hold its boards by ID, in { }, such as { "my-board": { ... } }.`,
-    };
-  }
-  return { boards: parsed as CustomBoards, error: null };
+export function customBoardsText(p: WorkingProject): string | null {
+  return findFile(p, CUSTOM_BOARDS_FILE)?.text ?? null;
 }
 
 /** Pin constraint file extensions (as `CONSTRAINT_EXTENSIONS` in `build_dir.rs`). */

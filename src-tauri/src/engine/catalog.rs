@@ -2,6 +2,7 @@
 //! project's own boards (`custom-boards.json`) as the engine reads them.
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -128,21 +129,48 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
     })
 }
 
-/// The project's own boards, from `custom-boards.json`: board ID to
-/// definition in Logix Engine's custom board format, sent unchanged as
-/// `custom_boards`. The IDE never reads the definitions.
-pub type CustomBoards = serde_json::Map<String, Value>;
+/// Why the project's `custom-boards.json` can't be used: Logix Engine's
+/// message, and a diagnostic for each problem, at line and column in
+/// `custom-boards.json`, for the editor's markers.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardsProblem {
+    pub message: String,
+    pub diagnostics: Vec<crate::outcome::Diagnostic>,
+}
 
-/// The project's own boards (`custom-boards.json`, sent unchanged as
-/// `custom_boards`), as the engine reads them: `Err` with the engine's
-/// message for a list it refuses, such as a board without a valid FPGA.
+impl BoardsProblem {
+    /// The engine's error for a custom boards file at `file`, its
+    /// diagnostics named as the project's file.
+    pub fn from_error(error: &Value, file: &Path) -> BoardsProblem {
+        let given = file.to_string_lossy();
+        let mut diagnostics = super::task::diagnostics(&error["diagnostics"]);
+        for d in &mut diagnostics {
+            if d.file.as_deref() == Some(given.as_ref()) {
+                d.file = Some(crate::project::CUSTOM_BOARDS_FILE.into());
+            }
+        }
+        BoardsProblem {
+            // The scratch copy's path reads as the project's file.
+            message: error["message"]
+                .as_str()
+                .unwrap_or("Logix Engine can't use the custom boards.")
+                .replace(given.as_ref(), crate::project::CUSTOM_BOARDS_FILE),
+            diagnostics,
+        }
+    }
+}
+
+/// The project's own boards, as Logix Engine reads them from the custom
+/// boards file at `file` (`custom_boards_file`): none without a file, or
+/// the problems the engine found in it, at line and column.
 pub async fn project_boards(
     engine: &Engine,
-    custom_boards: &CustomBoards,
-) -> Result<std::result::Result<Vec<Board>, String>> {
-    if custom_boards.is_empty() {
+    file: Option<&Path>,
+) -> Result<std::result::Result<Vec<Board>, BoardsProblem>> {
+    let Some(file) = file else {
         return Ok(Ok(Vec::new()));
-    }
+    };
     let answer = engine
         .call(
             "get_catalog",
@@ -150,17 +178,14 @@ pub async fn project_boards(
                 "boards": {"fetch": true},
                 "fpgas": {"fetch": true},
                 "architectures": {"fetch": true},
-                "custom_boards": custom_boards,
+                "custom_boards_file": file,
             }),
             None,
         )
         .await?;
     Ok(match answer {
         Ok(catalog) => Ok(custom_only(parse_boards(&catalog)?)),
-        Err(e) => Err(e["message"]
-            .as_str()
-            .unwrap_or("Logix Engine refused the custom boards.")
-            .to_string()),
+        Err(e) => Err(BoardsProblem::from_error(&e, file)),
     })
 }
 
@@ -286,6 +311,35 @@ mod tests {
         assert_eq!(pick(json!({"memory": "eeprom"})), None);
         assert_eq!(variant_values(b, "usb-ram").unwrap()["memory"], "ram");
         assert_eq!(b.configurations[1].user_notes.as_deref(), Some("Try it."));
+    }
+
+    #[test]
+    fn the_engines_problems_name_the_projects_file() {
+        let file = Path::new("/Users/you/.logix/boards/1a2b/custom-boards.json");
+        let error = json!({
+            "category": "request",
+            "message": "The custom boards file has problems. /Users/you/.logix/boards/1a2b/custom-boards.json:4:3: Trailing comma.",
+            "diagnostics": [
+                {"file": "/Users/you/.logix/boards/1a2b/custom-boards.json", "line": 4, "column": 3,
+                 "severity": "error", "text": "Trailing comma."},
+            ]
+        });
+        let p = BoardsProblem::from_error(&error, file);
+        assert_eq!(
+            p.message,
+            "The custom boards file has problems. custom-boards.json:4:3: Trailing comma."
+        );
+        assert_eq!(p.diagnostics.len(), 1);
+        let d = &p.diagnostics[0];
+        assert_eq!(
+            (d.file.as_deref(), d.line, d.column, d.message.as_str()),
+            (
+                Some("custom-boards.json"),
+                Some(4),
+                Some(3),
+                "Trailing comma."
+            )
+        );
     }
 
     #[test]

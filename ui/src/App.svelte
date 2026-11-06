@@ -58,7 +58,7 @@
     isFileDirty,
     MAIN_FILE,
     mainFile,
-    customBoardsOf,
+    customBoardsText,
     CUSTOM_BOARDS_FILE,
     formatJson,
     markSaved,
@@ -919,7 +919,6 @@
         filesForSave(p),
         board,
         variant,
-        customBoards,
         task === "upload" ? device : null,
         (event) => {
           if (event.kind === "line") log(event.line);
@@ -985,43 +984,46 @@
 
   const dirty = $derived(project !== null && isDirty(project));
 
-  /** The project's custom-boards.json, parsed (unsaved edits included). */
-  const parsedCustomBoards = $derived(
-    project ? customBoardsOf(project) : { boards: {}, error: null },
-  );
-  /** The boards sent as `custom_boards` with every engine call. */
-  const customBoards = $derived(parsedCustomBoards.boards);
-  /** The boards as text, so the engine is asked again only when they change. */
-  const customBoardsKey = $derived(JSON.stringify(customBoards));
+  /**
+   * The text of the project's custom-boards.json (unsaved edits included),
+   * sent as it is with every engine call that deals with boards, errors and
+   * all: Logix Engine reports its problems at line and column. Null when
+   * the project has none.
+   */
+  const customBoards = $derived(project ? customBoardsText(project) : null);
+
+  /** Shows the custom boards file's problems as its markers, or clears them. */
+  function markCustomBoards(diagnostics: Diagnostic[]) {
+    const others = shownDiagnostics.filter((d) => d.file !== CUSTOM_BOARDS_FILE);
+    if (others.length !== shownDiagnostics.length || diagnostics.length > 0) {
+      showDiagnostics([...others, ...diagnostics]);
+    }
+  }
 
   // The project's own boards, as Logix Engine reads them, for the board
-  // list; a list it can't use is shown in a banner and left out.
+  // list; a file with problems is shown in a banner and as markers, and its
+  // boards are left out until it's fixed.
   $effect(() => {
-    const key = customBoardsKey;
-    const parseError = parsedCustomBoards.error;
+    const text = customBoards;
     if (!ready) return;
-    if (parseError) {
-      projectBoards = [];
-      projectBoardsError = parseError;
-      return;
-    }
-    const list = untrack(() => customBoards);
-    if (Object.keys(list).length === 0) {
+    if (text === null) {
       projectBoards = [];
       projectBoardsError = null;
+      untrack(() => markCustomBoards([]));
       return;
     }
     // Wait for typing to pause.
     const timer = setTimeout(() => {
       backend
-        .projectBoards(list)
+        .projectBoards(text)
         .then((found) => {
-          if (customBoardsKey !== key) return;
-          projectBoards = found;
-          projectBoardsError = null;
+          if (customBoards !== text) return;
+          projectBoards = found.boards;
+          projectBoardsError = found.problem?.message ?? null;
+          markCustomBoards(found.problem?.diagnostics ?? []);
         })
         .catch((e) => {
-          if (customBoardsKey !== key) return;
+          if (customBoards !== text) return;
           projectBoards = [];
           projectBoardsError = toUserError(e).message;
         });

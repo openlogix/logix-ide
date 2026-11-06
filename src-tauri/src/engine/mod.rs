@@ -17,7 +17,7 @@ mod task;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-pub use catalog::{catalog, project_boards, variant_id, Board, Catalog, CustomBoards, Variant};
+pub use catalog::{catalog, project_boards, variant_id, Board, BoardsProblem, Catalog, Variant};
 pub use client::Engine;
 pub use devices::{
     connected_devices, list_devices, ConnectedDevice, DeviceList, UnreachableDevice, UsbDevice,
@@ -25,7 +25,7 @@ pub use devices::{
 pub use format::format_file;
 pub use info::program_path;
 pub use setup::run_setup;
-pub use task::{run as run_task, TaskInput};
+pub use task::{boards_problem_outcome, run as run_task, TaskInput};
 
 use client::{Progress, ProgressSink};
 

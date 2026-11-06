@@ -111,11 +111,14 @@ export interface Configuration {
 }
 
 /**
- * The project's own boards (custom-boards.json): board ID to definition, in
- * Logix Engine's custom board format. Sent unchanged; the IDE never reads
- * the definitions.
+ * The project's own boards as Logix Engine reads them from the text of its
+ * custom-boards.json, or the problems it found there: its message, and a
+ * diagnostic for each problem at line and column in custom-boards.json.
  */
-export type CustomBoards = Record<string, unknown>;
+export interface ProjectBoards {
+  boards: Board[];
+  problem: { message: string; diagnostics: Diagnostic[] } | null;
+}
 
 export type SaveChoice = "save" | "discard" | "cancel";
 
@@ -419,8 +422,6 @@ export const backend = {
     files: ProjectFile[],
     board: string,
     variant: Variant,
-    /** The project's own boards (custom-boards.json), sent unchanged. */
-    customBoards: CustomBoards,
     device: string | null,
     onEvent: (event: TaskEvent) => void,
   ): Promise<TaskOutcome> => {
@@ -435,7 +436,6 @@ export const backend = {
       files,
       board,
       variant,
-      customBoards,
       device,
       onEvent: channel,
     });
@@ -574,24 +574,27 @@ export const backend = {
   onLspClosed: (handler: () => void): Promise<UnlistenFn> =>
     listen("lsp-closed", () => handler()),
 
-  /** The connected USB devices, matched to the catalog's and `customBoards`. */
-  scanDevices: (customBoards: CustomBoards): Promise<Devices> =>
+  /**
+   * The connected USB devices, matched to the catalog's boards and those of
+   * `customBoards`, the text of custom-boards.json (null if none).
+   */
+  scanDevices: (customBoards: string | null): Promise<Devices> =>
     invoke<Devices>("scan_devices", { customBoards }),
 
   /**
    * The connected USB devices that fit boards (the catalog's and
    * `customBoards`), with their boards (silent).
    */
-  connectedDevices: (customBoards: CustomBoards): Promise<ConnectedDevice[]> =>
+  connectedDevices: (customBoards: string | null): Promise<ConnectedDevice[]> =>
     invoke<ConnectedDevice[]>("connected_devices", { customBoards }),
 
   /**
-   * The project's own boards (custom-boards.json's boards, sent unchanged), as
-   * Logix Engine reads them. Rejects with the engine's reason for a list it
-   * refuses.
+   * The project's own boards, as Logix Engine reads them from the text of
+   * custom-boards.json (sent as it is, errors and all; null if none), or the
+   * problems it found in it.
    */
-  projectBoards: (customBoards: CustomBoards): Promise<Board[]> =>
-    invoke<Board[]>("project_boards", { customBoards }),
+  projectBoards: (customBoards: string | null): Promise<ProjectBoards> =>
+    invoke<ProjectBoards>("project_boards", { customBoards }),
 
   /** Stops the running build, upload, test or simulation. */
   cancelTask: (): Promise<boolean> => invoke<boolean>("cancel_task"),

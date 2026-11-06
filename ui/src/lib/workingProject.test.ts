@@ -15,7 +15,7 @@ import {
   mainFile,
   markSaved,
   renameFile,
-  customBoardsOf,
+  customBoardsText,
   formatJson,
   starterText,
 } from "./workingProject";
@@ -35,19 +35,15 @@ const savedDoc: ProjectDoc = {
 describe("workingProject", () => {
   it("reads the project's custom-boards.json", () => {
     const withFile = (text: string | null) =>
-      customBoardsOf(
+      customBoardsText(
         fromDoc({
           ...savedDoc,
           files: text === null ? savedDoc.files : [...savedDoc.files, { name: "custom-boards.json", text }],
         }),
       );
-    expect(withFile(null)).toEqual({ boards: {}, error: null });
-    expect(withFile("  \n")).toEqual({ boards: {}, error: null });
-    expect(withFile('{"mine": {"description": "Mine"}}').boards).toEqual({
-      mine: { description: "Mine" },
-    });
-    expect(withFile("{").error).toMatch(/^custom-boards.json isn't valid JSON: .*\.$/);
-    expect(withFile('[{"id": "mine"}]').error).toMatch(/must hold its boards by ID, in \{ \}/);
+    // Sent as it is, errors and all: Logix Engine reports them.
+    expect(withFile(null)).toBeNull();
+    expect(withFile("{ oops")).toBe("{ oops");
     expect(fileRole("custom-boards.json", "main.v")).toBe("boards");
     expect(starterText("custom-boards.json")).toBe("{\n}\n");
     expect(formatJson('{"a":{"b":[1,2]}}')).toEqual({

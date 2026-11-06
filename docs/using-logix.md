@@ -203,8 +203,9 @@ replaces it in this project. The format is Logix Engine's custom board
 format, described in its
 [tool documentation](https://github.com/openlogix/logix-engine/blob/main/docs/tool-api.md#board-specification).
 Logix highlights the file, and **Tools > Auto Format** tidies it. If the
-file has a mistake, a red banner says what's wrong, and its boards aren't
-offered until it's fixed.
+file has a mistake, a red banner says what's wrong, the mistakes are marked
+in the file like errors in your design, and its boards aren't offered
+until it's fixed.
 
 ## Help
 

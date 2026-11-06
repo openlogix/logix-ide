@@ -79,9 +79,11 @@ pub struct TaskInput<'a> {
     /// The board variant, as the engine's variant ID (e.g. "usb-ram"); `None`
     /// for the board's default.
     pub board_variant: Option<&'a str>,
-    /// The project's own boards (`custom-boards.json`), sent unchanged as
-    /// `custom_boards` with every engine call that deals with boards.
-    pub custom_boards: &'a super::catalog::CustomBoards,
+    /// The project's custom boards file in the prepared folder, as
+    /// `custom_boards_file` with every engine call that deals with boards,
+    /// when the project has one. The engine reports its problems at line
+    /// and column, named `custom-boards.json` like the project's file.
+    pub custom_boards_file: Option<&'a Path>,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
     /// The prepared build folder: the project's files and other contents.
@@ -131,6 +133,27 @@ fn layout_file(testbench: &str) -> String {
     format!("{stem}.gtkw")
 }
 
+/// A task that can't start because the project's custom boards file has
+/// problems: they are its diagnostics, marked in the file like build
+/// errors.
+pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOutcome {
+    let mut diagnostics = problem.diagnostics.clone();
+    if diagnostics.is_empty() {
+        diagnostics.push(error(&problem.message));
+    }
+    TaskOutcome {
+        ok: false,
+        diagnostics,
+        testbenches: Vec::new(),
+        report: None,
+        cancelled: false,
+        graph_svg: None,
+        seconds: 0.0,
+        action: None,
+        devices: Vec::new(),
+    }
+}
+
 /// Runs `task` with the engine. `on_event` gets console lines and
 /// progress.
 pub async fn run<F>(
@@ -149,7 +172,7 @@ where
         on_event,
         cancel,
         sources: design_files(input.files),
-        custom_boards: Value::Object(input.custom_boards.clone()),
+        custom_boards_file: json!(input.custom_boards_file),
         folder: input.source_folder.to_string_lossy().into_owned(),
         build_folder: build_folder(input.source_folder),
     };
@@ -189,8 +212,9 @@ struct Runner<'a, F> {
     sources: Vec<String>,
     /// The prepared folder, as the engine's `source_folder`.
     folder: String,
-    /// The project's own boards, for program_board and list_devices.
-    custom_boards: Value,
+    /// The project's custom boards file (or null), for program_board and
+    /// list_devices.
+    custom_boards_file: Value,
     build_folder: PathBuf,
 }
 
@@ -245,7 +269,7 @@ where
                     json!({
                         "board": input.board,
                         "board_variant": input.board_variant,
-                        "custom_boards": input.custom_boards,
+                        "custom_boards_file": input.custom_boards_file,
                         "top_module": TOP_MODULE,
                         "source_folder": self.folder,
                         "source_files": self.sources,
@@ -269,7 +293,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards": input.custom_boards,
+                        "custom_boards_file": input.custom_boards_file,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
@@ -303,7 +327,7 @@ where
                     json!({
                         "build_folder": self.build_folder(),
                         "device": device,
-                        "custom_boards": self.custom_boards,
+                        "custom_boards_file": self.custom_boards_file,
                     }),
                 )
                 .await?;
@@ -333,7 +357,7 @@ where
                 "list_devices",
                 json!({
                     "build_folder": self.build_folder(),
-                    "custom_boards": self.custom_boards,
+                    "custom_boards_file": self.custom_boards_file,
                 }),
             )
             .await?;
@@ -378,7 +402,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards": input.custom_boards,
+                        "custom_boards_file": input.custom_boards_file,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -414,7 +438,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards": input.custom_boards,
+                        "custom_boards_file": input.custom_boards_file,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -956,7 +980,7 @@ mod tests {
         let mut input = TaskInput {
             board: "alhambra-ii",
             board_variant: None,
-            custom_boards: &Default::default(),
+            custom_boards_file: None,
             arch: "ice40",
             source_folder: &dir,
             files: &files,
@@ -1126,7 +1150,7 @@ mod tests {
                 let mut input = TaskInput {
                     board: &board,
                     board_variant: None,
-                    custom_boards: &Default::default(),
+                    custom_boards_file: None,
                     arch: &arch,
                     source_folder: &dir,
                     files: &files,
@@ -1219,7 +1243,6 @@ mod tests {
             line.replace(&dir.to_string_lossy().into_owned(), "~/.logix/build")
                 .replace(&home, "~")
         };
-        let no_custom = crate::engine::CustomBoards::new();
         let capture = |task: Task, target: Option<&'static str>, main: &'static str, name: &str| {
             std::fs::write(dir.join("main.v"), main).unwrap();
             let lines = Arc::new(Mutex::new(Vec::new()));
@@ -1234,7 +1257,7 @@ mod tests {
             let input = TaskInput {
                 board: "alhambra-ii",
                 board_variant: None,
-                custom_boards: &no_custom,
+                custom_boards_file: None,
                 arch: "ice40",
                 source_folder: &dir,
                 files: &files,
