@@ -102,9 +102,10 @@ pub const NEEDS_PROJECT: &[&str] = &[
 pub struct MenuState {
     /// A project is open (not the start screen).
     pub project: bool,
-    /// The open tab is Verilog or SystemVerilog (.v .sv .vh .svh): Auto
-    /// Format. Pin files have no formatter.
-    pub verilog: bool,
+    /// The open tab can be formatted (Auto Format): Verilog or
+    /// SystemVerilog (.v .sv .vh .svh), or the project's custom-boards.json.
+    /// Pin files have no formatter.
+    pub formattable: bool,
     /// The open tab has line comments: Verilog (`//`) or a pin file (`#`,
     /// or `//` for .cst): Comment/Uncomment.
     pub comment: bool,
@@ -158,7 +159,7 @@ pub fn is_enabled(id: &str, state: &MenuState) -> bool {
         return false;
     }
     match id {
-        AUTO_FORMAT => state.verilog,
+        AUTO_FORMAT => state.formattable,
         TOGGLE_COMMENT => state.comment,
         GO_TO_DEFINITION => state.definition,
         RUN_TESTS => state.testbenches,
@@ -559,7 +560,7 @@ mod tests {
         assert!(!is_enabled(AUTO_FORMAT, &pin_file));
         let all = MenuState {
             project: true,
-            verilog: true,
+            formattable: true,
             comment: true,
             definition: true,
             testbenches: true,

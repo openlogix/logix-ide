@@ -38,7 +38,7 @@ const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false })
  * Engine's rules to test the UI (an id, a description, an FPGA, variants
  * with a connection and memory), with the FPGA's family taken from its ID.
  */
-function fakeProjectBoards(list: unknown[]): Real.Board[] {
+function fakeProjectBoards(boards: Real.CustomBoards): Real.Board[] {
   const fail = (message: string): never => {
     throw { message, details: message };
   };
@@ -47,9 +47,9 @@ function fakeProjectBoards(list: unknown[]): Real.Board[] {
   // Value labels, as the catalog's boards have them.
   const labels = new Map<string, Real.Dimension["values"][number]>();
   for (const b of BOARDS) for (const d of b.dimensions) for (const v of d.values) labels.set(`${d.id}:${v.id}`, v);
-  return list.map((item) => {
-    const b = item as { id?: string; description?: string; fpga_id?: string; variants?: { connection: string; memory: string; tested: boolean }[] };
-    if (!b.id || !/^[a-z0-9-]+$/.test(b.id)) fail(`custom_boards: ${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
+  return Object.entries(boards).map(([id, item]) => {
+    const b = { ...(item as object), id } as { id: string; description?: string; fpga_id?: string; variants?: { connection: string; memory: string; tested: boolean }[] };
+    if (!/^[a-z0-9-]+$/.test(b.id)) fail(`custom_boards: ${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
     if (!b.fpga_id) fail(`custom_boards: ${b.id}: give exactly one of fpga_id and fpga.`);
     if (!b.variants?.length) fail(`custom_boards: ${b.id}: invalid board definition: it has no variants.`);
     const arch = family(b.fpga_id!);
@@ -172,9 +172,9 @@ const fake = {
   /** More files for the projects `openProjectAt` opens, such as custom-boards.json. */
   projectFiles: [] as ProjectFile[],
   /** The custom boards of the last task run (`runTask`). */
-  taskCustomBoards: null as unknown[] | null,
+  taskCustomBoards: null as Real.CustomBoards | null,
   /** The custom boards of the last connected-devices scan. */
-  scannedCustomBoards: null as unknown[] | null,
+  scannedCustomBoards: null as Real.CustomBoards | null,
   /** The variant of the last task run (`runTask`). */
   taskVariant: null as Real.Variant | null,
   /** The board and variant last saved (`saveProject`, Save As). */

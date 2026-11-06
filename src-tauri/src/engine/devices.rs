@@ -90,7 +90,10 @@ pub struct DeviceList {
 
 /// The connected USB devices, with the boards they may be: the catalog's
 /// and the project's own (`custom_boards`, from `custom-boards.json`).
-pub async fn list_devices(engine: &Engine, custom_boards: &[Value]) -> Result<DeviceList> {
+pub async fn list_devices(
+    engine: &Engine,
+    custom_boards: &super::catalog::CustomBoards,
+) -> Result<DeviceList> {
     let args = json!({ "custom_boards": custom_boards });
     let result = engine
         .call("list_devices", args, None)

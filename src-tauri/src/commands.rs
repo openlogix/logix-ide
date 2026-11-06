@@ -189,7 +189,7 @@ pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<engine::Board>
 #[tauri::command]
 pub async fn project_boards(
     state: State<'_, AppState>,
-    custom_boards: Vec<serde_json::Value>,
+    custom_boards: engine::CustomBoards,
 ) -> Result<Vec<engine::Board>, UserError> {
     let engine = ready_engine(&state).await?;
     let boards = engine::project_boards(&engine, &custom_boards)
@@ -260,7 +260,7 @@ pub async fn run_task(
     files: Vec<ProjectFile>,
     board: String,
     variant: engine::Variant,
-    custom_boards: Vec<serde_json::Value>,
+    custom_boards: engine::CustomBoards,
     device: Option<String>,
     on_event: Channel<outcome::TaskEvent>,
 ) -> Result<outcome::TaskOutcome, UserError> {
@@ -497,7 +497,7 @@ pub struct Devices {
 #[tauri::command]
 pub async fn scan_devices(
     state: State<'_, AppState>,
-    custom_boards: Vec<serde_json::Value>,
+    custom_boards: engine::CustomBoards,
 ) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
     let list = engine::list_devices(&engine, &custom_boards)
@@ -515,7 +515,7 @@ pub async fn scan_devices(
 #[tauri::command]
 pub async fn connected_devices(
     state: State<'_, AppState>,
-    custom_boards: Vec<serde_json::Value>,
+    custom_boards: engine::CustomBoards,
 ) -> Result<Vec<engine::ConnectedDevice>, UserError> {
     let engine = ready_engine(&state).await?;
     let list = engine::list_devices(&engine, &custom_boards)

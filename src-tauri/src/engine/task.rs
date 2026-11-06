@@ -81,7 +81,7 @@ pub struct TaskInput<'a> {
     pub board_variant: Option<&'a str>,
     /// The project's own boards (`custom-boards.json`), sent unchanged as
     /// `custom_boards` with every engine call that deals with boards.
-    pub custom_boards: &'a [Value],
+    pub custom_boards: &'a super::catalog::CustomBoards,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
     /// The prepared build folder: the project's files and other contents.
@@ -149,7 +149,7 @@ where
         on_event,
         cancel,
         sources: design_files(input.files),
-        custom_boards: Value::from(input.custom_boards.to_vec()),
+        custom_boards: Value::Object(input.custom_boards.clone()),
         folder: input.source_folder.to_string_lossy().into_owned(),
         build_folder: build_folder(input.source_folder),
     };
@@ -956,7 +956,7 @@ mod tests {
         let mut input = TaskInput {
             board: "alhambra-ii",
             board_variant: None,
-            custom_boards: &[],
+            custom_boards: &Default::default(),
             arch: "ice40",
             source_folder: &dir,
             files: &files,
@@ -1126,7 +1126,7 @@ mod tests {
                 let mut input = TaskInput {
                     board: &board,
                     board_variant: None,
-                    custom_boards: &[],
+                    custom_boards: &Default::default(),
                     arch: &arch,
                     source_folder: &dir,
                     files: &files,
@@ -1219,6 +1219,7 @@ mod tests {
             line.replace(&dir.to_string_lossy().into_owned(), "~/.logix/build")
                 .replace(&home, "~")
         };
+        let no_custom = crate::engine::CustomBoards::new();
         let capture = |task: Task, target: Option<&'static str>, main: &'static str, name: &str| {
             std::fs::write(dir.join("main.v"), main).unwrap();
             let lines = Arc::new(Mutex::new(Vec::new()));
@@ -1233,7 +1234,7 @@ mod tests {
             let input = TaskInput {
                 board: "alhambra-ii",
                 board_variant: None,
-                custom_boards: &[],
+                custom_boards: &no_custom,
                 arch: "ice40",
                 source_folder: &dir,
                 files: &files,

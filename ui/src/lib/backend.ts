@@ -110,6 +110,13 @@ export interface Configuration {
   userNotes?: string;
 }
 
+/**
+ * The project's own boards (custom-boards.json): board ID to definition, in
+ * Logix Engine's custom board format. Sent unchanged; the IDE never reads
+ * the definitions.
+ */
+export type CustomBoards = Record<string, unknown>;
+
 export type SaveChoice = "save" | "discard" | "cancel";
 
 export interface Board {
@@ -302,8 +309,8 @@ export interface ExampleList {
 export interface MenuState {
   /** A project is open (not the start screen). */
   project: boolean;
-  /** The open tab is Verilog: Auto Format. */
-  verilog: boolean;
+  /** The open tab can be formatted (Auto Format): Verilog, or custom-boards.json. */
+  formattable: boolean;
   /** The open tab has line comments (Verilog or a pin file): Comment/Uncomment. */
   comment: boolean;
   /** Go to Definition can answer (a Verilog tab, live checking running). */
@@ -413,7 +420,7 @@ export const backend = {
     board: string,
     variant: Variant,
     /** The project's own boards (custom-boards.json), sent unchanged. */
-    customBoards: unknown[],
+    customBoards: CustomBoards,
     device: string | null,
     onEvent: (event: TaskEvent) => void,
   ): Promise<TaskOutcome> => {
@@ -568,22 +575,22 @@ export const backend = {
     listen("lsp-closed", () => handler()),
 
   /** The connected USB devices, matched to the catalog's and `customBoards`. */
-  scanDevices: (customBoards: unknown[]): Promise<Devices> =>
+  scanDevices: (customBoards: CustomBoards): Promise<Devices> =>
     invoke<Devices>("scan_devices", { customBoards }),
 
   /**
    * The connected USB devices that fit boards (the catalog's and
    * `customBoards`), with their boards (silent).
    */
-  connectedDevices: (customBoards: unknown[]): Promise<ConnectedDevice[]> =>
+  connectedDevices: (customBoards: CustomBoards): Promise<ConnectedDevice[]> =>
     invoke<ConnectedDevice[]>("connected_devices", { customBoards }),
 
   /**
-   * The project's own boards (custom-boards.json's list, sent unchanged), as
+   * The project's own boards (custom-boards.json's boards, sent unchanged), as
    * Logix Engine reads them. Rejects with the engine's reason for a list it
    * refuses.
    */
-  projectBoards: (customBoards: unknown[]): Promise<Board[]> =>
+  projectBoards: (customBoards: CustomBoards): Promise<Board[]> =>
     invoke<Board[]>("project_boards", { customBoards }),
 
   /** Stops the running build, upload, test or simulation. */

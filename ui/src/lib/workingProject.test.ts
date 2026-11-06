@@ -16,6 +16,7 @@ import {
   markSaved,
   renameFile,
   customBoardsOf,
+  formatJson,
   starterText,
 } from "./workingProject";
 
@@ -40,15 +41,19 @@ describe("workingProject", () => {
           files: text === null ? savedDoc.files : [...savedDoc.files, { name: "custom-boards.json", text }],
         }),
       );
-    expect(withFile(null)).toEqual({ boards: [], error: null });
-    expect(withFile("  \n")).toEqual({ boards: [], error: null });
-    expect(withFile('[{"id": "mine"}]').boards).toEqual([{ id: "mine" }]);
-    expect(withFile("[").error).toMatch(/^custom-boards.json isn't valid JSON/);
-    expect(withFile('{"id": "mine"}').error).toBe(
-      "custom-boards.json must hold a list of boards, in [ ].",
-    );
+    expect(withFile(null)).toEqual({ boards: {}, error: null });
+    expect(withFile("  \n")).toEqual({ boards: {}, error: null });
+    expect(withFile('{"mine": {"description": "Mine"}}').boards).toEqual({
+      mine: { description: "Mine" },
+    });
+    expect(withFile("{").error).toMatch(/^custom-boards.json isn't valid JSON: .*\.$/);
+    expect(withFile('[{"id": "mine"}]').error).toMatch(/must hold its boards by ID, in \{ \}/);
     expect(fileRole("custom-boards.json", "main.v")).toBe("boards");
-    expect(starterText("custom-boards.json")).toBe("[\n]\n");
+    expect(starterText("custom-boards.json")).toBe("{\n}\n");
+    expect(formatJson('{"a":{"b":[1,2]}}')).toEqual({
+      text: '{\n  "a": {\n    "b": [\n      1,\n      2\n    ]\n  }\n}\n',
+    });
+    expect(formatJson("{")).toHaveProperty("error");
   });
 
   it("starts clean", () => {

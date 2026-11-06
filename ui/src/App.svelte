@@ -60,6 +60,7 @@
     mainFile,
     customBoardsOf,
     CUSTOM_BOARDS_FILE,
+    formatJson,
     markSaved,
     renameFile,
     projectModules,
@@ -631,9 +632,22 @@
     const file = activeFile;
     const f = findFile(p, file);
     if (!f) return;
+    // The project's boards file is JSON: formatted here, by the IDE.
+    if (file === CUSTOM_BOARDS_FILE) {
+      const formatted = formatJson(f.text);
+      if ("error" in formatted) {
+        status = { text: `Auto Format failed: ${formatted.error}`, kind: "error" };
+      } else if (formatted.text === f.text) {
+        status = { text: "No changes necessary for Auto Format.", kind: "ok" };
+      } else {
+        editor?.replaceText(file, formatted.text);
+        status = { text: "Auto Format finished.", kind: "ok" };
+      }
+      return;
+    }
     if (!isHdlSource(file)) {
       status = {
-        text: "Auto Format works on Verilog and SystemVerilog files (.v .sv .vh .svh).",
+        text: `Auto Format works on Verilog and SystemVerilog files (.v .sv .vh .svh) and ${CUSTOM_BOARDS_FILE}.`,
         kind: "error",
       };
       return;
@@ -973,11 +987,11 @@
 
   /** The project's custom-boards.json, parsed (unsaved edits included). */
   const parsedCustomBoards = $derived(
-    project ? customBoardsOf(project) : { boards: [], error: null },
+    project ? customBoardsOf(project) : { boards: {}, error: null },
   );
-  /** The list sent as `custom_boards` with every engine call. */
+  /** The boards sent as `custom_boards` with every engine call. */
   const customBoards = $derived(parsedCustomBoards.boards);
-  /** The list as text, so the engine is asked again only when it changes. */
+  /** The boards as text, so the engine is asked again only when they change. */
   const customBoardsKey = $derived(JSON.stringify(customBoards));
 
   // The project's own boards, as Logix Engine reads them, for the board
@@ -992,7 +1006,7 @@
       return;
     }
     const list = untrack(() => customBoards);
-    if (list.length === 0) {
+    if (Object.keys(list).length === 0) {
       projectBoards = [];
       projectBoardsError = null;
       return;
@@ -1048,7 +1062,8 @@
    */
   const menuState = $derived<MenuState>({
     project: project !== null,
-    verilog: project !== null && isHdlSource(activeFile),
+    formattable:
+      project !== null && (isHdlSource(activeFile) || activeFile === CUSTOM_BOARDS_FILE),
     comment:
       project !== null && (isHdlSource(activeFile) || pinCommentToken(activeFile) !== null),
     definition: project !== null && lsp !== null && isHdlSource(activeFile),

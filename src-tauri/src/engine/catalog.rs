@@ -128,12 +128,17 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
     })
 }
 
+/// The project's own boards, from `custom-boards.json`: board ID to
+/// definition in Logix Engine's custom board format, sent unchanged as
+/// `custom_boards`. The IDE never reads the definitions.
+pub type CustomBoards = serde_json::Map<String, Value>;
+
 /// The project's own boards (`custom-boards.json`, sent unchanged as
 /// `custom_boards`), as the engine reads them: `Err` with the engine's
 /// message for a list it refuses, such as a board without a valid FPGA.
 pub async fn project_boards(
     engine: &Engine,
-    custom_boards: &[Value],
+    custom_boards: &CustomBoards,
 ) -> Result<std::result::Result<Vec<Board>, String>> {
     if custom_boards.is_empty() {
         return Ok(Ok(Vec::new()));

@@ -498,7 +498,7 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
   // In main.v; the fake has no live checker, so Go to Definition is off.
   expect(await editorMenu()).toMatchObject({
     project: true,
-    verilog: true,
+    formattable: true,
     comment: true,
     definition: false,
     testbenches: true,
@@ -521,7 +521,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
   const runTests = page.getByTitle(/^Run tests/);
   const simulate = page.getByTitle(/^Simulate/);
   // Blinky: main.v open, one testbench.
-  await expect.poll(menuState).toMatchObject({ verilog: true, testbenches: true, simulate: true });
+  await expect.poll(menuState).toMatchObject({ formattable: true, testbenches: true, simulate: true });
   await expect(runTests).toBeEnabled();
   await expect(simulate).toBeEnabled();
   // A testbench: its own Run This Test in the editor's right-click menu.
@@ -533,7 +533,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
   // Format.
   await tab(page, "pinout.pcf").click();
   await expect.poll(menuState).toMatchObject({
-    verilog: false,
+    formattable: false,
     comment: true,
     definition: false,
   });
@@ -548,7 +548,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
   await menu(page, "new");
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
   await expect.poll(menuState).toMatchObject({
-    verilog: true,
+    formattable: true,
     testbenches: false,
     simulate: false,
   });
@@ -558,7 +558,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
   await menu(page, "close-project");
   await expect.poll(menuState).toMatchObject({
     project: false,
-    verilog: false,
+    formattable: false,
     comment: false,
     definition: false,
     testbenches: false,
@@ -760,13 +760,12 @@ test("lists the connected devices", async ({ page }) => {
 test("a project's custom-boards.json adds its own boards, sent with every task", async ({ page }) => {
   type Fake = {
     projectFiles: { name: string; text: string }[];
-    taskCustomBoards: unknown[] | null;
-    scannedCustomBoards: unknown[] | null;
+    taskCustomBoards: unknown;
+    scannedCustomBoards: unknown;
     taskVariant: unknown;
   };
-  const myBoards = [
-    {
-      id: "my-upduino",
+  const myBoards = {
+    "my-upduino": {
       description: "My UPduino",
       fpga_id: "ice40up5k-sg48",
       variants: [
@@ -777,13 +776,13 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
         },
       ],
     },
-  ];
+  };
   await page.goto("/?recents=/Users/you/Documents/Logix/mine");
   await page.evaluate((text) => {
     (window as unknown as { __fake: Fake }).__fake.projectFiles = [
       { name: "custom-boards.json", text },
     ];
-  }, JSON.stringify(myBoards, null, 2));
+  }, JSON.stringify(myBoards));
   await expect(output(page)).toContainText("Ready.");
   await page.getByRole("button", { name: /mine/ }).click();
   await expect(tab(page, "custom-boards.json")).toBeVisible();
@@ -804,17 +803,29 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
   expect((await fake()).taskCustomBoards).toEqual(myBoards);
   await expect.poll(async () => (await fake()).scannedCustomBoards).toEqual(myBoards);
 
-  // A file that isn't valid JSON: a banner, and its boards are left out.
+  // Highlighted as JSON, and Auto Format pretty-prints it.
   await tab(page, "custom-boards.json").click();
+  await expect(page.locator(".cm-line span", { hasText: '"my-upduino"' })).toBeVisible();
+  await menu(page, "auto-format");
+  await expect(status(page)).toHaveText("Auto Format finished.");
+  await expect(page.locator(".cm-line").nth(1)).toHaveText('  "my-upduino": {');
+  await menu(page, "auto-format");
+  await expect(status(page)).toHaveText("No changes necessary for Auto Format.");
+
+  // A file that isn't valid JSON: a banner, and its boards are left out.
   await page.locator(".cm-content").click();
   await page.keyboard.press("Meta+A");
   await page.keyboard.type("oops");
   const banner = page.locator(".custom-boards-error");
   await expect(banner).toContainText("custom-boards.json isn't valid JSON");
   await expect(banner.getByRole("button", { name: "Show File" })).toHaveCount(0);
+  // The editor closes brackets and quotes itself: these give [1] and
+  // {"Bad":1}.
   await page.keyboard.press("Meta+A");
-  // The editor closes brackets itself: this gives [1].
   await page.keyboard.type("[1");
+  await expect(banner).toContainText("must hold its boards by ID");
+  await page.keyboard.press("Meta+A");
+  await page.keyboard.type('{"Bad":1');
   await expect(banner).toContainText("isn't a board ID");
 });
 
