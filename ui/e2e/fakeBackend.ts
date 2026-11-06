@@ -94,10 +94,12 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
         (v) => labels.get(`${id}:${v}`) ?? { id: v, label: v },
       ),
     }));
+    const sameFpga = BOARDS.find((x) => x.fpga?.id === b.fpga_id)?.fpga;
     return {
       ...like,
       id: b.id!,
       description: b.description ?? b.id!,
+      fpga: sameFpga ?? { id: b.fpga_id!, partNumber: b.fpga_id!.toUpperCase(), size: "" },
       dimensions: dims,
       configurations: b.variants!.map((v) => ({
         when: { connection: v.connection, memory: v.memory },

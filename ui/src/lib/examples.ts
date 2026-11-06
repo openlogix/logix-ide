@@ -69,6 +69,7 @@ export function groupExamples(
         dimensions: [],
         configurations: [],
         custom: false,
+        fpga: null,
       })),
   );
 

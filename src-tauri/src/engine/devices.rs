@@ -284,6 +284,7 @@ mod tests {
             arch_order: 0,
             pin_extension: None,
             custom: false,
+            fpga: None,
             dimensions: Vec::new(),
             configurations: vec![super::super::catalog::Configuration {
                 id: "usb-flash".into(),

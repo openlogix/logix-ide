@@ -38,6 +38,23 @@ pub struct Board {
     /// One of the project's own boards (`custom-boards.json`), rather than
     /// a catalog board.
     pub custom: bool,
+    /// The board's FPGA, for Board Info and the board picker's hints and
+    /// search. `None` when the engine doesn't describe it.
+    pub fpga: Option<Fpga>,
+}
+
+/// A board's FPGA, as Logix Engine's catalog describes it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Fpga {
+    /// The catalog's FPGA ID, such as "ice40hx4k-tq144-8k"; `None` for a
+    /// custom board's own FPGA definition. Boards with the same ID have the
+    /// same FPGA.
+    pub id: Option<String>,
+    /// The vendor's part number, such as "ICE40HX4K-TQ144".
+    pub part_number: String,
+    /// The device size, such as "8k".
+    pub size: String,
 }
 
 /// A board's variant: dimension values by dimension id, e.g.
@@ -205,11 +222,18 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
     let mut list: Vec<Board> = boards
         .iter()
         .map(|(id, b)| {
-            let arch = b["fpga_id"]
-                .as_str()
-                .and_then(|fpga| fpgas[fpga]["architecture"].as_str())
-                .unwrap_or("")
-                .to_string();
+            // The FPGA: a catalog ID, or a custom board's own definition.
+            let fpga_id = b["fpga_id"].as_str();
+            let fpga_def = match fpga_id {
+                Some(f) => &fpgas[f],
+                None => &b["fpga"],
+            };
+            let arch = fpga_def["architecture"].as_str().unwrap_or("").to_string();
+            let fpga = fpga_def["part_number"].as_str().map(|part| Fpga {
+                id: fpga_id.map(String::from),
+                part_number: part.to_string(),
+                size: fpga_def["size"].as_str().unwrap_or("").to_string(),
+            });
             let dimensions = serde_json::from_value(b["dimensions"].clone()).unwrap_or_default();
             let configurations = b["variants"]
                 .as_array()
@@ -246,6 +270,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 dimensions,
                 configurations,
                 custom: b["custom"].as_bool().unwrap_or(false),
+                fpga,
             }
         })
         .collect();
@@ -274,6 +299,7 @@ mod tests {
         let ids: Vec<_> = boards.iter().map(|b| b.id.as_str()).collect();
         assert_eq!(ids, ["alhambra-ii", "icezum", "odd"]);
         assert_eq!(boards[0].arch, "ice40");
+        assert_eq!(boards[0].fpga, None, "no part number in this catalog");
         assert_eq!(boards[2].description, "odd");
         assert_eq!(boards[2].arch, "");
         assert!(parse_boards(&json!({})).is_err());
@@ -340,6 +366,34 @@ mod tests {
                 "Trailing comma."
             )
         );
+    }
+
+    #[test]
+    fn reads_each_boards_fpga() {
+        let catalog = json!({
+            "boards": {
+                "alhambra-ii": {"description": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k"},
+                "mine": {"description": "Mine", "custom": true, "fpga": {
+                    "architecture": "ecp5", "part_number": "LFE5U-25F-6BG256C", "size": "25k"}},
+            },
+            "fpgas": {"ice40hx4k-tq144-8k": {
+                "architecture": "ice40", "part_number": "ICE40HX4K-TQ144", "size": "8k"}},
+        });
+        let boards = parse_boards(&catalog).unwrap();
+        let alhambra = boards.iter().find(|b| b.id == "alhambra-ii").unwrap();
+        assert_eq!(
+            alhambra.fpga,
+            Some(Fpga {
+                id: Some("ice40hx4k-tq144-8k".into()),
+                part_number: "ICE40HX4K-TQ144".into(),
+                size: "8k".into(),
+            })
+        );
+        // A custom board's own FPGA: its family too.
+        let mine = boards.iter().find(|b| b.id == "mine").unwrap();
+        assert_eq!(mine.arch, "ecp5");
+        assert_eq!(mine.fpga.as_ref().unwrap().id, None);
+        assert_eq!(mine.fpga.as_ref().unwrap().part_number, "LFE5U-25F-6BG256C");
     }
 
     #[test]

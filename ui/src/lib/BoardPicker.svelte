@@ -10,7 +10,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
-  import { boardGroups, RECENT_GROUP, type BoardGroup } from "./boards";
+  import { boardGroups, fpgaLabel, RECENT_GROUP, type BoardGroup } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
 
   let {
@@ -205,6 +205,7 @@
               id="board-{key}"
               data-key={key}
               role="option"
+              title={b.fpga ? `FPGA: ${fpgaLabel(b)}` : undefined}
               aria-selected={b.id === value}
               class:active={key === active}
               onmousemove={() => (active = key)}

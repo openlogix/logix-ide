@@ -37,6 +37,7 @@
   } from "./lib/variants";
   import DiagramDialog from "./lib/DiagramDialog.svelte";
   import DevicesDialog from "./lib/DevicesDialog.svelte";
+  import BoardInfoDialog from "./lib/BoardInfoDialog.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
   import { deviceSummaryLines, isBoardNotFound, needsDeviceChoice } from "./lib/devices";
@@ -820,6 +821,8 @@
   // ---- Connected devices (Tools > Connected Devices) ----
 
   let devicesOpen = $state(false);
+  /** Tools > Board Info… (or the ⓘ next to the board), while it's open. */
+  let boardInfoOpen = $state(false);
   let devices = $state<Devices | null>(null);
   let devicesError = $state<string | null>(null);
   let devicesBusy = $state(false);
@@ -1083,6 +1086,7 @@
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && simulationTestbench(project) !== null,
     testbenchOpen: project !== null && isTestbench(activeFile),
+    board: currentBoardInfo !== null,
     variantMenus: variantMenus(currentBoardInfo, currentVariant),
   });
 
@@ -1456,6 +1460,10 @@
       showDevices();
       return;
     }
+    if (id === "board-info") {
+      if (currentBoardInfo) boardInfoOpen = true;
+      return;
+    }
     if (id === "settings") {
       if (prefs) settingsOpen = true;
       return;
@@ -1504,6 +1512,7 @@
         | "show-folder"
         | "show-diagram"
         | "devices"
+        | "board-info"
         | "settings"
         | "go-to-definition"
         | "toggle-comment"
@@ -1664,6 +1673,19 @@
   />
 {/if}
 
+{#if boardInfoOpen && currentBoardInfo}
+  <BoardInfoDialog
+    board={currentBoardInfo}
+    {boards}
+    selected={currentBoard}
+    onPick={(id) => {
+      boardInfoOpen = false;
+      setBoard(id);
+    }}
+    onClose={() => (boardInfoOpen = false)}
+  />
+{/if}
+
 {#if devicePicker}
   <DevicePicker
     boardName={boardName(devicePicker.board)}
@@ -1780,6 +1802,14 @@
         disabled={running !== null}
         onChoose={setVariant}
       />
+    {/if}
+    {#if currentBoardInfo && !pendingBoard}
+      <button
+        class="board-info"
+        title="Board info: its FPGA, how it's programmed, and the boards with the same FPGA"
+        aria-label="Board info"
+        onclick={() => (boardInfoOpen = true)}>ⓘ</button
+      >
     {/if}
     {#if ready && currentBoard}
       {@const boardConnected = isConnected(currentBoard)}
@@ -2092,6 +2122,23 @@
   /* Whether the selected board is plugged in: a dot and a word. A button
      (it opens Connected Devices), so it must override `.toolbar button`,
      the round icon buttons: hence `.toolbar .board-link`. */
+  /* The ⓘ next to the board: Board Info. */
+  .toolbar .board-info {
+    width: auto;
+    height: auto;
+    margin-left: 6px;
+    padding: 2px 6px;
+    font-size: 16px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.75);
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .toolbar .board-info:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
   .toolbar .board-link {
     display: flex;
     align-items: center;

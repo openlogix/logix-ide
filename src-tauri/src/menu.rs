@@ -31,6 +31,9 @@ pub const SIMULATE: &str = "simulate";
 pub const SHOW_FOLDER: &str = "show-folder";
 pub const SHOW_DIAGRAM: &str = "show-diagram";
 pub const DEVICES: &str = "devices";
+/// Tools > Board Info…: the toolbar board's FPGA, how it's programmed, and
+/// the boards with the same FPGA.
+pub const BOARD_INFO: &str = "board-info";
 pub const SETTINGS: &str = "settings";
 pub const GO_TO_DEFINITION: &str = "go-to-definition";
 pub const TOGGLE_COMMENT: &str = "toggle-comment";
@@ -119,6 +122,9 @@ pub struct MenuState {
     /// The open tab is a testbench: the editor's right-click menu adds Run
     /// This Test and Simulate (hidden otherwise, to keep it short).
     pub testbench_open: bool,
+    /// The toolbar has a board Logix knows (Board Info).
+    #[serde(default)]
+    pub board: bool,
     /// One Tools submenu per dimension of the current board's variants,
     /// e.g. Tools > Memory ▸ Flash / RAM. Empty for most boards.
     #[serde(default)]
@@ -164,6 +170,7 @@ pub fn is_enabled(id: &str, state: &MenuState) -> bool {
         GO_TO_DEFINITION => state.definition,
         RUN_TESTS => state.testbenches,
         SIMULATE => state.simulate,
+        BOARD_INFO => state.board,
         _ => true,
     }
 }
@@ -316,6 +323,11 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         tools = tools.separator();
     }
     let tools = tools
+        .item(
+            &MenuItemBuilder::with_id(BOARD_INFO, "Board Info…")
+                .enabled(is_enabled(BOARD_INFO, &state))
+                .build(app)?,
+        )
         .item(&MenuItemBuilder::with_id(DEVICES, "Connected Devices…").build(app)?)
         .build()?;
 
@@ -373,7 +385,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
-        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST => {
+        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST | BOARD_INFO => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {
@@ -533,6 +545,12 @@ mod tests {
         assert!(!is_enabled(SAVE, &none));
         assert!(is_enabled(OPEN, &none));
         assert!(is_enabled(SETTINGS, &none));
+        assert!(!is_enabled(BOARD_INFO, &none));
+        let board = MenuState {
+            board: true,
+            ..Default::default()
+        };
+        assert!(is_enabled(BOARD_INFO, &board), "on the start screen too");
         // A pin file open in a project without testbenches.
         let pins = MenuState {
             project: true,
@@ -566,6 +584,7 @@ mod tests {
             testbenches: true,
             simulate: true,
             testbench_open: true,
+            board: true,
             variant_menus: Vec::new(),
         };
         for id in [

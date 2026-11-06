@@ -18,6 +18,7 @@ const plain: Board = {
   arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0,
   pinExtension: "pcf",
   custom: false,
+  fpga: null,
   // Every board has both standard dimensions; one value each is no choice.
   dimensions: [
     { id: "connection", label: "Connection", values: [{ id: "usb", label: "USB" }] },
@@ -44,6 +45,7 @@ const stick: Board = {
   arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1,
   pinExtension: "lpf",
   custom: false,
+  fpga: null,
   dimensions: [
     {
       id: "connection",

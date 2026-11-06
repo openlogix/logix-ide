@@ -32,7 +32,8 @@ To get it, see [Installing Logix](installing.md).
 | ![Run Tests](images/icon-test.png){ .toolbar-icon } | **Run Tests** | Runs all the project's testbenches |
 | ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals in GTKWave |
 | ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running |
-| | Board list | Picks your board; boards plugged in come first |
+| | Board list | Picks your board; the ones you used recently come first |
+| | ⓘ | Shows the board's FPGA and the boards with the same FPGA |
 
 Below the toolbar are a tab for each file, the editor and the output, and at
 the bottom of the window a status line that says what Logix is doing. Mistakes in the grammar, like a

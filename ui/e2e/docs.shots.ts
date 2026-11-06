@@ -119,6 +119,13 @@ test("connected devices", async ({ page }) => {
   await shot(page, "devices");
 });
 
+test("board info", async ({ page }) => {
+  await startWithBoard(page);
+  await menu(page, "board-info");
+  await expect(page.getByRole("dialog", { name: "Board Info" })).toContainText("ICE40HX4K-TQ144");
+  await shot(page, "board-info");
+});
+
 test("toolbar icons", async ({ page }) => {
   // The toolbar buttons as small images for the docs text (icon-<name>.png),
   // taken from the real UI so they always match it: no toolbar color around

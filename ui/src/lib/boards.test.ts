@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { boardGroups, groupByArch, withProjectBoards } from "./boards";
+import { boardGroups, fpgaLabel, groupByArch, sameFpgaBoards, withProjectBoards } from "./boards";
 import type { Board } from "./backend";
 
 const boards: Board[] = [
-  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false },
-  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", archLabel: "Xilinx", archOrder: 3, pinExtension: null, dimensions: [], configurations: [], custom: false },
-  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1, pinExtension: null, dimensions: [], configurations: [], custom: false },
-  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false },
-  { id: "mystery", description: "Mystery Board", arch: "", archLabel: "Other", archOrder: 99, pinExtension: null, dimensions: [], configurations: [], custom: false },
-  { id: "tang", description: "Tang Nano 9K", arch: "gowin", archLabel: "Gowin", archOrder: 2, pinExtension: null, dimensions: [], configurations: [], custom: false },
+  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", archLabel: "Xilinx", archOrder: 3, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "mystery", description: "Mystery Board", arch: "", archLabel: "Other", archOrder: 99, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "tang", description: "Tang Nano 9K", arch: "gowin", archLabel: "Gowin", archOrder: 2, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
 ];
 
 const summary = (recent: string[], q: string, list: Board[] = boards) =>
@@ -51,6 +51,34 @@ describe("boardGroups", () => {
     expect(summary([], "gowin")).toEqual(["Gowin: tang"]);
     expect(summary(["alhambra-ii"], "tang")).toEqual(["Gowin: tang"]);
     expect(summary([], "zzz")).toEqual([]);
+  });
+});
+
+describe("FPGAs", () => {
+  const hx4k = { id: "ice40hx4k-tq144-8k", partNumber: "ICE40HX4K-TQ144", size: "8k" };
+  const withFpga: Board[] = [
+    { ...boards[0], fpga: hx4k },
+    { ...boards[3], fpga: { id: "ice40up5k-sg48", partNumber: "ICE40UP5K-SG48", size: "5k" } },
+    { ...boards[0], id: "kefir", description: "Kefir", fpga: hx4k },
+    ...boards.slice(4),
+  ];
+
+  it("finds boards by their FPGA's part number or ID, though it isn't shown", () => {
+    expect(summary([], "up5k", withFpga)).toEqual(["Lattice iCE40: icebreaker"]);
+    expect(summary([], "ICE40HX4K-TQ144", withFpga)).toEqual(["Lattice iCE40: alhambra-ii,kefir"]);
+  });
+
+  it("names the FPGA for people", () => {
+    expect(fpgaLabel(withFpga[0])).toBe("Lattice iCE40 ICE40HX4K-TQ144 (8k)");
+    expect(fpgaLabel(boards[4])).toBe("");
+  });
+
+  it("lists the other boards with the same FPGA, by name", () => {
+    expect(sameFpgaBoards(withFpga, withFpga[0]).map((b) => b.id)).toEqual(["kefir"]);
+    expect(sameFpgaBoards(withFpga, withFpga[1])).toEqual([]);
+    // A custom board's own FPGA definition has no ID to compare.
+    const own = { ...withFpga[0], id: "mine", fpga: { ...hx4k, id: null } };
+    expect(sameFpgaBoards(withFpga, own)).toEqual([]);
   });
 });
 

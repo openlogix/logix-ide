@@ -55,16 +55,18 @@ export function withProjectBoards(catalog: Board[], own: Board[]): Board[] {
  * The board picker's groups: the boards chosen most recently (`recent`,
  * newest first, the ones still offered), then every board by FPGA
  * architecture, the project's own boards included. With a search query,
- * only boards whose name, id or architecture contains it; empty groups are
- * left out.
+ * only boards whose name, id, architecture or FPGA (part number or ID)
+ * contains it; empty groups are left out.
  */
 export function boardGroups(boards: Board[], recent: string[], query: string): BoardGroup[] {
   const q = query.trim().toLowerCase();
+  // The FPGA's part number and ID count too, though the list doesn't show
+  // them, so "up5k" or "xc7a35t" finds the boards with that FPGA.
   const matches = (b: Board) =>
     !q ||
-    b.description.toLowerCase().includes(q) ||
-    b.id.toLowerCase().includes(q) ||
-    b.archLabel.toLowerCase().includes(q);
+    [b.description, b.id, b.archLabel, b.fpga?.partNumber ?? "", b.fpga?.id ?? ""].some((t) =>
+      t.toLowerCase().includes(q),
+    );
   const shown = boards.filter(matches);
 
   const groups: BoardGroup[] = [];
@@ -77,4 +79,19 @@ export function boardGroups(boards: Board[], recent: string[], query: string): B
     groups.push({ key: g.label, label: g.label, boards: g.items, recent: false });
   }
   return groups;
+}
+
+/** A board's FPGA for people, e.g. "Lattice iCE40 ICE40HX4K-TQ144 (8k)"; "" if unknown. */
+export function fpgaLabel(b: Board): string {
+  if (!b.fpga) return "";
+  return `${b.archLabel} ${b.fpga.partNumber}${b.fpga.size ? ` (${b.fpga.size})` : ""}`;
+}
+
+/** The other boards with the same FPGA as `b` (the catalog's FPGA ID), by name. */
+export function sameFpgaBoards(boards: Board[], b: Board): Board[] {
+  const id = b.fpga?.id;
+  if (!id) return [];
+  return boards
+    .filter((x) => x.id !== b.id && x.fpga?.id === id)
+    .sort((x, y) => x.description.localeCompare(y.description));
 }

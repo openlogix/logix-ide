@@ -141,6 +141,18 @@ export interface Board {
   configurations: Configuration[];
   /** One of the project's own boards (custom-boards.json), not a catalog board. */
   custom: boolean;
+  /** The board's FPGA, from Logix Engine's catalog (null if it doesn't say). */
+  fpga: Fpga | null;
+}
+
+/** A board's FPGA. */
+export interface Fpga {
+  /** The catalog's FPGA ID, e.g. "ice40hx4k-tq144-8k": boards with the same ID have the same FPGA. Null for a custom board's own FPGA definition. */
+  id: string | null;
+  /** The vendor's part number, e.g. "ICE40HX4K-TQ144". */
+  partNumber: string;
+  /** The device size, e.g. "8k". */
+  size: string;
 }
 
 export interface Example {
@@ -324,6 +336,8 @@ export interface MenuState {
   simulate: boolean;
   /** The open tab is a testbench (the editor menu's Run This Test, Simulate). */
   testbenchOpen: boolean;
+  /** The toolbar has a board Logix knows (Tools > Board Info). */
+  board: boolean;
   /** One Tools submenu per dimension of the board's variants. */
   variantMenus: VariantMenu[];
 }
@@ -354,6 +368,7 @@ export type MenuId =
   | "stop"
   | "show-diagram"
   | "devices"
+  | "board-info"
   | "settings"
   | "go-to-definition"
   | "toggle-comment"

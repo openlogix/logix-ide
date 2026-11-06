@@ -860,6 +860,33 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
   await expect(tab(page, "custom-boards.json")).not.toHaveClass(/has-error/);
 });
 
+test("Board Info shows the board's FPGA and the boards with the same FPGA", async ({ page }) => {
+  await start(page);
+  // The board picker: the FPGA as a hover hint, and search by it.
+  await boardButton(page).click();
+  await page.getByRole("combobox").fill("hx4k");
+  const alhambra = page.getByRole("option", { name: "Alhambra II", exact: true }).first();
+  await expect(alhambra).toHaveAttribute("title", "FPGA: Lattice iCE40 ICE40HX4K-TQ144 (8k)");
+  await page.keyboard.press("Escape");
+
+  // The ⓘ next to the board, and Tools > Board Info.
+  await page.getByRole("button", { name: "Board info" }).click();
+  const info = page.getByRole("dialog", { name: "Board Info" });
+  await expect(info).toContainText("ICE40HX4K-TQ144");
+  await expect(info).toContainText("Lattice iCE40");
+  await expect(info).toContainText(".pcf");
+  await expect(info).toContainText("USB · Flash (default)");
+  await page.keyboard.press("Escape");
+  await expect(info).toBeHidden();
+  await menu(page, "board-info");
+  await expect(info).toBeVisible();
+  // A board with the same FPGA selects it, as the board picker does.
+  await info.getByRole("button", { name: /^Kéfir I/ }).click();
+  await expect(info).toBeHidden();
+  await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
+  await expect(boardButton(page)).toHaveText(/Kéfir I/);
+});
+
 test("a failed command's banner says why, with one red line", async ({ page }) => {
   await start(page);
   await page.evaluate(() => {

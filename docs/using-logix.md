@@ -91,6 +91,16 @@ used**, then all boards by FPGA family. The words next to the list
 to be plugged in; Upload then checks. Click them to see the connected
 devices and the boards each may be.
 
+### Board info
+
+The **ⓘ** next to the board (or **Tools > Board Info…**) shows the board's
+FPGA, its pin file kind and the ways to program it, and lists the other
+boards with the same FPGA: click one to select it. To find a board like
+yours, you can also type its FPGA in the board list's search, such as
+`up5k` or `xc7a35t`, and hover over a board to see its FPGA.
+
+![The Board Info window for the Alhambra II](images/board-info.png)
+
 ### Board options
 
 Next to the board, Logix shows how it's programmed: the connection (such
