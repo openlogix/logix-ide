@@ -230,8 +230,8 @@ test("picking the current board offers its examples too", async ({ page }) => {
   await expect(page.getByRole("option", { selected: true }).last()).toHaveText(/Alhambra II/);
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", { name: "Examples" });
-  await expect(dialog.getByRole("heading")).toContainText("Examples for Alhambra II");
-  await dialog.getByRole("button", { name: "Just Change the Board" }).click();
+  await expect(dialog.getByRole("heading")).toHaveText("Project options for Alhambra II");
+  await dialog.getByRole("button", { name: "Change the Board", exact: true }).click();
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
 });
 
@@ -268,7 +268,7 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
 
   // The iCESugar-Pro can be programmed to flash or to RAM.
   await pickBoard(page, "Icesugar Pro");
-  await page.getByRole("dialog").getByRole("button", { name: "Just Change the Board" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Change the Board", exact: true }).click();
   await expect(summary).toHaveText(/^\s*USB · Flash/);
   const memory = (await fake()).menuState.variantMenus[1];
   expect(memory.label).toBe("Memory");
@@ -318,7 +318,7 @@ test("a value that doesn't go with the others is greyed out, and choosing it swi
   await start(page);
   // The ButterStick's USB bootloader writes flash, its JTAG adapters RAM.
   await pickBoard(page, "butterstick r1.0");
-  await page.getByRole("dialog").getByRole("button", { name: "Just Change the Board" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Change the Board", exact: true }).click();
   await expect(summary).toHaveText(/^\s*USB bootloader · Flash/);
   await summary.click();
   const panel = page.getByRole("dialog", { name: "butterstick r1.0 options" });
@@ -333,15 +333,41 @@ test("a value that doesn't go with the others is greyed out, and choosing it swi
   await expect(panel.getByRole("radio", { name: "USB bootloader" })).toHaveClass(/unavailable/);
 });
 
-test("changing the board offers its examples, or keeps the files", async ({ page }) => {
+test("changing the board offers project options: the current project first", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
   await typeAtStart(page, "// mine\n");
   await pickBoard(page, "iCEBreaker");
   const dialog = page.getByRole("dialog", { name: "Examples" });
-  await expect(dialog.getByRole("heading")).toContainText("Examples for iCEBreaker");
+  await expect(dialog.getByRole("heading")).toHaveText("Project options for iCEBreaker");
   await expect(dialog.getByRole("list", { name: "Boards" })).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Just Change the Board" }).click();
+  // The current project, selected, with what the change means.
+  const current = dialog.getByRole("button", { name: /^Change the board of “blinky” to iCEBreaker/ });
+  await expect(current).toHaveClass(/selected/);
+  await expect(current).toContainText(
+    "Another Lattice iCE40 FPGA (ICE40HX4K-TQ144 → ICE40UP5K-SG48). pinout.pcf needs this board's pins.",
+  );
+  await expect(dialog.getByText("Example projects", { exact: true })).toBeVisible();
+  // The main button follows the selection.
+  const main = dialog.locator("footer .primary");
+  await expect(main).toHaveText("Change the Board");
+  await dialog.getByRole("button", { name: /^blinky/ }).click();
+  await expect(main).toHaveText("New Project");
+  await expect(current).not.toHaveClass(/selected/);
+  // Cancel keeps the board as it was.
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(boardButton(page)).toHaveText(/Alhambra II/);
+  // Another family: another kind of pin file, and probably more.
+  await pickBoard(page, "ColorLight-5A-75B-V8");
+  await expect(dialog.getByRole("button", { name: /^Change the board of/ })).toContainText(
+    "The project needs a .lpf pin file instead of pinout.pcf, and probably significant changes",
+  );
+  await page.keyboard.press("Escape");
+  await expect(boardButton(page)).toHaveText(/Alhambra II/);
+  // Change the Board (the default): the files stay, the board changes.
+  await pickBoard(page, "iCEBreaker");
+  await dialog.getByRole("button", { name: "Change the Board", exact: true }).click();
   await expect(dialog).toBeHidden();
   await expect(page.locator(".cm-content")).toContainText("// mine");
   await expect(boardButton(page)).toHaveText(/iCEBreaker/);
@@ -360,11 +386,11 @@ test("changing the board offers your recent projects for it", async ({ page }) =
   const dialog = page.getByRole("dialog", { name: "Examples" });
   await expect(dialog.getByRole("button", { name: /^blinky/ })).toBeVisible();
   await expect(dialog.getByText("Recent projects", { exact: true })).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Just Change the Board" }).click();
+  await dialog.getByRole("button", { name: "Change the Board", exact: true }).click();
   // The fake's recent projects are UPduino v2 projects: listed first.
   await pickBoard(page, "UPDuino v2.0");
   await expect(dialog.getByText("Recent projects", { exact: true })).toBeVisible();
-  await expect(dialog.getByRole("heading")).toHaveText("Projects and examples for UPDuino v2.0");
+  await expect(dialog.getByRole("heading")).toHaveText("Project options for UPDuino v2.0");
   await dialog.getByRole("button", { name: /counter/ }).click();
   await dialog.getByRole("button", { name: "Open Project" }).click();
   await expect(dialog).toBeHidden();
@@ -432,14 +458,14 @@ test("shows if the board is connected, and lists recently used boards first", as
     window.dispatchEvent(new Event("focus"));
   });
   await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
-  await page.getByRole("dialog").getByRole("button", { name: "Just Change the Board" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Change the Board", exact: true }).click();
   await expect(link).toHaveText("Connected");
   await expect(link).toHaveAttribute("title", /may be the Arty A7-35T/);
   await page.keyboard.press("Escape");
 
   // The boards picked come first, under "Recently used", newest first.
   await pickBoard(page, "iCEBreaker");
-  await page.getByRole("dialog").getByRole("button", { name: "Just Change the Board" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Change the Board", exact: true }).click();
   await boardButton(page).click();
   const recent = page.locator(".group").first();
   await expect(recent).toHaveText(/^\s*Recently used\s*2\s*$/);
@@ -899,7 +925,7 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await info.getByRole("button", { name: /^Kéfir I/ }).click();
   await info.getByRole("button", { name: "Select This Board" }).click();
   await expect(info).toBeHidden();
-  await page.getByRole("dialog").getByRole("button", { name: "Just Change the Board" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Change the Board", exact: true }).click();
   await expect(boardButton(page)).toHaveText(/Kéfir I/);
 });
 
@@ -925,7 +951,7 @@ test("a failed command's banner says why, with one red line", async ({ page }) =
 test("selects a board from the connected devices", async ({ page }) => {
   await start(page);
   await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
-  await page.getByRole("dialog").getByRole("button", { name: "Just Change the Board" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Change the Board", exact: true }).click();
   await page.evaluate(() =>
     (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu(
       "devices",
@@ -936,7 +962,7 @@ test("selects a board from the connected devices", async ({ page }) => {
   // The board's name is a link that selects it, as the board picker does.
   await dialog.getByRole("button", { name: "Alhambra II", exact: true }).click();
   await expect(dialog).toBeHidden();
-  await page.getByRole("dialog").getByRole("button", { name: "Just Change the Board" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Change the Board", exact: true }).click();
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
 });
 

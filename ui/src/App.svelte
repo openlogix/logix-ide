@@ -397,9 +397,10 @@
   }
 
   /**
-   * A board chosen in the toolbar while its examples are offered: applied
-   * only on Just Change the Board (opening an example or project brings
-   * its own board), so the "Save changes?" question is only about files.
+   * A board chosen in the toolbar while its project options are offered:
+   * applied only on Change the Board (opening an example or project brings
+   * its own board; Cancel keeps the old one), so the "Save changes?"
+   * question is only about files.
    */
   let pendingBoard = $state<string | null>(null);
   /** The recent projects for `pendingBoard`, offered with its examples. */
@@ -407,8 +408,8 @@
 
   /**
    * Toolbar board change. As in the Arduino IDE, it never changes the
-   * files by itself; the board's examples are offered, with "Use Board in
-   * Current Project" as the default.
+   * files by itself; the board's project options are offered, with
+   * changing the board of the current project selected by default.
    */
   function setBoard(id: string) {
     if (!id) return;
@@ -478,10 +479,27 @@
     };
   }
 
-  function closeExamples(keepFiles: boolean) {
-    if (keepFiles && pendingBoard && project) applyBoard(project, pendingBoard);
+  /**
+   * Closes the examples dialog; after a board change, `changeBoard` applies
+   * the new board to the current project (Change the Board), and otherwise
+   * the board stays as it was (Cancel, Esc, ✕).
+   */
+  function closeExamples(changeBoard: boolean) {
+    if (changeBoard && pendingBoard && project) applyBoard(project, pendingBoard);
     pendingBoard = null;
     examplesOpen = false;
+  }
+
+  /** The project's pin file for its board's kind, else any pin file (for notes). */
+  function projectPinFile(p: WorkingProject): string | null {
+    const main = mainFile(p);
+    const ext = currentBoardInfo?.pinExtension ?? null;
+    const roles = p.files.map((f) => ({ name: f.name, role: fileRole(f.name, main, ext) }));
+    return (
+      roles.find((f) => f.role === "pins")?.name ??
+      roles.find((f) => f.role === "otherPins")?.name ??
+      null
+    );
   }
 
   function boardName(id: string | null): string {
@@ -1714,8 +1732,12 @@
     onlyBoard={pendingBoard}
     recents={pendingBoard ? boardRecents : []}
     onOpenRecent={openBoardRecent}
+    currentProject={pendingBoard && project
+      ? { name: project.name, board: currentBoardInfo, pinFile: projectPinFile(project) }
+      : null}
+    onChangeBoard={() => closeExamples(true)}
     onOpen={openExample}
-    onClose={() => closeExamples(true)}
+    onClose={() => closeExamples(false)}
   />
 {/if}
 

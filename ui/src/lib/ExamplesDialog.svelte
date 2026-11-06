@@ -1,16 +1,19 @@
 <!--
   Browse the examples by board and open one. With `onlyBoard` (after a
-  board change in the toolbar), only that board's examples are shown,
-  after the recent projects for that board (`recents`), and Just Change the
-  Board (or closing) keeps the current project, on the new board. The open
-  button says what it does: New Project for an example or Bare Minimum
-  (each starts a new, unsaved project), Open Project for a recent one (the
-  user's wording).
+  board change in the toolbar), it's "Project options for <board>", one
+  list of choices (the user's design, 2026-11-06): the current project on
+  the new board (selected by default, with a note on what the change
+  means), the recent projects for that board (`recents`), and the board's
+  example projects. The main button says what the selected choice does:
+  Change the Board, Open Project, or New Project (an example or Bare
+  Minimum starts a new, unsaved project). Cancel, Esc and ✕ cancel the
+  board change.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import type { Board, Example } from "./backend";
   import { groupExamples, type ExampleEntry } from "./examples";
-  import { groupByArch } from "./boards";
+  import { boardChangeNote, groupByArch } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
 
@@ -21,6 +24,8 @@
     onlyBoard = null,
     recents = [],
     onOpenRecent = () => {},
+    currentProject = null,
+    onChangeBoard = () => {},
     onOpen,
     onClose,
   }: {
@@ -33,7 +38,15 @@
     /** Recent project folders for `onlyBoard`, listed first. */
     recents?: string[];
     onOpenRecent?: (dir: string) => void;
+    /**
+     * With `onlyBoard`: the project open now, offered first, to move to the
+     * new board (its name, its board, and its pin file, for the note).
+     */
+    currentProject?: { name: string; board: Board | null; pinFile: string | null } | null;
+    /** Change the board of the current project to `onlyBoard`. */
+    onChangeBoard?: () => void;
     onOpen: (example: ExampleEntry) => void;
+    /** Closed without a choice: after a board change, it's cancelled. */
     onClose: () => void;
   } = $props();
 
@@ -44,6 +57,9 @@
   let selectedKey = $state<string | null>(null);
   /** Selected recent project folder (instead of an example). */
   let selectedRecent = $state<string | null>(null);
+  /** The current project on the new board is selected (the default). */
+  // svelte-ignore state_referenced_locally
+  let selectedCurrent = $state(onlyBoard !== null && currentProject !== null);
   const folderName = (dir: string) => dir.split(/[\\/]/).pop() ?? dir;
   /** Recent projects shown: all of them, or those matching the search. */
   const shownRecents = $derived(
@@ -69,8 +85,13 @@
     if (first) expandGroup(first.archLabel);
   }
 
-  const onlyBoardName = $derived(
-    boards.find((b) => b.id === onlyBoard)?.description ?? onlyBoard,
+  const onlyBoardInfo = $derived(boards.find((b) => b.id === onlyBoard) ?? null);
+  const onlyBoardName = $derived(onlyBoardInfo?.description ?? onlyBoard);
+  /** What moving the current project to the new board means. */
+  const changeNote = $derived(
+    currentProject && onlyBoardInfo
+      ? boardChangeNote(currentProject.board, onlyBoardInfo, currentProject.pinFile)
+      : null,
   );
   /** The selected board's group, or the first one if it's filtered out. */
   const group = $derived(
@@ -81,7 +102,7 @@
    * just one (or Bare Minimum if it has none).
    */
   const selectedExample = $derived.by(() => {
-    if (selectedRecent) return null;
+    if (selectedRecent || selectedCurrent) return null;
     const clicked = group?.examples.find((e) => key(e) === selectedKey);
     if (clicked || !group) return clicked ?? null;
     const real = group.examples.filter((e) => !e.bare);
@@ -95,26 +116,56 @@
     selectedBoard = id;
     selectedKey = null;
     selectedRecent = null;
+    selectedCurrent = false;
   }
 
   function selectExample(k: string) {
     selectedKey = k;
     selectedRecent = null;
+    selectedCurrent = false;
   }
 
-  const canOpen = $derived(selectedRecent !== null || selectedExample !== null);
+  function selectRecent(dir: string) {
+    selectedRecent = dir;
+    selectedCurrent = false;
+  }
+
+  function selectCurrent() {
+    selectedCurrent = true;
+    selectedRecent = null;
+    selectedKey = null;
+  }
+
+  const canOpen = $derived(
+    selectedCurrent || selectedRecent !== null || selectedExample !== null,
+  );
   /**
-   * The open button: what it does. An example, like Bare Minimum, starts a
-   * new, unsaved project.
+   * The main button: what the selected choice does. An example, like Bare
+   * Minimum, starts a new, unsaved project.
    */
-  const openLabel = $derived(selectedRecent !== null ? "Open Project" : "New Project");
+  const openLabel = $derived(
+    selectedCurrent ? "Change the Board" : selectedRecent !== null ? "Open Project" : "New Project",
+  );
 
   function open() {
-    if (selectedRecent) onOpenRecent(selectedRecent);
+    if (selectedCurrent) onChangeBoard();
+    else if (selectedRecent) onOpenRecent(selectedRecent);
     else if (selectedExample) onOpen(selectedExample);
   }
 
+  /**
+   * Keys count only once the dialog is open: the Enter that picked a board
+   * in the board list opens it and reaches it too, and with a choice
+   * selected by default it would act at once.
+   */
+  let armed = false;
+  onMount(() => {
+    const timer = setTimeout(() => (armed = true));
+    return () => clearTimeout(timer);
+  });
+
   function onKey(e: KeyboardEvent) {
+    if (!armed) return;
     if (e.key === "Escape") {
       e.preventDefault();
       onClose();
@@ -145,18 +196,12 @@
   >
     <header>
       <h2>
-        {onlyBoard
-          ? `${recents.length > 0 ? "Projects and examples" : "Examples"} for ${onlyBoardName}`
-          : "Examples"}
+        {onlyBoard ? `Project options for ${onlyBoardName}` : "Examples"}
       </h2>
       <!-- svelte-ignore a11y_autofocus -->
       <input
         type="search"
-        placeholder={onlyBoard
-          ? recents.length > 0
-            ? "Search projects and examples"
-            : "Search examples"
-          : "Search boards and examples"}
+        placeholder={onlyBoard ? "Search projects" : "Search boards and examples"}
         bind:value={query}
         spellcheck="false"
         autocomplete="off"
@@ -164,18 +209,11 @@
       />
       <button
         class="close"
-        title={onlyBoard ? "Keep current files" : "Close"}
+        title={onlyBoard ? "Cancel: keep the board as it was" : "Close"}
         onclick={onClose}>✕</button
       >
     </header>
 
-    {#if onlyBoard}
-      <p class="hint">
-        {recents.length > 0
-          ? "Open a recent project for this board, start from one of its examples, or change the board of your current project."
-          : "Start from one of the board's examples, or change the board of your current project."}
-      </p>
-    {/if}
 
     <div class="body" class:single={onlyBoard}>
       {#if !onlyBoard}
@@ -212,7 +250,23 @@
       </ul>
       {/if}
 
-      <ul class="examples" aria-label="Examples">
+      <ul class="examples" aria-label={onlyBoard ? "Project options" : "Examples"}>
+        {#if onlyBoard && currentProject}
+          <li class="section">Current project</li>
+          <li>
+            <button
+              class="current"
+              class:selected={selectedCurrent}
+              onclick={selectCurrent}
+              ondblclick={onChangeBoard}
+            >
+              <span class="example-name"
+                >Change the board of “{currentProject.name}” to {onlyBoardName}</span
+              >
+              {#if changeNote}<span class="example-desc">{changeNote}</span>{/if}
+            </button>
+          </li>
+        {/if}
         {#if shownRecents.length > 0}
           <li class="section">Recent projects</li>
           {#each shownRecents as dir (dir)}
@@ -221,7 +275,7 @@
                 class="recent"
                 class:selected={selectedRecent === dir}
                 title={dir}
-                onclick={() => (selectedRecent = dir)}
+                onclick={() => selectRecent(dir)}
                 ondblclick={() => onOpenRecent(dir)}
               >
                 <Icon name="folder" size={16} />
@@ -230,7 +284,9 @@
               </button>
             </li>
           {/each}
-          <li class="section">Examples</li>
+        {/if}
+        {#if onlyBoard}
+          <li class="section">Example projects</li>
         {/if}
         {#if group}
           {#each group.examples as ex (ex.name)}
@@ -251,9 +307,7 @@
     </div>
 
     <footer>
-      <button class="secondary" onclick={onClose}
-        >{onlyBoard ? "Just Change the Board" : "Cancel"}</button
-      >
+      <button class="secondary" onclick={onClose}>Cancel</button>
       <button class="primary" disabled={!canOpen} onclick={open}
         >{openLabel}</button
       >
@@ -319,13 +373,6 @@
   }
   .body.single {
     grid-template-columns: 1fr;
-  }
-  .hint {
-    margin: 0;
-    padding: 8px 16px;
-    font-size: 13px;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
   }
   .boards {
     border-right: 1px solid var(--border);

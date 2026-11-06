@@ -99,3 +99,28 @@ export function boardsWithFpga(boards: Board[], b: Board): Board[] {
   if (!same.some((x) => x.id === b.id)) same.push(b);
   return same.sort((x, y) => x.description.localeCompare(y.description));
 }
+
+/**
+ * What changing a project from board `from` to board `to` means, for the
+ * "change the board" choice, or null when nothing needs saying.
+ * `pinFile` is the project's pin file, such as "pinout.pcf". From the
+ * catalog's facts only: the same FPGA keeps the design, another FPGA of the
+ * family needs this board's pins, and another family needs another kind of
+ * pin file and probably significant changes.
+ */
+export function boardChangeNote(from: Board | null, to: Board, pinFile: string | null): string | null {
+  if (!from || from.id === to.id) return null;
+  const pins = pinFile ?? "the pin file";
+  if (from.arch !== to.arch && from.arch && to.arch) {
+    const ext = to.pinExtension ? `a .${to.pinExtension} pin file` : "another kind of pin file";
+    const instead = pinFile ? ` instead of ${pinFile}` : "";
+    return `Another FPGA family (${from.archLabel} → ${to.archLabel}). The project needs ${ext}${instead}, and probably significant changes: parts made for ${from.archLabel}, such as its I/O cells and PLLs, won't build.`;
+  }
+  if (from.fpga?.id && from.fpga.id === to.fpga?.id) {
+    return `Same FPGA (${to.fpga.partNumber}). Check that the pins in ${pins} match this board.`;
+  }
+  if (from.fpga && to.fpga) {
+    return `Another ${to.archLabel} FPGA (${from.fpga.partNumber} → ${to.fpga.partNumber}). ${pinFile ?? "The pin file"} needs this board's pins.`;
+  }
+  return null;
+}

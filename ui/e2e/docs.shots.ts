@@ -119,6 +119,15 @@ test("connected devices", async ({ page }) => {
   await shot(page, "devices");
 });
 
+test("project options after a board change", async ({ page }) => {
+  await startWithBoard(page);
+  await page.locator(".board-button").click();
+  await page.getByRole("combobox").fill("iCEBreaker");
+  await page.getByRole("option", { name: "iCEBreaker", exact: true }).first().click();
+  await expect(page.getByRole("dialog", { name: "Examples" })).toContainText("Project options for iCEBreaker");
+  await shot(page, "project-options");
+});
+
 test("board info", async ({ page }) => {
   await startWithBoard(page);
   await menu(page, "board-info");

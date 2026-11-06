@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardGroups, fpgaLabel, groupByArch, boardsWithFpga, withProjectBoards } from "./boards";
+import { boardChangeNote, boardGroups, fpgaLabel, groupByArch, boardsWithFpga, withProjectBoards } from "./boards";
 import type { Board } from "./backend";
 
 const boards: Board[] = [
@@ -98,5 +98,36 @@ describe("groupByArch", () => {
       (g) => `${g.label}:${g.items.map((i) => i.n).join("")}`,
     );
     expect(groups).toEqual(["Lattice iCE40:c", "Xilinx:b", "ALPHA:d", "ZETA:a"]);
+  });
+});
+
+describe("boardChangeNote", () => {
+  const hx4k = { id: "ice40hx4k-tq144-8k", partNumber: "ICE40HX4K-TQ144", size: "8k" };
+  const alhambra: Board = { ...boards[0], pinExtension: "pcf", fpga: hx4k };
+  const kefir: Board = { ...alhambra, id: "kefir", description: "Kéfir I" };
+  const icebreaker: Board = {
+    ...boards[3],
+    pinExtension: "pcf",
+    fpga: { id: "ice40up5k-sg48", partNumber: "ICE40UP5K-SG48", size: "5k" },
+  };
+  const colorlight: Board = {
+    ...boards[2],
+    pinExtension: "lpf",
+    fpga: { id: "lfe5u-25f", partNumber: "LFE5U-25F-6BG256C", size: "25k" },
+  };
+
+  it("says what a board change means for the project", () => {
+    expect(boardChangeNote(alhambra, kefir, "pinout.pcf")).toBe(
+      "Same FPGA (ICE40HX4K-TQ144). Check that the pins in pinout.pcf match this board.",
+    );
+    expect(boardChangeNote(alhambra, icebreaker, "pinout.pcf")).toBe(
+      "Another Lattice iCE40 FPGA (ICE40HX4K-TQ144 → ICE40UP5K-SG48). pinout.pcf needs this board's pins.",
+    );
+    expect(boardChangeNote(alhambra, colorlight, "pinout.pcf")).toBe(
+      "Another FPGA family (Lattice iCE40 → Lattice ECP5). The project needs a .lpf pin file instead of pinout.pcf, and probably significant changes: parts made for Lattice iCE40, such as its I/O cells and PLLs, won't build.",
+    );
+    expect(boardChangeNote(alhambra, colorlight, null)).toMatch(/needs a \.lpf pin file, and probably/);
+    expect(boardChangeNote(null, colorlight, null)).toBeNull();
+    expect(boardChangeNote(alhambra, alhambra, "pinout.pcf")).toBeNull();
   });
 });
