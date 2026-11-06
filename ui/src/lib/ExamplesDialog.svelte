@@ -1,13 +1,13 @@
 <!--
   Browse the examples by board and open one. With `onlyBoard` (after a
   board change in the toolbar), it's "Project options for <board>", one
-  list of choices (the user's design, 2026-11-06): the current project on
-  the new board (selected by default, with a note on what the change
-  means), the recent projects for that board (`recents`), and the board's
-  example projects. The main button says what the selected choice does:
-  Change the Board, Open Project, or New Project (an example or Bare
-  Minimum starts a new, unsaved project). Cancel, Esc and ✕ cancel the
-  board change.
+  list of choices (the user's design, 2026-11-06), none selected at first:
+  the current project on the new board (with a note on what the change
+  means), the recent projects for that board (`recents`), and "New
+  project" (Bare Minimum and the board's examples). The main button says
+  what the selected choice does: Change the Board, Open Project, or New
+  Project (an example or Bare Minimum starts a new, unsaved project).
+  Cancel, Esc and ✕ cancel the board change.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -306,7 +306,7 @@
           {/each}
         {/if}
         {#if onlyBoard}
-          <li class="section">Example projects</li>
+          <li class="section">New project</li>
         {/if}
         {#if group}
           {#each group.examples as ex (ex.name)}

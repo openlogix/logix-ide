@@ -365,7 +365,7 @@ test("changing the board offers project options: the current project first", asy
   ]);
   // Every implication is red.
   await expect(current.locator(".note .point.risky")).toHaveCount(3);
-  await expect(dialog.getByText("Example projects", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("New project", { exact: true })).toBeVisible();
   // The main button waits for a choice, then follows it; Enter does
   // nothing before.
   const main = dialog.locator("footer .primary");
