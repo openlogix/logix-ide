@@ -356,10 +356,13 @@ test("changing the board offers project options: the current project first", asy
   const current = dialog.getByRole("button", { name: /^Change the board of “blinky” to iCEBreaker/ });
   await expect(current).not.toHaveClass(/selected/);
   await expect(dialog.locator("button.selected")).toHaveCount(0);
-  await expect(current.locator(".note .point")).toHaveText([
-    "Another Lattice iCE40 FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
-    "pinout.pcf needs this board's pins.",
+  // A group per level of change: here the board and the FPGA.
+  await expect(current.locator(".note-group")).toHaveText([
+    "Board change",
+    "FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48",
   ]);
+  await expect(current.locator(".note .point")).toHaveCount(5);
+  await expect(current.locator(".note .point.risky")).toHaveCount(2);
   await expect(dialog.getByText("Example projects", { exact: true })).toBeVisible();
   // The main button waits for a choice, then follows it; Enter does
   // nothing before.
@@ -379,13 +382,16 @@ test("changing the board offers project options: the current project first", asy
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
   // Another family: another kind of pin file, and probably more.
   await pickBoard(page, "ColorLight-5A-75B-V8");
-  await expect(dialog.getByRole("button", { name: /^Change the board of/ }).locator(".note .point")).toHaveText([
-    "Another FPGA family: Lattice iCE40 → Lattice ECP5.",
-    "Needs a .lpf pin file instead of pinout.pcf.",
-    /^Probably significant changes/,
+  const other = dialog.getByRole("button", { name: /^Change the board of/ });
+  await expect(other.locator(".note-group")).toHaveText([
+    "Board change",
+    "FPGA change: ICE40HX4K-TQ144 → LFE5U-25F-6BG256C",
+    "Architecture change: Lattice iCE40 → Lattice ECP5",
   ]);
-  // The risky ones in red.
-  await expect(dialog.locator(".note .point.risky")).toHaveText([
+  // The FPGA and architecture changes' points are risky, in red.
+  await expect(other.locator(".note .point.risky")).toHaveText([
+    /^FPGA-specific parts/,
+    /^The design may not fit/,
     "Needs a .lpf pin file instead of pinout.pcf.",
     /^Probably significant changes/,
   ]);

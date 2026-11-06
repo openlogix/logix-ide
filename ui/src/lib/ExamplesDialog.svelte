@@ -273,14 +273,16 @@
               <span class="example-name"
                 >Change the board of “{currentProject.name}” to {onlyBoardName}</span
               >
-              {#if changeNote.length > 0}
-                <!-- Spans as list items: a button can't hold a list. -->
+              <!-- A group per level of change, its points as list items
+                   (spans: a button can't hold a list). -->
+              {#each changeNote as group (group.title)}
+                <span class="example-desc note-group">{group.title}</span>
                 <span class="example-desc note">
-                  {#each changeNote as point, i (i)}<span class="point" class:risky={point.risky}
+                  {#each group.points as point, i (i)}<span class="point" class:risky={point.risky}
                       >{point.text}</span
                     >{/each}
                 </span>
-              {/if}
+              {/each}
             </button>
           </li>
         {/if}
@@ -538,6 +540,13 @@
   .note .point {
     display: list-item;
     list-style: disc;
+  }
+  /* A level of change's title, above its points. */
+  .note-group {
+    display: block;
+    margin-top: 4px;
+    color: var(--fg) !important;
+    font-weight: 600;
   }
   /* A risky consequence of changing the board: reddish (the user's request). */
   .note .point.risky {
