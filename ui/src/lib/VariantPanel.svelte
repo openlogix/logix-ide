@@ -108,7 +108,6 @@
 <style>
   .variant {
     position: relative;
-    margin-left: 6px;
   }
   .summary {
     display: flex;

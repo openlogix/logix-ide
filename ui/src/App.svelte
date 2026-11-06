@@ -2127,7 +2127,7 @@
     width: auto;
     height: auto;
     margin-left: -4px;
-    padding: 2px 6px;
+    padding: 2px 3px 2px 6px;
     font-size: 16px;
     line-height: 1;
     color: rgba(255, 255, 255, 0.75);
@@ -2146,7 +2146,7 @@
     width: auto;
     height: auto;
     margin-left: 0;
-    padding: 2px 6px;
+    padding: 2px 6px 2px 3px;
     font-size: 12px;
     font-family: inherit;
     line-height: inherit;
