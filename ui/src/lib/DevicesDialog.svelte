@@ -1,8 +1,15 @@
-<!-- Tools > Connected Devices: the USB devices connected. -->
+<!--
+  Tools > Connected Devices: the USB devices connected, each a collapsible
+  group (open when it may be a board), with the boards it may be as bullet
+  lists in two collapsible groups: Matches (its most likely boards, open)
+  and Other possible matches (weaker ones, closed). Board names select the
+  board.
+-->
 <script lang="ts">
   import type { Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
-  import { deviceBoardsParts, otherBoards, usbLabel } from "./devices";
+  import type { UsbDevice } from "./backend";
+  import { deviceBoardGroups, usbLabel } from "./devices";
 
   let {
     devices,
@@ -24,16 +31,31 @@
     error: string | null;
     busy: boolean;
     onRefresh: () => void;
-    /** A board name in a device's line was clicked: select that board. */
+    /** A board name was clicked: select that board. */
     onPick: (board: string) => void;
     onClose: () => void;
   } = $props();
 
-  /** Devices whose other boards are listed (by device id). */
-  const showingOthers = new SvelteSet<string>();
-  function toggleOthers(id: string) {
-    if (showingOthers.has(id)) showingOthers.delete(id);
-    else showingOthers.add(id);
+  /**
+   * The groups the user opened or closed, as "<device id>", "<device
+   * id>:matches" or "<device id>:others": each is the opposite of its
+   * default.
+   */
+  const toggled = new SvelteSet<string>();
+  function toggle(key: string) {
+    if (toggled.has(key)) toggled.delete(key);
+    else toggled.add(key);
+  }
+  /** Whether a group is open: its default, unless the user toggled it. */
+  const isOpen = (key: string, byDefault: boolean) => byDefault !== toggled.has(key);
+
+  /** The groups of a device: the boards are sorted by name among others. */
+  function groupsOf(d: UsbDevice) {
+    const { matches, others } = deviceBoardGroups(d, board);
+    return {
+      matches,
+      others: [...others].sort((a, b) => boardName(a).localeCompare(boardName(b))),
+    };
   }
 
   function onKey(e: KeyboardEvent) {
@@ -79,38 +101,45 @@
             another cable (some USB cables only charge and don't carry data).
           </p>
         {:else}
-          <ul>
-            {#each devices.usb as d, i (i)}
-              {@const parts = deviceBoardsParts(d, board, boardName)}
-              {@const others = otherBoards(d, board)}
-              <li>
-                <span class="name">{usbLabel(d)}</span>
-                {#if d.serialNumber}
-                  <span class="muted">serial {d.serialNumber}</span>
-                {/if}
-                {#if parts || others.length > 0}
-                  <span class="muted"
-                    >{#each parts ?? [] as p, pi (pi)}{#if typeof p === "string"}{p}{:else}<button
-                          class="board-pick"
-                          title="Select the {boardName(p.board)}"
-                          onclick={() => onPick(p.board)}>{boardName(p.board)}</button
-                        >{/if}{/each}{#if others.length > 0}{parts ? " It may also be one of " : "It may be one of "}<button
-                        class="board-pick"
-                        aria-expanded={showingOthers.has(d.id)}
-                        title="Boards it matches less well. Click to {showingOthers.has(d.id) ? 'hide' : 'list'} them."
-                        onclick={() => toggleOthers(d.id)}
-                        >{others.length}{parts ? " other" : ""} {others.length === 1 ? "board" : "boards"}</button
-                      >.{/if}</span
-                  >
-                  {#if showingOthers.has(d.id)}
-                    <span class="muted others"
-                      >{#each [...others].sort((a, b) => boardName(a).localeCompare(boardName(b))) as o, oi (o)}{oi > 0 ? ", " : ""}<button
-                          class="board-pick"
-                          title="Select the {boardName(o)}"
-                          onclick={() => onPick(o)}>{boardName(o)}</button
-                        >{/each}</span
-                    >
-                  {/if}
+          <ul class="devices">
+            {#each devices.usb as d (d.id)}
+              {@const g = groupsOf(d)}
+              {@const fits = g.matches.length + g.others.length > 0}
+              {@const open = isOpen(d.id, fits)}
+              <li class="device">
+                <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
+                  >{@render chevron(open)}<span class="name">{usbLabel(d)}</span>{#if d.serialNumber}{" "}<span class="muted">· serial {d.serialNumber}</span>{/if}</button
+                >
+                {#if open}
+                  <div class="groups">
+                    {#if !fits}
+                      <p class="muted">Not a board Logix knows.</p>
+                    {/if}
+                    {#each [{ key: "matches", label: "Matches", list: g.matches, byDefault: true }, { key: "others", label: "Other possible matches", list: g.others, byDefault: false }] as group (group.key)}
+                      {#if group.list.length > 0}
+                        {@const groupOpen = isOpen(`${d.id}:${group.key}`, group.byDefault)}
+                        <button
+                          class="toggle"
+                          aria-expanded={groupOpen}
+                          onclick={() => toggle(`${d.id}:${group.key}`)}
+                          >{@render chevron(groupOpen)}{group.label}<span class="count">{group.list.length}</span></button
+                        >
+                        {#if groupOpen}
+                          <ul class="boards">
+                            {#each group.list as id (id)}
+                              <li>
+                                <button
+                                  class="board-pick"
+                                  title="Select the {boardName(id)}"
+                                  onclick={() => onPick(id)}>{boardName(id)}</button
+                                >{#if id === board}{" "}<span class="muted">(selected)</span>{/if}
+                              </li>
+                            {/each}
+                          </ul>
+                        {/if}
+                      {/if}
+                    {/each}
+                  </div>
                 {/if}
               </li>
             {/each}
@@ -140,7 +169,70 @@
   </div>
 </div>
 
+{#snippet chevron(open: boolean)}<svg
+    class="chevron"
+    class:open
+    viewBox="0 0 12 12"
+    width="12"
+    height="12"
+    aria-hidden="true"
+    ><path
+      d="M4 2.5 L8 6 L4 9.5"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    /></svg
+  >{/snippet}
+
 <style>
+  /* A collapsible group's heading: an arrow and its title. */
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 3px 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .device-toggle .name {
+    font-weight: 600;
+  }
+  .chevron {
+    flex: none;
+    transition: transform 0.1s;
+  }
+  .chevron.open {
+    transform: rotate(90deg);
+  }
+  .count {
+    margin-left: 6px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .groups {
+    padding-left: 18px;
+  }
+  .groups p {
+    margin: 2px 0;
+  }
+  ul.boards {
+    margin: 0 0 4px;
+    padding-left: 36px;
+    list-style: disc;
+  }
+  ul.boards li {
+    display: list-item;
+    padding: 1px 0;
+    border: none;
+  }
   /* A board name that selects the board: a link, inline in the line. */
   .board-pick {
     padding: 0;

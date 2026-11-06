@@ -735,13 +735,22 @@ test("lists the connected devices", async ({ page }) => {
   );
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
   await expect(dialog).toContainText("Alhambra II v1.0A (AlhambraBits, 0403:6010)");
-  // The engine's matches: the board it looks like, and the selected one.
-  await expect(dialog).toContainText("Looks like the selected board, Alhambra II.");
-  // A strong match: the weaker ones aren't counted.
-  await expect(dialog).not.toContainText("other board");
+  // The device is a group, open, with its matches as a bullet list.
+  const device = dialog.getByRole("button", { name: /Alhambra II v1.0A/ });
+  await expect(device).toHaveAttribute("aria-expanded", "true");
+  const matches = dialog.getByRole("button", { name: /^Matches/ });
+  await expect(matches).toHaveAttribute("aria-expanded", "true");
+  await expect(dialog.locator("ul.boards li")).toHaveText(["Alhambra II (selected)"]);
+  // A strong match: the weaker ones aren't listed.
+  await expect(dialog.getByRole("button", { name: /^Other possible matches/ })).toHaveCount(0);
+  // The device collapses, to skip it.
+  await device.click();
+  await expect(device).toHaveAttribute("aria-expanded", "false");
+  await expect(matches).toHaveCount(0);
   await page.keyboard.press("Escape");
 
-  // A device with no strong match: its boards as a count, listed on a click.
+  // A device with no strong match: its boards under Other possible
+  // matches, closed until clicked.
   await page.evaluate(() => {
     (window as unknown as { __fake: { usb: unknown[] } }).__fake.usb = [
       {
@@ -752,8 +761,9 @@ test("lists the connected devices", async ({ page }) => {
     ];
     (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu("devices");
   });
-  await expect(dialog).toContainText("It may be one of 2 boards.");
-  await dialog.getByRole("button", { name: "2 boards" }).click();
+  const others = dialog.getByRole("button", { name: /^Other possible matches\s*2$/ });
+  await expect(others).toHaveAttribute("aria-expanded", "false");
+  await others.click();
   await expect(dialog.getByRole("button", { name: /^Alchitry Au/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
@@ -879,7 +889,7 @@ test("selects a board from the connected devices", async ({ page }) => {
     ),
   );
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
-  await expect(dialog).toContainText("Looks like this board: Alhambra II.");
+  await expect(dialog.locator("ul.boards li")).toHaveText(["Alhambra II"]);
   // The board's name is a link that selects it, as the board picker does.
   await dialog.getByRole("button", { name: "Alhambra II", exact: true }).click();
   await expect(dialog).toBeHidden();

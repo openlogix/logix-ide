@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   matchLabel,
-  deviceBoardsLine,
-  deviceBoardsParts,
-  otherBoards,
+  deviceBoardGroups,
   deviceSummaryLines,
   isBoardNotFound,
   likelyBoards,
@@ -60,80 +58,7 @@ describe("devices", () => {
     expect(mayBeBoard(generic, null)).toBe(false);
   });
 
-  it("says in one line which boards a device may be", () => {
-    const names: Record<string, string> = {
-      "arty-a7-35t": "Arty A7-35T (Xilinx, Artix7)",
-      basys3: "Basys3 (Xilinx, Artix7)",
-      icestick: "iCEstick Eval Kit",
-    };
-    const name = (id: string) => names[id] ?? id;
-    const digilent = {
-      ...alhambra,
-      boards: [
-        { board: "arty-a7-35t", level: "strong" as const },
-        { board: "basys3", level: "strong" as const },
-        { board: "icestick", level: "weak" as const },
-      ],
-    };
-    expect(deviceBoardsLine(digilent, "arty-a7-35t", name)).toBe(
-      "Looks like the selected board, Arty A7-35T (Xilinx, Artix7), or this board: Basys3 (Xilinx, Artix7).",
-    );
-    expect(deviceBoardsLine(digilent, "icestick", name)).toBe(
-      "Looks like one of these boards: Arty A7-35T (Xilinx, Artix7) or Basys3 (Xilinx, Artix7). It may also be the selected board.",
-    );
-    expect(deviceBoardsLine(digilent, "alhambra-ii", name)).toBe(
-      "Looks like one of these boards: Arty A7-35T (Xilinx, Artix7) or Basys3 (Xilinx, Artix7).",
-    );
-    const three = {
-      ...digilent,
-      boards: [...digilent.boards.slice(0, 2), { board: "icestick", level: "strong" as const }],
-    };
-    expect(deviceBoardsLine(three, "arty-a7-35t", name)).toBe(
-      "Looks like the selected board, Arty A7-35T (Xilinx, Artix7), or one of these boards: Basys3 (Xilinx, Artix7) or iCEstick Eval Kit.",
-    );
-    expect(deviceBoardsLine(three, null, name)).toBe(
-      "Looks like one of these boards: Arty A7-35T (Xilinx, Artix7), Basys3 (Xilinx, Artix7) or iCEstick Eval Kit.",
-    );
-    expect(deviceBoardsLine({ ...digilent, boards: [{ board: "basys3", level: "strong" as const }] }, null, name)).toBe(
-      "Looks like this board: Basys3 (Xilinx, Artix7).",
-    );
-    const generic = { ...alhambra, boards: [{ board: "icestick", level: "weak" as const }] };
-    expect(deviceBoardsLine(generic, "icestick", name)).toBe(
-      "May be the selected board, iCEstick Eval Kit.",
-    );
-    expect(deviceBoardsLine(generic, null, name)).toBeNull();
-    expect(deviceBoardsLine(alhambra, "alhambra-ii", name)).toBe(
-      "Looks like the selected board, alhambra-ii.",
-    );
-  });
-
-  it("makes the boards other than the selected one links", () => {
-    const name = (id: string) => id.toUpperCase();
-    const digilent = {
-      ...alhambra,
-      boards: [
-        { board: "arty", level: "strong" as const },
-        { board: "basys3", level: "strong" as const },
-      ],
-    };
-    expect(deviceBoardsParts(digilent, "arty", name)).toEqual([
-      "Looks like the selected board, ARTY",
-      ", or ",
-      "this board: ",
-      { board: "basys3" },
-      ".",
-    ]);
-    expect(deviceBoardsParts(digilent, null, name)).toEqual([
-      "Looks like ",
-      "one of these boards: ",
-      { board: "arty" },
-      " or ",
-      { board: "basys3" },
-      ".",
-    ]);
-  });
-
-  it("counts the weaker matches apart", () => {
+  it("splits a device's boards into likely matches and others", () => {
     const d = {
       ...alhambra,
       boards: [
@@ -143,15 +68,20 @@ describe("devices", () => {
         { board: "generic-b", level: "weak" as const },
       ],
     };
-    expect(otherBoards(d, null)).toEqual(["generic-a", "generic-b"]);
-    // The selected board is named in the line, so it isn't counted.
-    expect(otherBoards(d, "generic-a")).toEqual(["generic-b"]);
-    // With a strong match, the weaker ones aren't counted at all.
-    const strong = { ...d, boards: [{ board: "arty", level: "strong" as const }, ...d.boards.slice(2)] };
-    expect(otherBoards(strong, null)).toEqual([]);
-    // With no name match, every board is a weaker match.
+    expect(deviceBoardGroups(d, null)).toEqual({
+      matches: ["arty", "basys3"],
+      others: ["generic-a", "generic-b"],
+    });
+    // With a strong match, the weaker ones are left out, except the
+    // selected board when the device fits it.
+    const strong = { ...d, boards: [{ board: "arty", level: "strong" as const }, ...d.boards.slice(1)] };
+    expect(deviceBoardGroups(strong, null)).toEqual({ matches: ["arty"], others: [] });
+    expect(deviceBoardGroups(strong, "generic-b")).toEqual({ matches: ["arty"], others: ["generic-b"] });
+    expect(deviceBoardGroups(strong, "alhambra-ii")).toEqual({ matches: ["arty"], others: [] });
+    // Only weak matches: no likely board, all others.
     const generic = { ...alhambra, boards: [{ board: "generic-a", level: "weak" as const }] };
-    expect(otherBoards(generic, null)).toEqual(["generic-a"]);
+    expect(deviceBoardGroups(generic, null)).toEqual({ matches: [], others: ["generic-a"] });
+    expect(deviceBoardGroups({ ...alhambra, boards: [] }, null)).toEqual({ matches: [], others: [] });
   });
 
   it("puts match levels in words", () => {
