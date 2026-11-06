@@ -206,7 +206,9 @@
   >
     <header>
       <h2>
-        {onlyBoard ? `Project options for ${onlyBoardName}` : "Examples"}
+        <!-- Board names in quotes, like the project's: a name such as
+             "FPGA 101 - Workshop Badge" reads as a name (the user's request). -->
+        {onlyBoard ? `Project options for “${onlyBoardName}”` : "Examples"}
       </h2>
       {#if onlyBoard}
         <!-- Project options are few: no search (the user's decision). -->
@@ -276,7 +278,7 @@
               ondblclick={onChangeBoard}
             >
               <span class="example-name"
-                >Change the board of “{currentProject.name}” to {onlyBoardName}</span
+                >Change the board of “{currentProject.name}” to “{onlyBoardName}”</span
               >
               <!-- The change, then its implications, as list items (spans: a
                    button can't hold a list). -->

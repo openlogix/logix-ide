@@ -240,7 +240,7 @@ test("picking the current board offers its examples too", async ({ page }) => {
   await expect(page.getByRole("option", { selected: true }).last()).toHaveText(/Alhambra II/);
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", { name: "Examples" });
-  await expect(dialog.getByRole("heading")).toHaveText("Project options for Alhambra II");
+  await expect(dialog.getByRole("heading")).toHaveText("Project options for “Alhambra II”");
   await changeTheBoard(page);
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
 });
@@ -349,13 +349,13 @@ test("changing the board offers project options: the current project first", asy
   await typeAtStart(page, "// mine\n");
   await pickBoard(page, "iCEBreaker");
   const dialog = page.getByRole("dialog", { name: "Examples" });
-  await expect(dialog.getByRole("heading")).toHaveText("Project options for iCEBreaker");
+  await expect(dialog.getByRole("heading")).toHaveText("Project options for “iCEBreaker”");
   await expect(dialog.getByRole("list", { name: "Boards" })).toHaveCount(0);
   // Few choices: no search.
   await expect(dialog.getByRole("searchbox")).toHaveCount(0);
   // The current project, with what the change means; nothing is selected
   // until the user chooses.
-  const current = dialog.getByRole("button", { name: /^Change the board of “blinky” to iCEBreaker/ });
+  const current = dialog.getByRole("button", { name: /^Change the board of “blinky” to “iCEBreaker”/ });
   await expect(current).not.toHaveClass(/selected/);
   await expect(dialog.locator("button.selected")).toHaveCount(0);
   // The change, then its implications, the risky ones red.
@@ -422,7 +422,7 @@ test("changing the board offers your recent projects for it", async ({ page }) =
   // The fake's recent projects are UPduino v2 projects: listed first.
   await pickBoard(page, "UPDuino v2.0");
   await expect(dialog.getByText("Recent projects", { exact: true })).toBeVisible();
-  await expect(dialog.getByRole("heading")).toHaveText("Project options for UPDuino v2.0");
+  await expect(dialog.getByRole("heading")).toHaveText("Project options for “UPDuino v2.0”");
   await dialog.getByRole("button", { name: /counter/ }).click();
   await dialog.getByRole("button", { name: "Open Project" }).click();
   await expect(dialog).toBeHidden();

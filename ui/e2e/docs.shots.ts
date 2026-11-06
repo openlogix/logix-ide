@@ -124,7 +124,7 @@ test("project options after a board change", async ({ page }) => {
   await page.locator(".board-button").click();
   await page.getByRole("combobox").fill("iCEBreaker");
   await page.getByRole("option", { name: "iCEBreaker", exact: true }).first().click();
-  await expect(page.getByRole("dialog", { name: "Examples" })).toContainText("Project options for iCEBreaker");
+  await expect(page.getByRole("dialog", { name: "Examples" })).toContainText("Project options for “iCEBreaker”");
   await shot(page, "project-options");
 });
 
