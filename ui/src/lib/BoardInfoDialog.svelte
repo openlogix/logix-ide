@@ -66,7 +66,7 @@
     onclick={(e) => e.stopPropagation()}
   >
     <header>
-      <h2>{current.description}</h2>
+      <h2>Board: {current.description}</h2>
       <span class="spacer"></span>
       <button class="close" title="Close" onclick={onClose}>✕</button>
     </header>
@@ -116,7 +116,9 @@
       {/if}
     </div>
     <footer>
-      <button onclick={back} disabled={shownIds.length < 2} title="The board shown before">Back</button>
+      {#if shownIds.length > 1}
+        <button onclick={back} title="The board shown before">Back</button>
+      {/if}
       <span class="spacer"></span>
       {#if current.id === selected}
         <span class="muted">The selected board</span>
