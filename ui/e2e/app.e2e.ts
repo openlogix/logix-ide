@@ -344,9 +344,10 @@ test("changing the board offers project options: the current project first", asy
   // The current project, selected, with what the change means.
   const current = dialog.getByRole("button", { name: /^Change the board of “blinky” to iCEBreaker/ });
   await expect(current).toHaveClass(/selected/);
-  await expect(current).toContainText(
-    "Another Lattice iCE40 FPGA (ICE40HX4K-TQ144 → ICE40UP5K-SG48). pinout.pcf needs this board's pins.",
-  );
+  await expect(current.locator(".note .point")).toHaveText([
+    "Another Lattice iCE40 FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
+    "pinout.pcf needs this board's pins.",
+  ]);
   await expect(dialog.getByText("Example projects", { exact: true })).toBeVisible();
   // The main button follows the selection.
   const main = dialog.locator("footer .primary");
@@ -360,9 +361,11 @@ test("changing the board offers project options: the current project first", asy
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
   // Another family: another kind of pin file, and probably more.
   await pickBoard(page, "ColorLight-5A-75B-V8");
-  await expect(dialog.getByRole("button", { name: /^Change the board of/ })).toContainText(
-    "The project needs a .lpf pin file instead of pinout.pcf, and probably significant changes",
-  );
+  await expect(dialog.getByRole("button", { name: /^Change the board of/ }).locator(".note .point")).toHaveText([
+    "Another FPGA family: Lattice iCE40 → Lattice ECP5.",
+    "Needs a .lpf pin file instead of pinout.pcf.",
+    /^Probably significant changes/,
+  ]);
   await page.keyboard.press("Escape");
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
   // Change the Board (the default): the files stay, the board changes.

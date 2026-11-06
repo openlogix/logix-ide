@@ -87,11 +87,11 @@
 
   const onlyBoardInfo = $derived(boards.find((b) => b.id === onlyBoard) ?? null);
   const onlyBoardName = $derived(onlyBoardInfo?.description ?? onlyBoard);
-  /** What moving the current project to the new board means. */
+  /** What moving the current project to the new board means: short points. */
   const changeNote = $derived(
     currentProject && onlyBoardInfo
       ? boardChangeNote(currentProject.board, onlyBoardInfo, currentProject.pinFile)
-      : null,
+      : [],
   );
   /** The selected board's group, or the first one if it's filtered out. */
   const group = $derived(
@@ -263,7 +263,12 @@
               <span class="example-name"
                 >Change the board of “{currentProject.name}” to {onlyBoardName}</span
               >
-              {#if changeNote}<span class="example-desc">{changeNote}</span>{/if}
+              {#if changeNote.length > 0}
+                <!-- Spans as list items: a button can't hold a list. -->
+                <span class="example-desc note">
+                  {#each changeNote as point, i (i)}<span class="point">{point}</span>{/each}
+                </span>
+              {/if}
             </button>
           </li>
         {/if}
@@ -477,6 +482,34 @@
   }
   .selected .example-desc {
     color: inherit;
+  }
+  /* Project options: the selected choice's title is green, its note stays
+     as it is (the user's request). */
+  .single li button.selected {
+    background: transparent;
+    color: inherit;
+  }
+  .single li button.selected:hover {
+    background: var(--banner-bg);
+  }
+  .single .selected .example-name {
+    color: var(--accent);
+  }
+  .single .selected .example-desc {
+    color: var(--muted);
+  }
+  .single .recent.selected :global(svg) {
+    color: var(--accent);
+  }
+  /* The current-project choice's note: short bullet points. */
+  .note {
+    display: block;
+    margin-top: 2px;
+    padding-left: 18px;
+  }
+  .note .point {
+    display: list-item;
+    list-style: disc;
   }
   .empty {
     padding: 8px 14px;

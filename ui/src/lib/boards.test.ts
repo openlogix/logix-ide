@@ -116,18 +116,22 @@ describe("boardChangeNote", () => {
     fpga: { id: "lfe5u-25f", partNumber: "LFE5U-25F-6BG256C", size: "25k" },
   };
 
-  it("says what a board change means for the project", () => {
-    expect(boardChangeNote(alhambra, kefir, "pinout.pcf")).toBe(
-      "Same FPGA (ICE40HX4K-TQ144). Check that the pins in pinout.pcf match this board.",
-    );
-    expect(boardChangeNote(alhambra, icebreaker, "pinout.pcf")).toBe(
-      "Another Lattice iCE40 FPGA (ICE40HX4K-TQ144 → ICE40UP5K-SG48). pinout.pcf needs this board's pins.",
-    );
-    expect(boardChangeNote(alhambra, colorlight, "pinout.pcf")).toBe(
-      "Another FPGA family (Lattice iCE40 → Lattice ECP5). The project needs a .lpf pin file instead of pinout.pcf, and probably significant changes: parts made for Lattice iCE40, such as its I/O cells and PLLs, won't build.",
-    );
-    expect(boardChangeNote(alhambra, colorlight, null)).toMatch(/needs a \.lpf pin file, and probably/);
-    expect(boardChangeNote(null, colorlight, null)).toBeNull();
-    expect(boardChangeNote(alhambra, alhambra, "pinout.pcf")).toBeNull();
+  it("says what a board change means for the project, as short points", () => {
+    expect(boardChangeNote(alhambra, kefir, "pinout.pcf")).toEqual([
+      "Same FPGA: ICE40HX4K-TQ144.",
+      "Check that the pins in pinout.pcf match this board.",
+    ]);
+    expect(boardChangeNote(alhambra, icebreaker, "pinout.pcf")).toEqual([
+      "Another Lattice iCE40 FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
+      "pinout.pcf needs this board's pins.",
+    ]);
+    expect(boardChangeNote(alhambra, colorlight, "pinout.pcf")).toEqual([
+      "Another FPGA family: Lattice iCE40 → Lattice ECP5.",
+      "Needs a .lpf pin file instead of pinout.pcf.",
+      "Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
+    ]);
+    expect(boardChangeNote(alhambra, colorlight, null)[1]).toBe("Needs a .lpf pin file.");
+    expect(boardChangeNote(null, colorlight, null)).toEqual([]);
+    expect(boardChangeNote(alhambra, alhambra, "pinout.pcf")).toEqual([]);
   });
 });
