@@ -95,7 +95,8 @@ devices and the boards each may be.
 
 The **ⓘ** next to the board (or **Tools > Board Info…**) shows the board's
 FPGA, its pin file kind and the ways to program it, and lists the other
-boards with the same FPGA: click one to select it. To find a board like
+boards with the same FPGA: click one to see its info (**Back** returns),
+and **Select This Board** to select the board shown. To find a board like
 yours, you can also type its FPGA in the board list's search, such as
 `up5k` or `xc7a35t`, and hover over a board to see its FPGA.
 

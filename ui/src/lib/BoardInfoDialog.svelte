@@ -1,10 +1,12 @@
 <!--
   Tools > Board Info… (and the ⓘ next to the board): a board's FPGA, its pin
   file kind, the ways it can be programmed, and the other boards with the
-  same FPGA, which the user can select, such as to find a board like theirs.
-  Everything comes from Logix Engine's catalog (`get_catalog`).
+  same FPGA, such as to find a board like the user's. A board in that list
+  shows its own info (Back returns), and Select This Board picks the board
+  shown. Everything comes from Logix Engine's catalog (`get_catalog`).
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import type { Board } from "./backend";
   import { sameFpgaBoards } from "./boards";
   import { summary } from "./variants";
@@ -16,18 +18,31 @@
     onPick,
     onClose,
   }: {
-    /** The board to describe. */
+    /** The board to describe first. */
     board: Board;
     /** Every board offered, for the boards with the same FPGA. */
     boards: Board[];
     /** The toolbar's board, marked in the lists. */
     selected: string | null;
-    /** A board's name was clicked: select that board. */
+    /** Select This Board: select the board shown. */
     onPick: (id: string) => void;
     onClose: () => void;
   } = $props();
 
-  const same = $derived(sameFpgaBoards(boards, board));
+  /** The boards shown, the current one last (Back goes to the one before). */
+  let shownIds = $state<string[]>(untrack(() => [board.id]));
+  const current = $derived(
+    boards.find((b) => b.id === shownIds[shownIds.length - 1]) ?? board,
+  );
+  const same = $derived(sameFpgaBoards(boards, current));
+
+  function show(id: string) {
+    shownIds = [...shownIds, id];
+  }
+
+  function back() {
+    if (shownIds.length > 1) shownIds = shownIds.slice(0, -1);
+  }
 
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -51,35 +66,35 @@
     onclick={(e) => e.stopPropagation()}
   >
     <header>
-      <h2>{board.description}</h2>
+      <h2>{current.description}</h2>
       <span class="spacer"></span>
       <button class="close" title="Close" onclick={onClose}>✕</button>
     </header>
     <div class="body">
-      {#if board.custom}
+      {#if current.custom}
         <p class="muted">One of this project's own boards, from custom-boards.json.</p>
       {/if}
       <table>
         <tbody>
-          <tr><th scope="row">FPGA family</th><td>{board.archLabel}</td></tr>
-          {#if board.fpga}
-            <tr><th scope="row">FPGA</th><td>{board.fpga.partNumber}</td></tr>
-            {#if board.fpga.size}
-              <tr><th scope="row">Size</th><td>{board.fpga.size}</td></tr>
+          <tr><th scope="row">FPGA family</th><td>{current.archLabel}</td></tr>
+          {#if current.fpga}
+            <tr><th scope="row">FPGA</th><td>{current.fpga.partNumber}</td></tr>
+            {#if current.fpga.size}
+              <tr><th scope="row">Size</th><td>{current.fpga.size}</td></tr>
             {/if}
           {/if}
-          {#if board.pinExtension}
-            <tr><th scope="row">Pin file</th><td>.{board.pinExtension}</td></tr>
+          {#if current.pinExtension}
+            <tr><th scope="row">Pin file</th><td>.{current.pinExtension}</td></tr>
           {/if}
-          <tr><th scope="row">Board ID</th><td>{board.id}</td></tr>
+          <tr><th scope="row">Board ID</th><td>{current.id}</td></tr>
         </tbody>
       </table>
 
       <h3>Ways to program it</h3>
       <ul>
-        {#each board.configurations as c, i (i)}
+        {#each current.configurations as c, i (i)}
           <li>
-            {summary(board, c.when)}{i === 0 ? " (default)" : ""}{c.tested ? "" : " (not yet tried on a board)"}
+            {summary(current, c.when)}{i === 0 ? " (default)" : ""}{c.tested ? "" : " (not yet tried on a board)"}
             {#if c.userNotes}<span class="muted note">{c.userNotes}</span>{/if}
           </li>
         {/each}
@@ -92,7 +107,7 @@
         <ul>
           {#each same as b (b.id)}
             <li>
-              <button class="board-pick" title="Select the {b.description}" onclick={() => onPick(b.id)}
+              <button class="board-pick" title="Show the {b.description}" onclick={() => show(b.id)}
                 >{b.description}</button
               >{#if b.id === selected}{" "}<span class="muted">(selected)</span>{/if}
             </li>
@@ -100,6 +115,15 @@
         </ul>
       {/if}
     </div>
+    <footer>
+      <button onclick={back} disabled={shownIds.length < 2} title="The board shown before">Back</button>
+      <span class="spacer"></span>
+      {#if current.id === selected}
+        <span class="muted">The selected board</span>
+      {:else}
+        <button class="primary" onclick={() => onPick(current.id)}>Select This Board</button>
+      {/if}
+    </footer>
   </div>
 </div>
 
@@ -198,6 +222,22 @@
   }
   .note {
     display: block;
+  }
+  footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .primary {
+    background: var(--accent, #00796b);
+    border-color: var(--accent, #00796b);
+    color: #fff;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
   .muted {
     color: var(--muted);

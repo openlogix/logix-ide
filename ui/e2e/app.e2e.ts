@@ -880,8 +880,19 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await expect(info).toBeHidden();
   await menu(page, "board-info");
   await expect(info).toBeVisible();
-  // A board with the same FPGA selects it, as the board picker does.
+  await expect(info).toContainText("The selected board");
+  const back = info.getByRole("button", { name: "Back" });
+  await expect(back).toBeDisabled();
+  // A board with the same FPGA shows its own info; Back returns.
   await info.getByRole("button", { name: /^Kéfir I/ }).click();
+  await expect(info.getByRole("heading", { level: 2 })).toHaveText(/Kéfir I/);
+  await expect(info.getByRole("button", { name: "Alhambra II" })).toBeVisible();
+  await back.click();
+  await expect(info.getByRole("heading", { level: 2 })).toHaveText("Alhambra II");
+  await expect(back).toBeDisabled();
+  // Select This Board picks the board shown, as the board picker does.
+  await info.getByRole("button", { name: /^Kéfir I/ }).click();
+  await info.getByRole("button", { name: "Select This Board" }).click();
   await expect(info).toBeHidden();
   await page.getByRole("dialog").getByRole("button", { name: "Keep Current Files" }).click();
   await expect(boardButton(page)).toHaveText(/Kéfir I/);
