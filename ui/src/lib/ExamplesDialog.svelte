@@ -1,14 +1,15 @@
 <!--
   Browse the examples by board and open one. With `onlyBoard` (after a
   board change in the toolbar), only that board's examples are shown,
-  after the recent projects for that board (`recents`), and Change the
+  after the recent projects for that board (`recents`), and Just Change the
   Board (or closing) keeps the current project, on the new board. The open
-  button says what opens: Open Example, Open Project, or New Project for
-  Bare Minimum (the user's wording).
+  button says what it does: New Project for an example or Bare Minimum
+  (each starts a new, unsaved project), Open Project for a recent one (the
+  user's wording).
 -->
 <script lang="ts">
   import type { Board, Example } from "./backend";
-  import { BARE_MINIMUM, groupExamples, type ExampleEntry } from "./examples";
+  import { groupExamples, type ExampleEntry } from "./examples";
   import { groupByArch } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
@@ -102,14 +103,11 @@
   }
 
   const canOpen = $derived(selectedRecent !== null || selectedExample !== null);
-  /** The open button: what it opens. */
-  const openLabel = $derived(
-    selectedRecent !== null
-      ? "Open Project"
-      : selectedExample?.name === BARE_MINIMUM
-        ? "New Project"
-        : "Open Example",
-  );
+  /**
+   * The open button: what it does. An example, like Bare Minimum, starts a
+   * new, unsaved project.
+   */
+  const openLabel = $derived(selectedRecent !== null ? "Open Project" : "New Project");
 
   function open() {
     if (selectedRecent) onOpenRecent(selectedRecent);
@@ -254,7 +252,7 @@
 
     <footer>
       <button class="secondary" onclick={onClose}
-        >{onlyBoard ? "Change the Board" : "Cancel"}</button
+        >{onlyBoard ? "Just Change the Board" : "Cancel"}</button
       >
       <button class="primary" disabled={!canOpen} onclick={open}
         >{openLabel}</button

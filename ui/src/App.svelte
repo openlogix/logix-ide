@@ -398,7 +398,7 @@
 
   /**
    * A board chosen in the toolbar while its examples are offered: applied
-   * only on Change the Board (opening an example or project brings
+   * only on Just Change the Board (opening an example or project brings
    * its own board), so the "Save changes?" question is only about files.
    */
   let pendingBoard = $state<string | null>(null);
