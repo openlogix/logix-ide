@@ -94,7 +94,7 @@ devices and the boards each may be.
 ### Board info
 
 The **ⓘ** next to the board (or **Tools > Board Info…**) shows the board's
-FPGA, its pin file kind and the ways to program it, and lists the other
+FPGA, its pin file kind and the ways to program it, and lists all the
 boards with the same FPGA: click one to see its info (**Back** returns),
 and **Select This Board** to select the board shown. To find a board like
 yours, you can also type its FPGA in the board list's search, such as

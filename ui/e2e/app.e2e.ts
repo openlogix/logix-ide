@@ -881,11 +881,16 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await menu(page, "board-info");
   await expect(info).toBeVisible();
   await expect(info).toContainText("The selected board");
+  // Every board with this FPGA, the shown and selected one marked.
+  const list = info.locator("li", { hasText: /Alhambra II|Kéfir I/ });
+  await expect(list).toHaveText(["Alhambra II (shown, selected)", "Kéfir I iCE40-HX4K"]);
   const back = info.getByRole("button", { name: "Back" });
   await expect(back).toHaveCount(0);
   // A board with the same FPGA shows its own info; Back returns.
   await info.getByRole("button", { name: /^Kéfir I/ }).click();
   await expect(info.getByRole("heading", { level: 2 })).toHaveText(/^Board: Kéfir I/);
+  // The same list, the marks moved.
+  await expect(list).toHaveText(["Alhambra II (selected)", "Kéfir I iCE40-HX4K (shown)"]);
   await expect(info.getByRole("button", { name: "Alhambra II" })).toBeVisible();
   await back.click();
   await expect(info.getByRole("heading", { level: 2 })).toHaveText("Board: Alhambra II");

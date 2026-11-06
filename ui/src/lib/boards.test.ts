@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardGroups, fpgaLabel, groupByArch, sameFpgaBoards, withProjectBoards } from "./boards";
+import { boardGroups, fpgaLabel, groupByArch, boardsWithFpga, withProjectBoards } from "./boards";
 import type { Board } from "./backend";
 
 const boards: Board[] = [
@@ -73,12 +73,15 @@ describe("FPGAs", () => {
     expect(fpgaLabel(boards[4])).toBe("");
   });
 
-  it("lists the other boards with the same FPGA, by name", () => {
-    expect(sameFpgaBoards(withFpga, withFpga[0]).map((b) => b.id)).toEqual(["kefir"]);
-    expect(sameFpgaBoards(withFpga, withFpga[1])).toEqual([]);
-    // A custom board's own FPGA definition has no ID to compare.
+  it("lists every board with the same FPGA, itself included, by name", () => {
+    const ids = (b: Board) => boardsWithFpga(withFpga, b).map((x) => x.id);
+    expect(ids(withFpga[0])).toEqual(["alhambra-ii", "kefir"]);
+    // The same list from each of them.
+    expect(ids(withFpga[2])).toEqual(["alhambra-ii", "kefir"]);
+    expect(ids(withFpga[1])).toEqual(["icebreaker"]);
+    // A custom board's own FPGA definition has no ID to compare: just it.
     const own = { ...withFpga[0], id: "mine", fpga: { ...hx4k, id: null } };
-    expect(sameFpgaBoards(withFpga, own)).toEqual([]);
+    expect(ids(own)).toEqual(["mine"]);
   });
 });
 

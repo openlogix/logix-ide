@@ -8,7 +8,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import type { Board } from "./backend";
-  import { sameFpgaBoards } from "./boards";
+  import { boardsWithFpga } from "./boards";
   import { summary } from "./variants";
 
   let {
@@ -34,7 +34,7 @@
   const current = $derived(
     boards.find((b) => b.id === shownIds[shownIds.length - 1]) ?? board,
   );
-  const same = $derived(sameFpgaBoards(boards, current));
+  const same = $derived(boardsWithFpga(boards, current));
 
   function show(id: string) {
     shownIds = [...shownIds, id];
@@ -100,20 +100,19 @@
         {/each}
       </ul>
 
-      <h3>Other boards with this FPGA</h3>
-      {#if same.length === 0}
-        <p class="muted">None in Logix's board list.</p>
-      {:else}
-        <ul>
-          {#each same as b (b.id)}
-            <li>
-              <button class="board-pick" title="Show the {b.description}" onclick={() => show(b.id)}
-                >{b.description}</button
-              >{#if b.id === selected}{" "}<span class="muted">(selected)</span>{/if}
-            </li>
-          {/each}
-        </ul>
-      {/if}
+      <h3>Boards with this FPGA</h3>
+      <ul>
+        {#each same as b (b.id)}
+          {@const marks = [b.id === current.id ? "shown" : "", b.id === selected ? "selected" : ""].filter(Boolean)}
+          <li class:shown={b.id === current.id}>
+            {#if b.id === current.id}<span>{b.description}</span>{:else}<button
+                class="board-pick"
+                title="Show the {b.description}"
+                onclick={() => show(b.id)}>{b.description}</button
+              >{/if}{#if marks.length > 0}{" "}<span class="muted">({marks.join(", ")})</span>{/if}
+          </li>
+        {/each}
+      </ul>
     </div>
     <footer>
       {#if shownIds.length > 1}
@@ -224,6 +223,10 @@
   }
   .note {
     display: block;
+  }
+  /* The board shown: in bold, not a link. */
+  li.shown {
+    font-weight: 600;
   }
   footer {
     display: flex;

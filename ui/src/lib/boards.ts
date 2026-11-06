@@ -87,11 +87,15 @@ export function fpgaLabel(b: Board): string {
   return `${b.archLabel} ${b.fpga.partNumber}${b.fpga.size ? ` (${b.fpga.size})` : ""}`;
 }
 
-/** The other boards with the same FPGA as `b` (the catalog's FPGA ID), by name. */
-export function sameFpgaBoards(boards: Board[], b: Board): Board[] {
+/**
+ * Every board with the same FPGA as `b` (the catalog's FPGA ID), `b`
+ * included, by name: the same list for each of them, so Board Info's list
+ * stays put while browsing it. Just `b` when its FPGA has no ID (a custom
+ * board's own FPGA definition).
+ */
+export function boardsWithFpga(boards: Board[], b: Board): Board[] {
   const id = b.fpga?.id;
-  if (!id) return [];
-  return boards
-    .filter((x) => x.id !== b.id && x.fpga?.id === id)
-    .sort((x, y) => x.description.localeCompare(y.description));
+  const same = id ? boards.filter((x) => x.fpga?.id === id) : [];
+  if (!same.some((x) => x.id === b.id)) same.push(b);
+  return same.sort((x, y) => x.description.localeCompare(y.description));
 }
