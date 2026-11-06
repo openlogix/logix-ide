@@ -549,10 +549,8 @@
   .header-space {
     flex: 1;
   }
-  /* The first point: the change itself. */
-  .note .point.change {
-    color: var(--fg);
-  }
+  /* The first point, the change itself, is gray like the examples' notes
+     (the user's request); the implications are red. */
   /* A risky consequence of changing the board: reddish (the user's request). */
   .note .point.risky {
     color: var(--error-mark);
