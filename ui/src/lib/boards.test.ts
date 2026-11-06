@@ -121,20 +121,20 @@ describe("boardChangeNote", () => {
       points.map((p) => `${p.kind === "risky" ? "! " : p.kind === "change" ? "> " : ""}${p.text}`);
     expect(show(boardChangeNote(alhambra, kefir, "pinout.pcf"))).toEqual([
       "> Board change, same FPGA (ICE40HX4K-TQ144).",
-      "The pins may differ: check pinout.pcf.",
-      "The clock frequency and the LED and button wiring may differ: check the design.",
+      "! The pins may differ: check pinout.pcf.",
+      "! The clock frequency and the LED and button wiring may differ: check the design.",
     ]);
     expect(show(boardChangeNote(alhambra, icebreaker, "pinout.pcf"))).toEqual([
       "> FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
       "! FPGA-specific parts, such as PLLs and special cells, may need changes.",
       "! The design may not fit, or may not reach its clock speed.",
-      "The pins, clock frequency and LED and button wiring may differ: check pinout.pcf and the design.",
+      "! The pins, clock frequency and LED and button wiring may differ: check pinout.pcf and the design.",
     ]);
     expect(show(boardChangeNote(alhambra, colorlight, "pinout.pcf"))).toEqual([
       "> Architecture change: Lattice iCE40 → Lattice ECP5.",
       "! Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
       "! Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
-      "The clock frequency and the LED and button wiring may differ: check the design.",
+      "! The clock frequency and the LED and button wiring may differ: check the design.",
     ]);
     // 2 to 4 points each.
     for (const to of [kefir, icebreaker, colorlight]) {

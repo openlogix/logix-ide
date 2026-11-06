@@ -363,7 +363,8 @@ test("changing the board offers project options: the current project first", asy
     /^The design may not fit/,
     /^The pins, clock frequency and LED and button wiring may differ/,
   ]);
-  await expect(current.locator(".note .point.risky")).toHaveCount(2);
+  // Every implication is red.
+  await expect(current.locator(".note .point.risky")).toHaveCount(3);
   await expect(dialog.getByText("Example projects", { exact: true })).toBeVisible();
   // The main button waits for a choice, then follows it; Enter does
   // nothing before.
@@ -390,6 +391,7 @@ test("changing the board offers project options: the current project first", asy
   await expect(other.locator(".note .point.risky")).toHaveText([
     "Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
     /^Probably significant changes/,
+    /^The clock frequency/,
   ]);
   await page.keyboard.press("Escape");
   await expect(boardButton(page)).toHaveText(/Alhambra II/);

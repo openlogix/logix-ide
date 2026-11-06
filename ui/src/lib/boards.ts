@@ -102,11 +102,12 @@ export function boardsWithFpga(boards: Board[], b: Board): Board[] {
 
 /**
  * One point of a board-change note: the change itself (the first point),
- * something to check, or a risky implication (shown in red).
+ * or one of its implications, all risky (shown in red: the user's
+ * decision, since every implication is a possible problem).
  */
 export interface NotePoint {
   text: string;
-  kind: "change" | "check" | "risky";
+  kind: "change" | "risky";
 }
 
 /**
@@ -119,7 +120,6 @@ export interface NotePoint {
 export function boardChangeNote(from: Board | null, to: Board, pinFile: string | null): NotePoint[] {
   if (!from || from.id === to.id) return [];
   const change = (text: string): NotePoint => ({ text, kind: "change" });
-  const check = (text: string): NotePoint => ({ text, kind: "check" });
   const risk = (text: string): NotePoint => ({ text, kind: "risky" });
   const pins = pinFile ?? "the pin file";
   const otherArch = !!from.arch && !!to.arch && from.arch !== to.arch;
@@ -130,7 +130,7 @@ export function boardChangeNote(from: Board | null, to: Board, pinFile: string |
       change(`Architecture change: ${from.archLabel} → ${to.archLabel}.`),
       risk(`Needs ${ext}${pinFile ? ` instead of ${pinFile}` : ""}, with this board's pins.`),
       risk(`Probably significant changes: ${from.archLabel} parts, such as I/O cells and PLLs, won't build.`),
-      check("The clock frequency and the LED and button wiring may differ: check the design."),
+      risk("The clock frequency and the LED and button wiring may differ: check the design."),
     ];
   }
   if (otherFpga) {
@@ -139,12 +139,12 @@ export function boardChangeNote(from: Board | null, to: Board, pinFile: string |
       change(`FPGA change${parts}.`),
       risk("FPGA-specific parts, such as PLLs and special cells, may need changes."),
       risk("The design may not fit, or may not reach its clock speed."),
-      check(`The pins, clock frequency and LED and button wiring may differ: check ${pins} and the design.`),
+      risk(`The pins, clock frequency and LED and button wiring may differ: check ${pins} and the design.`),
     ];
   }
   return [
     change(`Board change, same FPGA${to.fpga ? ` (${to.fpga.partNumber})` : ""}.`),
-    check(`The pins may differ: check ${pins}.`),
-    check("The clock frequency and the LED and button wiring may differ: check the design."),
+    risk(`The pins may differ: check ${pins}.`),
+    risk("The clock frequency and the LED and button wiring may differ: check the design."),
   ];
 }
