@@ -355,7 +355,7 @@ test("changing the board offers project options: the current project first", asy
   await expect(dialog.getByRole("searchbox")).toHaveCount(0);
   // The current project, with what the change means; nothing is selected
   // until the user chooses.
-  const current = dialog.getByRole("button", { name: /^Change the board of project “blinky” to “iCEBreaker”/ });
+  const current = dialog.getByRole("button", { name: /^Change the board of the current project to “iCEBreaker”/ });
   await expect(current).not.toHaveClass(/selected/);
   await expect(dialog.locator("button.selected")).toHaveCount(0);
   // The change, then its implications, the risky ones red.
