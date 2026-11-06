@@ -483,23 +483,24 @@
   .selected .example-desc {
     color: inherit;
   }
-  /* Project options: the selected choice's title is green, its note stays
-     as it is (the user's request). */
-  .single li button.selected {
+  /* Project options: the selection's green background covers only the
+     choice's title, a band across the row; its note below stays as it is
+     (the user's request). A recent project is one line: all of it. */
+  .single li button.selected:not(.recent) {
     background: transparent;
     color: inherit;
   }
-  .single li button.selected:hover {
+  .single li button.selected:not(.recent):hover {
     background: var(--banner-bg);
   }
-  .single .selected .example-name {
-    color: var(--accent);
+  .single .selected:not(.recent) .example-name {
+    margin: -6px -14px 0;
+    padding: 6px 14px 4px;
+    background: var(--accent);
+    color: #fff;
   }
-  .single .selected .example-desc {
+  .single .selected:not(.recent) .example-desc {
     color: var(--muted);
-  }
-  .single .recent.selected :global(svg) {
-    color: var(--accent);
   }
   /* The current-project choice's note: short bullet points. */
   .note {
