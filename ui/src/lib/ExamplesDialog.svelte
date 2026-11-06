@@ -276,7 +276,9 @@
               {#if changeNote.length > 0}
                 <!-- Spans as list items: a button can't hold a list. -->
                 <span class="example-desc note">
-                  {#each changeNote as point, i (i)}<span class="point">{point}</span>{/each}
+                  {#each changeNote as point, i (i)}<span class="point" class:risky={point.risky}
+                      >{point.text}</span
+                    >{/each}
                 </span>
               {/if}
             </button>
@@ -536,6 +538,10 @@
   .note .point {
     display: list-item;
     list-style: disc;
+  }
+  /* A risky consequence of changing the board: reddish (the user's request). */
+  .note .point.risky {
+    color: var(--error-mark);
   }
   .empty {
     padding: 8px 14px;

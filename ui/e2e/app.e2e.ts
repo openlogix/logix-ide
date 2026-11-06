@@ -384,6 +384,11 @@ test("changing the board offers project options: the current project first", asy
     "Needs a .lpf pin file instead of pinout.pcf.",
     /^Probably significant changes/,
   ]);
+  // The risky ones in red.
+  await expect(dialog.locator(".note .point.risky")).toHaveText([
+    "Needs a .lpf pin file instead of pinout.pcf.",
+    /^Probably significant changes/,
+  ]);
   await page.keyboard.press("Escape");
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
   // Change the Board: the files stay, the board changes.

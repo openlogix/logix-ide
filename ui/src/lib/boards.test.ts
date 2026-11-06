@@ -116,21 +116,23 @@ describe("boardChangeNote", () => {
     fpga: { id: "lfe5u-25f", partNumber: "LFE5U-25F-6BG256C", size: "25k" },
   };
 
-  it("says what a board change means for the project, as short points", () => {
-    expect(boardChangeNote(alhambra, kefir, "pinout.pcf")).toEqual([
+  it("says what a board change means for the project, risky points marked", () => {
+    const show = (points: { text: string; risky: boolean }[]) =>
+      points.map((p) => (p.risky ? `! ${p.text}` : p.text));
+    expect(show(boardChangeNote(alhambra, kefir, "pinout.pcf"))).toEqual([
       "Same FPGA: ICE40HX4K-TQ144.",
-      "Check that the pins in pinout.pcf match this board.",
+      "! Check that the pins in pinout.pcf match this board.",
     ]);
-    expect(boardChangeNote(alhambra, icebreaker, "pinout.pcf")).toEqual([
+    expect(show(boardChangeNote(alhambra, icebreaker, "pinout.pcf"))).toEqual([
       "Another Lattice iCE40 FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
-      "pinout.pcf needs this board's pins.",
+      "! pinout.pcf needs this board's pins.",
     ]);
-    expect(boardChangeNote(alhambra, colorlight, "pinout.pcf")).toEqual([
+    expect(show(boardChangeNote(alhambra, colorlight, "pinout.pcf"))).toEqual([
       "Another FPGA family: Lattice iCE40 → Lattice ECP5.",
-      "Needs a .lpf pin file instead of pinout.pcf.",
-      "Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
+      "! Needs a .lpf pin file instead of pinout.pcf.",
+      "! Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
     ]);
-    expect(boardChangeNote(alhambra, colorlight, null)[1]).toBe("Needs a .lpf pin file.");
+    expect(boardChangeNote(alhambra, colorlight, null)[1].text).toBe("Needs a .lpf pin file.");
     expect(boardChangeNote(null, colorlight, null)).toEqual([]);
     expect(boardChangeNote(alhambra, alhambra, "pinout.pcf")).toEqual([]);
   });
