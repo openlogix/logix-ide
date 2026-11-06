@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "sipeed-tang-nano-9k"
-description = "Blinks an LED, in SystemVerilog"
+summary = "Blinks an LED, in SystemVerilog"

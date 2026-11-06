@@ -932,6 +932,22 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await expect(boardButton(page)).toHaveText(/Kéfir I/);
 });
 
+test("examples show their summary, and the selected one its notes", async ({ page }) => {
+  await page.goto("/");
+  await expect(output(page)).toContainText("Ready.");
+  await page.getByRole("button", { name: "From Example…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Examples" });
+  await dialog.getByRole("searchbox").fill("icenode");
+  // The board's only example is selected already: its note shows.
+  const blinky = dialog.getByRole("button", { name: /^blinky/ });
+  await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
+  // Another one selected: only the summary.
+  await dialog.getByRole("button", { name: /^Bare Minimum/ }).click();
+  await expect(blinky.locator(".point")).toHaveText(["Blinks an LED"]);
+  await blinky.click();
+  await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
+});
+
 test("a failed command's banner says why, with one red line", async ({ page }) => {
   await start(page);
   await page.evaluate(() => {

@@ -7,10 +7,10 @@ const boards = [
   { id: "no-examples", description: "Lonely Board", arch: "", archLabel: "Other", archOrder: 99, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
 ];
 const examples = [
-  { board: "alhambra-ii", name: "blinky", description: "Blinks an LED" },
-  { board: "alhambra-ii", name: "ledon", description: "Turns on an LED" },
-  { board: "icebreaker", name: "pll", description: "Clock from a PLL" },
-  { board: "mystery", name: "blinky", description: "Blinks" },
+  { board: "alhambra-ii", name: "blinky", summary: "Blinks an LED", notes: [] },
+  { board: "alhambra-ii", name: "ledon", summary: "Turns on an LED", notes: [] },
+  { board: "icebreaker", name: "pll", summary: "Clock from a PLL", notes: ["Not yet tried on the board."] },
+  { board: "mystery", name: "blinky", summary: "Blinks", notes: [] },
 ];
 
 const summary = (q: string) =>
@@ -39,8 +39,8 @@ describe("groupExamples", () => {
   it("says when Bare Minimum has no pins", () => {
     const [alhambra, icebreaker] = groupExamples(boards, examples, "");
     expect(alhambra.examples[0].bare).toBe(true);
-    expect(alhambra.examples[0].description).toContain("board's pins");
-    expect(icebreaker.examples[0].description).toContain("without pins");
+    expect(alhambra.examples[0].summary).toContain("board's pins");
+    expect(icebreaker.examples[0].summary).toContain("without pins");
   });
 
   it("shows all entries of a matching board", () => {
@@ -59,6 +59,8 @@ describe("groupExamples", () => {
   it("shows only matching examples otherwise", () => {
     expect(summary("BLINK")).toEqual(["alhambra-ii:blinky", "mystery:blinky"]);
     expect(summary("clock")).toEqual(["icebreaker:pll"]);
+    // Notes count too.
+    expect(summary("not yet tried")).toEqual(["icebreaker:pll"]);
   });
 
   it("returns nothing when nothing matches", () => {

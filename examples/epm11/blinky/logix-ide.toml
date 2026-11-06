@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "epm11"
-description = "Blinks an LED"
+summary = "Blinks an LED"

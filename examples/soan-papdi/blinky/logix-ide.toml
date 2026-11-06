@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "soan-papdi"
-description = "Blinking LED (untested)"
+summary = "Blinking LED"
+notes = ["Not yet tried on the board."]

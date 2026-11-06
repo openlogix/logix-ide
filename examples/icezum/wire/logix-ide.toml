@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "icezum"
-description = "An LED follows a header pin"
+summary = "An LED follows a header pin"

@@ -158,7 +158,10 @@ export interface Fpga {
 export interface Example {
   board: string;
   name: string;
-  description: string;
+  /** What it does, in one line. */
+  summary: string;
+  /** More about it, a line each (empty when none), e.g. "Not yet tried on the board." */
+  notes: string[];
 }
 
 export type Task = "build" | "upload" | "test" | "simulate" | "graph";

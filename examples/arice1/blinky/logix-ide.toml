@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "arice1"
-description = "Blinks an LED (not yet tried on the board)"
+summary = "Blinks an LED"
+notes = ["Not yet tried on the board."]

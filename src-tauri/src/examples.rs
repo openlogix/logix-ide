@@ -1,6 +1,6 @@
 //! Logix's examples, built into the app from the repo's `examples/` folder:
 //! `examples/<board>/<name>/`, each a Logix project (its files and a
-//! `logix-ide.toml` with the board and a description). Plain Rust, no Tauri.
+//! `logix-ide.toml` with the board, a one-line `summary` and optional `notes`). Plain Rust, no Tauri.
 
 use std::path::{Path, PathBuf};
 
@@ -32,7 +32,11 @@ pub struct ExampleList {
 pub struct Example {
     pub board: String,
     pub name: String,
-    pub description: String,
+    /// What it does, in one line (`summary` in its `logix-ide.toml`).
+    pub summary: String,
+    /// More about it, a line each, such as that it wasn't tried on the
+    /// board yet (`notes`; empty when it has none).
+    pub notes: Vec<String>,
 }
 
 /// Every example, sorted by board then name.
@@ -46,16 +50,28 @@ pub fn all() -> Vec<Example> {
                     .map(|n| n.to_string_lossy().into_owned())
                     .unwrap_or_default()
             };
-            let description = example
+            let settings = example
                 .get_file(example.path().join(crate::project::SETTINGS_FILE))
                 .and_then(|f| f.contents_utf8())
-                .and_then(|t| t.parse::<toml_edit::DocumentMut>().ok())
-                .and_then(|d| d.get("description")?.as_str().map(String::from))
+                .and_then(|t| t.parse::<toml_edit::DocumentMut>().ok());
+            let summary = settings
+                .as_ref()
+                .and_then(|d| d.get("summary")?.as_str().map(String::from))
+                .unwrap_or_default();
+            let notes = settings
+                .as_ref()
+                .and_then(|d| d.get("notes")?.as_array().cloned())
+                .map(|a| {
+                    a.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
                 .unwrap_or_default();
             list.push(Example {
                 board: name(board),
                 name: name(example),
-                description,
+                summary,
+                notes,
             });
         }
     }
@@ -100,15 +116,25 @@ mod tests {
     use crate::project;
 
     #[test]
-    fn lists_the_examples_with_descriptions() {
+    fn lists_the_examples_with_summaries_and_notes() {
         let list = all();
         assert!(list.len() > 100, "{}", list.len());
         let blinky = list
             .iter()
             .find(|e| e.board == DEFAULT_BOARD && e.name == "blinky")
             .unwrap();
-        assert_eq!(blinky.description, "Blinking led");
-        assert!(list.iter().all(|e| !e.description.is_empty()));
+        assert_eq!(blinky.summary, "Blinking led");
+        assert!(blinky.notes.is_empty());
+        // Every example has a one-line summary; qualifiers are notes.
+        assert!(list
+            .iter()
+            .all(|e| !e.summary.is_empty() && !e.summary.contains('\n')));
+        assert!(list.iter().all(|e| !e.summary.contains("(untested)")));
+        let primer = list
+            .iter()
+            .find(|e| e.board == "sipeed-tang-primer-20k" && e.name == "blinky")
+            .unwrap();
+        assert_eq!(primer.notes, ["Not yet tried on the board."]);
         assert_eq!(
             starter_example(&list, DEFAULT_BOARD).map(|e| e.name.as_str()),
             Some("blinky")

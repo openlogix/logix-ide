@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "sipeed-tang-primer-20k"
-description = "Blinks a segment of a 7-segment PMOD (not yet tried on the board)"
+summary = "Blinks a segment of a 7-segment PMOD"
+notes = ["Not yet tried on the board."]

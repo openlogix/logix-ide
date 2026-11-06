@@ -30,9 +30,10 @@ function bareMinimum(board: string, examples: Example[]): ExampleEntry {
   return {
     board,
     name: BARE_MINIMUM,
-    description: hasPins
+    summary: hasPins
       ? "The board's pins and an empty design, to start from scratch"
       : "An empty design, without pins (no example to take them from)",
+    notes: [],
     bare: true,
   };
 }
@@ -85,8 +86,7 @@ export function groupExamples(
       ? all
       : all.filter(
           (e) =>
-            e.name.toLowerCase().includes(q) ||
-            e.description.toLowerCase().includes(q),
+            [e.name, e.summary, ...e.notes].some((t) => t.toLowerCase().includes(q)),
         );
     if (shown.length > 0)
       groups.push({ board, examples: shown, count: list.length });

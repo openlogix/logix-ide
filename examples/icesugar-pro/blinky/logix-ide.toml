@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "icesugar-pro"
-description = "Blinks an LED"
+summary = "Blinks an LED"

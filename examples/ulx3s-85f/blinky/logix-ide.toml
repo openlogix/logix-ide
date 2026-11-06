@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "ulx3s-85f"
-description = "Blinks an LED"
+summary = "Blinks an LED"

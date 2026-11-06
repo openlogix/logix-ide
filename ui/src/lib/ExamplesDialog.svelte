@@ -303,7 +303,15 @@
                 ondblclick={() => onOpen(ex)}
               >
                 <span class="example-name">{ex.name}</span>
-                <span class="example-desc">{ex.description}</span>
+                <!-- The summary, and the notes of the selected example: a
+                     bullet each (spans as list items: a button can't hold
+                     a list). -->
+                <span class="example-desc note">
+                  <span class="point">{ex.summary}</span>
+                  {#if selectedExample !== null && key(ex) === key(selectedExample)}
+                    {#each ex.notes as n, i (i)}<span class="point">{n}</span>{/each}
+                  {/if}
+                </span>
               </button>
             </li>
           {/each}
