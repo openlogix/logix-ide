@@ -882,7 +882,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
 
   // Listed first in "Custom boards" (expanded), and first in its
   // architecture's group too, with the board icon and a tooltip saying
-  // where it comes from; picking it asks nothing.
+  // where it comes from.
   await boardButton(page).click();
   await expect(page.locator(".group").first()).toContainText("Custom boards");
   await expect(
@@ -897,7 +897,18 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(first).toHaveAttribute("title", /custom-boards\.json/);
   await page.getByRole("combobox").fill("My UPduino");
   await page.getByRole("option", { name: "My UPduino", exact: true }).first().click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // Its project options: the current project, with the change note, and
+  // no examples or new projects, saying why.
+  const options = page.getByRole("dialog", { name: "Examples" });
+  await expect(options.getByRole("heading")).toHaveText("Project options for board “My UPduino”");
+  await expect(options.locator(".current .note .point").first()).toHaveText(/^Board change, same FPGA/);
+  await expect(options.locator(".custom-note")).toContainText("Custom boards have no examples");
+  await expect(options.getByRole("button", { name: /^Bare Minimum/ })).toHaveCount(0);
+  await expect(options.getByRole("button", { name: /^blinky/ })).toHaveCount(0);
+  // Not applied until chosen.
+  await expect(boardButton(page)).toHaveText(/UPDuino v2/);
+  await changeTheBoard(page);
+  await expect(options).toBeHidden();
   await expect(boardButton(page)).toHaveText(/My UPduino/);
   await expect(boardButton(page).locator(".custom")).toHaveCount(1);
   await expect(boardButton(page)).toHaveAttribute("title", /From this project's custom-boards\.json/);

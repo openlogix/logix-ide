@@ -418,10 +418,12 @@
    */
   function setBoard(id: string) {
     if (!id) return;
-    // One of the project's own boards: no examples, and not a board for new
-    // projects (they don't have its definition).
+    // One of the project's own boards: its project options (the change
+    // note), without examples or new projects (they don't have its
+    // definition), and not remembered as a board for new projects.
     if (project && projectBoards.some((b) => b.id === id)) {
-      applyBoard(project, id);
+      pendingBoard = id;
+      examplesOpen = true;
       return;
     }
     // Another board starts with its default variant.

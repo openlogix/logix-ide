@@ -9,7 +9,9 @@
   Open Recent has them). The main button says what the selected choice
   does: Change the Board or New Project (an example or Bare Minimum starts
   a new, unsaved project). Picking the project's own board again offers
-  "Keep the current project" (button Keep the Project) instead.
+  "Keep the current project" (button Keep the Project) instead. For a
+  custom board, "New project" only says custom boards have no examples
+  (`customOnly`).
   Cancel, Esc and ✕ cancel the board change.
 -->
 <script lang="ts">
@@ -86,6 +88,13 @@
   const sameBoard = $derived(
     currentProject !== null && currentProject.board?.id === onlyBoard,
   );
+  /**
+   * The board picked is one of the project's custom boards: no examples
+   * (even with a catalog board's ID, whose examples were written for the
+   * catalog board) and no new project (it wouldn't have the project's
+   * custom-boards.json), so only the current-project choice is offered.
+   */
+  const customOnly = $derived(onlyBoardInfo?.custom === true);
   /** What moving the current project to the new board means: short points. */
   const changeNote = $derived(
     currentProject && onlyBoardInfo
@@ -285,7 +294,12 @@
         {#if onlyBoard}
           <li class="section">New project</li>
         {/if}
-        {#if group}
+        {#if customOnly}
+          <li class="empty custom-note">
+            Custom boards have no examples, and new projects can't use them:
+            they're defined in this project's custom-boards.json.
+          </li>
+        {:else if group}
           {#each group.examples as ex (ex.name)}
             <li>
               <button
