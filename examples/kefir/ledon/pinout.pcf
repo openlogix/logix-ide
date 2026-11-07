@@ -1,6 +1,6 @@
-# Constraint file of the template example for the Go Board board.
+# Constraint file of the ledon example for the Kéfir I board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
 
 # LED (LED1), active high.
-set_io led 56  # output
+set_io led 137  # output

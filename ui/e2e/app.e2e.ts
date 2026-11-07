@@ -129,7 +129,7 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
   await start(page);
-  await expect(output(page)).toContainText("124 examples available.");
+  await expect(output(page)).toContainText("119 examples available.");
   // Logix Engine's 84 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
