@@ -73,6 +73,14 @@ pub fn run() {
                 platform::current().map_or("unknown platform".into(), |p| format!("{p:?}")),
                 engine::ENGINE_RELEASE_TAG
             ));
+            if let Some(home) = std::env::var_os(platform::HOME_VARIABLE).filter(|v| !v.is_empty())
+            {
+                log!(
+                    "Data folder from {}: {}",
+                    platform::HOME_VARIABLE,
+                    std::path::Path::new(&home).display()
+                );
+            }
             install_panic_logging();
             if let Some(window) = app.get_webview_window("main") {
                 commands::apply_stored_window_preferences(&window);
@@ -112,6 +120,7 @@ pub fn run() {
             commands::format_file,
             commands::get_boards,
             commands::project_boards,
+            commands::custom_boards_stamp,
             commands::get_examples,
             commands::open_example,
             commands::open_bare_minimum,

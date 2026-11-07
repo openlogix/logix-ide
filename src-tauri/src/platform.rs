@@ -62,11 +62,11 @@ impl Platform {
     }
 
     /// Per-user directory where the IDE keeps Logix Engine, its packages
-    /// (the FPGA tools), settings and scratch folders: `~/.logix`.
+    /// (the FPGA tools), settings and scratch folders: `~/.logix`, or the
+    /// folder `LOGIX_IDE_HOME` names (see `data_dir_from`).
     pub fn data_dir(self) -> Result<PathBuf> {
         self.ensure_implemented()?;
-        let home = dirs::home_dir().context("can't find the user's home directory")?;
-        Ok(home.join(".logix"))
+        data_dir_from(std::env::var_os(HOME_VARIABLE), dirs::home_dir)
     }
 
     /// Opens `dir` in the system's file manager (Finder on macOS).
@@ -246,9 +246,52 @@ fn from_os_arch(os: &str, arch: &str) -> Option<Platform> {
     }
 }
 
+/// The environment variable that sets the IDE's data folder instead of
+/// `~/.logix`: for testing (generated settings and projects, a clean first
+/// start) without touching the real one.
+pub const HOME_VARIABLE: &str = "LOGIX_IDE_HOME";
+
+/// The IDE's data folder: `value` (`LOGIX_IDE_HOME`) when set, which must
+/// be an absolute path (an error otherwise, never a silent fallback), else
+/// `.logix` in the user's home.
+pub fn data_dir_from(
+    value: Option<std::ffi::OsString>,
+    home: impl FnOnce() -> Option<PathBuf>,
+) -> Result<PathBuf> {
+    match value.filter(|v| !v.is_empty()).map(PathBuf::from) {
+        Some(dir) if dir.is_absolute() => Ok(dir),
+        Some(dir) => anyhow::bail!(
+            "{HOME_VARIABLE} must be an absolute path, not \"{}\".",
+            dir.display()
+        ),
+        None => Ok(home()
+            .context("can't find the user's home directory")?
+            .join(".logix")),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn logix_ide_home_replaces_the_data_folder() {
+        let home = || Some(PathBuf::from("/Users/you"));
+        assert_eq!(
+            data_dir_from(None, home).unwrap(),
+            Path::new("/Users/you/.logix")
+        );
+        assert_eq!(
+            data_dir_from(Some("".into()), home).unwrap(),
+            Path::new("/Users/you/.logix")
+        );
+        assert_eq!(
+            data_dir_from(Some("/tmp/test-home".into()), home).unwrap(),
+            Path::new("/tmp/test-home")
+        );
+        let e = data_dir_from(Some("relative/dir".into()), home).unwrap_err();
+        assert!(e.to_string().contains("LOGIX_IDE_HOME"), "{e}");
+    }
 
     #[test]
     fn maps_target_platforms() {
