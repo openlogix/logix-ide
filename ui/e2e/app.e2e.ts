@@ -364,6 +364,8 @@ test("changing the board offers project options: the current project first", asy
   await expect(dialog.getByRole("heading")).toHaveText("Project options for board “iCEBreaker”");
   await expect(dialog.getByText("Recent projects", { exact: true })).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: /counter/ })).toHaveCount(0);
+  // Until a choice is made, the toolbar keeps the current board.
+  await expect(boardButton(page)).toHaveText(/Alhambra II/);
   await expect(dialog.getByRole("list", { name: "Boards" })).toHaveCount(0);
   // Few choices: no search.
   await expect(dialog.getByRole("searchbox")).toHaveCount(0);

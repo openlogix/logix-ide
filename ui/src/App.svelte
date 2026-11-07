@@ -406,7 +406,8 @@
    * A board chosen in the toolbar while its project options are offered:
    * applied only on Change the Board (opening an example or project brings
    * its own board; Cancel keeps the old one), so the "Save changes?"
-   * question is only about files.
+   * question is only about files. The toolbar keeps showing the current
+   * board until then (the user's decision, 2026-11-07).
    */
   let pendingBoard = $state<string | null>(null);
 
@@ -1877,7 +1878,7 @@
     <BoardPicker
       {boards}
       recent={recentBoards}
-      value={pendingBoard ?? currentBoard}
+      value={currentBoard}
       disabled={boards.length === 0}
       problemNote={boardsProblem
         ? `This project's ${CUSTOM_BOARDS_FILE} has problems (see the output). Its boards are left out until they're fixed.`
@@ -1885,7 +1886,7 @@
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}
     />
-    {#if currentBoardInfo && !pendingBoard}
+    {#if currentBoardInfo}
       <button
         class="board-info"
         title="Board info: its FPGA, how it's programmed, and the boards with the same FPGA"
@@ -1893,7 +1894,7 @@
         onclick={() => (boardInfoOpen = true)}>ⓘ</button
       >
     {/if}
-    {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0 && !pendingBoard}
+    {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0}
       <VariantPanel
         board={currentBoardInfo}
         variant={currentVariant}
