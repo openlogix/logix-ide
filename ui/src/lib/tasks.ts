@@ -52,7 +52,7 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   // The output above already lists the file's problems at its full path.
   if (first.file === CUSTOM_BOARDS_FILE) {
     const n = errors.filter((d) => d.file === CUSTOM_BOARDS_FILE).length;
-    return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has ${plural(n, "problem")} (above).`;
+    return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has ${plural(n, "problem")}.`;
   }
   const where = location(first);
   const problem = `${where ? `${where}: ` : ""}${friendly(first.message)}`;

@@ -1010,7 +1010,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(output(page)).toContainText(`${folder}/custom-boards.json:1:1: error: Expected value.`);
   // The status line counts them rather than repeating them.
   await expect(status(page)).toHaveText(
-    "Build failed: the project's custom-boards.json has 1 problem (above).",
+    "Build failed: the project's custom-boards.json has 1 problem.",
   );
 
   // Fixed: said once, and the boards are back.

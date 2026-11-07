@@ -55,7 +55,7 @@ describe("outcomeText", () => {
         action: null,
         devices: [],
       }),
-    ).toBe("Build failed: the project's custom-boards.json has 1 problem (above).");
+    ).toBe("Build failed: the project's custom-boards.json has 1 problem.");
     expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1, action: null, devices: [] })).toBe(
       "Upload failed. See the output below.",
     );
