@@ -5,11 +5,10 @@
 //! the console and the engine's phases to the status bar.
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use anyhow::{Context, Result};
-use regex::Regex;
 use serde_json::{json, Value};
 use tokio_util::sync::CancellationToken;
 
@@ -686,19 +685,15 @@ fn red(text: &str) -> String {
     format!("\x1b[31m{text}\x1b[0m")
 }
 
-/// A progress bar line, such as openFPGALoader's `Writing: [====  ] 42.00%`.
-/// The engine sends one line per redraw.
-static PROGRESS_BAR: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(?P<label>[^\[]*)\[[^\]]*\]\s*\d{1,3}(?:\.\d+)?\s*%").unwrap());
-
 /// Turns live output into console lines: command lines dimmed with `$`,
-/// errors red, warnings yellow. A progress bar's redraws become one line
-/// (its last state, as a terminal shows it): a redraw is held until the
-/// next line shows whether it was the last one. TODO(revisit): if the
-/// engine marks redraws itself, drop the pattern.
+/// errors red, warnings yellow. A line the tool prints over (`redraw`, such
+/// as a progress bar's) is held, and dropped when the same tool's next line
+/// arrives, so a progress bar stays on one line, as in a terminal; anything
+/// else first, or the end of the call, shows it.
 #[derive(Clone)]
 pub(super) struct Console<F> {
     on_event: F,
+    /// The held redraw line: its tool and console text.
     held: Arc<Mutex<Option<(String, String)>>>,
 }
 
@@ -729,27 +724,22 @@ where
             (_, OutputLevel::Warning) => format!("\x1b[33m{}\x1b[0m", line.text),
             (_, OutputLevel::Info) => line.text.clone(),
         };
-        let bar = (line.kind == OutputKind::Output)
-            .then(|| PROGRESS_BAR.captures(&line.text))
-            .flatten()
-            .map(|c| format!("{}\u{0}{}", line.tool, c["label"].trim()));
+        let output = line.kind == OutputKind::Output;
         let mut held = self.held.lock().unwrap();
-        match (held.take(), bar) {
-            // Another redraw of the held bar: keep only the newer one.
-            (Some((key, _)), Some(bar)) if key == bar => *held = Some((bar, text)),
-            (previous, bar) => {
-                if let Some((_, previous)) = previous {
-                    self.send(previous);
-                }
-                match bar {
-                    Some(bar) => *held = Some((bar, text)),
-                    None => self.send(text),
-                }
+        if let Some((tool, previous)) = held.take() {
+            // The tool printed over it: drop it; otherwise show it.
+            if !(output && tool == line.tool) {
+                self.send(previous);
             }
+        }
+        if output && line.redraw {
+            *held = Some((line.tool, text));
+        } else {
+            self.send(text);
         }
     }
 
-    /// Sends a held progress bar line (at the end of a call).
+    /// Sends a held redraw line (at the end of a call).
     pub(super) fn flush(&self) {
         if let Some((_, text)) = self.held.lock().unwrap().take() {
             self.send(text);
@@ -904,11 +894,20 @@ mod tests {
             kind,
             level,
             text: text.into(),
+            redraw: false,
+        }
+    }
+
+    /// A line the tool prints over (`redraw`).
+    fn redraw(tool: &str, text: &str) -> OutputLine {
+        OutputLine {
+            redraw: true,
+            ..out(tool, OutputKind::Output, OutputLevel::Info, text)
         }
     }
 
     #[test]
-    fn console_colors_lines_and_collapses_progress_bars() {
+    fn console_colors_lines_and_replaces_redraws() {
         let got = Arc::new(Mutex::new(Vec::new()));
         let console = {
             let got = got.clone();
@@ -928,12 +927,21 @@ mod tests {
             Info,
             "openFPGALoader -b ice40_generic hardware.bin",
         ));
-        sink(out(ofl, Output, Info, "Writing: [==>     ] 10.00%"));
-        sink(out(ofl, Output, Info, "Writing: [=====>  ] 60.00%"));
+        sink(redraw(ofl, "Writing: [==>     ] 10.00%"));
+        sink(redraw(ofl, "Writing: [=====>  ] 60.00%"));
         sink(out(ofl, Output, Info, "Writing: [========] 100.00% Done"));
-        sink(out(ofl, Output, Info, "Verifying: [==>     ] 10.00%"));
-        sink(out(ofl, Output, Info, "Verifying: [========] 100.00%"));
+        sink(redraw(ofl, "Verifying: [==>     ] 10.00%"));
+        sink(redraw(ofl, "Verifying: [========] 100.00%"));
         console.flush();
+        // iceprog's progress: the address lines are redraws, and the last
+        // one is printed over by "done.", as in a terminal.
+        sink(out("iceprog", Output, Info, "programming.."));
+        sink(redraw("iceprog", "addr 0x000000   0%"));
+        sink(redraw("iceprog", "addr 0x020F00  99%"));
+        sink(out("iceprog", Output, Info, "done."));
+        // A redraw followed by another tool's line or a message stays.
+        sink(redraw("iceprog", "addr 0x000100   0%"));
+        sink(out("logix-engine", Message, Info, "Stopped."));
         sink(out(
             "yosys",
             Output,
@@ -947,6 +955,10 @@ mod tests {
                 "\x1b[2m$ openFPGALoader -b ice40_generic hardware.bin\x1b[0m",
                 "Writing: [========] 100.00% Done",
                 "Verifying: [========] 100.00%",
+                "programming..",
+                "done.",
+                "addr 0x000100   0%",
+                "Stopped.",
                 "\x1b[31mmain.v:25: ERROR: syntax error\x1b[0m",
                 "\x1b[33ma warning\x1b[0m",
             ]

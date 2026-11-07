@@ -61,6 +61,10 @@ pub struct OutputLine {
     pub kind: OutputKind,
     pub level: OutputLevel,
     pub text: String,
+    /// The tool prints over this line (a carriage return ended it, as
+    /// progress bars do): the console replaces it with the tool's next line.
+    #[serde(default)]
+    pub redraw: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
