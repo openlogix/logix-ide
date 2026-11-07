@@ -5,13 +5,17 @@
   boards by FPGA architecture (collapsed groups, their state shared with the
   Examples window). No groups from connected devices: the user's decision,
   since which boards a device may be is a guess. Unlike a native list, picking the current
-  board is reported too (Logix then offers its examples).
+  board is reported too (Logix then offers its examples). The project's own
+  boards (custom-boards.json) carry a small board icon, here and on the
+  button, with a tooltip saying where they come from; a file with problems
+  gets one quiet line at the top of the list.
 -->
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
   import { boardGroups, fpgaLabel, RECENT_GROUP, type BoardGroup } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
+  import Icon from "./Icon.svelte";
 
   let {
     boards,
@@ -19,6 +23,7 @@
     value,
     disabled = false,
     placeholder,
+    problemNote = null,
     onPick,
   }: {
     boards: Board[];
@@ -29,6 +34,8 @@
     disabled?: boolean;
     /** The button's text when there's no board (e.g. "Loading boards…"). */
     placeholder: string;
+    /** A line at the top of the list, e.g. that custom-boards.json has problems (null for none). */
+    problemNote?: string | null;
     /** A board was picked (possibly the current one). */
     onPick: (id: string) => void;
   } = $props();
@@ -54,6 +61,14 @@
       isOpen(g) ? g.boards.map((b) => ({ key: `${gi}:${b.id}`, board: b })) : [],
     ),
   );
+  /** Where the project's own boards come from, for their tooltips. */
+  const FROM_PROJECT = "From this project's custom-boards.json";
+  const selected = $derived(boards.find((b) => b.id === value) ?? null);
+  /** An entry's tooltip: where a custom board comes from, and its FPGA. */
+  const entryTitle = (b: Board) =>
+    [b.custom ? FROM_PROJECT : null, b.fpga ? `FPGA: ${fpgaLabel(b)}` : null]
+      .filter(Boolean)
+      .join("\n") || undefined;
   const label = $derived(
     boards.find((b) => b.id === value)?.description ??
       (value ? `${value} (unknown)` : placeholder),
@@ -148,11 +163,12 @@
     bind:this={button}
     class="board-button"
     {disabled}
-    title="Board: {label}"
+    title={selected?.custom ? `Board: ${label}\n${FROM_PROJECT}` : `Board: ${label}`}
     aria-haspopup="listbox"
     aria-expanded={open}
     onclick={() => (open ? hide() : show())}
   >
+    {#if selected?.custom}<span class="custom" aria-hidden="true"><Icon name="board" size={13} /></span>{/if}
     <span class="name">{label}</span>
     <svg class="arrow" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
       ><path
@@ -181,6 +197,7 @@
         aria-activedescendant={active ? `board-${active}` : undefined}
         onkeydown={onKey}
       />
+      {#if problemNote}<p class="problem-note">{problemNote}</p>{/if}
       <ul id="board-list" role="listbox" aria-label="Boards" bind:this={list}>
         {#each groups as g, gi (g.key)}
           {@const shown = isOpen(g)}
@@ -205,7 +222,7 @@
               id="board-{key}"
               data-key={key}
               role="option"
-              title={b.fpga ? `FPGA: ${fpgaLabel(b)}` : undefined}
+              title={entryTitle(b)}
               aria-selected={b.id === value}
               class:active={key === active}
               onmousemove={() => (active = key)}
@@ -214,6 +231,7 @@
               <!-- The selected board: a dot, unlike the groups' arrows. -->
               <span class="check" class:on={b.id === value} aria-hidden="true"></span>
               {b.description}
+              {#if b.custom}<span class="custom" aria-hidden="true"><Icon name="board" size={12} /></span>{/if}
             </li>
           {/each}
         {:else}
@@ -225,6 +243,23 @@
 </div>
 
 <style>
+  /* The project's own boards: a small board icon, in a muted color. */
+  .custom {
+    display: inline-flex;
+    flex: none;
+    opacity: 0.6;
+    vertical-align: -2px;
+    margin-left: 4px;
+  }
+  .board-button .custom {
+    margin-left: 0;
+  }
+  .problem-note {
+    margin: 0;
+    padding: 4px 10px;
+    font-size: 12px;
+    opacity: 0.75;
+  }
   .picker {
     position: relative;
     margin-left: 12px;

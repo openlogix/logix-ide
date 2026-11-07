@@ -1,4 +1,4 @@
-import type { Board } from "./backend";
+import type { Board, ProjectBoards } from "./backend";
 
 /** A titled group of boards in the board picker. */
 export interface BoardGroup {
@@ -38,6 +38,22 @@ export function groupByArch<T>(
       label: a.archLabel,
       items: items.filter((item) => board(item).arch === a.arch),
     }));
+}
+
+/**
+ * The console lines for problems Logix Engine found in the project's
+ * custom-boards.json, in red: one per problem at line and column
+ * (`custom-boards.json:4:3: error: Trailing comma.`), like build errors, so
+ * the user can find them in the editor they edit it with; the engine's
+ * message when it gives no locations.
+ */
+export function boardsProblemLines(problem: NonNullable<ProjectBoards["problem"]>): string[] {
+  const red = (text: string) => `\x1b[31m${text}\x1b[0m`;
+  if (problem.diagnostics.length === 0) return [red(problem.message)];
+  return problem.diagnostics.map((d) => {
+    const at = [d.file ?? "", d.line, d.column].filter((x) => x != null).join(":");
+    return red(`${at}: ${d.severity === "error" ? "error" : "warning"}: ${d.message}`);
+  });
 }
 
 /**

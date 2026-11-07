@@ -26,7 +26,6 @@ describe("taskReads", () => {
     for (const task of ["build", "upload", "test", "simulate", "graph"] as const) {
       expect(taskReads(task, "main")).toBe(true);
       expect(taskReads(task, "design")).toBe(true);
-      expect(taskReads(task, "boards")).toBe(true);
     }
   });
 });

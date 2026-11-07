@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardChangeNote, boardGroups, fpgaLabel, groupByArch, boardsWithFpga, withProjectBoards } from "./boards";
+import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByArch, boardsWithFpga, withProjectBoards } from "./boards";
 import type { Board } from "./backend";
 
 const boards: Board[] = [
@@ -144,5 +144,27 @@ describe("boardChangeNote", () => {
     expect(boardChangeNote(alhambra, colorlight, null)[1].text).toBe("Needs a .lpf pin file, with this board's pins.");
     expect(boardChangeNote(null, colorlight, null)).toEqual([]);
     expect(boardChangeNote(alhambra, alhambra, "pinout.pcf")).toEqual([]);
+  });
+});
+
+describe("boardsProblemLines", () => {
+  it("gives one red line per problem, at line and column, like build errors", () => {
+    expect(
+      boardsProblemLines({
+        message: "The custom boards file has problems.",
+        diagnostics: [
+          { severity: "error", file: "custom-boards.json", line: 4, column: 3, message: "Trailing comma." },
+          { severity: "warning", file: "custom-boards.json", line: 9, column: null, message: "Odd." },
+        ],
+      }),
+    ).toEqual([
+      "\x1b[31mcustom-boards.json:4:3: error: Trailing comma.\x1b[0m",
+      "\x1b[31mcustom-boards.json:9: warning: Odd.\x1b[0m",
+    ]);
+  });
+  it("gives the message when there are no locations", () => {
+    expect(boardsProblemLines({ message: "Can't read it.", diagnostics: [] })).toEqual([
+      "\x1b[31mCan't read it.\x1b[0m",
+    ]);
   });
 });

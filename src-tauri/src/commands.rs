@@ -192,52 +192,32 @@ pub struct ProjectBoards {
     problem: Option<engine::BoardsProblem>,
 }
 
-/// Writes the text of the project's `custom-boards.json` (unsaved edits
-/// included, errors and all) to a scratch file for Logix Engine, which
-/// reads it and reports its problems at line and column. One folder per
-/// text, so calls that run at the same time never see each other's; older
-/// ones are removed. `None` for a project without the file.
-fn scratch_boards_file(text: Option<&str>) -> anyhow::Result<Option<std::path::PathBuf>> {
-    use std::hash::{Hash, Hasher};
-    let Some(text) = text else {
-        return Ok(None);
-    };
-    let root = platform::current_implemented()?.data_dir()?.join("boards");
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    text.hash(&mut hasher);
-    let hash = format!("{:016x}", hasher.finish());
-    let dir = root.join(&hash);
-    let file = dir.join(project::CUSTOM_BOARDS_FILE);
-    if !file.is_file() {
-        std::fs::create_dir_all(&dir).context("Couldn't write the custom boards.")?;
-        std::fs::write(&file, text).context("Couldn't write the custom boards.")?;
-        // Keep the newest few for calls still running.
-        if let Ok(entries) = std::fs::read_dir(&root) {
-            let mut old: Vec<_> = entries
-                .filter_map(|e| e.ok())
-                .filter(|e| e.file_name() != hash.as_str())
-                .filter_map(|e| Some((e.metadata().ok()?.modified().ok()?, e.path())))
-                .collect();
-            old.sort();
-            let extra = old.len().saturating_sub(4);
-            for (_, path) in old.into_iter().take(extra) {
-                let _ = std::fs::remove_dir_all(path);
-            }
-        }
-    }
-    Ok(Some(file))
+/// The custom boards file of the project in `folder` (its folder, or the
+/// example a new project starts from): the file on disk, which the user
+/// edits outside Logix; Logix Engine reads it and reports its problems at
+/// line and column. None without a folder or without the file.
+fn boards_file(folder: Option<&str>) -> Option<std::path::PathBuf> {
+    project::custom_boards_file(Path::new(folder?))
 }
 
-/// The project's own boards from the text of its `custom-boards.json`
-/// (null when it has none), as Logix Engine reads them, for the board
-/// list, or the problems the engine found in it.
+/// A value that changes whenever the project's custom-boards.json is
+/// added, changed or removed (null without it), polled by the UI to reload
+/// the board list after edits made outside Logix.
+#[tauri::command]
+pub fn custom_boards_stamp(folder: Option<String>) -> Option<String> {
+    project::custom_boards_stamp(Path::new(&folder?))
+}
+
+/// The project's own boards from its `custom-boards.json` (in `folder`),
+/// as Logix Engine reads them, for the board list, or the problems the
+/// engine found in it.
 #[tauri::command]
 pub async fn project_boards(
     state: State<'_, AppState>,
-    custom_boards: Option<String>,
+    folder: Option<String>,
 ) -> Result<ProjectBoards, UserError> {
     let engine = ready_engine(&state).await?;
-    let file = scratch_boards_file(custom_boards.as_deref())?;
+    let file = boards_file(folder.as_deref());
     let found = engine::project_boards(&engine, file.as_deref())
         .await
         .context("Couldn't read the project's custom boards.")?;
@@ -322,27 +302,23 @@ pub async fn run_task(
     };
     let engine = ready_engine(&state).await?;
     // The project's own boards come first: one with a catalog board's ID
-    // replaces it, as in the engine.
-    let boards_text = files
-        .iter()
-        .find(|f| f.name == project::CUSTOM_BOARDS_FILE)
-        .map(|f| f.text.clone());
+    // replaces it, as in the engine. Its custom-boards.json is the file in
+    // the project folder (or the example a new project starts from).
+    let boards_file = boards_file(source_dir.as_deref());
     let catalog_boards = catalog(&state).await?.boards;
-    let scratch = scratch_boards_file(boards_text.as_deref())?;
-    let own = match engine::project_boards(&engine, scratch.as_deref())
+    let own = match engine::project_boards(&engine, boards_file.as_deref())
         .await
         .context("Couldn't read the project's custom boards.")?
     {
         Ok(own) => own,
-        // A catalog board still runs: the engine reports the file's
-        // problems in the task. A board from the file can't.
-        Err(_) if catalog_boards.iter().any(|b| b.id == board) => Vec::new(),
+        // Problems in the file stop every task, as in the engine, whatever
+        // the board.
         Err(problem) => {
-            (on_event.clone())
-                .send(outcome::TaskEvent::Line {
-                    line: format!("\x1b[31m{}\x1b[0m", problem.message),
-                })
-                .ok();
+            for line in problem.console_lines() {
+                (on_event.clone())
+                    .send(outcome::TaskEvent::Line { line })
+                    .ok();
+            }
             return Ok(engine::boards_problem_outcome(&problem));
         }
     };
@@ -421,11 +397,12 @@ pub async fn run_task(
     };
     let cancel = tokio_util::sync::CancellationToken::new();
     *state.task_cancel.lock().unwrap() = Some(cancel.clone());
-    // The engine reads the copy in the prepared folder, so its problems are
-    // named custom-boards.json, as in the project.
-    let boards_file = boards_text
-        .is_some()
-        .then(|| dir.join(project::CUSTOM_BOARDS_FILE));
+    if info.custom {
+        crate::log!(
+            "Task {task:?}: board {board} from {}",
+            boards_file.as_deref().unwrap_or(Path::new("?")).display()
+        );
+    }
     let input = engine::TaskInput {
         board: &board,
         board_variant: Some(&board_variant),
@@ -574,10 +551,10 @@ pub struct Devices {
 #[tauri::command]
 pub async fn scan_devices(
     state: State<'_, AppState>,
-    custom_boards: Option<String>,
+    folder: Option<String>,
 ) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
-    let file = scratch_boards_file(custom_boards.as_deref())?;
+    let file = boards_file(folder.as_deref());
     // A custom boards file with problems: the devices without its boards
     // (the board list shows its problems).
     let list = match engine::list_devices(&engine, file.as_deref()).await {
@@ -598,10 +575,10 @@ pub async fn scan_devices(
 #[tauri::command]
 pub async fn connected_devices(
     state: State<'_, AppState>,
-    custom_boards: Option<String>,
+    folder: Option<String>,
 ) -> Result<Vec<engine::ConnectedDevice>, UserError> {
     let engine = ready_engine(&state).await?;
-    let file = scratch_boards_file(custom_boards.as_deref())?;
+    let file = boards_file(folder.as_deref());
     // The project's boards first, as the engine matched them; a file with
     // problems counts as none here (the board list shows its problems).
     let usable = engine::project_boards(&engine, file.as_deref())

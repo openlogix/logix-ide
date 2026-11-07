@@ -7,9 +7,8 @@
   **Stop** ![](images/icon-stop.png){ .toolbar-icon }, and the board list.
 - **Tabs**: one per file of the project. A dot marks unsaved changes. A
   flask marks testbenches, a chip marks the board's pin file (a pin file
-  for another kind of board has no chip, since this board doesn't use it),
-  and a circuit board marks `custom-boards.json`; hover over a tab to
-  see what its file is for.
+  for another kind of board has no chip, since this board doesn't use it);
+  hover over a tab to see what its file is for.
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
   Other problems, such as a name that isn't declared, are found by Verify
@@ -190,8 +189,9 @@ or a device to skip it). Click a board's name to select it.
 ## Your own boards
 
 A board that isn't in Logix's board list can be added to a project. Add a
-file named **custom-boards.json** to the project (File > New File…, or any
-text editor) and describe the board in it. The file holds the boards by
+file named **custom-boards.json** to the project folder with any text
+editor (Logix doesn't edit it) and describe the board in it. Since it's
+part of the project, anyone who opens the project gets the same boards. The file holds the boards by
 their ID, so it can have one board or several:
 
 ```json
@@ -212,16 +212,16 @@ their ID, so it can have one board or several:
 }
 ```
 
-The boards in it are listed first in the board list, under **This
-project's boards**, and Verify, Upload and the other commands use them like
-any other board. A board with the same ID as a board in Logix's list
+The boards in it are listed first in their group of the board list, marked
+with a small circuit board, and Verify, Upload and the other commands use
+them like any other board; the output says when a command uses one. Logix
+notices when you save the file in your editor. A board with the same ID as a board in Logix's list
 replaces it in this project. The format is Logix Engine's custom board
 format, described in its
 [tool documentation](https://github.com/openlogix/logix-engine/blob/main/docs/tool-api.md#board-specification).
-Logix highlights the file, and **Tools > Auto Format** tidies it. If the
-file has a mistake, the mistakes are marked in the file like errors in
-your design (point at a mark to see what's wrong), and its boards aren't
-offered until it's fixed.
+If the file has a mistake, the output lists each one with its line and
+column (such as `custom-boards.json:4:3: error: …`), the board list says
+the file has problems, and its boards aren't offered until it's fixed.
 
 ## Help
 

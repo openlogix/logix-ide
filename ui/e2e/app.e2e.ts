@@ -850,13 +850,13 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toBeVisible();
 });
 
-test("a project's custom-boards.json adds its own boards, sent with every task", async ({ page }) => {
+test("a project's custom-boards.json, edited outside Logix, adds its own boards", async ({ page }) => {
   type Fake = {
-    projectFiles: { name: string; text: string }[];
-    taskCustomBoards: unknown;
-    scannedCustomBoards: unknown;
-    taskVariant: unknown;
+    customBoardsOnDisk: Record<string, string>;
+    taskBoardsFolder: unknown;
+    scannedBoardsFolder: unknown;
   };
+  const folder = "/Users/you/Documents/Logix/mine";
   const myBoards = {
     "my-upduino": {
       description: "My UPduino",
@@ -870,72 +870,82 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
       ],
     },
   };
-  await page.goto("/?recents=/Users/you/Documents/Logix/mine");
-  await page.evaluate((text) => {
-    (window as unknown as { __fake: Fake }).__fake.projectFiles = [
-      { name: "custom-boards.json", text },
-    ];
-  }, JSON.stringify(myBoards));
+  /** Writes (or, with null, deletes) the file on the fake disk, as another editor would. */
+  const writeFile = async (text: string | null) => {
+    await page.evaluate(
+      ([dir, t]) => {
+        const disk = (window as unknown as { __fake: Fake }).__fake.customBoardsOnDisk;
+        if (t === null) delete disk[dir as string];
+        else disk[dir as string] = t;
+        // The IDE checks the file when the window gets the focus back.
+        window.dispatchEvent(new Event("focus"));
+      },
+      [folder, text],
+    );
+  };
+  await page.goto(`/?recents=${folder}`);
+  await writeFile(JSON.stringify(myBoards, null, 2));
   await expect(output(page)).toContainText("Ready.");
   await page.getByRole("button", { name: /mine/ }).click();
-  await expect(tab(page, "custom-boards.json")).toBeVisible();
+  // Not a tab: it's edited outside Logix.
+  await expect(tab(page, "main.v")).toBeVisible();
+  await expect(tab(page, "custom-boards.json")).toHaveCount(0);
 
-  // Listed in its architecture's group, first; picking it asks nothing.
+  // Listed in its architecture's group, first, with the board icon and a
+  // tooltip saying where it comes from; picking it asks nothing.
   await boardButton(page).click();
   // (The current board's group, iCE40, opens by itself.)
-  await expect(
-    page.locator(".group", { hasText: "Lattice iCE40" }).locator("xpath=following-sibling::li[1]"),
-  ).toHaveText(/My UPduino/);
+  const first = page
+    .locator(".group", { hasText: "Lattice iCE40" })
+    .locator("xpath=following-sibling::li[1]");
+  await expect(first).toHaveText(/My UPduino/);
+  await expect(first.locator(".custom")).toHaveCount(1);
+  await expect(first).toHaveAttribute("title", /custom-boards\.json/);
   await page.getByRole("combobox").fill("My UPduino");
   await page.getByRole("option", { name: "My UPduino", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(boardButton(page)).toHaveText(/My UPduino/);
+  await expect(boardButton(page).locator(".custom")).toHaveCount(1);
+  await expect(boardButton(page)).toHaveAttribute("title", /From this project's custom-boards\.json/);
 
-  // Sent with every task and every device scan.
+  // The project folder goes with every task and device scan (the engine
+  // reads the file there), and the output says where the board is from.
   await menu(page, "verify");
   await expect(status(page)).toContainText("Build succeeded");
+  await expect(output(page)).toContainText("The board is from this project's custom-boards.json.");
   const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
-  // The file's text, as it is, goes with tasks and device scans.
-  expect(JSON.parse((await fake()).taskCustomBoards as string)).toEqual(myBoards);
-  await expect
-    .poll(async () => JSON.parse(((await fake()).scannedCustomBoards as string) ?? "null"))
-    .toEqual(myBoards);
+  expect((await fake()).taskBoardsFolder).toBe(folder);
+  await expect.poll(async () => (await fake()).scannedBoardsFolder).toBe(folder);
 
-  // Its own icon, a circuit board, like the pin file's chip.
-  await expect(tab(page, "custom-boards.json").locator(".tab-icon")).toHaveCount(1);
-  // Highlighted as JSON, and Auto Format pretty-prints it.
-  await tab(page, "custom-boards.json").click();
-  await expect(page.locator(".cm-line span", { hasText: '"my-upduino"' })).toBeVisible();
-  await menu(page, "auto-format");
-  await expect(status(page)).toHaveText("Auto Format finished.");
-  await expect(page.locator(".cm-line").nth(1)).toHaveText('  "my-upduino": {');
-  await menu(page, "auto-format");
-  await expect(status(page)).toHaveText("No changes necessary for Auto Format.");
-
-  // A file with problems is still sent: Logix Engine's problems show as
-  // markers in the file (no banner), and its boards are left out.
-  await page.locator(".cm-content").click();
-  await page.keyboard.press("Meta+A");
-  await page.keyboard.type("oops");
-  await expect(tab(page, "custom-boards.json")).toHaveClass(/has-error/);
-  await expect(page.locator(".cm-lint-marker-error")).toBeVisible();
+  // Broken in another editor: its problems go to the output at line and
+  // column, the board list says so in one line and leaves its boards out,
+  // and there's no banner.
+  await writeFile("oops");
+  await expect(output(page)).toContainText("custom-boards.json:1:1: error: Expected value.");
   await expect(page.locator(".banner")).toHaveCount(0);
-  // The editor closes brackets and quotes itself: this gives {"Bad":1}.
-  await page.keyboard.press("Meta+A");
-  await page.keyboard.type('{"Bad":1');
-  await expect(page.locator(".cm-lint-marker-error")).toBeVisible();
-  // A task for the file's board fails with the same problems, marked.
+  await boardButton(page).click();
+  await expect(page.locator(".problem-note")).toContainText("custom-boards.json has problems");
+  await page.getByRole("combobox").fill("My UPduino");
+  await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  // A task stops with the same problems.
   await menu(page, "verify");
-  await expect(status(page)).toContainText("isn't a board ID");
-  await expect(tab(page, "custom-boards.json")).toHaveClass(/has-error/);
-  // Fixed: the markers go.
-  await page.locator(".cm-content").click();
-  await page.keyboard.press("Meta+A");
-  // Typing a bracket over a selection would wrap it: delete it first.
-  await page.keyboard.press("Backspace");
-  await page.keyboard.type("{");
-  await expect(tab(page, "custom-boards.json")).not.toHaveClass(/has-error/);
-  await expect(page.locator(".cm-lint-marker-error")).toHaveCount(0);
+  await expect(output(page)).toContainText("custom-boards.json:1:1: error: Expected value.");
+  await expect(status(page)).not.toContainText("Build succeeded");
+
+  // Fixed: said once, and the boards are back.
+  await writeFile(JSON.stringify(myBoards));
+  await expect(output(page)).toContainText("custom-boards.json has no problems now.");
+  await boardButton(page).click();
+  await expect(page.locator(".problem-note")).toHaveCount(0);
+  await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(1);
+  await page.keyboard.press("Escape");
+
+  // Deleted: its boards go.
+  await writeFile(null);
+  await boardButton(page).click();
+  await page.getByRole("combobox").fill("My UPduino");
+  await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(0);
 });
 
 test("Board Info shows the board's FPGA and the boards with the same FPGA", async ({ page }) => {

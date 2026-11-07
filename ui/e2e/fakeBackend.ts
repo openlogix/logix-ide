@@ -24,6 +24,7 @@ export * from "../src/lib/backend";
 // Real engine data and output (see e2e/fixtures/README.md).
 import catalog from "./fixtures/catalog.json";
 import { configurationOf, resolve } from "../src/lib/variants";
+import { boardsProblemLines } from "../src/lib/boards";
 import verifyOutput from "./fixtures/verify.txt?raw";
 import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
 import testOutput from "./fixtures/test.txt?raw";
@@ -35,7 +36,7 @@ const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false })
 
 /**
  * The project's own boards as the fake engine reads them from the text of
- * custom-boards.json: enough of Logix Engine's rules to test the UI (valid
+ * custom-boards.json (on the fake disk, `fake.customBoardsOnDisk`): enough of Logix Engine's rules to test the UI (valid
  * JSON, an object, board IDs, an FPGA, variants with a selector), with each problem at the line of the board's key (line 1 for
  * invalid JSON), and the FPGA's family taken from its ID.
  */
@@ -206,12 +207,15 @@ const fake = {
   outputMenu: 0,
   /** The boards chosen most recently, newest first (`setLastBoard`). */
   recentBoards: [] as string[],
-  /** More files for the projects `openProjectAt` opens, such as custom-boards.json. */
-  projectFiles: [] as ProjectFile[],
-  /** The custom boards of the last task run (`runTask`). */
-  taskCustomBoards: null as string | null,
-  /** The custom boards of the last connected-devices scan. */
-  scannedCustomBoards: null as string | null,
+  /**
+   * The custom-boards.json files on the fake disk, by project folder: the
+   * file the user edits outside Logix (change it to simulate an edit).
+   */
+  customBoardsOnDisk: {} as Record<string, string>,
+  /** The folder whose custom-boards.json the last task run used (`runTask`). */
+  taskBoardsFolder: null as string | null,
+  /** The folder whose custom-boards.json the last connected-devices scan used. */
+  scannedBoardsFolder: null as string | null,
   /** The variant of the last task run (`runTask`). */
   taskVariant: null as Real.Variant | null,
   /** The board and variant last saved (`saveProject`, Save As). */
@@ -220,6 +224,11 @@ const fake = {
   finishSetup: () => handlers.finishSetup?.(),
 };
 (window as unknown as { __fake: typeof fake }).__fake = fake;
+
+/** The text of the custom-boards.json in `folder` on the fake disk (null without it). */
+function boardsOnDisk(folder: string | null): string | null {
+  return folder === null ? null : (fake.customBoardsOnDisk[folder] ?? null);
+}
 
 /** A real Alhambra II, as Logix Engine lists it. */
 const alhambraDevice: Real.UsbDevice = {
@@ -367,14 +376,14 @@ export const backend: typeof Real.backend = {
   openBareMinimum: async (board) => bareDoc(board),
   openExample: async (board) => blinkyDoc(board),
 
-  runTask: async (task, target, _key, _sourceDir, _projectDir, files, board, variant, device, onEvent) => {
+  runTask: async (task, target, _key, sourceDir, _projectDir, files, board, variant, device, onEvent) => {
     fake.taskVariant = variant;
-    const customBoards = files.find((f) => f.name === "custom-boards.json")?.text ?? null;
-    fake.taskCustomBoards = customBoards;
-    // As the engine: a file with problems fails the task, at its lines.
-    const own = fakeProjectBoards(customBoards);
+    fake.taskBoardsFolder = sourceDir;
+    // As the IDE's backend: a file with problems stops the task, its
+    // problems in the console at line and column.
+    const own = fakeProjectBoards(boardsOnDisk(sourceDir));
     if (own.problem) {
-      onEvent({ kind: "line", line: `\x1b[31m${own.problem.message}\x1b[0m` });
+      for (const line of boardsProblemLines(own.problem)) onEvent({ kind: "line", line });
       return {
         ok: false, diagnostics: own.problem.diagnostics, testbenches: [], report: null,
         cancelled: false, graphSvg: null, seconds: 0.1, action: null, devices: [],
@@ -492,7 +501,7 @@ export const backend: typeof Real.backend = {
     const doc = bareDoc("upduino2");
     return {
       ...doc,
-      files: [...doc.files, ...fake.projectFiles],
+      files: doc.files,
       dir,
       name: dir.split("/").pop() ?? dir,
     };
@@ -543,11 +552,13 @@ export const backend: typeof Real.backend = {
   setDocumentState: async () => {},
   closeWindow: async () => {},
   logOutput: async () => {},
-  connectedDevices: async (customBoards) => {
-    fake.scannedCustomBoards = customBoards;
+  connectedDevices: async (folder) => {
+    fake.scannedBoardsFolder = folder;
     return fake.connected;
   },
-  projectBoards: async (customBoards) => fakeProjectBoards(customBoards),
+  projectBoards: async (folder) => fakeProjectBoards(boardsOnDisk(folder)),
+  // The text itself: it changes whenever the file does.
+  customBoardsStamp: async (folder) => boardsOnDisk(folder),
   showOutputMenu: async () => {
     fake.outputMenu += 1;
   },

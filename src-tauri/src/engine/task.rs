@@ -79,10 +79,10 @@ pub struct TaskInput<'a> {
     /// The board variant, as the engine's selector (e.g. `{"connection":
     /// "usb", "memory": "ram"}`); `None` for the board's default.
     pub board_variant: Option<&'a super::Variant>,
-    /// The project's custom boards file in the prepared folder, as
-    /// `custom_boards_file` with every engine call that deals with boards,
-    /// when the project has one. The engine reports its problems at line
-    /// and column, named `custom-boards.json` like the project's file.
+    /// The project's custom boards file (`custom-boards.json` in the
+    /// project folder, on disk), as `custom_boards_file` with every engine
+    /// call that deals with boards, when the project has one. Problems in
+    /// it stop the task before it runs (`boards_problem_outcome`).
     pub custom_boards_file: Option<&'a Path>,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,

@@ -14,6 +14,7 @@
     type Preferences,
     type MenuId,
     type MenuState,
+    type ProjectBoards,
     type ProjectDoc,
     type Task,
     type SetupEvent,
@@ -34,7 +35,7 @@
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
-  import { withProjectBoards } from "./lib/boards";
+  import { boardsProblemLines, withProjectBoards } from "./lib/boards";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
     choose as chooseVariant,
@@ -68,9 +69,7 @@
     isFileDirty,
     MAIN_FILE,
     mainFile,
-    customBoardsText,
     CUSTOM_BOARDS_FILE,
-    formatJson,
     markSaved,
     renameFile,
     projectModules,
@@ -373,7 +372,7 @@
     if (scanning || !ready || isBusy) return;
     scanning = true;
     try {
-      const found = await backend.connectedDevices(customBoards);
+      const found = await backend.connectedDevices(boardsFolder);
       if (JSON.stringify(found) !== JSON.stringify(connectedDevices)) connectedDevices = found;
     } catch {
       // Keep the last result; Tools > Connected Devices shows errors.
@@ -672,9 +671,8 @@
 
   /** The live checker stopped: its problems are no longer current. */
   function clearVerilogLiveProblems() {
-    const kept = new Map([...liveProblems].filter(([file]) => file === CUSTOM_BOARDS_FILE));
-    if (kept.size === liveProblems.size) return;
-    liveProblems = kept;
+    if (liveProblems.size === 0) return;
+    liveProblems = new Map();
     showProblems();
   }
 
@@ -719,22 +717,9 @@
     const file = activeFile;
     const f = findFile(p, file);
     if (!f) return;
-    // The project's boards file is JSON: formatted here, by the IDE.
-    if (file === CUSTOM_BOARDS_FILE) {
-      const formatted = formatJson(f.text);
-      if ("error" in formatted) {
-        status = { text: `Auto Format failed: ${formatted.error}`, kind: "error" };
-      } else if (formatted.text === f.text) {
-        status = { text: "No changes necessary for Auto Format.", kind: "ok" };
-      } else {
-        editor?.replaceText(file, formatted.text);
-        status = { text: "Auto Format finished.", kind: "ok" };
-      }
-      return;
-    }
     if (!isHdlSource(file)) {
       status = {
-        text: `Auto Format works on Verilog and SystemVerilog files (.v .sv .vh .svh) and ${CUSTOM_BOARDS_FILE}.`,
+        text: "Auto Format works on Verilog and SystemVerilog files (.v .sv .vh .svh).",
         kind: "error",
       };
       return;
@@ -909,7 +894,7 @@
   async function refreshDevices() {
     devicesBusy = true;
     try {
-      devices = await backend.scanDevices(customBoards);
+      devices = await backend.scanDevices(boardsFolder);
       devicesError = null;
     } catch (e) {
       devicesError = toUserError(e).message;
@@ -926,7 +911,7 @@
   /** After Upload couldn't find the board: say what is connected. */
   async function logConnectedDevices() {
     try {
-      log("", ...deviceSummaryLines(await backend.scanDevices(customBoards)));
+      log("", ...deviceSummaryLines(await backend.scanDevices(boardsFolder)));
     } catch {
       // Only a hint; the upload error is already shown.
     }
@@ -1002,6 +987,7 @@
     log(
       `${VERB[task]} ${p.name}${which} for ${boardName(board)}${summary ? ` (${summary})` : ""}…`,
     );
+    if (boardInfo?.custom) log(`The board is from this project's ${CUSTOM_BOARDS_FILE}.`);
     try {
       const outcome = await backend.runTask(
         task,
@@ -1080,45 +1066,79 @@
   const dirty = $derived(project !== null && isDirty(project));
 
   /**
-   * The text of the project's custom-boards.json (unsaved edits included),
-   * sent as it is with every engine call that deals with boards, errors and
-   * all: Logix Engine reports its problems at line and column. Null when
-   * the project has none.
+   * The folder whose custom-boards.json holds the project's own boards:
+   * the project's (or, for a new project, the example it starts from).
+   * The file is edited outside Logix; its path goes with every engine call
+   * that deals with boards, and Logix Engine reads it from disk.
    */
-  const customBoards = $derived(project ? customBoardsText(project) : null);
+  const boardsFolder = $derived(project ? copySource(project) : null);
+  /** custom-boards.json as last seen on disk: its folder and stamp (null without the file). */
+  let boardsSeen = $state<{ folder: string | null; stamp: string | null } | null>(null);
+  /** The problems Logix Engine found in custom-boards.json (null if none). */
+  let boardsProblem = $state<ProjectBoards["problem"]>(null);
 
-  /** Shows the custom boards file's problems as its markers, or clears them. */
-  function markCustomBoards(diagnostics: Diagnostic[]) {
-    showLiveProblems(CUSTOM_BOARDS_FILE, diagnostics);
-  }
-
-  // The project's own boards, as Logix Engine reads them, for the board
-  // list; a file with problems is shown as markers in it, like errors in
-  // the design, and its boards are left out until it's fixed.
-  $effect(() => {
-    const text = customBoards;
-    if (!ready) return;
-    if (text === null) {
-      projectBoards = [];
-      untrack(() => markCustomBoards([]));
+  /** Notices custom-boards.json being added, changed or removed on disk. */
+  async function checkCustomBoards() {
+    const folder = boardsFolder;
+    let stamp: string | null;
+    try {
+      stamp = await backend.customBoardsStamp(folder);
+    } catch {
       return;
     }
-    // Wait for typing to pause.
-    const timer = setTimeout(() => {
-      backend
-        .projectBoards(text)
-        .then((found) => {
-          if (customBoards !== text) return;
-          projectBoards = found.boards;
-          markCustomBoards(found.problem?.diagnostics ?? []);
-        })
-        .catch((e) => {
-          if (customBoards !== text) return;
-          projectBoards = [];
-          log(`Couldn't read the boards in ${CUSTOM_BOARDS_FILE}: ${toUserError(e).message}`);
-        });
-    }, 400);
-    return () => clearTimeout(timer);
+    if (folder !== boardsFolder) return;
+    const seen = untrack(() => boardsSeen);
+    if (seen && seen.folder === folder && seen.stamp === stamp) return;
+    boardsSeen = { folder, stamp };
+  }
+
+  // Edited outside Logix: check the file every second while the window
+  // has the focus, and when it gets it back (as for connected devices).
+  $effect(() => {
+    void boardsFolder; // At once for another project.
+    if (!ready) return;
+    untrack(checkCustomBoards);
+    const timer = setInterval(() => {
+      if (document.hasFocus()) checkCustomBoards();
+    }, 1000);
+    window.addEventListener("focus", checkCustomBoards);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", checkCustomBoards);
+    };
+  });
+
+  // The project's own boards, as Logix Engine reads them, for the board
+  // list. A file with problems lists them in the console (at line and
+  // column, once per change) and gets a line in the board list; its boards
+  // are left out until it's fixed.
+  $effect(() => {
+    const seen = boardsSeen;
+    if (!ready || !seen) return;
+    if (seen.stamp === null) {
+      projectBoards = [];
+      boardsProblem = null;
+      return;
+    }
+    backend
+      .projectBoards(seen.folder)
+      .then((found) => {
+        if (boardsSeen !== seen) return;
+        const before = untrack(() => boardsProblem);
+        projectBoards = found.boards;
+        boardsProblem = found.problem;
+        if (found.problem && JSON.stringify(found.problem) !== JSON.stringify(before)) {
+          log(`${CUSTOM_BOARDS_FILE} has problems; its boards are left out until they're fixed:`);
+          log(...boardsProblemLines(found.problem));
+        } else if (!found.problem && before) {
+          log(`${CUSTOM_BOARDS_FILE} has no problems now.`);
+        }
+      })
+      .catch((e) => {
+        if (boardsSeen !== seen) return;
+        projectBoards = [];
+        log(`Couldn't read the boards in ${CUSTOM_BOARDS_FILE}: ${toUserError(e).message}`);
+      });
   });
   /**
    * No project open (first start, or after Close Project): the editor area
@@ -1154,8 +1174,7 @@
    */
   const menuState = $derived<MenuState>({
     project: project !== null,
-    formattable:
-      project !== null && (isHdlSource(activeFile) || activeFile === CUSTOM_BOARDS_FILE),
+    formattable: project !== null && isHdlSource(activeFile),
     comment:
       project !== null && (isHdlSource(activeFile) || pinCommentToken(activeFile) !== null),
     definition: project !== null && lsp !== null && isHdlSource(activeFile),
@@ -1880,6 +1899,9 @@
       recent={recentBoards}
       value={pendingBoard ?? currentBoard}
       disabled={boards.length === 0}
+      problemNote={boardsProblem
+        ? `This project's ${CUSTOM_BOARDS_FILE} has problems (see the output). Its boards are left out until they're fixed.`
+        : null}
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}
     />
@@ -2025,8 +2047,6 @@
                     class="tab-icon"><Icon name="test" size={12} /></span
                   >{:else if fileRole(f.name, mainFile(project), pinExtension) === "pins"}<span
                     class="tab-icon"><Icon name="chip" size={12} /></span
-                  >{:else if fileRole(f.name, mainFile(project), pinExtension) === "boards"}<span
-                    class="tab-icon"><Icon name="board" size={12} /></span
                   >{/if}{f.name}{#if fileProblems.get(f.name) === "error"}<span
                     class="problem-icon error"><Icon name="error" size={12} /></span
                   >{:else if fileProblems.get(f.name) === "warning"}<span

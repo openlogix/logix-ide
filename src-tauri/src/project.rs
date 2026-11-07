@@ -9,9 +9,10 @@
 //! - `logix-ide.toml`: the project's settings, such as its board and the
 //!   board's variant (TOML, so it can hold comments; Logix keeps them when
 //!   it updates a value);
-//! - optionally `custom-boards.json`: the project's own boards, a JSON list
-//!   in Logix Engine's custom board format, shown as a tab like the
-//!   sources.
+//! - optionally `custom-boards.json`: the project's own boards, in Logix
+//!   Engine's custom boards format, edited outside Logix (no tab); Logix
+//!   passes its path to the engine, which reads it and reports its
+//!   problems at line and column.
 //!
 //! The UI holds the files in memory. Creating, renaming and deleting files
 //! take effect on save, like text edits.
@@ -27,8 +28,31 @@ pub const MAIN_FILE: &str = "main.v";
 /// Accepted main file names, in order of preference.
 pub const MAIN_FILES: &[&str] = &["main.v", "main.sv"];
 pub const SETTINGS_FILE: &str = "logix-ide.toml";
-/// The project's own boards: a JSON list of Logix Engine custom boards.
+/// The project's own boards: a Logix Engine custom boards file (a JSON map
+/// from board ID to definition), edited outside Logix.
 pub const CUSTOM_BOARDS_FILE: &str = "custom-boards.json";
+
+/// The custom boards file of the project in `folder` (or of the example a
+/// new project starts from), when there is one: the path Logix passes to
+/// the engine as `custom_boards_file`.
+pub fn custom_boards_file(folder: &Path) -> Option<PathBuf> {
+    let file = folder.join(CUSTOM_BOARDS_FILE);
+    file.is_file().then_some(file)
+}
+
+/// A value that changes whenever the custom boards file in `folder` is
+/// added, changed or removed on disk (its size and modification time),
+/// polled by the UI to notice edits made outside Logix. None without it.
+pub fn custom_boards_stamp(folder: &Path) -> Option<String> {
+    let meta = std::fs::metadata(custom_boards_file(folder)?).ok()?;
+    let modified = meta
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    Some(format!("{}:{modified}", meta.len()))
+}
 
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
 /// and headers, and the pin constraint formats of the supported boards.
@@ -92,18 +116,17 @@ pub fn project_name(dir: &Path) -> String {
         .unwrap_or_else(|| dir.display().to_string())
 }
 
-/// Whether a file with this name is shown as an editor tab: sources, pin
-/// files and the project's custom boards file.
+/// Whether a file with this name is shown as an editor tab: sources and
+/// pin files (not custom-boards.json, which is edited outside Logix).
 pub fn is_editable(name: &str) -> bool {
-    name == CUSTOM_BOARDS_FILE
-        || Path::new(name)
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| {
-                EDITABLE_EXTENSIONS
-                    .iter()
-                    .any(|x| x.eq_ignore_ascii_case(e))
-            })
+    Path::new(name)
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| {
+            EDITABLE_EXTENSIONS
+                .iter()
+                .any(|x| x.eq_ignore_ascii_case(e))
+        })
 }
 
 /// Whether a file is Verilog or SystemVerilog source (what Auto Format takes).
@@ -147,7 +170,7 @@ pub fn check_new_file_name(name: &str, existing: &[String]) -> Result<(), String
     }
     if !is_editable(name) {
         return Err(format!(
-            "Use one of these extensions: {}, or name it {CUSTOM_BOARDS_FILE} for your own boards.",
+            "Use one of these extensions: {}.",
             EDITABLE_EXTENSIONS
                 .iter()
                 .map(|e| format!(".{e}"))
@@ -1104,13 +1127,12 @@ mod tests {
     }
 
     #[test]
-    fn the_custom_boards_file_is_a_tab() {
-        assert!(is_editable("custom-boards.json"));
-        assert!(!is_editable("other.json"));
-        assert!(check_new_file_name("custom-boards.json", &[]).is_ok());
-        let e = check_new_file_name("boards.json", &[]).unwrap_err();
-        assert!(e.contains("custom-boards.json"), "{e}");
+    fn the_custom_boards_file_is_not_a_tab() {
+        assert!(!is_editable("custom-boards.json"));
+        assert!(check_new_file_name("custom-boards.json", &[]).is_err());
         let tmp = tempfile::tempdir().unwrap();
+        assert_eq!(custom_boards_file(tmp.path()), None);
+        assert_eq!(custom_boards_stamp(tmp.path()), None);
         std::fs::write(tmp.path().join("main.v"), "m").unwrap();
         std::fs::write(tmp.path().join("custom-boards.json"), "[]").unwrap();
         std::fs::write(tmp.path().join("data.json"), "{}").unwrap();
@@ -1120,6 +1142,29 @@ mod tests {
             .into_iter()
             .map(|f| f.name)
             .collect();
-        assert_eq!(names, ["main.v", "custom-boards.json"]);
+        assert_eq!(names, ["main.v"]);
+        let file = tmp.path().join("custom-boards.json");
+        assert_eq!(custom_boards_file(tmp.path()), Some(file.clone()));
+        // Edits on disk change the stamp; deleting the file removes it.
+        let before = custom_boards_stamp(tmp.path()).unwrap();
+        std::fs::write(&file, "{ }").unwrap();
+        assert_ne!(custom_boards_stamp(tmp.path()).unwrap(), before);
+        std::fs::remove_file(&file).unwrap();
+        assert_eq!(custom_boards_stamp(tmp.path()), None);
+    }
+
+    #[test]
+    fn save_as_keeps_the_custom_boards_file() {
+        let tmp = tempfile::tempdir().unwrap();
+        let (from, to) = (tmp.path().join("a"), tmp.path().join("b"));
+        std::fs::create_dir(&from).unwrap();
+        std::fs::write(from.join("main.v"), "m").unwrap();
+        std::fs::write(from.join("custom-boards.json"), "{}").unwrap();
+        let files = load(&from).unwrap().files;
+        save_as(&to, Some(&from), &files, &[], None, NO_VARIANT, |_| Ok(())).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(to.join("custom-boards.json")).unwrap(),
+            "{}"
+        );
     }
 }

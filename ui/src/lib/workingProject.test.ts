@@ -15,8 +15,6 @@ import {
   mainFile,
   markSaved,
   renameFile,
-  customBoardsText,
-  formatJson,
   starterText,
 } from "./workingProject";
 
@@ -33,23 +31,9 @@ const savedDoc: ProjectDoc = {
 };
 
 describe("workingProject", () => {
-  it("reads the project's custom-boards.json", () => {
-    const withFile = (text: string | null) =>
-      customBoardsText(
-        fromDoc({
-          ...savedDoc,
-          files: text === null ? savedDoc.files : [...savedDoc.files, { name: "custom-boards.json", text }],
-        }),
-      );
-    // Sent as it is, errors and all: Logix Engine reports them.
-    expect(withFile(null)).toBeNull();
-    expect(withFile("{ oops")).toBe("{ oops");
-    expect(fileRole("custom-boards.json", "main.v")).toBe("boards");
-    expect(starterText("custom-boards.json")).toBe("{\n}\n");
-    expect(formatJson('{"a":{"b":[1,2]}}')).toEqual({
-      text: '{\n  "a": {\n    "b": [\n      1,\n      2\n    ]\n  }\n}\n',
-    });
-    expect(formatJson("{")).toHaveProperty("error");
+  it("has no special case for custom-boards.json, which isn't a tab", () => {
+    expect(fileRole("custom-boards.json", "main.v")).toBe("design");
+    expect(starterText("custom-boards.json")).toBe("");
   });
 
   it("starts clean", () => {

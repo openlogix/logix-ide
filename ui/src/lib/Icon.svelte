@@ -75,7 +75,8 @@
     <line x1="17" y1="16" x2="21" y2="16" />
   {:else if name === "board"}
     <!-- A circuit board: a chip on a board with mounting holes, for
-         custom-boards.json (unlike the pin file's chip) -->
+         the project's own boards in the board picker (unlike the pin
+         file's chip) -->
     <rect x="2.5" y="5" width="19" height="14" rx="2" />
     <rect x="9" y="9" width="6" height="6" rx="0.5" />
     <circle cx="5.5" cy="8" r="0.6" fill="currentColor" />

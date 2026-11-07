@@ -2,7 +2,7 @@
 //
 // Two kinds, kept apart:
 // - live problems: what a check that runs while typing found (Verible for
-//   Verilog files, Logix Engine for custom-boards.json). Always current:
+//   Verilog files). Always current:
 //   each check replaces its file's list.
 // - command problems: what the last command found (Verify, Upload, Run
 //   Tests, Simulate, Show Diagram, Auto Format). They stay until the file

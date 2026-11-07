@@ -126,32 +126,13 @@ export type FileRole =
   | "include"
   | "testbench"
   | "pins"
-  | "otherPins"
-  | "boards";
+  | "otherPins";
 
-/** The project's own boards: board ID to definition, as Logix Engine takes them. */
+/**
+ * The project's own boards: a Logix Engine custom boards file (board ID to
+ * definition) in the project folder, edited outside Logix (not a tab).
+ */
 export const CUSTOM_BOARDS_FILE = "custom-boards.json";
-
-/**
- * JSON text pretty-printed for Auto Format: two-space indents and a final
- * newline. Text that isn't JSON gives the reason instead.
- */
-export function formatJson(text: string): { text: string } | { error: string } {
-  try {
-    return { text: `${JSON.stringify(JSON.parse(text), null, 2)}\n` };
-  } catch (e) {
-    const why = (e as Error).message.replace(/[.\s]*$/, "");
-    return { error: `${CUSTOM_BOARDS_FILE} isn't valid JSON: ${why}.` };
-  }
-}
-
-/**
- * The text of the project's custom-boards.json (unsaved edits included), as
- * Logix Engine gets it, errors and all, or null when the project has none.
- */
-export function customBoardsText(p: WorkingProject): string | null {
-  return findFile(p, CUSTOM_BOARDS_FILE)?.text ?? null;
-}
 
 /** Pin constraint file extensions (as `CONSTRAINT_EXTENSIONS` in `build_dir.rs`). */
 const PIN_FILE = /\.(pcf|lpf|cst|xdc|pdc|ccf)$/i;
@@ -168,7 +149,6 @@ export function fileRole(
   pinExtension: string | null = null,
 ): FileRole {
   if (name === main) return "main";
-  if (name === CUSTOM_BOARDS_FILE) return "boards";
   if (isTestbench(name)) return "testbench";
   if (PIN_FILE.test(name)) {
     const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
@@ -191,7 +171,6 @@ export function roleTooltip(role: FileRole, pinExtension: string | null = null):
     include: "Include file: text other Verilog files include",
     testbench: "Testbench: check your design with Run Tests or Simulate",
     pins: "Pin file: connects your design's signals to the board's pins",
-    boards: "Your own boards: board definitions this project can use, listed in the board list",
     otherPins: `Pin file for another kind of board: not used with this board${
       pinExtension ? `, whose pin file is a .${pinExtension} file` : ""
     }`,
@@ -211,7 +190,6 @@ export function testbenches(p: WorkingProject): string[] {
  * empty module for other Verilog files, and nothing otherwise.
  */
 export function starterText(name: string): string {
-  if (name === CUSTOM_BOARDS_FILE) return "{\n}\n";
   const match = /^([A-Za-z_][A-Za-z0-9_$]*)\.(s?v)$/i.exec(name);
   if (!match) return "";
   const module = match[1];

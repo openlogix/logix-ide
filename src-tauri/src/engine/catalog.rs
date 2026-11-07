@@ -149,7 +149,7 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
 
 /// Why the project's `custom-boards.json` can't be used: Logix Engine's
 /// message, and a diagnostic for each problem, at line and column in
-/// `custom-boards.json`, for the editor's markers.
+/// `custom-boards.json`, for the console.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BoardsProblem {
@@ -169,13 +169,39 @@ impl BoardsProblem {
             }
         }
         BoardsProblem {
-            // The scratch copy's path reads as the project's file.
+            // The file's absolute path reads as the project's file name,
+            // like problems in its other files.
             message: error["message"]
                 .as_str()
                 .unwrap_or("Logix Engine can't use the custom boards.")
                 .replace(given.as_ref(), crate::project::CUSTOM_BOARDS_FILE),
             diagnostics,
         }
+    }
+
+    /// The problems as console lines, in red: one per problem, at line and
+    /// column (`custom-boards.json:4:3: error: Trailing comma.`), like
+    /// build errors, so the user can find them in their own editor; the
+    /// engine's message when it gives no locations.
+    pub fn console_lines(&self) -> Vec<String> {
+        let red = |text: String| format!("\x1b[31m{text}\x1b[0m");
+        if self.diagnostics.is_empty() {
+            return vec![red(self.message.clone())];
+        }
+        self.diagnostics
+            .iter()
+            .map(|d| {
+                let mut at = d.file.clone().unwrap_or_default();
+                for n in [d.line, d.column].into_iter().flatten() {
+                    at.push_str(&format!(":{n}"));
+                }
+                let severity = match d.severity {
+                    crate::outcome::Severity::Error => "error",
+                    crate::outcome::Severity::Warning => "warning",
+                };
+                red(format!("{at}: {severity}: {}", d.message))
+            })
+            .collect()
     }
 }
 
@@ -344,12 +370,12 @@ mod tests {
 
     #[test]
     fn the_engines_problems_name_the_projects_file() {
-        let file = Path::new("/Users/you/.logix/boards/1a2b/custom-boards.json");
+        let file = Path::new("/Users/you/blinky/custom-boards.json");
         let error = json!({
             "category": "request",
-            "message": "The custom boards file has problems. /Users/you/.logix/boards/1a2b/custom-boards.json:4:3: Trailing comma.",
+            "message": "The custom boards file has problems. /Users/you/blinky/custom-boards.json:4:3: Trailing comma.",
             "diagnostics": [
-                {"file": "/Users/you/.logix/boards/1a2b/custom-boards.json", "line": 4, "column": 3,
+                {"file": "/Users/you/blinky/custom-boards.json", "line": 4, "column": 3,
                  "severity": "error", "text": "Trailing comma."},
             ]
         });
@@ -369,6 +395,15 @@ mod tests {
                 "Trailing comma."
             )
         );
+        assert_eq!(
+            p.console_lines(),
+            ["\x1b[31mcustom-boards.json:4:3: error: Trailing comma.\x1b[0m"]
+        );
+        let no_place = BoardsProblem {
+            message: "Can't read it.".into(),
+            diagnostics: Vec::new(),
+        };
+        assert_eq!(no_place.console_lines(), ["\x1b[31mCan't read it.\x1b[0m"]);
     }
 
     #[test]

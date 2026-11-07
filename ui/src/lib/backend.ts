@@ -111,9 +111,10 @@ export interface Configuration {
 }
 
 /**
- * The project's own boards as Logix Engine reads them from the text of its
- * custom-boards.json, or the problems it found there: its message, and a
- * diagnostic for each problem at line and column in custom-boards.json.
+ * The project's own boards as Logix Engine reads them from its
+ * custom-boards.json (the file on disk), or the problems it found there:
+ * its message, and a diagnostic for each problem at line and column in
+ * custom-boards.json.
  */
 export interface ProjectBoards {
   boards: Board[];
@@ -327,7 +328,7 @@ export interface ExampleList {
 export interface MenuState {
   /** A project is open (not the start screen). */
   project: boolean;
-  /** The open tab can be formatted (Auto Format): Verilog, or custom-boards.json. */
+  /** The open tab can be formatted (Auto Format): Verilog. */
   formattable: boolean;
   /** The open tab has line comments (Verilog or a pin file): Comment/Uncomment. */
   comment: boolean;
@@ -600,25 +601,34 @@ export const backend = {
 
   /**
    * The connected USB devices, matched to the catalog's boards and those of
-   * `customBoards`, the text of custom-boards.json (null if none).
+   * the custom-boards.json in `folder` (the project's folder, `copySource`;
+   * null for none).
    */
-  scanDevices: (customBoards: string | null): Promise<Devices> =>
-    invoke<Devices>("scan_devices", { customBoards }),
+  scanDevices: (folder: string | null): Promise<Devices> =>
+    invoke<Devices>("scan_devices", { folder }),
 
   /**
-   * The connected USB devices that fit boards (the catalog's and
-   * `customBoards`), with their boards (silent).
+   * The connected USB devices that fit boards (the catalog's and those of
+   * the custom-boards.json in `folder`), with their boards (silent).
    */
-  connectedDevices: (customBoards: string | null): Promise<ConnectedDevice[]> =>
-    invoke<ConnectedDevice[]>("connected_devices", { customBoards }),
+  connectedDevices: (folder: string | null): Promise<ConnectedDevice[]> =>
+    invoke<ConnectedDevice[]>("connected_devices", { folder }),
 
   /**
-   * The project's own boards, as Logix Engine reads them from the text of
-   * custom-boards.json (sent as it is, errors and all; null if none), or the
-   * problems it found in it.
+   * The project's own boards, as Logix Engine reads them from the
+   * custom-boards.json in `folder` (the file on disk, edited outside
+   * Logix; none without it), or the problems it found in it.
    */
-  projectBoards: (customBoards: string | null): Promise<ProjectBoards> =>
-    invoke<ProjectBoards>("project_boards", { customBoards }),
+  projectBoards: (folder: string | null): Promise<ProjectBoards> =>
+    invoke<ProjectBoards>("project_boards", { folder }),
+
+  /**
+   * A value that changes whenever the custom-boards.json in `folder` is
+   * added, changed or removed on disk (null without it), polled to notice
+   * edits made outside Logix.
+   */
+  customBoardsStamp: (folder: string | null): Promise<string | null> =>
+    invoke<string | null>("custom_boards_stamp", { folder }),
 
   /** Stops the running build, upload, test or simulation. */
   cancelTask: (): Promise<boolean> => invoke<boolean>("cancel_task"),

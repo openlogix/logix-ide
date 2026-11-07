@@ -9,7 +9,6 @@
   import { EditorView } from "@codemirror/view";
   import { indentUnit, StreamLanguage } from "@codemirror/language";
   import { verilog } from "@codemirror/legacy-modes/mode/verilog";
-  import { json } from "@codemirror/legacy-modes/mode/javascript";
   import { oneDark } from "@codemirror/theme-one-dark";
   import {
     lintGutter,
@@ -86,8 +85,6 @@
     return null;
   }
   const verilogLanguage = StreamLanguage.define(verilog);
-  /** JSON highlighting, for the project's custom-boards.json. */
-  const jsonLanguage = StreamLanguage.define(json);
 
   function currentTheme() {
     return dark ? oneDark : [];
@@ -103,11 +100,7 @@
       extensions: [
         basicSetup,
         lintGutter(),
-        isVerilog(file)
-          ? verilogLanguage
-          : /\.json$/i.test(file)
-            ? jsonLanguage
-            : (pinLanguage(file) ?? []),
+        isVerilog(file) ? verilogLanguage : (pinLanguage(file) ?? []),
         indentUnit.of("  "),
         themeSlot.of(currentTheme()),
         lspSlot.of(lspExtension(file)),
