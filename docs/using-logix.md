@@ -87,9 +87,8 @@ too.
 
 Choosing a board opens **Project options** for it. The first choice
 changes the board of your current project, files unchanged; a note says what that means, such as when the new board has
-another FPGA and needs another pin file. Or open one of your recent
-projects for that board, or start a new project from Bare Minimum or one
-of its examples. **Cancel** keeps the board you had. Choosing the current board
+another FPGA and needs another pin file. Or start a new project from
+**bare-minimum** or one of its examples. **Cancel** keeps the board you had. Choosing the current board
 again is a quick way to get to its examples.
 
 ![Project options after choosing the iCEBreaker](images/project-options.png)
@@ -140,7 +139,7 @@ The boards are grouped by FPGA type in the same way.
 
 ![The Examples window: boards on the left, the selected board's examples on the right](images/examples.png)
 
-Every board's list starts with **Bare Minimum**, as in the Arduino IDE: the
+Every board's list starts with **bare-minimum**, like the Arduino IDE's BareMinimum: the
 board's pins (from its basic example) and a design that does nothing yet.
 Its outputs are set to 0 so that it builds; replace that with your design.
 

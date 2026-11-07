@@ -64,7 +64,7 @@ More in [Using Logix](using-logix.md#projects).
 ## Start from an example
 
 **File > New Project > From Example…** lists the examples for each board, with a search box.
-Every board's list starts with **Bare Minimum**: the board's pins and a
+Every board's list starts with **bare-minimum**: the board's pins and a
 design that does nothing yet, to start from scratch. Choosing a board never
 changes your files.
 

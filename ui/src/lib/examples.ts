@@ -2,9 +2,10 @@ import type { Board, Example } from "./backend";
 
 /**
  * Every board's first entry, as Arduino's File > Examples > 01.Basics >
- * Bare Minimum: the board's pins and a design that does nothing yet.
+ * BareMinimum: the board's pins and a design that does nothing yet. Named
+ * like the examples (the user's decision, 2026-11-07; was "Bare Minimum").
  */
-export const BARE_MINIMUM = "Bare Minimum";
+export const BARE_MINIMUM = "bare-minimum";
 
 /** An entry in the Examples dialog: one of the examples, or Bare Minimum. */
 export interface ExampleEntry extends Example {
@@ -77,7 +78,7 @@ export function groupExamples(
   const groups: BoardGroup[] = [];
   for (const board of allBoards) {
     const list = byBoard.get(board.id) ?? [];
-    const all = [bareMinimum(board.id, list), ...list];
+    const all: ExampleEntry[] = [bareMinimum(board.id, list), ...list];
     const boardMatches =
       !q ||
       board.description.toLowerCase().includes(q) ||
@@ -86,7 +87,10 @@ export function groupExamples(
       ? all
       : all.filter(
           (e) =>
-            [e.name, e.summary, ...e.notes].some((t) => t.toLowerCase().includes(q)),
+            // "bare minimum" finds bare-minimum too.
+            [e.name, e.bare ? "bare minimum" : "", e.summary, ...e.notes].some((t) =>
+              t.toLowerCase().includes(q),
+            ),
         );
     if (shown.length > 0)
       groups.push({ board, examples: shown, count: list.length });

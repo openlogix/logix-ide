@@ -79,7 +79,7 @@
   } from "./lib/workingProject";
   import { appendCapped, formatBytes, progressFraction } from "./lib/format";
   import { addLinks, parseAnsi, type Segment } from "./lib/ansi";
-  import { examplesSummary, type ExampleEntry } from "./lib/examples";
+  import { BARE_MINIMUM, examplesSummary, type ExampleEntry } from "./lib/examples";
   import {
     byFile,
     firstLocated,
@@ -519,7 +519,7 @@
         loadDoc(doc);
         finish(
           ex.bare
-            ? `Opened Bare Minimum for ${boardName(ex.board)}.`
+            ? `Opened ${BARE_MINIMUM} for ${boardName(ex.board)}.`
             : `Opened example ${ex.board}/${ex.name}.`,
         );
       } catch (e) {

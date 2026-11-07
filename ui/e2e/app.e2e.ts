@@ -508,7 +508,7 @@ test("shows if the board is connected, and lists recently used boards first", as
   await expect(page.getByRole("option").first()).toHaveText(/iCEBreaker/);
 });
 
-test("opens a board's Bare Minimum from the examples", async ({ page }) => {
+test("opens a board's bare-minimum from the examples", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
   await page.evaluate(() =>
@@ -530,16 +530,16 @@ test("opens a board's Bare Minimum from the examples", async ({ page }) => {
   await expect(boards.getByRole("button", { name: /^Alchitry Au \(/ })).toHaveCount(0);
   await boards.getByRole("button", { name: /Xilinx/ }).click();
   await expect(boards.getByRole("button", { name: /^Alchitry Au \(/ })).toBeVisible();
-  await dialog.getByRole("button", { name: /Bare Minimum/ }).click();
+  await dialog.getByRole("button", { name: /^bare-minimum/ }).click();
   await dialog.getByRole("button", { name: "New Project" }).click();
   await expect(dialog).toBeHidden();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
   await expect(page.locator(".cm-content")).toContainText("assign led = 0;");
-  await expect(status(page)).toHaveText("Opened Bare Minimum for Alhambra II.");
+  await expect(status(page)).toHaveText("Opened bare-minimum for Alhambra II.");
   // Like every command, its output ends with the result, then "Ready.".
   await expect(output(page)).toContainText(
-    /Opened Bare Minimum for Alhambra II\.\s*Ready\./,
+    /Opened bare-minimum for Alhambra II\.\s*Ready\./,
   );
   await expect(page.locator(".spinner")).toHaveCount(0);
 });
@@ -903,7 +903,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(options.getByRole("heading")).toHaveText("Project options for custom board “My UPduino”");
   await expect(options.locator(".current .note .point").first()).toHaveText(/^Board change, same FPGA/);
   await expect(options.locator(".custom-note")).toContainText("Custom boards have no examples");
-  await expect(options.getByRole("button", { name: /^Bare Minimum/ })).toHaveCount(0);
+  await expect(options.getByRole("button", { name: /^bare-minimum/ })).toHaveCount(0);
   await expect(options.getByRole("button", { name: /^blinky/ })).toHaveCount(0);
   // Not applied until chosen.
   await expect(boardButton(page)).toHaveText(/UPDuino v2/);
@@ -1013,7 +1013,7 @@ test("examples show their summary and notes, selected or not", async ({ page }) 
   const blinky = dialog.getByRole("button", { name: /^blinky/ });
   await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
   // Not selected: the note still shows.
-  await dialog.getByRole("button", { name: /^Bare Minimum/ }).click();
+  await dialog.getByRole("button", { name: /^bare-minimum/ }).click();
   await expect(blinky).not.toHaveClass(/selected/);
   await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
 });

@@ -47,13 +47,12 @@ describe("groupExamples", () => {
     expect(summary("alhambra")).toEqual(["alhambra-ii:BM,blinky,ledon"]);
   });
 
-  it("finds Bare Minimum by name", () => {
-    expect(summary("minimum")).toEqual([
-      "alhambra-ii:BM",
-      "icebreaker:BM",
-      "no-examples:BM",
-      "mystery:BM",
-    ]);
+  it("finds bare-minimum by name, with a hyphen or a space", () => {
+    const all = ["alhambra-ii:BM", "icebreaker:BM", "no-examples:BM", "mystery:BM"];
+    expect(summary("minimum")).toEqual(all);
+    expect(summary("bare-minimum")).toEqual(all);
+    expect(summary("Bare Minimum")).toEqual(all);
+    expect(BARE_MINIMUM).toBe("bare-minimum");
   });
 
   it("shows only matching examples otherwise", () => {
