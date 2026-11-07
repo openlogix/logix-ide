@@ -201,9 +201,7 @@ their ID, so it can have one board or several:
     "fpga_id": "ice40up5k-sg48",
     "variants": [
       {
-        "id": "usb-flash",
-        "connection": "usb",
-        "memory": "flash",
+        "selector": { "connection": "usb", "memory": "flash" },
         "programmer": "iceprog",
         "args": "-d d:${BUS}/${DEV} ${BITSTREAM}",
         "usb": { "vid": "0403", "pid": "6014" },

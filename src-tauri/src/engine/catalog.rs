@@ -87,11 +87,8 @@ pub struct DimensionValue {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
-    /// The engine's variant ID, e.g. "usb-ram", sent as `board_variant`.
-    /// The UI works with `when` only.
-    #[serde(skip)]
-    pub id: String,
-    /// The value of every dimension.
+    /// The value of every dimension: the engine's selector, e.g.
+    /// `{"connection": "usb", "memory": "ram"}`, sent as `board_variant`.
     pub when: Variant,
     /// Whether programming this way was tried on hardware.
     pub tested: bool,
@@ -100,24 +97,28 @@ pub struct Configuration {
     pub user_notes: Option<String>,
 }
 
-/// The engine's ID of the variant the IDE's choice picks: the first
-/// configuration with all the chosen dimension values ({} = the default).
-/// `None` when the board has no such configuration.
-pub fn variant_id(board: &Board, variant: &Variant) -> Option<String> {
+/// The engine's selector of the variant the IDE's choice picks: the first
+/// configuration with all the chosen dimension values ({} = the default),
+/// with every dimension's value. `None` when the board has no such
+/// configuration.
+pub fn variant_selector(board: &Board, variant: &Variant) -> Option<Variant> {
     board
         .configurations
         .iter()
         .find(|c| variant.iter().all(|(k, v)| c.when.get(k) == Some(v)))
-        .map(|c| c.id.clone())
+        .map(|c| c.when.clone())
 }
 
-/// The dimension values of a board's variant, by the engine's variant ID.
-pub fn variant_values(board: &Board, id: &str) -> Option<Variant> {
-    board
-        .configurations
-        .iter()
-        .find(|c| c.id == id)
-        .map(|c| c.when.clone())
+/// An engine selector, e.g. `{"connection": "usb", "memory": "ram"}`, as
+/// dimension values by dimension ID.
+pub fn selector(v: &serde_json::Value) -> Variant {
+    v.as_object()
+        .map(|o| {
+            o.iter()
+                .filter_map(|(k, x)| Some((k.clone(), x.as_str()?.to_string())))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// The engine's boards.
@@ -240,13 +241,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 .map(|list| {
                     list.iter()
                         .map(|c| Configuration {
-                            id: c["id"].as_str().unwrap_or_default().to_string(),
-                            when: ["connection", "memory"]
-                                .iter()
-                                .filter_map(|d| {
-                                    c[*d].as_str().map(|v| (d.to_string(), v.to_string()))
-                                })
-                                .collect(),
+                            when: selector(&c["selector"]),
                             tested: c["tested"].as_bool().unwrap_or(true),
                             user_notes: c["user_notes"].as_str().map(String::from),
                         })
@@ -315,8 +310,8 @@ mod tests {
                         {"id": "flash", "label": "Flash"},
                         {"id": "ram", "label": "RAM", "help": "Lost at power-off."}]}],
                     "variants": [
-                        {"id": "usb-flash", "connection": "usb", "memory": "flash", "programmer": "p", "args": "a", "usb": {}, "tested": true},
-                        {"id": "usb-ram", "connection": "usb", "memory": "ram", "programmer": "p", "args": "a", "usb": {}, "tested": false,
+                        {"selector": {"connection": "usb", "memory": "flash"}, "programmer": "p", "args": "a", "tested": true},
+                        {"selector": {"connection": "usb", "memory": "ram"}, "programmer": "p", "args": "a", "tested": false,
                          "user_notes": "Try it."}]}
             },
             "fpgas": {"f": {"architecture": "ecp5"}}
@@ -329,13 +324,21 @@ mod tests {
         assert_eq!(b.configurations.len(), 2);
         assert_eq!(b.configurations[1].when["memory"], "ram");
         assert!(!b.configurations[1].tested);
-        assert_eq!(b.configurations[1].id, "usb-ram");
-        // The IDE's choice, possibly partial, picks the engine's variant ID.
-        let pick = |v: serde_json::Value| variant_id(b, &serde_json::from_value(v).unwrap());
-        assert_eq!(pick(json!({})).as_deref(), Some("usb-flash"));
-        assert_eq!(pick(json!({"memory": "ram"})).as_deref(), Some("usb-ram"));
+        assert_eq!(b.configurations[1].when["connection"], "usb");
+        // The IDE's choice, possibly partial, picks the engine's full selector.
+        let pick = |v: serde_json::Value| {
+            variant_selector(b, &serde_json::from_value(v).unwrap())
+                .map(|s| serde_json::to_value(s).unwrap())
+        };
+        assert_eq!(
+            pick(json!({})),
+            Some(json!({"connection": "usb", "memory": "flash"}))
+        );
+        assert_eq!(
+            pick(json!({"memory": "ram"})),
+            Some(json!({"connection": "usb", "memory": "ram"}))
+        );
         assert_eq!(pick(json!({"memory": "eeprom"})), None);
-        assert_eq!(variant_values(b, "usb-ram").unwrap()["memory"], "ram");
         assert_eq!(b.configurations[1].user_notes.as_deref(), Some("Try it."));
     }
 

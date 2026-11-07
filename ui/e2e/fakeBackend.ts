@@ -36,8 +36,7 @@ const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false })
 /**
  * The project's own boards as the fake engine reads them from the text of
  * custom-boards.json: enough of Logix Engine's rules to test the UI (valid
- * JSON, an object, board IDs, an FPGA, variants with a connection and
- * memory), with each problem at the line of the board's key (line 1 for
+ * JSON, an object, board IDs, an FPGA, variants with a selector), with each problem at the line of the board's key (line 1 for
  * invalid JSON), and the FPGA's family taken from its ID.
  */
 function fakeProjectBoards(text: string | null): Real.ProjectBoards {
@@ -81,16 +80,17 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
   for (const b of BOARDS) for (const d of b.dimensions) for (const v of d.values) labels.set(`${d.id}:${v.id}`, v);
   return Object.entries(boards).map(([id, item]) => {
     current = id;
-    const b = { ...(item as object), id } as { id: string; description?: string; fpga_id?: string; variants?: { connection: string; memory: string; tested: boolean }[] };
+    const b = { ...(item as object), id } as { id: string; description?: string; fpga_id?: string; variants?: { selector: { connection: string; memory: string }; tested: boolean }[] };
     if (!/^[a-z0-9-]+$/.test(b.id)) fail(`${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
     if (!b.fpga_id) fail(`Board ${JSON.stringify(b.id)}: give exactly one of fpga_id and fpga.`);
     if (!b.variants?.length) fail("A board needs at least one variant.");
+    if (b.variants!.some((v) => !v.selector)) fail("Missing field `selector`.");
     const arch = family(b.fpga_id!);
     const like = BOARDS.find((x) => x.arch === arch)!;
     const dims = ["connection", "memory"].map((id) => ({
       id,
       label: id === "connection" ? "Connection" : "Memory",
-      values: [...new Set(b.variants!.map((v) => (id === "connection" ? v.connection : v.memory)))].map(
+      values: [...new Set(b.variants!.map((v) => (id === "connection" ? v.selector.connection : v.selector.memory)))].map(
         (v) => labels.get(`${id}:${v}`) ?? { id: v, label: v },
       ),
     }));
@@ -102,7 +102,7 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
       fpga: sameFpga ?? { id: b.fpga_id!, partNumber: b.fpga_id!.toUpperCase(), size: "" },
       dimensions: dims,
       configurations: b.variants!.map((v) => ({
-        when: { connection: v.connection, memory: v.memory },
+        when: { connection: v.selector.connection, memory: v.selector.memory },
         tested: v.tested,
       })),
       custom: true,

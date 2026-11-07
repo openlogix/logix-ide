@@ -358,8 +358,9 @@ pub async fn run_task(
     };
     let arch = info.arch.clone();
     let pin_extension = info.pin_extension.clone();
-    // The engine picks a variant by ID: the first one with the chosen values.
-    let Some(board_variant) = engine::variant_id(info, &variant) else {
+    // The engine picks a variant by its full selector: the first one with
+    // the chosen values.
+    let Some(board_variant) = engine::variant_selector(info, &variant) else {
         return Err(anyhow!(
             "The {} can't be programmed that way. Choose another option next to the board.",
             info.description
@@ -603,17 +604,16 @@ pub async fn connected_devices(
     let file = scratch_boards_file(custom_boards.as_deref())?;
     // The project's boards first, as the engine matched them; a file with
     // problems counts as none here (the board list shows its problems).
-    let mut boards = engine::project_boards(&engine, file.as_deref())
+    let usable = engine::project_boards(&engine, file.as_deref())
         .await
         .ok()
-        .and_then(Result::ok);
-    let file = if boards.is_some() { file } else { None };
+        .and_then(Result::ok)
+        .is_some();
+    let file = if usable { file } else { None };
     let list = engine::list_devices(&engine, file.as_deref())
         .await
         .context("Couldn't list the connected devices.")?;
-    let mut boards = boards.take().unwrap_or_default();
-    boards.extend(catalog(&state).await?.boards);
-    let found = engine::connected_devices(&list.devices, &boards);
+    let found = engine::connected_devices(&list.devices);
     // Polled every few seconds: log only changes, not every scan.
     static LAST: std::sync::Mutex<Option<Vec<engine::ConnectedDevice>>> =
         std::sync::Mutex::new(None);

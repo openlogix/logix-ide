@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 use serde_json::{json, Value};
 
-use super::catalog::{variant_values, Board, Variant};
+use super::catalog::{selector, Variant};
 use super::client::{tool_error, Engine};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -65,7 +65,7 @@ pub struct DeviceBoard {
     /// The variants the device fits (the engine's variant IDs), with their
     /// levels.
     #[serde(skip)]
-    pub variants: Vec<(String, MatchLevel)>,
+    pub variants: Vec<(Variant, MatchLevel)>,
 }
 
 /// A device the engine sees but can't open (a missing driver or
@@ -150,14 +150,13 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
 }
 
 fn parse_board(b: &Value) -> DeviceBoard {
-    let variants: Vec<(String, MatchLevel)> = b["variants"]
+    let variants: Vec<(Variant, MatchLevel)> = b["variants"]
         .as_array()
         .map(|vs| {
             vs.iter()
                 .map(|v| {
-                    let id = v["id"].as_str().unwrap_or_default().to_string();
                     let level = MatchLevel::parse(&v["match"]).unwrap_or(MatchLevel::Weak);
-                    (id, level)
+                    (selector(&v["selector"]), level)
                 })
                 .collect()
         })
@@ -203,21 +202,16 @@ pub struct ConnectedDevice {
 
 /// The connected devices that fit catalog boards, each with the boards it
 /// may be, strongest first, from the engine's matches and levels.
-pub fn connected_devices(devices: &[UsbDevice], boards: &[Board]) -> Vec<ConnectedDevice> {
+pub fn connected_devices(devices: &[UsbDevice]) -> Vec<ConnectedDevice> {
     let mut found = Vec::new();
     for dev in devices {
         let mut its: Vec<ConnectedBoard> = Vec::new();
         for b in &dev.boards {
-            // The engine reports variant IDs; the UI works with their values.
-            let info = boards.iter().find(|x| x.id == b.board);
+            // The engine reports each variant by its selector: its values.
             let mut variants: Vec<Variant> = Vec::new();
-            for v in b
-                .variants
-                .iter()
-                .filter_map(|(id, _)| info.and_then(|i| variant_values(i, id)))
-            {
-                if !variants.contains(&v) {
-                    variants.push(v);
+            for (v, _) in &b.variants {
+                if !variants.contains(v) {
+                    variants.push(v.clone());
                 }
             }
             its.push(ConnectedBoard {
@@ -254,49 +248,13 @@ mod tests {
     fn device(product: &str, boards: &[(&str, &str)]) -> Value {
         let boards: Vec<Value> = boards
             .iter()
-            .map(|(b, l)| json!({"board": b, "variants": [{"id": "usb-flash", "match": l}]}))
+            .map(|(b, l)| json!({"board": b, "variants": [{"selector": {"connection": "usb", "memory": "flash"}, "match": l}]}))
             .collect();
         json!({
             "id": format!("usb:1-1:0403:6010:{product}"), "kind": "usb",
             "vid": "0403", "pid": "6010", "product": product,
             "bus": 1, "device": 2, "boards": boards
         })
-    }
-
-    /// Catalog boards whose variant usb-flash is USB and flash.
-    fn boards() -> Vec<Board> {
-        [
-            "alhambra-ii",
-            "generic-a",
-            "generic-b",
-            "icestick",
-            "a",
-            "b",
-            "c",
-            "d",
-        ]
-        .iter()
-        .map(|id| Board {
-            id: id.to_string(),
-            description: id.to_string(),
-            arch: "ice40".into(),
-            arch_label: String::new(),
-            arch_order: 0,
-            pin_extension: None,
-            custom: false,
-            fpga: None,
-            dimensions: Vec::new(),
-            configurations: vec![super::super::catalog::Configuration {
-                id: "usb-flash".into(),
-                when: Variant::from([
-                    ("connection".into(), "usb".into()),
-                    ("memory".into(), "flash".into()),
-                ]),
-                tested: true,
-                user_notes: None,
-            }],
-        })
-        .collect()
     }
 
     #[test]
@@ -307,7 +265,7 @@ mod tests {
             device("Unknown", &[]),
         ]}))
         .unwrap();
-        let all = connected_devices(&list.devices, &boards());
+        let all = connected_devices(&list.devices);
         assert_eq!(all.len(), 2, "a device that fits no board is left out");
         assert_eq!(all[0].name, "Alhambra II");
         assert_eq!(all[0].id, "usb:1-1:0403:6010:Alhambra II");
@@ -349,7 +307,7 @@ mod tests {
                 "vid": "0403", "pid": "6010", "manufacturer": "AlhambraBits",
                 "product": "Alhambra II v1.0A", "serial_number": "FTATANKC",
                 "bus": 1, "device": 7, "build_match": "strong",
-                "boards": [{"board": "alhambra-ii", "variants": [{"id": "usb-flash", "match": "strong"}]}]
+                "boards": [{"board": "alhambra-ii", "variants": [{"selector": {"connection": "usb", "memory": "flash"}, "match": "strong"}]}]
             }],
             "unreachable": [{
                 "kind": "usb", "vid": "0403", "pid": "6014", "bus": 1, "device": 9,

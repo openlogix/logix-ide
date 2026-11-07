@@ -76,9 +76,9 @@ enum Choice {
 /// What to run the task on.
 pub struct TaskInput<'a> {
     pub board: &'a str,
-    /// The board variant, as the engine's variant ID (e.g. "usb-ram"); `None`
-    /// for the board's default.
-    pub board_variant: Option<&'a str>,
+    /// The board variant, as the engine's selector (e.g. `{"connection":
+    /// "usb", "memory": "ram"}`); `None` for the board's default.
+    pub board_variant: Option<&'a super::Variant>,
     /// The project's custom boards file in the prepared folder, as
     /// `custom_boards_file` with every engine call that deals with boards,
     /// when the project has one. The engine reports its problems at line

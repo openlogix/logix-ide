@@ -863,7 +863,7 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
       fpga_id: "ice40up5k-sg48",
       variants: [
         {
-          id: "usb-flash", connection: "usb", memory: "flash", programmer: "iceprog",
+          selector: { connection: "usb", memory: "flash" }, programmer: "iceprog",
           args: "-d d:${BUS}/${DEV} ${BITSTREAM}",
           usb: { vid: "0403", pid: "6014" }, tested: false,
         },
