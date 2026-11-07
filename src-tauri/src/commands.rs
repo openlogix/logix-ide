@@ -493,15 +493,21 @@ where
 // Language server (live errors while typing)
 // ---------------------------------------------------------------------------
 
-/// Starts the Verilog language server, if it isn't running. Its messages
-/// go to the UI as `lsp-message` events (JSON text); `lsp-closed` tells
-/// the UI it stopped.
+/// Starts the Verilog language server for the UI's new client. Its
+/// messages go to the UI as `lsp-message` events (JSON text);
+/// `lsp-closed` tells the UI it stopped. One already running (the window
+/// was reloaded, so its client is gone) is replaced: the new client opens
+/// the project's files again, and Verible aborts when a file it already
+/// has open is opened again and the files then change
+/// (`StringViewSuperRangeMap::must_emplace`).
 #[tauri::command]
 pub async fn lsp_start(app: AppHandle, state: State<'_, AppState>) -> Result<(), UserError> {
+    static STARTS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
     let mut slot = state.lsp.lock().await;
-    if slot.is_some() {
-        return Ok(());
+    if slot.take().is_some() {
+        crate::log!("Language server replaced (a new window)");
     }
+    let number = STARTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let engine = ready_engine(&state).await?;
     let exe = engine::program_path(&engine, "verible", "verible-verilog-ls")
         .await
@@ -516,15 +522,21 @@ pub async fn lsp_start(app: AppHandle, state: State<'_, AppState>) -> Result<(),
         let app = app.clone();
         move || {
             tauri::async_runtime::spawn(async move {
-                app.state::<AppState>().lsp.lock().await.take();
-                let _ = app.emit("lsp-closed", ());
+                let state = app.state::<AppState>();
+                let mut slot = state.lsp.lock().await;
+                // Only this server's exit: a replaced one is already gone.
+                if slot.as_ref().is_some_and(|(n, _)| *n == number) {
+                    slot.take();
+                    crate::log!("Language server stopped by itself");
+                    let _ = app.emit("lsp-closed", ());
+                }
             });
         }
     };
     let server = crate::language_server::LanguageServer::start(&exe, on_message, on_exit)
         .context("Couldn't start the Verilog language server.")?;
     crate::log!("Language server started: {}", exe.display());
-    *slot = Some(server);
+    *slot = Some((number, server));
     Ok(())
 }
 
@@ -542,7 +554,7 @@ pub async fn lsp_stop(state: State<'_, AppState>) -> Result<(), UserError> {
 #[tauri::command]
 pub async fn lsp_send(state: State<'_, AppState>, message: String) -> Result<(), UserError> {
     let mut slot = state.lsp.lock().await;
-    let server = slot
+    let (_, server) = slot
         .as_mut()
         .ok_or_else(|| anyhow!("The Verilog language server isn't running."))?;
     server

@@ -1013,8 +1013,10 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   // column, the board list says so in one line and leaves its boards out,
   // and there's no banner.
   await writeFile("oops");
-  // At the file's full path: it's edited outside Logix.
+  // At the file's full path: it's edited outside Logix. Noticed in the
+  // background, so "Ready." comes again after it: it's always last when idle.
   await expect(output(page)).toContainText(`${folder}/custom-boards.json:1:1: error: Expected value.`);
+  await expect(output(page)).toContainText(/Expected value\.\s*Ready\.\s*$/);
   await expect(page.locator(".banner")).toHaveCount(0);
   await boardButton(page).click();
   // The note is in the Custom boards group, which stays, empty.
@@ -1035,6 +1037,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   // Fixed: said once, and the boards are back.
   await writeFile(JSON.stringify(myBoards));
   await expect(output(page)).toContainText("custom-boards.json has no problems now.");
+  await expect(output(page)).toContainText(/has no problems now\.\s*Ready\.\s*$/);
   await boardButton(page).click();
   await expect(page.locator(".problem-note")).toHaveCount(0);
   // In Custom boards and in its iCE40 group.

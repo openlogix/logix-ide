@@ -269,6 +269,20 @@
     return show(lines, false);
   }
 
+  /** Set once startup has printed its "Ready.". */
+  let startedUp = false;
+
+  /**
+   * Lines from a background check, not from a command the user ran (such
+   * as custom-boards.json changing on disk). The user waits for "Ready."
+   * before going on, so when nothing runs it comes again after them: it's
+   * always the last line while Logix is idle.
+   */
+  function notice(...lines: string[]) {
+    log(...lines);
+    if (startedUp && !running && !activity) log("Ready.");
+  }
+
   /** A tool's line, which may replace its redraw line (progress). */
   function logToolLine(line: string, tool: string, redraw: boolean) {
     const { replace, final } = redraws.toolLine(line, tool, redraw);
@@ -339,6 +353,7 @@
       await loadCatalog();
       startLsp();
       log("Ready.");
+      startedUp = true;
     } catch (e) {
       const err = toUserError(e);
       setupError = err.message;
@@ -824,7 +839,7 @@
       );
     } catch (e) {
       // Not essential: Verify still finds errors.
-      log(`Verible live error checking is off: ${toUserError(e).details}`);
+      notice(`Verible live error checking is off: ${toUserError(e).details}`);
     } finally {
       lspStarting = false;
     }
@@ -851,7 +866,8 @@
     old?.disconnect();
     // Stopped on purpose (Settings), or never wanted: nothing to do.
     if (!old || !lspWanted()) return;
-    log("The Verible live error checker stopped; restarting it.");
+    // Restarted by itself: nothing for the user to do, so the IDE log only.
+    sendToLogFile(["The Verible live error checker stopped; restarting it."]);
     setTimeout(startLsp, 2000);
   }
 
@@ -1169,16 +1185,18 @@
         projectBoards = found.boards;
         boardsProblem = found.problem;
         if (found.problem && JSON.stringify(found.problem) !== JSON.stringify(before)) {
-          log(`${CUSTOM_BOARDS_FILE} has problems; its boards are left out until they're fixed:`);
-          log(...boardsProblemLines(found.problem));
+          notice(
+            `${CUSTOM_BOARDS_FILE} has problems; its boards are left out until they're fixed:`,
+            ...boardsProblemLines(found.problem),
+          );
         } else if (!found.problem && before) {
-          log(`${CUSTOM_BOARDS_FILE} has no problems now.`);
+          notice(`${CUSTOM_BOARDS_FILE} has no problems now.`);
         }
       })
       .catch((e) => {
         if (boardsSeen !== seen) return;
         projectBoards = [];
-        log(`Couldn't read the boards in ${CUSTOM_BOARDS_FILE}: ${toUserError(e).message}`);
+        notice(`Couldn't read the boards in ${CUSTOM_BOARDS_FILE}: ${toUserError(e).message}`);
       });
   });
   /**

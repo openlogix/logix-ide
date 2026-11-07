@@ -30,8 +30,10 @@ pub struct AppState {
     task_cancel: std::sync::Mutex<Option<tokio_util::sync::CancellationToken>>,
     /// Held while formatting, which reuses one scratch folder.
     format: tokio::sync::Mutex<()>,
-    /// The Verilog language server, while running (live errors).
-    lsp: tokio::sync::Mutex<Option<language_server::LanguageServer>>,
+    /// The Verilog language server, while running (live errors), with its
+    /// number: each start gets a new one, so a replaced server's exit isn't
+    /// taken for the current one's.
+    lsp: tokio::sync::Mutex<Option<(u64, language_server::LanguageServer)>>,
     /// Board and example lists, fetched once per run (boards from the
     /// engine, examples built in).
     catalog: tokio::sync::Mutex<Option<Catalog>>,
