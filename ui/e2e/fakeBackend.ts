@@ -470,7 +470,6 @@ export const backend: typeof Real.backend = {
   lastVariant: async () => ({}),
   recentProjects: async () => fake.recents,
   // The fake's recent projects are all UPduino v2 projects (openProjectAt).
-  recentProjectsForBoard: async (board) => (board === "upduino2" ? fake.recents : []),
   setLastBoard: async (board) => {
     fake.recentBoards = [board, ...fake.recentBoards.filter((b) => b !== board)].slice(0, 5);
     return fake.recentBoards;

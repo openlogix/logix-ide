@@ -504,16 +504,6 @@ pub(crate) fn check_files(files: &[ProjectFile]) -> Result<()> {
 }
 
 /// The project file, or an empty one if there's none yet.
-/// The board in a project folder's project file, without loading the
-/// project. `None` if there's no project file, no board or it can't be read.
-pub fn board_of(dir: &Path) -> Option<String> {
-    read_settings(dir)
-        .ok()?
-        .get("board")?
-        .as_str()
-        .map(String::from)
-}
-
 fn read_settings(dir: &Path) -> Result<toml_edit::DocumentMut> {
     let path = dir.join(SETTINGS_FILE);
     if !path.exists() {
@@ -1109,21 +1099,6 @@ mod tests {
             normalize_new_project_path(Path::new("/a/blinky")),
             PathBuf::from("/a/blinky")
         );
-    }
-
-    #[test]
-    fn reads_only_the_board() {
-        let tmp = tempfile::tempdir().unwrap();
-        assert_eq!(board_of(tmp.path()), None);
-        std::fs::write(
-            tmp.path().join(SETTINGS_FILE),
-            "# mine\nboard = \"upduino2\"\n",
-        )
-        .unwrap();
-        assert_eq!(board_of(tmp.path()).as_deref(), Some("upduino2"));
-        std::fs::write(tmp.path().join(SETTINGS_FILE), "not = [toml").unwrap();
-        assert_eq!(board_of(tmp.path()), None);
-        assert_eq!(board_of(&tmp.path().join("missing")), None);
     }
 
     #[test]

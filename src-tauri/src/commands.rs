@@ -877,22 +877,6 @@ pub fn recent_projects() -> Vec<String> {
         .collect()
 }
 
-/// The recent project folders made for `board`, newest first (offered with
-/// the board's examples after a board change). Reads only each project's
-/// board.
-#[tauri::command]
-pub async fn recent_projects_for_board(board: String) -> Result<Vec<String>, UserError> {
-    let dirs = crate::menu::recent_projects();
-    let found = blocking(move || {
-        dirs.into_iter()
-            .filter(|d| project::board_of(d).as_deref() == Some(board.as_str()))
-            .map(|d| d.to_string_lossy().into_owned())
-            .collect()
-    })
-    .await?;
-    Ok(found)
-}
-
 /// The board for new projects: the last one chosen, or the default.
 #[tauri::command]
 pub fn last_board() -> String {

@@ -409,8 +409,6 @@
    * question is only about files.
    */
   let pendingBoard = $state<string | null>(null);
-  /** The recent projects for `pendingBoard`, offered with its examples. */
-  let boardRecents = $state<string[]>([]);
 
   /**
    * Toolbar board change. As in the Arduino IDE, it never changes the
@@ -439,23 +437,7 @@
       return;
     }
     pendingBoard = id;
-    boardRecents = [];
     examplesOpen = true;
-    // The open project itself isn't offered.
-    const current = project.dir;
-    backend
-      .recentProjectsForBoard(id)
-      .then((dirs) => {
-        if (pendingBoard === id) boardRecents = dirs.filter((d) => d !== current);
-      })
-      .catch(() => {});
-  }
-
-  /** A recent project picked in the board's examples dialog. */
-  function openBoardRecent(dir: string) {
-    pendingBoard = null;
-    examplesOpen = false;
-    openRecent(dir);
   }
 
   /** Sets the project's board; another board starts with its default variant. */
@@ -1815,8 +1797,6 @@
     {examples}
     initialBoard={pendingBoard ?? currentBoard}
     onlyBoard={pendingBoard}
-    recents={pendingBoard ? boardRecents : []}
-    onOpenRecent={openBoardRecent}
     currentProject={pendingBoard && project
       ? { name: project.name, board: currentBoardInfo, pinFile: projectPinFile(project) }
       : null}

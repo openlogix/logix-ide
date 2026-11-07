@@ -490,8 +490,6 @@ export const backend = {
   recentProjects: (): Promise<string[]> => invoke<string[]>("recent_projects"),
 
   /** The recent project folders made for `board`, newest first. */
-  recentProjectsForBoard: (board: string): Promise<string[]> =>
-    invoke<string[]>("recent_projects_for_board", { board }),
 
   /** The variant of the last chosen board ({} for its default). */
   lastVariant: (): Promise<Variant> => invoke<Variant>("last_variant"),

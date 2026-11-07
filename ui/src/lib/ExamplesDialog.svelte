@@ -3,10 +3,12 @@
   board change in the toolbar), it's "Project options for <board>", one
   list of choices (the user's design, 2026-11-06), none selected at first:
   the current project on the new board (with a note on what the change
-  means), the recent projects for that board (`recents`), and "New
-  project" (Bare Minimum and the board's examples). The main button says
-  what the selected choice does: Change the Board, Open Project, or New
-  Project (an example or Bare Minimum starts a new, unsaved project).
+  means), and "New project" (Bare Minimum and the board's examples). No
+  recent projects for that board (the user's decision, 2026-11-07: other
+  projects with the same board aren't relevant to a board change; File >
+  Open Recent has them). The main button says what the selected choice
+  does: Change the Board or New Project (an example or Bare Minimum starts
+  a new, unsaved project).
   Cancel, Esc and ✕ cancel the board change.
 -->
 <script lang="ts">
@@ -22,8 +24,6 @@
     examples,
     initialBoard,
     onlyBoard = null,
-    recents = [],
-    onOpenRecent = () => {},
     currentProject = null,
     onChangeBoard = () => {},
     onOpen,
@@ -35,9 +35,6 @@
     initialBoard: string | null;
     /** Show only this board's examples (the board was just chosen). */
     onlyBoard?: string | null;
-    /** Recent project folders for `onlyBoard`, listed first. */
-    recents?: string[];
-    onOpenRecent?: (dir: string) => void;
     /**
      * With `onlyBoard`: the project open now, offered first, to move to the
      * new board (its name, its board, and its pin file, for the note).
@@ -55,21 +52,12 @@
   let selectedBoard = $state<string | null>(initialBoard);
   /** Selected example as "board/name". */
   let selectedKey = $state<string | null>(null);
-  /** Selected recent project folder (instead of an example). */
-  let selectedRecent = $state<string | null>(null);
   /**
    * The current project on the new board is selected. Nothing is selected
    * at first (the user's decision: changing the board, especially to
    * another FPGA or family, should be a choice, not a default).
    */
   let selectedCurrent = $state(false);
-  const folderName = (dir: string) => dir.split(/[\\/]/).pop() ?? dir;
-  /** Recent projects shown: all of them, or those matching the search. */
-  const shownRecents = $derived(
-    recents.filter((d) =>
-      folderName(d).toLowerCase().includes(query.trim().toLowerCase()),
-    ),
-  );
 
   const key = (e: Example) => `${e.board}/${e.name}`;
   const groups = $derived(
@@ -105,7 +93,7 @@
    * just one (or Bare Minimum if it has none).
    */
   const selectedExample = $derived.by(() => {
-    if (selectedRecent || selectedCurrent) return null;
+    if (selectedCurrent) return null;
     const clicked = group?.examples.find((e) => key(e) === selectedKey);
     // Project options select nothing by themselves.
     if (clicked || !group || onlyBoard) return clicked ?? null;
@@ -119,30 +107,20 @@
   function selectBoard(id: string) {
     selectedBoard = id;
     selectedKey = null;
-    selectedRecent = null;
     selectedCurrent = false;
   }
 
   function selectExample(k: string) {
     selectedKey = k;
-    selectedRecent = null;
-    selectedCurrent = false;
-  }
-
-  function selectRecent(dir: string) {
-    selectedRecent = dir;
     selectedCurrent = false;
   }
 
   function selectCurrent() {
     selectedCurrent = true;
-    selectedRecent = null;
     selectedKey = null;
   }
 
-  const canOpen = $derived(
-    selectedCurrent || selectedRecent !== null || selectedExample !== null,
-  );
+  const canOpen = $derived(selectedCurrent || selectedExample !== null);
   /**
    * The main button: what the selected choice does. An example, like Bare
    * Minimum, starts a new, unsaved project.
@@ -150,16 +128,13 @@
   const openLabel = $derived(
     selectedCurrent
       ? "Change the Board"
-      : selectedRecent !== null
-        ? "Open Project"
-        : selectedExample !== null || !onlyBoard
-          ? "New Project"
-          : "Choose an Option",
+      : selectedExample !== null || !onlyBoard
+        ? "New Project"
+        : "Choose an Option",
   );
 
   function open() {
     if (selectedCurrent) onChangeBoard();
-    else if (selectedRecent) onOpenRecent(selectedRecent);
     else if (selectedExample) onOpen(selectedExample);
   }
 
@@ -294,24 +269,6 @@
               {/if}
             </button>
           </li>
-        {/if}
-        {#if shownRecents.length > 0}
-          <li class="section">Recent projects</li>
-          {#each shownRecents as dir (dir)}
-            <li>
-              <button
-                class="recent"
-                class:selected={selectedRecent === dir}
-                title={dir}
-                onclick={() => selectRecent(dir)}
-                ondblclick={() => onOpenRecent(dir)}
-              >
-                <Icon name="folder" size={16} />
-                <span class="example-name">{folderName(dir)}</span>
-                <span class="example-desc">{dir.slice(0, -folderName(dir).length - 1)}</span>
-              </button>
-            </li>
-          {/each}
         {/if}
         {#if onlyBoard}
           <li class="section">New project</li>
@@ -477,24 +434,6 @@
     flex-direction: column;
     gap: 2px;
   }
-  .examples button.recent {
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-  }
-  .recent :global(svg) {
-    flex: none;
-    color: var(--accent);
-  }
-  .recent.selected :global(svg) {
-    color: inherit;
-  }
-  .recent .example-desc {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
   /* Section headings stand out from the entries, like the board picker's
      group headings (the user's request). */
   .section {
@@ -522,21 +461,21 @@
   }
   /* Project options: the selection's green background covers only the
      choice's title, a band across the row; its note below stays as it is
-     (the user's request). A recent project is one line: all of it. */
-  .single li button.selected:not(.recent) {
+     (the user's request). */
+  .single li button.selected {
     background: transparent;
     color: inherit;
   }
-  .single li button.selected:not(.recent):hover {
+  .single li button.selected:hover {
     background: var(--banner-bg);
   }
-  .single .selected:not(.recent) .example-name {
+  .single .selected .example-name {
     margin: -6px -14px 0;
     padding: 6px 14px 4px;
     background: var(--accent);
     color: #fff;
   }
-  .single .selected:not(.recent) .example-desc {
+  .single .selected .example-desc {
     color: var(--muted);
   }
   /* The current-project choice's note: short bullet points. */
