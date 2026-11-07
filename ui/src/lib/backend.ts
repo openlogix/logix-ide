@@ -104,6 +104,8 @@ export interface Dimension {
 export interface Configuration {
   /** The value of every dimension. */
   when: Variant;
+  /** The engine's label for people, e.g. "USB · Flash". */
+  label: string;
   /** Whether programming this way was tried on hardware. */
   tested: boolean;
   /** Warnings for users, e.g. to hold a button while plugging the board in. */

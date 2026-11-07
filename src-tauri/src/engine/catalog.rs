@@ -87,25 +87,15 @@ pub struct DimensionValue {
 #[serde(rename_all = "camelCase")]
 pub struct Configuration {
     /// The value of every dimension: the engine's selector, e.g.
-    /// `{"connection": "usb", "memory": "ram"}`, sent as `board_variant`.
+    /// `{"connection": "usb", "memory": "ram"}`.
     pub when: Variant,
+    /// The engine's label for people, e.g. "USB · Flash".
+    pub label: String,
     /// Whether programming this way was tried on hardware.
     pub tested: bool,
     /// Warnings for users, e.g. to hold a button while plugging it in.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_notes: Option<String>,
-}
-
-/// The engine's selector of the variant the IDE's choice picks: the first
-/// configuration with all the chosen dimension values ({} = the default),
-/// with every dimension's value. `None` when the board has no such
-/// configuration.
-pub fn variant_selector(board: &Board, variant: &Variant) -> Option<Variant> {
-    board
-        .configurations
-        .iter()
-        .find(|c| variant.iter().all(|(k, v)| c.when.get(k) == Some(v)))
-        .map(|c| c.when.clone())
 }
 
 /// An engine selector, e.g. `{"connection": "usb", "memory": "ram"}`, as
@@ -351,6 +341,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                     list.iter()
                         .map(|c| Configuration {
                             when: selector(&c["selector"]),
+                            label: c["label"].as_str().unwrap_or_default().to_string(),
                             tested: c["tested"].as_bool().unwrap_or(true),
                             user_notes: c["user_notes"].as_str().map(String::from),
                         })
@@ -419,8 +410,8 @@ mod tests {
                         {"id": "flash", "label": "Flash"},
                         {"id": "ram", "label": "RAM", "help": "Lost at power-off."}]}],
                     "variants": [
-                        {"selector": {"connection": "usb", "memory": "flash"}, "programmer": "p", "args": "a", "tested": true},
-                        {"selector": {"connection": "usb", "memory": "ram"}, "programmer": "p", "args": "a", "tested": false,
+                        {"selector": {"connection": "usb", "memory": "flash"}, "label": "USB · Flash", "programmer": "p", "args": "a", "tested": true},
+                        {"selector": {"connection": "usb", "memory": "ram"}, "label": "USB · RAM", "programmer": "p", "args": "a", "tested": false,
                          "user_notes": "Try it."}]}
             },
             "fpgas": {"f": {"architecture": "ecp5"}}
@@ -434,20 +425,8 @@ mod tests {
         assert_eq!(b.configurations[1].when["memory"], "ram");
         assert!(!b.configurations[1].tested);
         assert_eq!(b.configurations[1].when["connection"], "usb");
-        // The IDE's choice, possibly partial, picks the engine's full selector.
-        let pick = |v: serde_json::Value| {
-            variant_selector(b, &serde_json::from_value(v).unwrap())
-                .map(|s| serde_json::to_value(s).unwrap())
-        };
-        assert_eq!(
-            pick(json!({})),
-            Some(json!({"connection": "usb", "memory": "flash"}))
-        );
-        assert_eq!(
-            pick(json!({"memory": "ram"})),
-            Some(json!({"connection": "usb", "memory": "ram"}))
-        );
-        assert_eq!(pick(json!({"memory": "eeprom"})), None);
+        // The engine's label for people.
+        assert_eq!(b.configurations[1].label, "USB · RAM");
         assert_eq!(b.configurations[1].user_notes.as_deref(), Some("Try it."));
     }
 

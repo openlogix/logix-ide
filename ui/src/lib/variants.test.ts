@@ -24,7 +24,7 @@ const plain: Board = {
     { id: "connection", label: "Connection", values: [{ id: "usb", label: "USB" }] },
     { id: "memory", label: "Memory", values: [{ id: "flash", label: "Flash" }] },
   ],
-  configurations: [{ when: { connection: "usb", memory: "flash" }, tested: true }],
+  configurations: [{ when: { connection: "usb", memory: "flash" }, label: "USB · Flash", tested: true }],
 };
 
 // Like a Zybo Z7: its own USB port, RAM only.
@@ -35,7 +35,7 @@ const arty: Board = {
     { id: "connection", label: "Connection", values: [{ id: "usb", label: "USB" }] },
     { id: "memory", label: "Memory", values: [{ id: "ram", label: "RAM" }] },
   ],
-  configurations: [{ when: { connection: "usb", memory: "ram" }, tested: true }],
+  configurations: [{ when: { connection: "usb", memory: "ram" }, label: "USB · RAM", tested: true }],
 };
 
 // Like ButterStick: the bootloader writes flash only, the adapter both.
@@ -65,9 +65,9 @@ const stick: Board = {
     },
   ],
   configurations: [
-    { when: { connection: "bootloader", memory: "flash" }, tested: true },
-    { when: { connection: "ft232h", memory: "flash" }, tested: true },
-    { when: { connection: "ft232h", memory: "ram" }, tested: false },
+    { when: { connection: "bootloader", memory: "flash" }, label: "USB bootloader · Flash", tested: true },
+    { when: { connection: "ft232h", memory: "flash" }, label: "FT232H adapter · Flash", tested: true },
+    { when: { connection: "ft232h", memory: "ram" }, label: "FT232H adapter · RAM", tested: false },
   ],
 };
 

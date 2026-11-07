@@ -18,8 +18,8 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub use catalog::{
-    boards_fields, catalog, compare_boards, project_boards, variant_selector, Board,
-    BoardComparison, BoardsFile, BoardsProblem, Catalog, Variant,
+    boards_fields, catalog, compare_boards, project_boards, Board, BoardComparison, BoardsFile,
+    BoardsProblem, Catalog, Variant,
 };
 pub use client::Engine;
 pub use devices::{

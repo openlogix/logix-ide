@@ -139,6 +139,11 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
       dimensions: dims,
       configurations: b.variants!.map((v) => ({
         when: { connection: v.selector.connection, memory: v.selector.memory },
+        // As the engine labels it, from the dimension labels.
+        label: [
+          dims[0]?.values.find((x) => x.id === v.selector.connection)?.label ?? v.selector.connection,
+          dims[1]?.values.find((x) => x.id === v.selector.memory)?.label ?? v.selector.memory,
+        ].join(" · "),
         tested: v.tested,
       })),
       custom: true,

@@ -354,15 +354,9 @@ pub async fn run_task(
     };
     let arch = info.arch.clone();
     let pin_extension = info.pin_extension.clone();
-    // The engine picks a variant by its full selector: the first one with
-    // the chosen values.
-    let Some(board_variant) = engine::variant_selector(info, &variant) else {
-        return Err(anyhow!(
-            "The {} can't be programmed that way. Choose another option next to the board.",
-            info.description
-        )
-        .into());
-    };
+    // The values the user chose, as they are: the engine uses the board's
+    // first variant with them ({} for its default).
+    let board_variant = variant.clone();
     let on_line = {
         let channel = on_event.clone();
         move |line: String| {

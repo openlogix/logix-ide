@@ -7,8 +7,10 @@
 //
 // A project stores the values the user chose (`[variant]` in
 // logix-ide.toml), only when they aren't the board's default. As in the
-// engine, the first configuration with those values is used, and values the
-// board doesn't have are ignored (so an old project still opens).
+// engine (its documented `board_variant` rule), the first configuration
+// with those values is used, and values the board doesn't have are ignored
+// here (so an old project still opens). Commands send `toStore` of it, {}
+// for the default, so the engine programs the variant shown.
 
 import type {
   Board,
@@ -62,14 +64,11 @@ export function valueLabel(board: Board, dim: string, value: string): string {
 }
 
 /**
- * The toolbar's summary: the value of every dimension, e.g.
- * "FT232H adapter · RAM" or "USB · Flash".
+ * The toolbar's summary: the engine's label of the variant the choice
+ * picks, e.g. "FT232H adapter · RAM" or "USB · Flash".
  */
 export function summary(board: Board, variant: Variant): string {
-  const when = resolve(board, variant);
-  return board.dimensions
-    .map((d) => valueLabel(board, d.id, when[d.id]))
-    .join(" · ");
+  return configurationOf(board, variant)?.label ?? "";
 }
 
 /** Whether `value` exists with the variant's other current values. */
