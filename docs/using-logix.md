@@ -12,8 +12,11 @@
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
   Other problems, such as a name that isn't declared, are found by Verify
-  and marked when you click it. Hover over a mark to read it. If you turn it
-  on in Settings, hovering over a name shows what it is.
+  and marked when you click it. Hover over a mark to read it. A tab with a
+  problem has a red line under it (yellow for a warning), whether it's open
+  or not; the line goes when the problem is fixed, or for problems Verify
+  found, when you edit the file. If you turn it on in Settings, hovering
+  over a name shows what it is.
 - **Right-click** in the editor for **Go to Definition** (jump to where the
   name you clicked is defined), Cut, Copy, Paste, **Comment/Uncomment** and
   Auto Format. The same items are in the **Edit** and **Tools** menus.

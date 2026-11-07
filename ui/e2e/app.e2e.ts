@@ -187,6 +187,12 @@ test("a build error is marked in the editor and linked in the output", async ({ 
   await expect(page.locator(".file-link", { hasText: "main.v:1" })).toHaveCount(2);
   await page.locator(".file-link", { hasText: "main.v:1" }).first().click();
   await expect(tab(page, "main.v")).toHaveClass(/active/);
+
+  // Editing the file clears what Verify found in it, marker and tab mark.
+  await page.keyboard.press("End");
+  await page.keyboard.type(" ");
+  await expect(page.locator(".cm-lintRange-error")).toHaveCount(0);
+  await expect(tab(page, "main.v")).not.toHaveClass(/has-error/);
 });
 
 test("adds a file as a new tab and checks names", async ({ page }) => {

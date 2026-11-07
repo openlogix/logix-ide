@@ -23,7 +23,7 @@
     toggleComment as cmToggleComment,
   } from "@codemirror/commands";
   import { jumpToDefinition, type LSPClient } from "@codemirror/lsp-client";
-  import { fileUri } from "./lsp";
+  import { fileUri, ProjectWorkspace } from "./lsp";
 
   let {
     onChange,
@@ -52,10 +52,38 @@
   /** The language server connection of each Verilog document. */
   const lspSlot = new Compartment();
 
+  function languageId(file: string): string {
+    return /\.svh?$/i.test(file) ? "systemverilog" : "verilog";
+  }
+
   function lspExtension(file: string) {
     if (!lsp || !isVerilog(file)) return [];
-    const language = /\.svh?$/i.test(file) ? "systemverilog" : "verilog";
-    return lsp.plugin(fileUri(projectDir, file), language);
+    return lsp.plugin(fileUri(projectDir, file), languageId(file));
+  }
+
+  /**
+   * Gives the language server every Verilog file's current text, so each
+   * one is checked while typing, shown or not.
+   */
+  function syncLsp() {
+    const workspace = lsp?.workspace;
+    if (!(workspace instanceof ProjectWorkspace)) return;
+    stashShown();
+    workspace.setFiles(
+      [...docs]
+        .filter(([name]) => isVerilog(name))
+        .map(([name, state]) => ({
+          uri: fileUri(projectDir, name),
+          languageId: languageId(name),
+          doc: state.doc,
+        })),
+    );
+  }
+
+  /** The project file at a language server address, if any. */
+  export function fileForUri(uri: string): string | null {
+    for (const name of docs.keys()) if (fileUri(projectDir, name) === uri) return name;
+    return null;
   }
   const verilogLanguage = StreamLanguage.define(verilog);
   /** JSON highlighting, for the project's custom-boards.json. */
@@ -112,6 +140,7 @@
     shown = null;
     for (const f of files) docs.set(f.name, makeState(f.name, f.text));
     show(showFile);
+    syncLsp();
   }
 
   /** Shows a file's document. */
@@ -124,10 +153,13 @@
     // The document may have been created under the other color scheme.
     view.dispatch({ effects: themeSlot.reconfigure(currentTheme()) });
     shown = file;
+    // The file shown before may have edits the server hasn't seen yet.
+    syncLsp();
   }
 
   export function add(file: string, text: string) {
     docs.set(file, makeState(file, text));
+    syncLsp();
   }
 
   /** Renames a document. Its undo history is reset (the language may change). */
@@ -141,11 +173,13 @@
       shown = null;
       show(newName);
     }
+    syncLsp();
   }
 
   export function remove(file: string) {
     docs.delete(file);
     if (shown === file) shown = null;
+    syncLsp();
   }
 
   /** Converts build diagnostics (1-based lines) to editor positions. */
@@ -175,12 +209,14 @@
     stashShown();
     for (const [name, state] of docs) {
       const diags = toLint(state, byFile.get(name) ?? []);
-      const next = state.update(setLintDiagnostics(state, diags)).state;
-      docs.set(name, next);
-    }
-    if (view && shown !== null) {
-      const state = docs.get(shown);
-      if (state) view.setState(state);
+      if (view && name === shown) {
+        // In place: this also runs while typing (live checks), and
+        // replacing the view's state would reset the editor.
+        view.dispatch(setLintDiagnostics(view.state, diags));
+        docs.set(name, view.state);
+      } else {
+        docs.set(name, state.update(setLintDiagnostics(state, diags)).state);
+      }
     }
   }
 
@@ -208,6 +244,7 @@
       view.dispatch({ ...spec(view.state), scrollIntoView: true });
     } else {
       docs.set(file, state.update(spec(state)).state);
+      syncLsp();
     }
   }
 
@@ -282,6 +319,7 @@
     }
     const state = shown !== null ? docs.get(shown) : undefined;
     if (view && state) view.setState(state);
+    syncLsp();
   });
 
   // Follow theme changes (other documents get it when shown).

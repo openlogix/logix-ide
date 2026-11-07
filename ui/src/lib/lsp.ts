@@ -5,12 +5,15 @@
 import {
   LSPClient,
   LSPPlugin,
+  Workspace,
   jumpToDefinitionKeymap,
-  serverDiagnostics,
+  type LSPClientExtension,
   type Transport,
+  type WorkspaceFile,
 } from "@codemirror/lsp-client";
-import { hoverTooltip, keymap, type EditorView } from "@codemirror/view";
-import { backend } from "./backend";
+import { ChangeSet, Text } from "@codemirror/state";
+import { hoverTooltip, keymap, ViewPlugin, type EditorView } from "@codemirror/view";
+import { backend, type Diagnostic } from "./backend";
 
 /** Relays LSP messages through the backend. */
 function backendTransport(): Transport {
@@ -27,16 +30,184 @@ function backendTransport(): Transport {
   };
 }
 
+/** A change to an open file, as `Workspace.syncFiles` returns it. */
+type WorkspaceFileUpdate = ReturnType<Workspace["syncFiles"]>[number];
+
+/** One project file open in the language server, shown or not. */
+class ProjectFile implements WorkspaceFile {
+  constructor(
+    public uri: string,
+    public languageId: string,
+    public version: number,
+    public doc: Text,
+    /** The editor, while the file is the shown tab. */
+    public view: EditorView | null,
+  ) {}
+  getView() {
+    return this.view;
+  }
+}
+
+/** A project file's text, for `ProjectWorkspace.setFiles`. */
+export interface OpenFile {
+  uri: string;
+  languageId: string;
+  doc: Text;
+}
+
+/**
+ * Keeps every Verilog file of the project open in the language server, not
+ * only the shown tab (as the client's default workspace does), so each
+ * file is checked while typing, shown or not. The shown file follows its
+ * editor; the others follow `setFiles`.
+ */
+export class ProjectWorkspace extends Workspace {
+  files: ProjectFile[] = [];
+  private versions: Record<string, number> = Object.create(null);
+  private pending: WorkspaceFileUpdate[] = [];
+
+  private nextVersion(uri: string): number {
+    return (this.versions[uri] = (this.versions[uri] ?? -1) + 1);
+  }
+
+  /** Makes `doc` the file's text, to be sent with the next sync. */
+  private replaceDoc(file: ProjectFile, doc: Text) {
+    const changes = ChangeSet.of({ from: 0, to: file.doc.length, insert: doc }, file.doc.length);
+    this.pending.push({ file, prevDoc: file.doc, changes });
+    file.doc = doc;
+    file.version = this.nextVersion(file.uri);
+  }
+
+  syncFiles(): readonly WorkspaceFileUpdate[] {
+    const result = this.pending;
+    this.pending = [];
+    for (const file of this.files) {
+      if (!file.view) continue;
+      const plugin = LSPPlugin.get(file.view);
+      if (!plugin) continue;
+      const changes = plugin.unsyncedChanges;
+      if (!changes.empty) {
+        result.push({ changes, file, prevDoc: file.doc });
+        file.doc = file.view.state.doc;
+        file.version = this.nextVersion(file.uri);
+        plugin.clear();
+      }
+    }
+    return result;
+  }
+
+  /**
+   * The project's Verilog files: opens new ones, sends changed text of
+   * the files not shown, and closes the ones that are gone.
+   */
+  setFiles(open: OpenFile[]) {
+    const uris = new Set(open.map((f) => f.uri));
+    for (const file of this.files.filter((f) => !uris.has(f.uri))) {
+      this.files = this.files.filter((f) => f !== file);
+      this.client.didClose(file.uri);
+    }
+    for (const f of open) {
+      const file = this.getFile(f.uri) as ProjectFile | null;
+      if (!file) {
+        const added = new ProjectFile(f.uri, f.languageId, this.nextVersion(f.uri), f.doc, null);
+        this.files.push(added);
+        this.client.didOpen(added);
+      } else if (!file.view && !file.doc.eq(f.doc)) {
+        this.replaceDoc(file, f.doc);
+      }
+    }
+    if (this.pending.length > 0) this.client.sync();
+  }
+
+  openFile(uri: string, languageId: string, view: EditorView) {
+    const file = this.getFile(uri) as ProjectFile | null;
+    if (!file) {
+      const added = new ProjectFile(uri, languageId, this.nextVersion(uri), view.state.doc, view);
+      this.files.push(added);
+      this.client.didOpen(added);
+      return;
+    }
+    file.view = view;
+    if (!file.doc.eq(view.state.doc)) {
+      this.replaceDoc(file, view.state.doc);
+      queueMicrotask(() => this.client.sync());
+    }
+  }
+
+  /** The file stays open: it's only no longer the shown tab. */
+  closeFile(uri: string, view: EditorView) {
+    const file = this.getFile(uri) as ProjectFile | null;
+    if (file?.view === view) file.view = null;
+  }
+}
+
+/** Live problems of one file, by its address, as the server sends them. */
+export type LiveProblemsHandler = (uri: string, problems: Diagnostic[]) => void;
+
+/** Sends the shown file's edits half a second after typing stops. */
+const autoSync = ViewPlugin.fromClass(
+  class {
+    pending: ReturnType<typeof setTimeout> | null = null;
+    update(update: { docChanged: boolean; view: EditorView }) {
+      if (!update.docChanged) return;
+      if (this.pending) clearTimeout(this.pending);
+      this.pending = setTimeout(() => {
+        this.pending = null;
+        LSPPlugin.get(update.view)?.client.sync();
+      }, 500);
+    }
+    destroy() {
+      if (this.pending) clearTimeout(this.pending);
+    }
+  },
+);
+
+/** LSP severities: 1 error, 2 warning, 3 information, 4 hint. */
+export function lspProblems(
+  diagnostics: { range: { start: { line: number; character: number } }; severity?: number; message: string }[],
+): Diagnostic[] {
+  return diagnostics.map((d) => ({
+    severity: (d.severity ?? 1) === 1 ? "error" : "warning",
+    file: null,
+    line: d.range.start.line + 1,
+    column: d.range.start.character + 1,
+    message: d.message,
+  }));
+}
+
+/**
+ * Errors as you type, for every open file (shown or not): passed to
+ * `onProblems`, which shows them with the others (see problems.ts).
+ */
+function liveProblems(onProblems: LiveProblemsHandler): LSPClientExtension {
+  return {
+    clientCapabilities: { textDocument: { publishDiagnostics: { versionSupport: true } } },
+    notificationHandlers: {
+      "textDocument/publishDiagnostics": (client, params) => {
+        const file = client.workspace.getFile(params.uri);
+        // An answer for an older version of the text: a newer one follows.
+        if (!file || (params.version != null && params.version !== file.version)) return true;
+        onProblems(params.uri, lspProblems(params.diagnostics));
+        return true;
+      },
+    },
+    editorExtension: autoSync,
+  };
+}
+
 /**
  * Starts the language server and returns a connected client, ready to be
- * attached to editor documents (`client.plugin(uri)`).
+ * attached to editor documents (`client.plugin(uri)`). Every project file
+ * is checked (`ProjectWorkspace.setFiles`), and its problems go to
+ * `onProblems`.
  */
-export async function startLanguageServer(): Promise<LSPClient> {
+export async function startLanguageServer(onProblems: LiveProblemsHandler): Promise<LSPClient> {
   await backend.lspStart();
   const client = new LSPClient({
+    workspace: (c) => new ProjectWorkspace(c),
     extensions: [
-      // Errors as you type (shown like Verify's).
-      serverDiagnostics(),
+      // Errors as you type, in every file.
+      liveProblems(onProblems),
       // Information about the symbol under the mouse.
       hoverTooltip(hoverSource, { hideOn: (tr) => tr.docChanged }),
       // F12: jump to where a signal or module is defined.

@@ -22,6 +22,14 @@
   } from "./lib/backend";
   import Editor from "./lib/Editor.svelte";
   import { setHoverEnabled, startLanguageServer } from "./lib/lsp";
+  import {
+    afterCommand,
+    afterEdit,
+    allProblems,
+    tabMarks,
+    taskReads,
+    type LiveProblems,
+  } from "./lib/problems";
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
@@ -601,22 +609,58 @@
     return ready ? "Ready." : "";
   });
 
-  /** Files with build problems, for marking their tabs. */
+  /** Each file's tab mark: its worst problem, live or from a command. */
   let fileProblems = $state(new Map<string, "error" | "warning">());
 
-  /** The problems currently marked in the editor. */
-  let shownDiagnostics: Diagnostic[] = [];
+  // The problems marked in the editor and on the tabs (see problems.ts):
+  // from the last commands, until the file is edited or a later command
+  // reads it again, and from the checks that run while typing.
+  let commandProblems: Diagnostic[] = [];
+  let liveProblems: LiveProblems = new Map();
 
-  function showDiagnostics(diags: Diagnostic[]) {
-    shownDiagnostics = diags;
-    const map = byFile(diags);
-    editor?.setDiagnostics(map);
-    fileProblems = new Map(
-      [...map].map(([file, list]) => [
-        file,
-        list.some((d) => d.severity === "error") ? "error" : "warning",
-      ]),
-    );
+  function showProblems() {
+    const all = allProblems(commandProblems, liveProblems);
+    editor?.setDiagnostics(byFile(all));
+    fileProblems = tabMarks(all);
+  }
+
+  /** A command's result: replaces the problems of the files it read. */
+  function showCommandProblems(found: Diagnostic[], reads: (file: string) => boolean) {
+    commandProblems = afterCommand(commandProblems, found, reads);
+    showProblems();
+  }
+
+  /** A live check's result for one file (null file: ignored). */
+  function showLiveProblems(file: string | null, found: Diagnostic[]) {
+    if (!file) return;
+    const before = liveProblems.get(file) ?? [];
+    if (before.length === 0 && found.length === 0) return;
+    liveProblems = new Map(liveProblems);
+    if (found.length > 0) liveProblems.set(file, found.map((d) => ({ ...d, file })));
+    else liveProblems.delete(file);
+    showProblems();
+  }
+
+  /** Forgets a file's problems (renamed or deleted). */
+  function forgetProblems(file: string) {
+    commandProblems = afterEdit(commandProblems, file);
+    showLiveProblems(file, []);
+    showProblems();
+  }
+
+  /** Clears all problems (another project, or none). */
+  function clearProblems() {
+    commandProblems = [];
+    liveProblems = new Map();
+    fileProblems = new Map();
+  }
+
+  /** The live checker stopped: its problems are no longer current. */
+  function clearVerilogLiveProblems() {
+    const kept = new Map([...liveProblems].filter(([file]) => file === CUSTOM_BOARDS_FILE));
+    if (kept.size === liveProblems.size) return;
+    liveProblems = kept;
+    showProblems();
   }
 
   // ---- Auto Format (Tools menu, Cmd+T, as in the Arduino IDE) ----
@@ -692,10 +736,10 @@
       const result = await backend.formatFile(file, before);
       if (project !== p) return; // Another project was opened meanwhile.
       // Old markers in this file no longer match its lines.
-      const others = shownDiagnostics.filter((d) => d.file !== file);
+      const onlyThis = (name: string) => name === file;
       if (!result.ok || result.text === null) {
         showOutput("error");
-        showDiagnostics([...others, ...result.diagnostics]);
+        showCommandProblems(result.diagnostics, onlyThis);
         const first = firstLocated(result.diagnostics);
         const why = first ?? result.diagnostics[0];
         status = {
@@ -711,11 +755,11 @@
           kind: "error",
         };
       } else if (result.text === before) {
-        showDiagnostics(others);
+        showCommandProblems([], onlyThis);
         status = { text: "No changes necessary for Auto Format.", kind: "ok" };
       } else {
         editor?.replaceText(file, result.text);
-        showDiagnostics(others);
+        showCommandProblems([], onlyThis);
         status = { text: "Auto Format finished.", kind: "ok" };
       }
     } catch (e) {
@@ -747,7 +791,9 @@
     if (lsp || lspStarting || !lspWanted()) return;
     lspStarting = true;
     try {
-      lsp = await startLanguageServer();
+      lsp = await startLanguageServer((uri, found) =>
+        showLiveProblems(editor?.fileForUri(uri) ?? null, found),
+      );
     } catch (e) {
       // Not essential: Verify still finds errors.
       log(`Verible live error checking is off: ${toUserError(e).details}`);
@@ -761,6 +807,7 @@
   async function stopLsp() {
     const old = lsp;
     lsp = null;
+    clearVerilogLiveProblems();
     old?.disconnect();
     try {
       await backend.lspStop();
@@ -772,6 +819,7 @@
   function onLspClosed() {
     const old = lsp;
     lsp = null;
+    clearVerilogLiveProblems();
     old?.disconnect();
     // Stopped on purpose (Settings), or never wanted: nothing to do.
     if (!old || !lspWanted()) return;
@@ -976,7 +1024,9 @@
       if (task === "graph" && outcome.ok && outcome.graphSvg) {
         diagram = { svg: outcome.graphSvg, module: testbench ?? "main" };
       }
-      showDiagnostics(outcome.diagnostics);
+      showCommandProblems(outcome.diagnostics, (file) =>
+        taskReads(task, fileRole(file, mainFile(p), pinExtension)),
+      );
       if (!outcome.ok && !outcome.cancelled) showOutput("error");
       status = {
         text: outcomeText(task, outcome),
@@ -1024,10 +1074,7 @@
 
   /** Shows the custom boards file's problems as its markers, or clears them. */
   function markCustomBoards(diagnostics: Diagnostic[]) {
-    const others = shownDiagnostics.filter((d) => d.file !== CUSTOM_BOARDS_FILE);
-    if (others.length !== shownDiagnostics.length || diagnostics.length > 0) {
-      showDiagnostics([...others, ...diagnostics]);
-    }
+    showLiveProblems(CUSTOM_BOARDS_FILE, diagnostics);
   }
 
   // The project's own boards, as Logix Engine reads them, for the board
@@ -1136,7 +1183,7 @@
     project = fromDoc(doc);
     const main = mainFile(project);
     activeFile = main;
-    fileProblems = new Map();
+    clearProblems();
     fileError = null;
     cancelNaming();
     editor?.reset(doc.files, main);
@@ -1146,6 +1193,12 @@
   function onEdit(file: string, text: string) {
     const f = project && findFile(project, file);
     if (f) f.text = text;
+    // Editing a file clears what the last command found in it.
+    const after = afterEdit(commandProblems, file);
+    if (after !== commandProblems) {
+      commandProblems = after;
+      showProblems();
+    }
   }
 
   function selectFile(name: string) {
@@ -1205,6 +1258,7 @@
     } else {
       renameFile(project, current.file, name);
       editor?.rename(current.file, name);
+      forgetProblems(current.file);
       if (activeFile === current.file) activeFile = name;
       cancelNaming();
       editor?.focus();
@@ -1231,6 +1285,7 @@
     if (!ok || !project) return;
     deleteFile(project, file);
     editor?.remove(file);
+    forgetProblems(file);
     if (activeFile === file) selectFile(mainFile(project));
   }
 
@@ -1290,7 +1345,7 @@
       homeVariant = project.variant;
     }
     project = null;
-    fileProblems = new Map();
+    clearProblems();
     fileError = null;
     cancelNaming();
     await backend.closeProject();
