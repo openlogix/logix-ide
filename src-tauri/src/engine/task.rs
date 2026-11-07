@@ -567,6 +567,13 @@ fn failed(outcome: &mut TaskOutcome, error: &Value, line: &impl Fn(String)) {
     outcome.ok = false;
     let found = diagnostics(&error["diagnostics"]);
     let has_error = found.iter().any(|d| d.severity == Severity::Error);
+    // The message becomes the task's first error, which the closing line
+    // ("Build failed: …") shows: printing it here too repeated it.
+    let closing_line = !has_error
+        && !outcome
+            .diagnostics
+            .iter()
+            .any(|d| d.severity == Severity::Error);
     outcome.diagnostics.extend(found);
     if !has_error {
         outcome.diagnostics.push(self::error(&message(error)));
@@ -574,7 +581,7 @@ fn failed(outcome: &mut TaskOutcome, error: &Value, line: &impl Fn(String)) {
     outcome.action = error["action"]["code"].as_str().map(String::from);
     // A design error's message repeats the tool's error line, which the
     // console already shows.
-    if error["category"] != "design" {
+    if error["category"] != "design" && !closing_line {
         line(red(&message(error)));
     }
 }
@@ -851,6 +858,11 @@ mod tests {
             outcome.diagnostics[0].message,
             "No Alhambra II is connected. Connect the Alhambra II by USB, then retry."
         );
+        // The closing line shows it ("Upload failed: …"): not printed too.
+        assert!(lines.lock().unwrap().is_empty());
+        // After another error, the closing line shows that one: printed.
+        failed(&mut outcome, &e, &|l| lines.lock().unwrap().push(l));
+        assert_eq!(lines.lock().unwrap().len(), 1);
         // A design error's located diagnostics are enough.
         let mut outcome2 = outcome.clone();
         outcome2.diagnostics.clear();
