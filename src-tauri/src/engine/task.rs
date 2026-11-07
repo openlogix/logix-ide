@@ -23,9 +23,8 @@ use crate::project;
 /// The design's top module: always main (see CLAUDE.md, Project on disk).
 const TOP_MODULE: &str = "main";
 
-/// Shown when the project has no pin file. The UI explains it in plain
-/// words (`friendly` in `tasks.ts`).
-pub const NO_CONSTRAINT_FILE: &str = "No constraint file (pin file) for the board.";
+/// Shown when the project has no pin file.
+pub const NO_CONSTRAINT_FILE: &str = "The project has no pin file (e.g. pinout.pcf) for the board. Start a new project with the board selected, or open one of the board's examples.";
 
 /// Upload's outcome action when several devices fit the board.
 pub const SELECT_DEVICE: &str = "select_device";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic } from "./backend";
-import { byFile, firstLocated, friendly, outcomeText, testbenchLines } from "./tasks";
+import { byFile, firstLocated, outcomeText, testbenchLines } from "./tasks";
 
 const err = (file: string | null, line: number | null, message: string): Diagnostic => ({
   severity: "error",
@@ -153,32 +153,6 @@ describe("build report in the status", () => {
   });
 });
 
-describe("friendly messages", () => {
-  it("explains a missing pin file", () => {
-    expect(
-      outcomeText("build", {
-        ok: false,
-        diagnostics: [err(null, null, "No constraint file '*.pcf' found.")],
-        testbenches: [],
-        report: null,
-        cancelled: false, graphSvg: null,
-        seconds: 0.2,
-        action: null,
-        devices: [],
-      }),
-    ).toMatch(/^Build failed: The project has no pin file/);
-  });
-  it("explains a pin file of the wrong kind", () => {
-    expect(
-      friendly(
-        'constraint_file: "pinout.lpf" isn\'t a .pcf file. iCE40 FPGAs, as on the Alhambra II, need a .pcf constraint file.',
-      ),
-    ).toBe(
-      "The pin file pinout.lpf is the wrong kind for this board. iCE40 FPGAs, as on the Alhambra II, need a .pcf constraint file. If it's written for this board, rename it to pinout.pcf.",
-    );
-  });
-});
-
 describe("stopped tasks", () => {
   it("says the task was stopped", () => {
     expect(
@@ -193,23 +167,5 @@ describe("stopped tasks", () => {
         devices: [],
       }),
     ).toBe("Upload stopped.");
-  });
-});
-
-describe("no pin file", () => {
-  it("explains it in plain words", () => {
-    expect(
-      outcomeText("build", {
-        ok: false,
-        diagnostics: [err(null, null, "No constraint file (pin file) for the board.")],
-        testbenches: [],
-        report: null,
-        cancelled: false,
-        graphSvg: null,
-        seconds: 0.1,
-        action: null,
-        devices: [],
-      }),
-    ).toMatch(/^Build failed: The project has no pin file/);
   });
 });

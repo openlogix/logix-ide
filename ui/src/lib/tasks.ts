@@ -57,7 +57,7 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
     return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has problems.`;
   }
   const where = location(first);
-  const problem = `${where ? `${where}: ` : ""}${friendly(first.message)}`;
+  const problem = `${where ? `${where}: ` : ""}${first.message}`;
   // A failing testbench is still simulated: its waveform shows the problem.
   if (task === "simulate" && outcome.testbenches.length > 0) {
     return `The testbench failed (GTKWave shows the signals): ${problem}`;
@@ -91,27 +91,6 @@ export function byFile(diags: Diagnostic[]): Map<string, Diagnostic[]> {
     map.set(d.file, list);
   }
   return map;
-}
-
-/** Plain explanations for messages beginners may not understand. */
-export function friendly(message: string): string {
-  if (/^No constraint file/i.test(message)) {
-    return (
-      "The project has no pin file (e.g. pinout.pcf) for the board. " +
-      "Start a new project with the board selected, or open one of the board's examples."
-    );
-  }
-  // The engine refuses a pin file of another FPGA family's kind.
-  const wrongKind = /^constraint_file: "(.+)" isn't a \.(\w+) file\.\s*(.*)$/.exec(message);
-  if (wrongKind) {
-    const [, file, ext, why] = wrongKind;
-    const renamed = file.replace(/\.[^./\\]*$/, "") + `.${ext}`;
-    return (
-      `The pin file ${file} is the wrong kind for this board. ${why} ` +
-      `If it's written for this board, rename it to ${renamed}.`
-    ).replace(/\s+/g, " ");
-  }
-  return message;
 }
 
 /** Console lines listing each testbench's result after a test run. */
