@@ -83,6 +83,7 @@
   import {
     byFile,
     firstLocated,
+    gtkwaveSlowText,
     location,
     outcomeText,
     runningText,
@@ -557,7 +558,26 @@
   }
 
   /** Whether Logix is doing something (the status bar shows a spinner). */
+  /**
+   * After a successful Simulate, while GTKWave starts (a cold start can
+   * take seconds): the "Opening GTKWave…" status and the texts that replace
+   * it when its window appears (`done`) or doesn't within 30 s (`slow`).
+   * Only while that status is still shown: another command's status ends
+   * it.
+   */
+  let gtkwaveWait = $state<{ done: string; slow: string } | null>(null);
+  const OPENING_GTKWAVE = "Opening GTKWave…";
+  const openingGtkwave = $derived(gtkwaveWait !== null && status?.text === OPENING_GTKWAVE);
+
+  function onGtkwaveOpened(found: boolean) {
+    const wait = gtkwaveWait;
+    gtkwaveWait = null;
+    if (!wait || status?.text !== OPENING_GTKWAVE) return;
+    status = { text: found ? wait.done : wait.slow, kind: "ok" };
+  }
+
   const isBusy = $derived(
+    openingGtkwave ||
     activity !== null ||
       running !== null ||
       formatting ||
@@ -964,6 +984,7 @@
     fileError = null;
     running = task;
     taskStep = null;
+    let opening: { done: string; slow: string } | null = null;
     status = { text: runningText(task), kind: "info" };
     consoleLines = [];
     showOutput("command");
@@ -1018,6 +1039,11 @@
         text: outcomeText(task, outcome),
         kind: outcome.ok ? "ok" : outcome.cancelled ? "info" : "error",
       };
+      // GTKWave starts after the engine returns: "Opening GTKWave…" until
+      // its window appears (after the result goes to the output).
+      if (task === "simulate" && outcome.ok && outcome.testbenches.length > 0) {
+        opening = { done: status.text, slow: gtkwaveSlowText(outcome) };
+      }
       const first =
         outcome.ok || outcome.cancelled
           ? null
@@ -1035,6 +1061,10 @@
       running = null;
       taskStep = null;
       if (project === p) logDone();
+      if (opening && project === p) {
+        status = { text: OPENING_GTKWAVE, kind: "info" };
+        gtkwaveWait = opening;
+      }
     }
   }
 
@@ -1679,6 +1709,7 @@
     const unlisten = [
       backend.onToolOutput((line) => log(line)),
       backend.onLspClosed(onLspClosed),
+      backend.onGtkwaveOpened(onGtkwaveOpened),
       backend.onOpenRecent(openRecent),
       backend.onMenu(onMenu),
       backend.onCloseRequested(onCloseRequested),

@@ -427,7 +427,8 @@ pub async fn run_task(
     // The engine opens GTKWave whenever the testbench ran, even failing
     // (its waveform shows where).
     if task == outcome::Task::Simulate && !outcome.testbenches.is_empty() {
-        tauri::async_runtime::spawn(bring_gtkwave_to_front(app, gtkwave_before));
+        let generation = GTKWAVE_WAIT.fetch_add(1, Ordering::SeqCst) + 1;
+        tauri::async_runtime::spawn(bring_gtkwave_to_front(app, gtkwave_before, generation));
     }
     Ok(outcome)
 }
@@ -435,12 +436,27 @@ pub async fn run_task(
 /// How GTKWave's process is named.
 const GTKWAVE: &str = "gtkwave";
 
+/// The latest simulation's wait for GTKWave: an older wait that ends after
+/// a newer simulation started says nothing.
+static GTKWAVE_WAIT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// How long to wait for GTKWave's window: a cold start (the first after a
+/// while) can take over 8 seconds.
+const GTKWAVE_WAIT_SECONDS: u64 = 30;
+
 /// After a simulation, GTKWave starts in the background and its
-/// window would stay behind Logix. Waits for the new GTKWave (up to ~8 s)
-/// and brings it to the front.
-async fn bring_gtkwave_to_front(app: AppHandle, before: Vec<i32>) {
+/// window would stay behind Logix. Waits for the new GTKWave (up to
+/// `GTKWAVE_WAIT_SECONDS`) and brings it to the front, then tells the UI
+/// with the `gtkwave-opened` event (true when found), which ends its
+/// "Opening GTKWave…" status.
+async fn bring_gtkwave_to_front(app: AppHandle, before: Vec<i32>, generation: u64) {
     use std::time::Duration;
-    for _ in 0..32 {
+    let tell = |found: bool| {
+        if GTKWAVE_WAIT.load(Ordering::SeqCst) == generation {
+            let _ = app.emit("gtkwave-opened", found);
+        }
+    };
+    for _ in 0..GTKWAVE_WAIT_SECONDS * 4 {
         tokio::time::sleep(Duration::from_millis(250)).await;
         let pids = on_main_thread(&app, || platform::running_app_pids(GTKWAVE))
             .await
@@ -453,9 +469,11 @@ async fn bring_gtkwave_to_front(app: AppHandle, before: Vec<i32>) {
         tokio::time::sleep(Duration::from_millis(500)).await;
         let moved = on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
         crate::log!("Brought GTKWave (pid {pid}) to the front: {moved:?}");
+        tell(true);
         return;
     }
     crate::log!("Didn't find a new GTKWave window to bring to the front");
+    tell(false);
 }
 
 /// Runs `f` on the main thread (needed for native window APIs) and returns

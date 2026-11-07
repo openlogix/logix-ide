@@ -961,6 +961,35 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(0);
 });
 
+test("Simulate says Opening GTKWave… until its window appears", async ({ page }) => {
+  await start(page);
+  const fake = (found: boolean) =>
+    page.evaluate(
+      (f) => (window as unknown as { __fake: { gtkwaveOpened: (f: boolean) => void } }).__fake.gtkwaveOpened(f),
+      found,
+    );
+  await menu(page, "simulate");
+  // The result goes to the output; the status waits for GTKWave, busy.
+  await expect(status(page)).toHaveText("Opening GTKWave…");
+  await expect(page.locator(".status-bar .spinner")).toBeVisible();
+  await expect(output(page)).toContainText(/Simulation done in [\d.]+ s\. GTKWave shows the signals\./);
+  await fake(true);
+  await expect(status(page)).toHaveText(/^Simulation done in [\d.]+ s\. GTKWave shows the signals\.$/);
+  await expect(page.locator(".status-bar .spinner")).toHaveCount(0);
+  // Not found within 30 s: it may open behind Logix.
+  await menu(page, "simulate");
+  await expect(status(page)).toHaveText("Opening GTKWave…");
+  await fake(false);
+  await expect(status(page)).toHaveText(/GTKWave is taking a while to start; it may open behind this window\.$/);
+  // Another command's status isn't replaced by a late answer.
+  await menu(page, "simulate");
+  await expect(status(page)).toHaveText("Opening GTKWave…");
+  await menu(page, "verify");
+  await expect(status(page)).toContainText("Build succeeded");
+  await fake(true);
+  await expect(status(page)).toContainText("Build succeeded");
+});
+
 test("Board Info shows the board's FPGA and the boards with the same FPGA", async ({ page }) => {
   await start(page);
   // The board picker: the FPGA as a hover hint, and search by it.

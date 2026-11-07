@@ -57,6 +57,14 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   return `${VERB[task].noun} failed: ${problem}`;
 }
 
+/**
+ * The status line after a successful simulation whose GTKWave window
+ * didn't appear in time (a slow start): it may still open, behind Logix.
+ */
+export function gtkwaveSlowText(outcome: TaskOutcome): string {
+  return `${VERB.simulate.done} in ${outcome.seconds.toFixed(1)} s. GTKWave is taking a while to start; it may open behind this window.`;
+}
+
 /** The first error (or else warning) that points into a file. */
 export function firstLocated(diags: Diagnostic[]): Diagnostic | null {
   const located = diags.filter((d) => d.file && d.line);

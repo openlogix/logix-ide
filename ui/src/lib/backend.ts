@@ -593,6 +593,13 @@ export const backend = {
   onLspMessage: (handler: (message: string) => void): Promise<UnlistenFn> =>
     listen<string>("lsp-message", (e) => handler(e.payload)),
 
+  /**
+   * After Simulate: GTKWave's window appeared and was brought to the front
+   * (true), or didn't appear within 30 s (false).
+   */
+  onGtkwaveOpened: (handler: (found: boolean) => void): Promise<UnlistenFn> =>
+    listen<boolean>("gtkwave-opened", (e) => handler(e.payload)),
+
   /** The language server stopped. */
   onLspClosed: (handler: () => void): Promise<UnlistenFn> =>
     listen("lsp-closed", () => handler()),

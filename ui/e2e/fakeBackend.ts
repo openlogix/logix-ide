@@ -178,6 +178,7 @@ const handlers: {
   menu?: (id: MenuId) => void;
   output?: (line: string) => void;
   finishSetup?: () => void;
+  gtkwaveOpened?: (found: boolean) => void;
 } = {};
 
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
@@ -222,6 +223,8 @@ const fake = {
   saved: null as { board: string | null; variant: Real.Variant } | null,
   /** Ends a setup held at the engine's package install (`/?engineSetup`). */
   finishSetup: () => handlers.finishSetup?.(),
+  /** GTKWave's window appeared after Simulate (true), or not in time (false). */
+  gtkwaveOpened: (found: boolean) => handlers.gtkwaveOpened?.(found),
 };
 (window as unknown as { __fake: typeof fake }).__fake = fake;
 
@@ -392,7 +395,7 @@ export const backend: typeof Real.backend = {
     const onLine = (line: string) => onEvent({ kind: "line", line });
     const { lines: buildLines, outcome } = buildOutcome(files, board);
     let lines = buildLines;
-    if (outcome.ok && task === "test") {
+    if (outcome.ok && (task === "test" || task === "simulate")) {
       lines = outputLines(testOutput);
       outcome.testbenches = [{ name: "main_tb.v", passed: true }];
       outcome.report = null;
@@ -516,6 +519,10 @@ export const backend: typeof Real.backend = {
   lspStop: async () => {},
   onLspMessage: unlisten,
   onLspClosed: unlisten,
+  onGtkwaveOpened: async (handler) => {
+    handlers.gtkwaveOpened = handler;
+    return () => {};
+  },
 
   getPreferences: async () => ({ ...preferences }),
   setPreferences: async (p) => {
