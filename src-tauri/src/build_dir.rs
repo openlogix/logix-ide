@@ -12,7 +12,7 @@ use crate::project::{self, ProjectFile, RESERVED_NAMES};
 
 /// Pin constraint file extensions. The first one in the project is the
 /// build's constraint file.
-pub const CONSTRAINT_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc", "pdc", "ccf"];
+pub const CONSTRAINT_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc"];
 
 /// Records which project the folder was prepared for.
 const KEY_FILE: &str = ".logix-build-key";

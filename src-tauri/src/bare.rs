@@ -14,7 +14,7 @@ use regex::Regex;
 use crate::project::ProjectFile;
 
 /// Pin constraint file extensions (the formats the boards use).
-const PIN_FILE_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc", "pdc", "ccf"];
+const PIN_FILE_EXTENSIONS: &[&str] = crate::build_dir::CONSTRAINT_EXTENSIONS;
 
 /// `main.v` for a board without an example to take the pins from.
 pub const NO_PINS_MAIN: &str = "\

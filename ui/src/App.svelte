@@ -1355,6 +1355,20 @@
     nameError = null;
   }
 
+  /** The name field's error, focusable so its text can be selected and copied. */
+  let nameErrorEl = $state<HTMLElement | null>(null);
+
+  /**
+   * Leaving the name field or its error cancels the naming, except when
+   * focus moves between them: clicking the error to select and copy it
+   * kept cancelling, which removed it (the user's report, 2026-11-07).
+   */
+  function onNamingBlur(e: FocusEvent) {
+    const to = e.relatedTarget as Node | null;
+    if (to && (to === nameErrorEl || (to as HTMLElement).classList?.contains("tab-input"))) return;
+    cancelNaming();
+  }
+
   async function commitNaming() {
     const current = naming;
     if (!project || !current) return;
@@ -2126,7 +2140,7 @@
                 class="tab-input"
                 bind:value={nameInput}
                 onkeydown={onNameKey}
-                onblur={cancelNaming}
+                onblur={onNamingBlur}
                 spellcheck="false"
                 autocomplete="off"
                 autofocus
@@ -2169,7 +2183,7 @@
               placeholder="name.v"
               bind:value={nameInput}
               onkeydown={onNameKey}
-              onblur={cancelNaming}
+              onblur={onNamingBlur}
               spellcheck="false"
               autocomplete="off"
               autofocus
@@ -2181,7 +2195,16 @@
         {/if}
       </div>
       {#if nameError}
-        <div class="name-error" role="alert">{nameError}</div>
+        <!-- Focusable, so selecting it to copy doesn't end the naming. -->
+        <div
+          class="name-error"
+          role="alert"
+          tabindex="-1"
+          bind:this={nameErrorEl}
+          onblur={onNamingBlur}
+        >
+          {nameError}
+        </div>
       {/if}
       <div class="code" style:display={welcome ? "none" : null}>
         <Editor
@@ -2478,6 +2501,8 @@
     color: var(--fg);
   }
   .name-error {
+    outline: none;
+    user-select: text;
     padding: 4px 12px;
     font-size: 12px;
     color: var(--banner-error-fg);

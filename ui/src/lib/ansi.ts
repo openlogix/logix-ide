@@ -148,7 +148,7 @@ export function parseAnsi(line: string): Segment[] {
  * (not part of a longer path), a colon, and a line number.
  */
 const FILE_LINE =
-  /(?<![\w/.\\-])([\w.-]+\.(?:s?vh?|pcf|lpf|cst|xdc|pdc|ccf)):(\d+)/gi;
+  /(?<![\w/.\\-])([\w.-]+\.(?:s?vh?|pcf|lpf|cst|xdc)):(\d+)/gi;
 
 /** Splits segments further so "file:line" references become links. */
 export function addLinks(segments: Segment[]): Segment[] {

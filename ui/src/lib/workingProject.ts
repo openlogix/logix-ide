@@ -135,7 +135,7 @@ export type FileRole =
 export const CUSTOM_BOARDS_FILE = "custom-boards.json";
 
 /** Pin constraint file extensions (as `CONSTRAINT_EXTENSIONS` in `build_dir.rs`). */
-const PIN_FILE = /\.(pcf|lpf|cst|xdc|pdc|ccf)$/i;
+const PIN_FILE = /\.(pcf|lpf|cst|xdc)$/i;
 
 /**
  * The role of the project file `name`; `main` is the project's main file

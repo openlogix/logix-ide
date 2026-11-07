@@ -603,8 +603,8 @@ export const backend: typeof Real.backend = {
     const n = name.trim();
     if (!n) return "Enter a file name.";
     if (/\s/.test(n)) return "A file name can't contain spaces.";
-    if (!/\.(s?vh?|pcf|lpf|cst|xdc|pdc|ccf)$/i.test(n)) {
-      return "Use one of these extensions: .v .sv .vh .svh .pcf .lpf .cst .xdc .pdc .ccf.";
+    if (!/\.(s?vh?|pcf|lpf|cst|xdc)$/i.test(n)) {
+      return "Use one of these extensions: .v .sv .vh .svh .pcf .lpf .cst .xdc.";
     }
     if (existing.some((e) => e.toLowerCase() === n.toLowerCase())) {
       return `There's already a file named "${n}".`;

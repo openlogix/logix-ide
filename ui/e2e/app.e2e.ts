@@ -286,6 +286,17 @@ test("adds a file as a new tab and checks names", async ({ page }) => {
   await page.keyboard.type("bad name.v");
   await page.keyboard.press("Enter");
   await expect(page.locator(".name-error")).toContainText("can't contain spaces");
+  // Clicking the error to select and copy it keeps it, and the name field.
+  await page.locator(".tab-input").fill("pins.xxxx");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".name-error")).toContainText("Use one of these extensions");
+  await page.locator(".name-error").click();
+  await expect(page.locator(".name-error")).toBeVisible();
+  await expect(page.locator(".tab-input")).toBeVisible();
+  // Leaving both cancels.
+  await page.locator(".cm-content").click();
+  await expect(page.locator(".name-error")).toHaveCount(0);
+  await page.getByTitle(/^New file/).click();
 
   await page.locator(".tab-input").fill("counter.v");
   await page.keyboard.press("Enter");

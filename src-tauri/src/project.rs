@@ -56,9 +56,7 @@ pub fn custom_boards_stamp(folder: &Path) -> Option<String> {
 
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
 /// and headers, and the pin constraint formats of the supported boards.
-pub const EDITABLE_EXTENSIONS: &[&str] = &[
-    "v", "sv", "vh", "svh", "pcf", "lpf", "cst", "xdc", "pdc", "ccf",
-];
+pub const EDITABLE_EXTENSIONS: &[&str] = &["v", "sv", "vh", "svh", "pcf", "lpf", "cst", "xdc"];
 
 /// Names that belong to the IDE or the build, never project files.
 pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "_build"];
@@ -579,6 +577,29 @@ fn copy_recursive(from: &Path, to: &Path, mode: CopyMode) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pin_files_are_the_engines_formats() {
+        // Every board in the engine's catalog (the UI tests' recorded copy)
+        // has a pin file kind Logix offers, and Logix offers no other kind.
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("../../ui/e2e/fixtures/catalog.json")).unwrap();
+        let mut used: Vec<&str> = fixture["boards"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|b| b["pinExtension"].as_str())
+            .collect();
+        used.sort();
+        used.dedup();
+        let mut offered = crate::build_dir::CONSTRAINT_EXTENSIONS.to_vec();
+        offered.sort();
+        assert_eq!(used, offered);
+        for ext in offered {
+            assert!(EDITABLE_EXTENSIONS.contains(&ext), "{ext}");
+        }
+        assert!(check_new_file_name("pins.pdc", &[]).is_err());
+    }
 
     const NO_VARIANT: &Variant = &Variant::new();
 

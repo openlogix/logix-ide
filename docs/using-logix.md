@@ -45,7 +45,7 @@ SystemVerilog), and the design's top module must be named `main`. Other
 files in the folder show up as tabs:
 
 - more Verilog or SystemVerilog files (`.v`, `.sv`, `.vh`, `.svh`),
-- the board's pin file (`.pcf`, `.lpf`, `.cst`, `.xdc`, `.pdc` or `.ccf`),
+- the board's pin file (`.pcf`, `.lpf`, `.cst` or `.xdc`),
 - testbenches (`*_tb.v`, see [Testbenches and simulation](testbenches.md)).
 
 Logix also keeps a small `logix-ide.toml` with the project's settings, such
