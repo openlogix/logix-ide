@@ -1254,7 +1254,14 @@
     log(`Error: ${err.details}`);
   }
 
-  function loadDoc(doc: ProjectDoc) {
+  /**
+   * Shows `doc` as the open project. The output is cleared, since the last
+   * project's lines and file links don't belong to this one (as each
+   * Arduino sketch has its own window; the IDE log keeps them), except at
+   * startup (`keepOutput`), where it holds Logix's own first lines.
+   */
+  function loadDoc(doc: ProjectDoc, keepOutput = false) {
+    if (!keepOutput) clearConsole();
     project = fromDoc(doc);
     const main = mainFile(project);
     activeFile = main;
@@ -1420,6 +1427,7 @@
       homeVariant = project.variant;
     }
     project = null;
+    clearConsole();
     clearProblems();
     fileError = null;
     cancelNaming();
@@ -1763,7 +1771,7 @@
     try {
       const doc = await backend.openLastProject();
       if (doc) {
-        loadDoc(doc);
+        loadDoc(doc, true);
         log(`Opened ${doc.dir}`);
         return;
       }

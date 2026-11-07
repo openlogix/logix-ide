@@ -128,8 +128,12 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
 });
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
-  await start(page);
+  // The start screen's output: Logix's own first lines (opening a project
+  // clears them).
+  await page.goto("/");
   await expect(output(page)).toContainText("119 examples available.");
+  await start(page);
+  await expect(output(page)).not.toContainText("119 examples available.");
   // Logix Engine's 84 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
@@ -221,6 +225,21 @@ test("Copy Project Folder Path offers Save As… first, then copies the path and
   await expect(status(page)).toContainText(
     `Copied the project folder's path: '${(await fake()).copiedPath}'`,
   );
+});
+
+test("switching projects clears the output", async ({ page }) => {
+  await start(page);
+  await menu(page, "verify");
+  await expect(status(page)).toContainText("Build succeeded");
+  await expect(output(page)).toContainText("Build succeeded");
+  // Another project: only its own lines.
+  await menu(page, "new");
+  await expect(output(page)).toContainText(/^\s*New project\.\s*Ready\.\s*$/);
+  // Closing it, too.
+  await menu(page, "verify");
+  await expect(status(page)).toContainText("Build succeeded");
+  await menu(page, "close-project");
+  await expect(output(page)).toContainText(/^\s*Closed the project\.\s*Ready\.\s*$/);
 });
 
 test("a programmer's progress stays on one line, as in a terminal", async ({ page }) => {

@@ -30,7 +30,9 @@
   links to that line. Select text in it and copy it as usual, or
   right-click for **Copy**, **Select All** and **Clear Output**. **Clear**
   (in the status bar) and **Clear Output** empty the output and the status
-  line; the marks on files with problems stay. Drag the bar above it to resize it. To hide it, drag
+  line; the marks on files with problems stay. Opening, creating or
+  closing a project clears the output too, so it shows only that
+  project's lines. Drag the bar above it to resize it. To hide it, drag
   the bar all the way down, click **Hide**, or use **View > Toggle Output**;
   it comes back with **Show**, by dragging the bar up, and by default when
   you Verify, Upload, Run Tests or Simulate (see **Show the output** in
