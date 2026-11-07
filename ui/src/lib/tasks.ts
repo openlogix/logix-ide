@@ -56,13 +56,20 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   if (file === CUSTOM_BOARDS_FILE || file.endsWith(`/${CUSTOM_BOARDS_FILE}`)) {
     return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has problems.`;
   }
-  const where = location(first);
-  const problem = `${where ? `${where}: ` : ""}${first.message}`;
+  // A located error is the tool's own line, already in the output just
+  // above: repeated here it read twice (the user's choice, 2026-11-07).
+  // One without a location (such as "No Alhambra II is connected. …")
+  // shows only here.
+  const located = Boolean(first.file && first.line);
   // A failing testbench is still simulated: its waveform shows the problem.
   if (task === "simulate" && outcome.testbenches.length > 0) {
-    return `The testbench failed (GTKWave shows the signals): ${problem}`;
+    return located
+      ? "The testbench failed. GTKWave shows the signals."
+      : `The testbench failed (GTKWave shows the signals): ${first.message}`;
   }
-  return `${VERB[task].noun} failed: ${problem}`;
+  return located
+    ? `${VERB[task].noun} failed.`
+    : `${VERB[task].noun} failed: ${first.message}`;
 }
 
 /**

@@ -34,7 +34,7 @@ describe("outcomeText", () => {
         action: null,
         devices: [],
       }),
-    ).toBe("Build failed: main.v:25: syntax error");
+    ).toBe("Build failed.");
     expect(
       outcomeText("upload", {
         ok: false,
@@ -106,7 +106,7 @@ describe("test results", () => {
         action: null,
         devices: [],
       }),
-    ).toBe("Test failed: alu_tb.v:52: Assertion failed: expected 'h01, actual 'h00");
+    ).toBe("Test failed.");
   });
   it("lists each testbench", () => {
     expect(
@@ -123,11 +123,14 @@ describe("test results", () => {
     const outcome = { ok: false, diagnostics: [failure], report: null, cancelled: false, graphSvg: null, seconds: 0.3, action: null, devices: [] };
     expect(
       outcomeText("simulate", { ...outcome, testbenches: [{ name: "main_tb.v", passed: false }] }),
-    ).toBe("The testbench failed (GTKWave shows the signals): main_tb.v:52: Assertion failed");
+    ).toBe("The testbench failed. GTKWave shows the signals.");
     // A compile error: nothing was simulated.
-    expect(outcomeText("simulate", { ...outcome, testbenches: [] })).toBe(
-      "Simulation failed: main_tb.v:52: Assertion failed",
-    );
+    expect(outcomeText("simulate", { ...outcome, testbenches: [] })).toBe("Simulation failed.");
+    // An error without a location is shown only here, so it stays.
+    const unlocated = { ...failure, file: null, line: null, message: "vvp stopped." };
+    expect(
+      outcomeText("simulate", { ...outcome, diagnostics: [unlocated], testbenches: [{ name: "main_tb.v", passed: false }] }),
+    ).toBe("The testbench failed (GTKWave shows the signals): vvp stopped.");
   });
 });
 

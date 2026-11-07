@@ -261,14 +261,14 @@ test("a build error is marked in the editor and linked in the output", async ({ 
   await expect(tab(page, "main.v").locator(".dot")).toBeVisible();
 
   await page.getByTitle(/^Verify/).click();
-  await expect(status(page)).toContainText("Build failed: main.v:1:");
+  await expect(status(page)).toHaveText("Build failed.");
   await expect(page.locator(".cm-lintRange-error")).toBeVisible();
   await expect(tab(page, "main.v")).toHaveClass(/has-error/);
 
-  // The "main.v:1" in the output jumps to the file (the tool's line, and
-  // the result line at the end).
+  // The "main.v:1" in the output jumps to the file (the tool's line; the
+  // closing line doesn't repeat it).
   await tab(page, "pinout.pcf").click();
-  await expect(page.locator(".file-link", { hasText: "main.v:1" })).toHaveCount(2);
+  await expect(page.locator(".file-link", { hasText: "main.v:1" })).toHaveCount(1);
   await page.locator(".file-link", { hasText: "main.v:1" }).first().click();
   await expect(tab(page, "main.v")).toHaveClass(/active/);
 
