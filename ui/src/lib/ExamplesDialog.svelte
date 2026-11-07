@@ -8,7 +8,8 @@
   projects with the same board aren't relevant to a board change; File >
   Open Recent has them). The main button says what the selected choice
   does: Change the Board or New Project (an example or Bare Minimum starts
-  a new, unsaved project).
+  a new, unsaved project). Picking the project's own board again offers
+  "Keep the current project" (button Keep the Project) instead.
   Cancel, Esc and ✕ cancel the board change.
 -->
 <script lang="ts">
@@ -78,6 +79,13 @@
 
   const onlyBoardInfo = $derived(boards.find((b) => b.id === onlyBoard) ?? null);
   const onlyBoardName = $derived(onlyBoardInfo?.description ?? onlyBoard);
+  /**
+   * The board picked is the project's own (picked again to see its
+   * examples): the current-project choice keeps it rather than changing it.
+   */
+  const sameBoard = $derived(
+    currentProject !== null && currentProject.board?.id === onlyBoard,
+  );
   /** What moving the current project to the new board means: short points. */
   const changeNote = $derived(
     currentProject && onlyBoardInfo
@@ -127,7 +135,9 @@
    */
   const openLabel = $derived(
     selectedCurrent
-      ? "Change the Board"
+      ? sameBoard
+        ? "Keep the Project"
+        : "Change the Board"
       : selectedExample !== null || !onlyBoard
         ? "New Project"
         : "Choose an Option",
@@ -254,7 +264,9 @@
               ondblclick={onChangeBoard}
             >
               <span class="example-name"
-                >Change the board of the current project to “{onlyBoardName}”</span
+                >{sameBoard
+                  ? `Keep the current project, with board “${onlyBoardName}”`
+                  : `Change the board of the current project to “${onlyBoardName}”`}</span
               >
               <!-- The change, then its implications, as list items (spans: a
                    button can't hold a list). -->

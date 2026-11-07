@@ -247,7 +247,11 @@ test("picking the current board offers its examples too", async ({ page }) => {
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", { name: "Examples" });
   await expect(dialog.getByRole("heading")).toHaveText("Project options for board “Alhambra II”");
-  await changeTheBoard(page);
+  // The same board: keep the project, not "change" it.
+  await expect(dialog.getByRole("button", { name: /^Change the board of/ })).toHaveCount(0);
+  await dialog.getByRole("button", { name: /^Keep the current project, with board “Alhambra II”/ }).click();
+  await dialog.getByRole("button", { name: "Keep the Project", exact: true }).click();
+  await expect(dialog).toBeHidden();
   await expect(boardButton(page)).toHaveText(/Alhambra II/);
 });
 
