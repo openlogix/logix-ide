@@ -195,9 +195,11 @@ pub struct ProjectBoards {
 /// The custom boards file of the project in `folder` (its folder, or the
 /// example a new project starts from): the file on disk, which the user
 /// edits outside Logix; Logix Engine reads it and reports its problems at
-/// line and column. None without a folder or without the file.
-fn boards_file(folder: Option<&str>) -> Option<std::path::PathBuf> {
-    project::custom_boards_file(Path::new(folder?))
+/// line and column, named as the user knows it (`engine::BoardsFile`: its
+/// full path when the project is `saved`, `custom-boards.json` when it
+/// isn't). None without a folder or without the file.
+fn boards_file(folder: Option<&str>, saved: bool) -> Option<engine::BoardsFile> {
+    project::custom_boards_file(Path::new(folder?)).map(|f| engine::BoardsFile::new(f, saved))
 }
 
 /// A value that changes whenever the project's custom-boards.json is
@@ -215,10 +217,11 @@ pub fn custom_boards_stamp(folder: Option<String>) -> Option<String> {
 pub async fn project_boards(
     state: State<'_, AppState>,
     folder: Option<String>,
+    saved: bool,
 ) -> Result<ProjectBoards, UserError> {
     let engine = ready_engine(&state).await?;
-    let file = boards_file(folder.as_deref());
-    let found = engine::project_boards(&engine, file.as_deref())
+    let file = boards_file(folder.as_deref(), saved);
+    let found = engine::project_boards(&engine, file.as_ref())
         .await
         .context("Couldn't read the project's custom boards.")?;
     Ok(match found {
@@ -304,9 +307,9 @@ pub async fn run_task(
     // The project's own boards come first: one with a catalog board's ID
     // replaces it, as in the engine. Its custom-boards.json is the file in
     // the project folder (or the example a new project starts from).
-    let boards_file = boards_file(source_dir.as_deref());
+    let boards_file = boards_file(source_dir.as_deref(), project_dir.is_some());
     let catalog_boards = catalog(&state).await?.boards;
-    let own = match engine::project_boards(&engine, boards_file.as_deref())
+    let own = match engine::project_boards(&engine, boards_file.as_ref())
         .await
         .context("Couldn't read the project's custom boards.")?
     {
@@ -398,13 +401,15 @@ pub async fn run_task(
     if info.custom {
         crate::log!(
             "Task {task:?}: board {board} from {}",
-            boards_file.as_deref().unwrap_or(Path::new("?")).display()
+            boards_file
+                .as_ref()
+                .map_or("?".into(), |f| f.path.display().to_string())
         );
     }
     let input = engine::TaskInput {
         board: &board,
         board_variant: Some(&board_variant),
-        custom_boards_file: boards_file.as_deref(),
+        custom_boards: boards_file.as_ref(),
         arch: &arch,
         source_folder: &dir,
         files: &names,
@@ -580,12 +585,13 @@ pub struct Devices {
 pub async fn scan_devices(
     state: State<'_, AppState>,
     folder: Option<String>,
+    saved: bool,
 ) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
-    let file = boards_file(folder.as_deref());
+    let file = boards_file(folder.as_deref(), saved);
     // A custom boards file with problems: the devices without its boards
     // (the board list shows its problems).
-    let list = match engine::list_devices(&engine, file.as_deref()).await {
+    let list = match engine::list_devices(&engine, file.as_ref()).await {
         Ok(list) => Ok(list),
         Err(_) if file.is_some() => engine::list_devices(&engine, None).await,
         Err(e) => Err(e),
@@ -604,18 +610,19 @@ pub async fn scan_devices(
 pub async fn connected_devices(
     state: State<'_, AppState>,
     folder: Option<String>,
+    saved: bool,
 ) -> Result<Vec<engine::ConnectedDevice>, UserError> {
     let engine = ready_engine(&state).await?;
-    let file = boards_file(folder.as_deref());
+    let file = boards_file(folder.as_deref(), saved);
     // The project's boards first, as the engine matched them; a file with
     // problems counts as none here (the board list shows its problems).
-    let usable = engine::project_boards(&engine, file.as_deref())
+    let usable = engine::project_boards(&engine, file.as_ref())
         .await
         .ok()
         .and_then(Result::ok)
         .is_some();
     let file = if usable { file } else { None };
-    let list = engine::list_devices(&engine, file.as_deref())
+    let list = engine::list_devices(&engine, file.as_ref())
         .await
         .context("Couldn't list the connected devices.")?;
     let found = engine::connected_devices(&list.devices);

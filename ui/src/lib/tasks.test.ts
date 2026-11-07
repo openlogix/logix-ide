@@ -56,6 +56,17 @@ describe("outcomeText", () => {
         devices: [],
       }),
     ).toBe("Build failed: the project's custom-boards.json has problems.");
+    // In a saved project, the engine names it by its full path.
+    expect(
+      outcomeText("build", {
+        ok: false,
+        diagnostics: [err("/Users/you/blinky 3/custom-boards.json", 4, "Expected `,` or `}`.")],
+        report: null, cancelled: false, graphSvg: null, testbenches: [],
+        seconds: 0,
+        action: null,
+        devices: [],
+      }),
+    ).toBe("Build failed: the project's custom-boards.json has problems.");
     expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1, action: null, devices: [] })).toBe(
       "Upload failed. See the output below.",
     );

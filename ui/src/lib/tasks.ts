@@ -51,7 +51,9 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   if (!first) return `${VERB[task].noun} failed. See the output below.`;
   // The output above already lists the file's problems at its full path.
   // No count: the engine may stop before finding them all.
-  if (first.file === CUSTOM_BOARDS_FILE) {
+  // Named `custom-boards.json`, or by its full path in a saved project.
+  const file = first.file ?? "";
+  if (file === CUSTOM_BOARDS_FILE || file.endsWith(`/${CUSTOM_BOARDS_FILE}`)) {
     return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has problems.`;
   }
   const where = location(first);

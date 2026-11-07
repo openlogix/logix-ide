@@ -80,9 +80,10 @@ pub struct TaskInput<'a> {
     pub board_variant: Option<&'a super::Variant>,
     /// The project's custom boards file (`custom-boards.json` in the
     /// project folder, on disk), as `custom_boards_file` with every engine
-    /// call that deals with boards, when the project has one. Problems in
-    /// it stop the task before it runs (`boards_problem_outcome`).
-    pub custom_boards_file: Option<&'a Path>,
+    /// call that deals with boards, when the project has one, with the
+    /// `display_paths` that name it. Problems in it stop the task before it
+    /// runs (`boards_problem_outcome`).
+    pub custom_boards: Option<&'a super::BoardsFile>,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
     /// The prepared build folder: the project's files and other contents.
@@ -175,7 +176,8 @@ where
         on_event,
         cancel,
         sources: design_files(input.files),
-        custom_boards_file: json!(input.custom_boards_file),
+        custom_boards_file: super::boards_fields(input.custom_boards).0,
+        display_paths: super::boards_fields(input.custom_boards).1,
         folder: input.source_folder.to_string_lossy().into_owned(),
         build_folder: build_folder(input.source_folder),
     };
@@ -215,9 +217,10 @@ struct Runner<'a, F> {
     sources: Vec<String>,
     /// The prepared folder, as the engine's `source_folder`.
     folder: String,
-    /// The project's custom boards file (or null), for program_board and
-    /// list_devices.
+    /// The project's custom boards file (or null), for every engine call
+    /// that deals with boards, and how messages name it (`display_paths`).
     custom_boards_file: Value,
+    display_paths: Value,
     build_folder: PathBuf,
 }
 
@@ -270,7 +273,8 @@ where
                     json!({
                         "board": input.board,
                         "board_variant": input.board_variant,
-                        "custom_boards_file": input.custom_boards_file,
+                        "custom_boards_file": self.custom_boards_file,
+                        "display_paths": self.display_paths,
                         "top_module": TOP_MODULE,
                         "source_folder": self.folder,
                         "source_files": self.sources,
@@ -294,7 +298,8 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards_file": input.custom_boards_file,
+                        "custom_boards_file": self.custom_boards_file,
+                        "display_paths": self.display_paths,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
@@ -329,6 +334,7 @@ where
                         "build_folder": self.build_folder(),
                         "device": device,
                         "custom_boards_file": self.custom_boards_file,
+                        "display_paths": self.display_paths,
                     }),
                 )
                 .await?;
@@ -359,6 +365,7 @@ where
                 json!({
                     "build_folder": self.build_folder(),
                     "custom_boards_file": self.custom_boards_file,
+                    "display_paths": self.display_paths,
                 }),
             )
             .await?;
@@ -403,7 +410,8 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards_file": input.custom_boards_file,
+                        "custom_boards_file": self.custom_boards_file,
+                        "display_paths": self.display_paths,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -439,7 +447,8 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards_file": input.custom_boards_file,
+                        "custom_boards_file": self.custom_boards_file,
+                        "display_paths": self.display_paths,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -484,7 +493,9 @@ where
                 let svg = tokio::fs::read_to_string(&path)
                     .await
                     .with_context(|| format!("can't read {}", path.display()))?;
-                outcome.graph_svg = Some(relative_paths(&svg, &self.folder));
+                // The engine labels files as the request gave them:
+                // relative to the source folder (`main.v:5.14-5.25`).
+                outcome.graph_svg = Some(svg);
                 outcome.ok = true;
             }
             Err(e) if is_cancelled(&e) => return Ok(false),
@@ -517,20 +528,6 @@ where
     fn failed(&self, outcome: &mut TaskOutcome, error: &Value) {
         failed(outcome, error, &|l| self.line(l));
     }
-}
-
-/// The diagram names the design's processes by file and line. The engine
-/// passes yosys absolute paths, so those read like
-/// `/Users/you/.logix/build/main.v:5.14-5.25`; shows them as `main.v:...`.
-/// TODO(revisit): ask the engine to label them relative to the source
-/// folder.
-fn relative_paths(svg: &str, folder: &str) -> String {
-    let mut svg = svg.replace(&format!("{folder}/"), "");
-    // The engine resolves symbolic links (e.g. /var -> /private/var).
-    if let Ok(real) = std::fs::canonicalize(folder) {
-        svg = svg.replace(&format!("{}/", real.to_string_lossy()), "");
-    }
-    svg
 }
 
 /// Why a testbench run ended, when the engine stopped it or it ran out of
@@ -960,7 +957,7 @@ mod tests {
         let mut input = TaskInput {
             board: "alhambra-ii",
             board_variant: None,
-            custom_boards_file: None,
+            custom_boards: None,
             arch: "ice40",
             source_folder: &dir,
             files: &files,
@@ -1130,7 +1127,7 @@ mod tests {
                 let mut input = TaskInput {
                     board: &board,
                     board_variant: None,
-                    custom_boards_file: None,
+                    custom_boards: None,
                     arch: &arch,
                     source_folder: &dir,
                     files: &files,
@@ -1237,7 +1234,7 @@ mod tests {
             let input = TaskInput {
                 board: "alhambra-ii",
                 board_variant: None,
-                custom_boards_file: None,
+                custom_boards: None,
                 arch: "ice40",
                 source_folder: &dir,
                 files: &files,
@@ -1270,15 +1267,6 @@ mod tests {
         assert!(capture(Task::Test, None, blinky, "test.txt").await.ok);
         let graph = capture(Task::Graph, None, blinky, "graph.txt").await;
         std::fs::write(out.join("graph.svg"), graph.graph_svg.unwrap()).unwrap();
-    }
-
-    #[test]
-    fn diagram_paths_are_relative() {
-        let svg = "<text>PROC $3 /Users/you/.logix/build/main.v:5.14-5.25</text>";
-        assert_eq!(
-            relative_paths(svg, "/Users/you/.logix/build"),
-            "<text>PROC $3 main.v:5.14-5.25</text>"
-        );
     }
 
     #[test]

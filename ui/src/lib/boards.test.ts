@@ -167,12 +167,12 @@ describe("boardChangeNote", () => {
 describe("boardsProblemLines", () => {
   it("gives one red line per problem, at line and column, like build errors", () => {
     expect(
+      // The file as the engine named it (here, a saved project's).
       boardsProblemLines({
-        file: "/Users/you/blinky 3/custom-boards.json",
         message: "The custom boards file has problems.",
         diagnostics: [
-          { severity: "error", file: "custom-boards.json", line: 4, column: 3, message: "Trailing comma." },
-          { severity: "warning", file: "custom-boards.json", line: 9, column: null, message: "Odd." },
+          { severity: "error", file: "/Users/you/blinky 3/custom-boards.json", line: 4, column: 3, message: "Trailing comma." },
+          { severity: "warning", file: "/Users/you/blinky 3/custom-boards.json", line: 9, column: null, message: "Odd." },
         ],
       }),
     ).toEqual([
@@ -181,7 +181,7 @@ describe("boardsProblemLines", () => {
     ]);
   });
   it("gives the message when there are no locations", () => {
-    expect(boardsProblemLines({ file: "/x/custom-boards.json", message: "Can't read it.", diagnostics: [] })).toEqual([
+    expect(boardsProblemLines({ message: "Can't read it.", diagnostics: [] })).toEqual([
       "\x1b[31mCan't read it.\x1b[0m",
     ]);
   });

@@ -89,13 +89,16 @@ pub struct DeviceList {
 }
 
 /// The connected USB devices, with the boards they may be: the catalog's
-/// and the project's own, from the custom boards file at `boards_file`.
+/// and the project's own, from its custom boards file.
 pub async fn list_devices(
     engine: &Engine,
-    boards_file: Option<&std::path::Path>,
+    boards_file: Option<&super::BoardsFile>,
 ) -> Result<DeviceList> {
     let args = match boards_file {
-        Some(file) => json!({ "custom_boards_file": file }),
+        Some(file) => json!({
+            "custom_boards_file": file.path,
+            "display_paths": file.display_paths(),
+        }),
         None => json!({}),
     };
     let result = engine

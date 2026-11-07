@@ -113,13 +113,13 @@ export interface Configuration {
 /**
  * The project's own boards as Logix Engine reads them from its
  * custom-boards.json (the file on disk), or the problems it found there:
- * its message, and a diagnostic for each problem at line and column in
- * custom-boards.json.
+ * its message, and a diagnostic for each problem at line and column, the
+ * file named as the user knows it (its full path in a saved project,
+ * `custom-boards.json` in one never saved).
  */
 export interface ProjectBoards {
   boards: Board[];
-  /** `file`: the file's full path, which the console names. */
-  problem: { file: string; message: string; diagnostics: Diagnostic[] } | null;
+  problem: { message: string; diagnostics: Diagnostic[] } | null;
 }
 
 export type SaveChoice = "save" | "discard" | "cancel";
@@ -623,25 +623,28 @@ export const backend = {
   /**
    * The connected USB devices, matched to the catalog's boards and those of
    * the custom-boards.json in `folder` (the project's folder, `copySource`;
-   * null for none).
+   * null for none). `saved`: whether the project is saved, which decides
+   * how messages name the file (its full path, or `custom-boards.json`).
    */
-  scanDevices: (folder: string | null): Promise<Devices> =>
-    invoke<Devices>("scan_devices", { folder }),
+  scanDevices: (folder: string | null, saved: boolean): Promise<Devices> =>
+    invoke<Devices>("scan_devices", { folder, saved }),
 
   /**
    * The connected USB devices that fit boards (the catalog's and those of
    * the custom-boards.json in `folder`), with their boards (silent).
    */
-  connectedDevices: (folder: string | null): Promise<ConnectedDevice[]> =>
-    invoke<ConnectedDevice[]>("connected_devices", { folder }),
+  connectedDevices: (folder: string | null, saved: boolean): Promise<ConnectedDevice[]> =>
+    invoke<ConnectedDevice[]>("connected_devices", { folder, saved }),
 
   /**
    * The project's own boards, as Logix Engine reads them from the
    * custom-boards.json in `folder` (the file on disk, edited outside
-   * Logix; none without it), or the problems it found in it.
+   * Logix; none without it), or the problems it found in it, the file
+   * named as the user knows it: its full path when the project is `saved`,
+   * `custom-boards.json` when it isn't.
    */
-  projectBoards: (folder: string | null): Promise<ProjectBoards> =>
-    invoke<ProjectBoards>("project_boards", { folder }),
+  projectBoards: (folder: string | null, saved: boolean): Promise<ProjectBoards> =>
+    invoke<ProjectBoards>("project_boards", { folder, saved }),
 
   /**
    * A value that changes whenever the custom-boards.json in `folder` is

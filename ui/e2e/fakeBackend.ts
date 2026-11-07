@@ -38,18 +38,22 @@ const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false })
  * The project's own boards as the fake engine reads them from the text of
  * custom-boards.json (on the fake disk, `fake.customBoardsOnDisk`): enough of Logix Engine's rules to test the UI (valid
  * JSON, an object, board IDs, an FPGA, variants with a selector), with each problem at the line of the board's key (line 1 for
- * invalid JSON), and the FPGA's family taken from its ID.
+ * invalid JSON), and the FPGA's family taken from its ID. The file is named
+ * as the IDE asks the engine to (display_paths): its full path when the
+ * project is `saved`, `custom-boards.json` when it isn't.
  */
-function fakeProjectBoards(text: string | null, folder: string | null): Real.ProjectBoards {
+function fakeProjectBoards(
+  text: string | null,
+  folder: string | null,
+  saved: boolean,
+): Real.ProjectBoards {
   if (text === null || text.trim() === "") return { boards: [], problem: null };
+  const file = saved ? `${folder}/custom-boards.json` : "custom-boards.json";
   const problem = (message: string, line = 1): Real.ProjectBoards => ({
     boards: [],
     problem: {
-      file: `${folder}/custom-boards.json`,
-      message: `The custom boards file has problems. custom-boards.json:${line}:1: ${message}`,
-      diagnostics: [
-        { severity: "error", file: "custom-boards.json", line, column: 1, message },
-      ],
+      message: `The custom boards file has problems. ${file}:${line}:1: ${message}`,
+      diagnostics: [{ severity: "error", file, line, column: 1, message }],
     },
   });
   let boards: unknown;
@@ -393,7 +397,7 @@ export const backend: typeof Real.backend = {
     fake.taskBoardsFolder = sourceDir;
     // As the IDE's backend: a file with problems stops the task, its
     // problems in the console at line and column.
-    const own = fakeProjectBoards(boardsOnDisk(sourceDir), sourceDir);
+    const own = fakeProjectBoards(boardsOnDisk(sourceDir), sourceDir, _projectDir != null);
     if (own.problem) {
       for (const line of boardsProblemLines(own.problem)) onEvent({ kind: "line", line });
       return {
@@ -590,7 +594,7 @@ export const backend: typeof Real.backend = {
     fake.scannedBoardsFolder = folder;
     return fake.connected;
   },
-  projectBoards: async (folder) => fakeProjectBoards(boardsOnDisk(folder), folder),
+  projectBoards: async (folder, saved) => fakeProjectBoards(boardsOnDisk(folder), folder, saved),
   // The text itself: it changes whenever the file does.
   customBoardsStamp: async (folder) => boardsOnDisk(folder),
   showOutputMenu: async () => {

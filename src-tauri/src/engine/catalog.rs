@@ -2,7 +2,6 @@
 //! project's own boards (`custom-boards.json`) as the engine reads them.
 
 use std::collections::BTreeMap;
-use std::path::Path;
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -147,45 +146,71 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
     })
 }
 
+/// The project's custom boards file as Logix Engine gets it: the file on
+/// disk (`custom_boards_file`), and how the engine's messages name it
+/// (`display_paths`). The user's rules (2026-11-07): files are named
+/// relative to the project, except those Logix doesn't show, named by their
+/// full path. custom-boards.json isn't shown, so a saved project's reads as
+/// its full path; a project never saved has no folder, and its file is the
+/// example's, so it reads `custom-boards.json`.
+#[derive(Debug, Clone)]
+pub struct BoardsFile {
+    pub path: std::path::PathBuf,
+    pub shown_as: String,
+}
+
+impl BoardsFile {
+    /// The file at `path`, of a saved project or not.
+    pub fn new(path: std::path::PathBuf, saved: bool) -> BoardsFile {
+        let shown_as = if saved {
+            path.to_string_lossy().into_owned()
+        } else {
+            crate::project::CUSTOM_BOARDS_FILE.into()
+        };
+        BoardsFile { path, shown_as }
+    }
+
+    /// The engine's `display_paths` for it.
+    pub fn display_paths(&self) -> Value {
+        json!({"files": [{"path": self.path, "as": self.shown_as}]})
+    }
+}
+
+/// `custom_boards_file` and `display_paths` for a request: the file and
+/// how it reads, or nulls without one.
+pub fn boards_fields(file: Option<&BoardsFile>) -> (Value, Value) {
+    match file {
+        Some(f) => (json!(f.path), f.display_paths()),
+        None => (Value::Null, Value::Null),
+    }
+}
+
 /// Why the project's `custom-boards.json` can't be used: Logix Engine's
-/// message, and a diagnostic for each problem, at line and column in
-/// `custom-boards.json`, for the console.
+/// message, and a diagnostic for each problem, at line and column, the
+/// file named as the request said (`BoardsFile`), for the console.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BoardsProblem {
-    /// The file's full path: the console names it, since the user edits
-    /// the file outside Logix and has to find it.
-    pub file: String,
     pub message: String,
     pub diagnostics: Vec<crate::outcome::Diagnostic>,
 }
 
 impl BoardsProblem {
-    /// The engine's error for a custom boards file at `file`, its
-    /// diagnostics named as the project's file.
-    pub fn from_error(error: &Value, file: &Path) -> BoardsProblem {
-        let given = file.to_string_lossy();
-        let mut diagnostics = super::task::diagnostics(&error["diagnostics"]);
-        for d in &mut diagnostics {
-            if d.file.as_deref() == Some(given.as_ref()) {
-                d.file = Some(crate::project::CUSTOM_BOARDS_FILE.into());
-            }
-        }
+    /// The engine's error for a custom boards file.
+    pub fn from_error(error: &Value) -> BoardsProblem {
         BoardsProblem {
-            file: given.into_owned(),
+            diagnostics: super::task::diagnostics(&error["diagnostics"]),
             message: error["message"]
                 .as_str()
                 .unwrap_or("Logix Engine can't use the custom boards.")
                 .to_string(),
-            diagnostics,
         }
     }
 
     /// The problems as console lines, in red: one per problem, at line and
-    /// column in the file's full path
-    /// (`/Users/you/blinky/custom-boards.json:4:3: error: Trailing comma.`),
-    /// like build errors, so the user can find them in their own editor;
-    /// the engine's message when it gives no locations.
+    /// column (`/Users/you/blinky/custom-boards.json:4:3: error: Trailing
+    /// comma.`), like build errors, so the user can find them in their own
+    /// editor; the engine's message when it gives no locations.
     pub fn console_lines(&self) -> Vec<String> {
         let red = |text: String| format!("\x1b[31m{text}\x1b[0m");
         if self.diagnostics.is_empty() {
@@ -194,10 +219,7 @@ impl BoardsProblem {
         self.diagnostics
             .iter()
             .map(|d| {
-                let mut at = match d.file.as_deref() {
-                    Some(crate::project::CUSTOM_BOARDS_FILE) | None => self.file.clone(),
-                    Some(other) => other.to_string(),
-                };
+                let mut at = d.file.clone().unwrap_or_default();
                 for n in [d.line, d.column].into_iter().flatten() {
                     at.push_str(&format!(":{n}"));
                 }
@@ -216,7 +238,7 @@ impl BoardsProblem {
 /// the problems the engine found in it, at line and column.
 pub async fn project_boards(
     engine: &Engine,
-    file: Option<&Path>,
+    file: Option<&BoardsFile>,
 ) -> Result<std::result::Result<Vec<Board>, BoardsProblem>> {
     let Some(file) = file else {
         return Ok(Ok(Vec::new()));
@@ -228,14 +250,15 @@ pub async fn project_boards(
                 "boards": {"fetch": true},
                 "fpgas": {"fetch": true},
                 "architectures": {"fetch": true},
-                "custom_boards_file": file,
+                "custom_boards_file": file.path,
+                "display_paths": file.display_paths(),
             }),
             None,
         )
         .await?;
     Ok(match answer {
         Ok(catalog) => Ok(custom_only(parse_boards(&catalog)?)),
-        Err(e) => Err(BoardsProblem::from_error(&e, file)),
+        Err(e) => Err(BoardsProblem::from_error(&e)),
     })
 }
 
@@ -375,39 +398,41 @@ mod tests {
     }
 
     #[test]
-    fn the_engines_problems_name_the_projects_file() {
-        let file = Path::new("/Users/you/blinky/custom-boards.json");
+    fn the_engines_problems_as_console_lines() {
+        // The engine names the file as display_paths said.
         let error = json!({
             "category": "request",
-            "message": "The custom boards file has problems. /Users/you/blinky/custom-boards.json:4:3: Trailing comma.",
+            "message": "The custom boards file has problems. custom-boards.json:4:3: Trailing comma.",
             "diagnostics": [
-                {"file": "/Users/you/blinky/custom-boards.json", "line": 4, "column": 3,
+                {"file": "custom-boards.json", "line": 4, "column": 3,
                  "severity": "error", "text": "Trailing comma."},
             ]
         });
-        let p = BoardsProblem::from_error(&error, file);
-        assert_eq!(p.file, "/Users/you/blinky/custom-boards.json");
-        assert_eq!(p.diagnostics.len(), 1);
-        let d = &p.diagnostics[0];
-        assert_eq!(
-            (d.file.as_deref(), d.line, d.column, d.message.as_str()),
-            (
-                Some("custom-boards.json"),
-                Some(4),
-                Some(3),
-                "Trailing comma."
-            )
-        );
+        let p = BoardsProblem::from_error(&error);
         assert_eq!(
             p.console_lines(),
-            ["\x1b[31m/Users/you/blinky/custom-boards.json:4:3: error: Trailing comma.\x1b[0m"]
+            ["\x1b[31mcustom-boards.json:4:3: error: Trailing comma.\x1b[0m"]
         );
         let no_place = BoardsProblem {
-            file: "/Users/you/blinky/custom-boards.json".into(),
             message: "Can't read it.".into(),
             diagnostics: Vec::new(),
         };
         assert_eq!(no_place.console_lines(), ["\x1b[31mCan't read it.\x1b[0m"]);
+    }
+
+    #[test]
+    fn a_boards_file_reads_as_the_user_knows_it() {
+        let path = std::path::PathBuf::from("/Users/you/blinky 3/custom-boards.json");
+        // Saved: its full path (Logix doesn't show it).
+        let saved = BoardsFile::new(path.clone(), true);
+        assert_eq!(
+            saved.display_paths(),
+            json!({"files": [{"path": path, "as": "/Users/you/blinky 3/custom-boards.json"}]})
+        );
+        // Never saved: the example's file, named relative to the project.
+        let new = BoardsFile::new("/app/examples/x/custom-boards.json".into(), false);
+        assert_eq!(new.shown_as, "custom-boards.json");
+        assert_eq!(boards_fields(None), (Value::Null, Value::Null));
     }
 
     #[test]

@@ -411,7 +411,7 @@
     if (scanning || !ready || isBusy) return;
     scanning = true;
     try {
-      const found = await backend.connectedDevices(boardsFolder);
+      const found = await backend.connectedDevices(boardsFolder, boardsSaved);
       if (JSON.stringify(found) !== JSON.stringify(connectedDevices)) connectedDevices = found;
     } catch {
       // Keep the last result; Tools > Connected Devices shows errors.
@@ -938,7 +938,7 @@
   async function refreshDevices() {
     devicesBusy = true;
     try {
-      devices = await backend.scanDevices(boardsFolder);
+      devices = await backend.scanDevices(boardsFolder, boardsSaved);
       devicesError = null;
     } catch (e) {
       devicesError = toUserError(e).message;
@@ -955,7 +955,7 @@
   /** After Upload couldn't find the board: say what is connected. */
   async function logConnectedDevices() {
     try {
-      log("", ...deviceSummaryLines(await backend.scanDevices(boardsFolder)));
+      log("", ...deviceSummaryLines(await backend.scanDevices(boardsFolder, boardsSaved)));
     } catch {
       // Only a hint; the upload error is already shown.
     }
@@ -1129,6 +1129,8 @@
    * that deals with boards, and Logix Engine reads it from disk.
    */
   const boardsFolder = $derived(project ? copySource(project) : null);
+  /** Whether the project is saved: its custom-boards.json then reads as its full path. */
+  const boardsSaved = $derived(!!project?.dir);
   /** custom-boards.json as last seen on disk: its folder and stamp (null without the file). */
   let boardsSeen = $state<{ folder: string | null; stamp: string | null } | null>(null);
   /** The problems Logix Engine found in custom-boards.json (null if none). */
@@ -1178,7 +1180,7 @@
       return;
     }
     backend
-      .projectBoards(seen.folder)
+      .projectBoards(seen.folder, boardsSaved)
       .then((found) => {
         if (boardsSeen !== seen) return;
         const before = untrack(() => boardsProblem);
