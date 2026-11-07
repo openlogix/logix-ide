@@ -78,6 +78,7 @@
     type WorkingProject,
   } from "./lib/workingProject";
   import { appendCapped, formatBytes, progressFraction } from "./lib/format";
+  import { Redraws } from "./lib/redraw";
   import { addLinks, parseAnsi, type Segment } from "./lib/ansi";
   import { BARE_MINIMUM, examplesSummary, type ExampleEntry } from "./lib/examples";
   import {
@@ -259,13 +260,35 @@
     unlogged.push(...lines);
   }
 
-  async function log(...lines: string[]) {
-    sendToLogFile(lines);
+  /** Tool lines printed over (progress), replaced in the console. */
+  const redraws = new Redraws();
+
+  function log(...lines: string[]) {
+    const final = redraws.end();
+    sendToLogFile([...final, ...lines]);
+    return show(lines, false);
+  }
+
+  /** A tool's line, which may replace its redraw line (progress). */
+  function logToolLine(line: string, tool: string, redraw: boolean) {
+    const { replace, final } = redraws.toolLine(line, tool, redraw);
+    if (final.length) sendToLogFile(final);
+    return show([line], replace);
+  }
+
+  /** Clears the console. */
+  function clearConsole() {
+    const final = redraws.end();
+    if (final.length) sendToLogFile(final);
+    consoleLines = [];
+  }
+
+  async function show(lines: string[], replaceLast: boolean) {
     const el = consoleEl;
     const atBottom =
       !el || el.scrollHeight - el.scrollTop - el.clientHeight < 20;
     consoleLines = appendCapped(
-      consoleLines,
+      replaceLast ? consoleLines.slice(0, -1) : consoleLines,
       lines.map((line) => addLinks(parseAnsi(line))),
       MAX_CONSOLE_LINES,
     );
@@ -620,7 +643,7 @@
    * stay: they go when the file is edited or a command runs again.
    */
   function clearOutput() {
-    consoleLines = [];
+    clearConsole();
     status = null;
   }
 
@@ -986,7 +1009,7 @@
     taskStep = null;
     let opening: { done: string; slow: string } | null = null;
     status = { text: runningText(task), kind: "info" };
-    consoleLines = [];
+    clearConsole();
     showOutput("command");
     const which = testbench ? ` (${testbench})` : "";
     const summary = boardInfo ? variantSummary(boardInfo, variant) : "";
@@ -1006,7 +1029,10 @@
         variant,
         task === "upload" ? device : null,
         (event) => {
-          if (event.kind === "line") log(event.line);
+          if (event.kind === "line") {
+            if (event.tool) logToolLine(event.line, event.tool, !!event.redraw);
+            else log(event.line);
+          }
           else taskStep = { message: event.message, percent: event.percent };
         },
       );

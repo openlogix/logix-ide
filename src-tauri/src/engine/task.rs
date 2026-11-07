@@ -5,7 +5,7 @@
 //! the console and the engine's phases to the status bar.
 
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Instant;
 
 use anyhow::{Context, Result};
@@ -237,13 +237,11 @@ where
             on_output: Some(console.sink()),
             cancel: Some(self.cancel.clone()),
         };
-        let result = self.engine.call_with(name, args, options).await;
-        console.flush();
-        result
+        self.engine.call_with(name, args, options).await
     }
 
     fn line(&self, line: String) {
-        (self.on_event)(TaskEvent::Line { line });
+        (self.on_event)(TaskEvent::line(line));
     }
 
     fn build_folder(&self) -> String {
@@ -686,15 +684,13 @@ fn red(text: &str) -> String {
 }
 
 /// Turns live output into console lines: command lines dimmed with `$`,
-/// errors red, warnings yellow. A line the tool prints over (`redraw`, such
-/// as a progress bar's) is held, and dropped when the same tool's next line
-/// arrives, so a progress bar stays on one line, as in a terminal; anything
-/// else first, or the end of the call, shows it.
+/// errors red, warnings yellow. Each tool line keeps its tool and the
+/// engine's `redraw` flag (the tool prints over it, as a progress bar
+/// does), so the console shows it at once and replaces it with that tool's
+/// next line, as a terminal does (`logToolLine` in the UI).
 #[derive(Clone)]
 pub(super) struct Console<F> {
     on_event: F,
-    /// The held redraw line: its tool and console text.
-    held: Arc<Mutex<Option<(String, String)>>>,
 }
 
 impl<F> Console<F>
@@ -702,19 +698,12 @@ where
     F: Fn(TaskEvent) + Send + Sync + Clone + 'static,
 {
     pub(super) fn new(on_event: F) -> Self {
-        Console {
-            on_event,
-            held: Arc::new(Mutex::new(None)),
-        }
+        Console { on_event }
     }
 
     pub(super) fn sink(&self) -> super::client::OutputSink {
         let console = self.clone();
         Arc::new(move |line: OutputLine| console.take(line))
-    }
-
-    fn send(&self, line: String) {
-        (self.on_event)(TaskEvent::Line { line });
     }
 
     fn take(&self, line: OutputLine) {
@@ -725,31 +714,18 @@ where
             (_, OutputLevel::Info) => line.text.clone(),
         };
         let output = line.kind == OutputKind::Output;
-        let mut held = self.held.lock().unwrap();
-        if let Some((tool, previous)) = held.take() {
-            // The tool printed over it: drop it; otherwise show it.
-            if !(output && tool == line.tool) {
-                self.send(previous);
-            }
-        }
-        if output && line.redraw {
-            *held = Some((line.tool, text));
-        } else {
-            self.send(text);
-        }
-    }
-
-    /// Sends a held redraw line (at the end of a call).
-    pub(super) fn flush(&self) {
-        if let Some((_, text)) = self.held.lock().unwrap().take() {
-            self.send(text);
-        }
+        (self.on_event)(TaskEvent::Line {
+            line: text,
+            tool: output.then_some(line.tool),
+            redraw: output && line.redraw,
+        });
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
 
     #[test]
     fn upload_picks_the_only_device_or_asks() {
@@ -907,41 +883,23 @@ mod tests {
     }
 
     #[test]
-    fn console_colors_lines_and_replaces_redraws() {
+    fn console_colors_lines_and_keeps_their_tool_and_redraw() {
         let got = Arc::new(Mutex::new(Vec::new()));
         let console = {
             let got = got.clone();
             Console::new(move |e| {
-                if let TaskEvent::Line { line } = e {
-                    got.lock().unwrap().push(line)
+                if let TaskEvent::Line { line, tool, redraw } = e {
+                    got.lock().unwrap().push((line, tool, redraw))
                 }
             })
         };
         let sink = console.sink();
         use OutputKind::*;
         use OutputLevel::*;
-        let ofl = "openFPGALoader";
-        sink(out(
-            ofl,
-            Command,
-            Info,
-            "openFPGALoader -b ice40_generic hardware.bin",
-        ));
-        sink(redraw(ofl, "Writing: [==>     ] 10.00%"));
-        sink(redraw(ofl, "Writing: [=====>  ] 60.00%"));
-        sink(out(ofl, Output, Info, "Writing: [========] 100.00% Done"));
-        sink(redraw(ofl, "Verifying: [==>     ] 10.00%"));
-        sink(redraw(ofl, "Verifying: [========] 100.00%"));
-        console.flush();
-        // iceprog's progress: the address lines are redraws, and the last
-        // one is printed over by "done.", as in a terminal.
-        sink(out("iceprog", Output, Info, "programming.."));
+        sink(out("iceprog", Command, Info, "iceprog hardware.bin"));
         sink(redraw("iceprog", "addr 0x000000   0%"));
-        sink(redraw("iceprog", "addr 0x020F00  99%"));
         sink(out("iceprog", Output, Info, "done."));
-        // A redraw followed by another tool's line or a message stays.
-        sink(redraw("iceprog", "addr 0x000100   0%"));
-        sink(out("logix-engine", Message, Info, "Stopped."));
+        sink(out("logix-engine", Message, Info, "Programmed."));
         sink(out(
             "yosys",
             Output,
@@ -949,18 +907,24 @@ mod tests {
             "main.v:25: ERROR: syntax error",
         ));
         sink(out("yosys", Output, Warning, "a warning"));
+        let tool = |t: &str| Some(t.to_string());
         assert_eq!(
             *got.lock().unwrap(),
             [
-                "\x1b[2m$ openFPGALoader -b ice40_generic hardware.bin\x1b[0m",
-                "Writing: [========] 100.00% Done",
-                "Verifying: [========] 100.00%",
-                "programming..",
-                "done.",
-                "addr 0x000100   0%",
-                "Stopped.",
-                "\x1b[31mmain.v:25: ERROR: syntax error\x1b[0m",
-                "\x1b[33ma warning\x1b[0m",
+                (
+                    "\x1b[2m$ iceprog hardware.bin\x1b[0m".to_string(),
+                    None,
+                    false
+                ),
+                ("addr 0x000000   0%".to_string(), tool("iceprog"), true),
+                ("done.".to_string(), tool("iceprog"), false),
+                ("Programmed.".to_string(), None, false),
+                (
+                    "\x1b[31mmain.v:25: ERROR: syntax error\x1b[0m".to_string(),
+                    tool("yosys"),
+                    false
+                ),
+                ("\x1b[33ma warning\x1b[0m".to_string(), tool("yosys"), false),
             ]
         );
     }
@@ -1261,7 +1225,7 @@ mod tests {
             let sink = {
                 let lines = lines.clone();
                 move |e: TaskEvent| {
-                    if let TaskEvent::Line { line } = e {
+                    if let TaskEvent::Line { line, .. } = e {
                         lines.lock().unwrap().push(line)
                     }
                 }

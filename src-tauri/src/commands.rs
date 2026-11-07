@@ -315,9 +315,7 @@ pub async fn run_task(
         // the board.
         Err(problem) => {
             for line in problem.console_lines() {
-                (on_event.clone())
-                    .send(outcome::TaskEvent::Line { line })
-                    .ok();
+                (on_event.clone()).send(outcome::TaskEvent::line(line)).ok();
             }
             return Ok(engine::boards_problem_outcome(&problem));
         }
@@ -346,7 +344,7 @@ pub async fn run_task(
     let on_line = {
         let channel = on_event.clone();
         move |line: String| {
-            let _ = channel.send(outcome::TaskEvent::Line { line });
+            let _ = channel.send(outcome::TaskEvent::line(line));
         }
     };
     let root = platform::current_implemented()?.data_dir()?.join("build");

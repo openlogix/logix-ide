@@ -32,7 +32,7 @@ where
     F: Fn(String) + Send + Sync + Clone + 'static,
 {
     let console = Console::new(move |event| {
-        if let TaskEvent::Line { line } = event {
+        if let TaskEvent::Line { line, .. } = event {
             on_line(line)
         }
     });
@@ -50,7 +50,6 @@ where
             options,
         )
         .await?;
-    console.flush();
     let done = result.map_err(|e| tool_error("format", &e))?;
     Ok(FormatOutcome {
         ok: done["passed"] == true,

@@ -58,8 +58,17 @@ pub struct TaskOutcome {
     rename_all_fields = "camelCase"
 )]
 pub enum TaskEvent {
-    /// A console line (may contain ANSI colors).
-    Line { line: String },
+    /// A console line (may contain ANSI colors). `tool` is the program that
+    /// printed it (None for the IDE's and engine's own lines); `redraw`
+    /// means the tool prints over it: the console replaces it with that
+    /// tool's next line, as a terminal does.
+    Line {
+        line: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        tool: Option<String>,
+        #[serde(skip_serializing_if = "std::ops::Not::not")]
+        redraw: bool,
+    },
     /// The current phase, such as "Placing and routing", and its
     /// percentage when known (status bar).
     Progress {
@@ -133,4 +142,15 @@ pub fn dedup(diags: Vec<Diagnostic>) -> Vec<Diagnostic> {
         }
     }
     kept
+}
+
+impl TaskEvent {
+    /// A console line of the IDE's or the engine's own.
+    pub fn line(line: String) -> Self {
+        TaskEvent::Line {
+            line,
+            tool: None,
+            redraw: false,
+        }
+    }
 }

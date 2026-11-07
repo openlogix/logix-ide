@@ -207,6 +207,18 @@ test("Show Project Folder on a project never saved offers Save As…, then shows
   await expect.poll(async () => (await fake()).confirms.length).toBe(2);
 });
 
+test("a programmer's progress stays on one line, as in a terminal", async ({ page }) => {
+  await start(page);
+  await menu(page, "upload");
+  // While it runs: its latest state, shown at once.
+  await expect(output(page)).toContainText("addr 0x000100  50%");
+  await expect(output(page)).not.toContainText("addr 0x000000");
+  // Then printed over by the programmer's next line.
+  await expect(output(page)).toContainText("programming..");
+  await expect(output(page)).toContainText(/programming\.\.\s*done\./);
+  await expect(output(page)).not.toContainText("addr 0x");
+});
+
 test("a build error is marked in the editor and linked in the output", async ({ page }) => {
   await start(page);
   await chooseBoard(page);

@@ -221,7 +221,14 @@ export interface TaskOutcome {
 
 /** Streamed while a task runs: console lines, and the current phase. */
 export type TaskEvent =
-  | { kind: "line"; line: string }
+  | {
+      kind: "line";
+      line: string;
+      /** The program that printed it; absent for the IDE's and engine's own lines. */
+      tool?: string;
+      /** The tool prints over it: replace it with that tool's next line. */
+      redraw?: boolean;
+    }
   | { kind: "progress"; message: string; percent: number | null };
 
 /** The result of Auto Format. */

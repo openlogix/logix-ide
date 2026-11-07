@@ -451,6 +451,16 @@ export const backend: typeof Real.backend = {
       const untested = info && configurationOf(info, variant)?.tested === false ? " (untested)" : "";
       onLine(`Programming the ${memory} of the ${name} through its USB port${untested}.`);
       onEvent({ kind: "progress", message: `Writing ${memory}`, percent: 42 });
+      // The programmer's progress, printed over itself (the engine's
+      // redraw flag), as iceprog prints it.
+      const prog = (line: string, redraw = false) =>
+        onEvent({ kind: "line", line, tool: "iceprog", redraw });
+      prog("programming..");
+      prog("addr 0x000000   0%", true);
+      await pause(5);
+      prog("addr 0x000100  50%", true);
+      await pause(500);
+      prog("done.");
       onLine("Programmed Alhambra II v1.0A.");
       onLine(
         `Programmed the ${memory} of the ${name}: the design ${
