@@ -7,7 +7,7 @@
   "type": "module",
   "appConstants": {
     "engineReleaseRepo": "openlogix/logix-engine",
-    "engineReleaseTag": "2026-11-07"
+    "engineReleaseTag": "2026-11-08"
   },
   "scripts": {
     "dev": "vite --config ui/vite.config.ts",
