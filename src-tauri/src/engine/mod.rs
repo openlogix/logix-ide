@@ -54,8 +54,8 @@ fn phase_sink(f: impl Fn(&str, Option<u32>, bool) + Send + Sync + 'static) -> Pr
 /// TODO(revisit): during development this is a daily pre-release. Before an
 /// IDE release, pin a stable engine release and check the package's size
 /// and SHA-256 (see CLAUDE.md, Open items).
-pub const ENGINE_RELEASE_REPO: &str = env!("LOGIX_ENGINE_RELEASE_REPO");
-pub const ENGINE_RELEASE_TAG: &str = env!("LOGIX_ENGINE_RELEASE_TAG");
+pub const ENGINE_RELEASE_REPO: &str = env!("LOGIX_IDE_BUILD_ENGINE_REPO");
+pub const ENGINE_RELEASE_TAG: &str = env!("LOGIX_IDE_BUILD_ENGINE_TAG");
 
 /// Where the engine lives in the IDE's data folder (`~/.logix`).
 struct Layout {

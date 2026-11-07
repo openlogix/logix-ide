@@ -9,8 +9,8 @@ fn main() {
 }
 
 /// The Logix Engine release Logix uses is pinned in package.json
-/// (`appConstants`). Passes it to the code as LOGIX_ENGINE_RELEASE_REPO /
-/// LOGIX_ENGINE_RELEASE_TAG (see engine/mod.rs).
+/// (`appConstants`). Passes it to the code as LOGIX_IDE_BUILD_ENGINE_REPO /
+/// LOGIX_IDE_BUILD_ENGINE_TAG (see engine/mod.rs).
 fn pinned_releases() {
     const PACKAGE: &str = "../package.json";
     println!("cargo:rerun-if-changed={PACKAGE}");
@@ -39,6 +39,6 @@ fn pinned_releases() {
         plain(&tag) && !tag.contains('/'),
         "bad appConstants.engineReleaseTag {tag:?}"
     );
-    println!("cargo:rustc-env=LOGIX_ENGINE_RELEASE_REPO={repo}");
-    println!("cargo:rustc-env=LOGIX_ENGINE_RELEASE_TAG={tag}");
+    println!("cargo:rustc-env=LOGIX_IDE_BUILD_ENGINE_REPO={repo}");
+    println!("cargo:rustc-env=LOGIX_IDE_BUILD_ENGINE_TAG={tag}");
 }

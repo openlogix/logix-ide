@@ -122,13 +122,13 @@ mod tests {
     }
 
     /// Talks to the real Verible language server. Run with:
-    /// `LOGIX_TEST_VERIBLE_LS=<path to verible-verilog-ls>
+    /// `LOGIX_IDE_TEST_VERIBLE_LS=<path to verible-verilog-ls>
     ///  cargo test real_language_server -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
     async fn real_language_server() {
         use std::sync::{Arc, Mutex};
-        let exe = std::path::PathBuf::from(std::env::var("LOGIX_TEST_VERIBLE_LS").unwrap());
+        let exe = std::path::PathBuf::from(std::env::var("LOGIX_IDE_TEST_VERIBLE_LS").unwrap());
         let received = Arc::new(Mutex::new(Vec::<String>::new()));
         let sink = received.clone();
         let mut server =

@@ -44,7 +44,7 @@ env:
   REPO: ""
   REPO_BRANCH: ""
   REPO_COMMIT: ""
-  LOGIX_VERSION: ""
+  LOGIX_IDE_BUILD_VERSION: ""
 
 jobs:
   # ----- Collect the build parameters.
@@ -80,8 +80,8 @@ jobs:
       - name: Get Logix version
         run: |
           version="$(jq -r .version src-tauri/tauri.conf.json)"
-          echo "LOGIX_VERSION=$version"
-          echo "LOGIX_VERSION=$version" >> "$GITHUB_ENV"
+          echo "LOGIX_IDE_BUILD_VERSION=$version"
+          echo "LOGIX_IDE_BUILD_VERSION=$version" >> "$GITHUB_ENV"
 
       # The build configuration passed to the other jobs.
       - name: Create build info
@@ -90,7 +90,7 @@ jobs:
           {
             "package-name": "logix",
             "description": "\"The Arduino experience, for FPGAs\"",
-            "logix-version": "$LOGIX_VERSION",
+            "logix-version": "$LOGIX_IDE_BUILD_VERSION",
             "repo": "${REPO}",
             "repo-branch": "${REPO_BRANCH}",
             "repo-commit": "${REPO_COMMIT}",
@@ -156,11 +156,11 @@ jobs:
         with:
           json-file: BUILD-INFO.json
           mappings: >-
-            LOGIX_VERSION  logix-version
-            REPO           repo
-            REPO_COMMIT    repo-commit
-            RELEASE_TAG    release-tag
-            PACKAGE_TAG    package-tag
+            LOGIX_IDE_BUILD_VERSION logix-version
+            REPO                    repo
+            REPO_COMMIT             repo-commit
+            RELEASE_TAG             release-tag
+            PACKAGE_TAG             package-tag
 
       - name: Convert json build info to text
         uses: openlogix/.github/actions/json-to-text@v1
