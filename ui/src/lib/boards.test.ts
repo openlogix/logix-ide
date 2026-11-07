@@ -95,9 +95,13 @@ describe("FPGAs", () => {
     // The same list from each of them.
     expect(ids(withFpga[2])).toEqual(["alhambra-ii", "kefir"]);
     expect(ids(withFpga[1])).toEqual(["icebreaker"]);
-    // A custom board's own FPGA definition has no ID to compare: just it.
-    const own = { ...withFpga[0], id: "mine", fpga: { ...hx4k, id: null } };
-    expect(ids(own)).toEqual(["mine"]);
+    // A custom board with a catalog FPGA is listed with the others.
+    const mine = { ...withFpga[0], id: "mine", description: "Mine", custom: true };
+    expect(boardsWithFpga([...withFpga, mine], mine).map((x) => x.id)).toEqual([
+      "alhambra-ii", "kefir", "mine",
+    ]);
+    // A board whose FPGA isn't known: just it.
+    expect(ids({ ...withFpga[0], id: "odd", fpga: null })).toEqual(["odd"]);
   });
 });
 

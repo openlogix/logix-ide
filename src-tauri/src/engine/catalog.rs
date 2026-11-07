@@ -46,10 +46,10 @@ pub struct Board {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Fpga {
-    /// The catalog's FPGA ID, such as "ice40hx4k-tq144-8k"; `None` for a
-    /// custom board's own FPGA definition. Boards with the same ID have the
-    /// same FPGA.
-    pub id: Option<String>,
+    /// The catalog's FPGA ID, such as "ice40hx4k-tq144-8k": every board's
+    /// FPGA is a catalog FPGA, custom boards' too, so boards with the same
+    /// ID have the same FPGA.
+    pub id: String,
     /// The vendor's part number, such as "ICE40HX4K-TQ144".
     pub part_number: String,
     /// The device size, such as "8k".
@@ -321,15 +321,12 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
     let mut list: Vec<Board> = boards
         .iter()
         .map(|(id, b)| {
-            // The FPGA: a catalog ID, or a custom board's own definition.
-            let fpga_id = b["fpga_id"].as_str();
-            let fpga_def = match fpga_id {
-                Some(f) => &fpgas[f],
-                None => &b["fpga"],
-            };
+            // The FPGA: always a catalog FPGA, by ID.
+            let fpga_id = b["fpga_id"].as_str().unwrap_or("");
+            let fpga_def = &fpgas[fpga_id];
             let arch = fpga_def["architecture"].as_str().unwrap_or("").to_string();
             let fpga = fpga_def["part_number"].as_str().map(|part| Fpga {
-                id: fpga_id.map(String::from),
+                id: fpga_id.to_string(),
                 part_number: part.to_string(),
                 size: fpga_def["size"].as_str().unwrap_or("").to_string(),
             });
@@ -472,26 +469,29 @@ mod tests {
         let catalog = json!({
             "boards": {
                 "alhambra-ii": {"description": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k"},
-                "mine": {"description": "Mine", "custom": true, "fpga": {
-                    "architecture": "ecp5", "part_number": "LFE5U-25F-6BG256C", "size": "25k"}},
+                "mine": {"description": "Mine", "custom": true, "fpga_id": "lfe5u-25f"},
             },
-            "fpgas": {"ice40hx4k-tq144-8k": {
-                "architecture": "ice40", "part_number": "ICE40HX4K-TQ144", "size": "8k"}},
+            "fpgas": {
+                "ice40hx4k-tq144-8k": {
+                    "architecture": "ice40", "part_number": "ICE40HX4K-TQ144", "size": "8k"},
+                "lfe5u-25f": {
+                    "architecture": "ecp5", "part_number": "LFE5U-25F-6BG256C", "size": "25k"},
+            },
         });
         let boards = parse_boards(&catalog).unwrap();
         let alhambra = boards.iter().find(|b| b.id == "alhambra-ii").unwrap();
         assert_eq!(
             alhambra.fpga,
             Some(Fpga {
-                id: Some("ice40hx4k-tq144-8k".into()),
+                id: "ice40hx4k-tq144-8k".into(),
                 part_number: "ICE40HX4K-TQ144".into(),
                 size: "8k".into(),
             })
         );
-        // A custom board's own FPGA: its family too.
+        // A custom board's FPGA: a catalog FPGA too.
         let mine = boards.iter().find(|b| b.id == "mine").unwrap();
         assert_eq!(mine.arch, "ecp5");
-        assert_eq!(mine.fpga.as_ref().unwrap().id, None);
+        assert_eq!(mine.fpga.as_ref().unwrap().id, "lfe5u-25f");
         assert_eq!(mine.fpga.as_ref().unwrap().part_number, "LFE5U-25F-6BG256C");
     }
 

@@ -125,7 +125,7 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
     current = id;
     const b = { ...(item as object), id } as { id: string; description?: string; fpga_id?: string; variants?: { selector: { connection: string; memory: string }; tested: boolean }[] };
     if (!/^[a-z0-9-]+$/.test(b.id)) fail(`${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
-    if (!b.fpga_id) fail(`Board ${JSON.stringify(b.id)}: give exactly one of fpga_id and fpga.`);
+    if (!b.fpga_id) fail("Missing field `fpga_id`.");
     if (!b.variants?.length) fail("A board needs at least one variant.");
     if (b.variants!.some((v) => !v.selector)) fail("Missing field `selector`.");
     const arch = family(b.fpga_id!);

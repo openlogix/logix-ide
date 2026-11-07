@@ -173,8 +173,8 @@ export interface Board {
 
 /** A board's FPGA. */
 export interface Fpga {
-  /** The catalog's FPGA ID, e.g. "ice40hx4k-tq144-8k": boards with the same ID have the same FPGA. Null for a custom board's own FPGA definition. */
-  id: string | null;
+  /** The catalog's FPGA ID, e.g. "ice40hx4k-tq144-8k": boards with the same ID have the same FPGA (every board's FPGA is a catalog FPGA). */
+  id: string;
   /** The vendor's part number, e.g. "ICE40HX4K-TQ144". */
   partNumber: string;
   /** The device size, e.g. "8k". */

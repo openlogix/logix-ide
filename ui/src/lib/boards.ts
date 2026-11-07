@@ -115,8 +115,7 @@ export function fpgaLabel(b: Board): string {
 /**
  * Every board with the same FPGA as `b` (the catalog's FPGA ID), `b`
  * included, by name: the same list for each of them, so Board Info's list
- * stays put while browsing it. Just `b` when its FPGA has no ID (a custom
- * board's own FPGA definition).
+ * stays put while browsing it. Just `b` when its FPGA isn't known.
  */
 export function boardsWithFpga(boards: Board[], b: Board): Board[] {
   const id = b.fpga?.id;
