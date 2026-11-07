@@ -212,16 +212,17 @@ their ID, so it can have one board or several:
 }
 ```
 
-The boards in it are listed first in their group of the board list, marked
-with a small circuit board, and Verify, Upload and the other commands use
+The boards in it are listed first in the board list, under **Custom
+boards**, and in their FPGA family's group too, marked with a small circuit
+board, and Verify, Upload and the other commands use
 them like any other board; the output says when a command uses one. Logix
 notices when you save the file in your editor. A board with the same ID as a board in Logix's list
 replaces it in this project. The format is Logix Engine's custom board
 format, described in its
 [tool documentation](https://github.com/openlogix/logix-engine/blob/main/docs/tool-api.md#board-specification).
 If the file has a mistake, the output lists each one with its line and
-column (such as `custom-boards.json:4:3: error: …`), the board list says
-the file has problems, and its boards aren't offered until it's fixed.
+column (such as `custom-boards.json:4:3: error: …`), the board list's
+**Custom boards** group says the file has problems, and its boards aren't offered until it's fixed.
 
 ## Help
 

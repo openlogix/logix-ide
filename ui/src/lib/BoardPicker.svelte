@@ -6,14 +6,16 @@
   Examples window). No groups from connected devices: the user's decision,
   since which boards a device may be is a guess. Unlike a native list, picking the current
   board is reported too (Logix then offers its examples). The project's own
-  boards (custom-boards.json) carry a small board icon, here and on the
-  button, with a tooltip saying where they come from; a file with problems
-  gets one quiet line at the top of the list.
+  boards (custom-boards.json) come first, in "Custom boards" (expanded
+  until collapsed), and in their architecture's group too; they carry a
+  small board icon, here and on the button, with a tooltip saying where
+  they come from. A file with problems leaves the group empty, with one
+  quiet line in it saying so.
 -->
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
-  import { boardGroups, fpgaLabel, RECENT_GROUP, type BoardGroup } from "./boards";
+  import { boardGroups, fpgaLabel, type BoardGroup } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
 
@@ -49,12 +51,19 @@
   let input = $state<HTMLInputElement | null>(null);
   let list = $state<HTMLElement | null>(null);
 
-  const groups = $derived(boardGroups(boards, recent, query));
+  const groups = $derived(boardGroups(boards, recent, query, problemNote !== null));
   /** Whether "Recently used" was collapsed (it starts expanded). */
   let recentCollapsed = $state(false);
+  /** Whether "Custom boards" was collapsed (it starts expanded). */
+  let customCollapsed = $state(false);
   /** Whether a group's boards are shown (all of them while searching). */
   const isOpen = (g: BoardGroup) =>
-    query.trim() !== "" || (g.recent ? !recentCollapsed : expanded.has(g.label));
+    query.trim() !== "" ||
+    (g.kind === "recent"
+      ? !recentCollapsed
+      : g.kind === "custom"
+        ? !customCollapsed
+        : expanded.has(g.label));
   /** The shown entries in order (a recent board appears twice). */
   const entries = $derived(
     groups.flatMap((g, gi) =>
@@ -145,7 +154,8 @@
   });
 
   function toggle(g: BoardGroup) {
-    if (g.key === RECENT_GROUP) recentCollapsed = !recentCollapsed;
+    if (g.kind === "recent") recentCollapsed = !recentCollapsed;
+    else if (g.kind === "custom") customCollapsed = !customCollapsed;
     else toggleGroup(g.label);
     // Keep the highlight on a shown entry.
     if (!entries.some((e) => e.key === active)) active = entries[0]?.key ?? null;
@@ -197,7 +207,6 @@
         aria-activedescendant={active ? `board-${active}` : undefined}
         onkeydown={onKey}
       />
-      {#if problemNote}<p class="problem-note">{problemNote}</p>{/if}
       <ul id="board-list" role="listbox" aria-label="Boards" bind:this={list}>
         {#each groups as g, gi (g.key)}
           {@const shown = isOpen(g)}
@@ -234,6 +243,9 @@
               {#if b.custom}<span class="custom" aria-hidden="true"><Icon name="board" size={12} /></span>{/if}
             </li>
           {/each}
+          {#if shown && g.kind === "custom" && problemNote}
+            <li class="problem-note" role="presentation">{problemNote}</li>
+          {/if}
         {:else}
           <li class="empty" role="presentation">No matching boards</li>
         {/each}
@@ -256,7 +268,7 @@
   }
   .problem-note {
     margin: 0;
-    padding: 4px 10px;
+    padding: 4px 10px 4px 28px;
     font-size: 12px;
     opacity: 0.75;
   }

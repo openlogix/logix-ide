@@ -876,9 +876,14 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(tab(page, "main.v")).toBeVisible();
   await expect(tab(page, "custom-boards.json")).toHaveCount(0);
 
-  // Listed in its architecture's group, first, with the board icon and a
-  // tooltip saying where it comes from; picking it asks nothing.
+  // Listed first in "Custom boards" (expanded), and first in its
+  // architecture's group too, with the board icon and a tooltip saying
+  // where it comes from; picking it asks nothing.
   await boardButton(page).click();
+  await expect(page.locator(".group").first()).toContainText("Custom boards");
+  await expect(
+    page.locator(".group").first().locator("xpath=following-sibling::li[1]"),
+  ).toHaveText(/My UPduino/);
   // (The current board's group, iCE40, opens by itself.)
   const first = page
     .locator(".group", { hasText: "Lattice iCE40" })
@@ -887,7 +892,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(first.locator(".custom")).toHaveCount(1);
   await expect(first).toHaveAttribute("title", /custom-boards\.json/);
   await page.getByRole("combobox").fill("My UPduino");
-  await page.getByRole("option", { name: "My UPduino", exact: true }).click();
+  await page.getByRole("option", { name: "My UPduino", exact: true }).first().click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(boardButton(page)).toHaveText(/My UPduino/);
   await expect(boardButton(page).locator(".custom")).toHaveCount(1);
@@ -909,7 +914,10 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(output(page)).toContainText("custom-boards.json:1:1: error: Expected value.");
   await expect(page.locator(".banner")).toHaveCount(0);
   await boardButton(page).click();
+  // The note is in the Custom boards group, which stays, empty.
   await expect(page.locator(".problem-note")).toContainText("custom-boards.json has problems");
+  await expect(page.locator(".group").first()).toContainText("Custom boards");
+  await expect(page.locator(".group").first().locator(".count")).toHaveText("0");
   await page.getByRole("combobox").fill("My UPduino");
   await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(0);
   await page.keyboard.press("Escape");
@@ -923,12 +931,14 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(output(page)).toContainText("custom-boards.json has no problems now.");
   await boardButton(page).click();
   await expect(page.locator(".problem-note")).toHaveCount(0);
-  await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(1);
+  // In Custom boards and in its iCE40 group.
+  await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(2);
   await page.keyboard.press("Escape");
 
-  // Deleted: its boards go.
+  // Deleted: its boards and the group go.
   await writeFile(null);
   await boardButton(page).click();
+  await expect(page.locator(".group", { hasText: "Custom boards" })).toHaveCount(0);
   await page.getByRole("combobox").fill("My UPduino");
   await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(0);
 });

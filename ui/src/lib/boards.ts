@@ -7,12 +7,15 @@ export interface BoardGroup {
   label: string;
   boards: Board[];
   /**
-   * The "Recently used" group: starts expanded. Architecture groups start
-   * collapsed, and their state is remembered. Both can be collapsed.
+   * "custom" (the project's custom-boards.json) and "recent" (Recently
+   * used) start expanded; architecture groups start collapsed, and their
+   * state is remembered. All can be collapsed.
    */
-  recent: boolean;
+  kind: "custom" | "recent" | "arch";
 }
 
+/** The board picker's group of the project's own boards (custom-boards.json). */
+export const CUSTOM_GROUP = "Custom boards";
 /** The board picker's group of the boards chosen most recently. */
 export const RECENT_GROUP = "Recently used";
 
@@ -68,13 +71,22 @@ export function withProjectBoards(catalog: Board[], own: Board[]): Board[] {
 }
 
 /**
- * The board picker's groups: the boards chosen most recently (`recent`,
- * newest first, the ones still offered), then every board by FPGA
- * architecture, the project's own boards included. With a search query,
- * only boards whose name, id, architecture or FPGA (part number or ID)
- * contains it; empty groups are left out.
+ * The board picker's groups: "Custom boards", the project's own boards
+ * (custom-boards.json; "custom" rather than "project", since a project's
+ * catalog board is its board too: the user's naming, 2026-11-07), then the
+ * boards chosen most recently (`recent`, newest first, the ones still
+ * offered), then every board by FPGA architecture, the project's own
+ * boards included. With a search query, only boards whose name, id,
+ * architecture or FPGA (part number or ID) contains it; empty groups are
+ * left out, except "Custom boards" when `customProblem` (its file has
+ * problems, so the group says so instead of listing boards).
  */
-export function boardGroups(boards: Board[], recent: string[], query: string): BoardGroup[] {
+export function boardGroups(
+  boards: Board[],
+  recent: string[],
+  query: string,
+  customProblem = false,
+): BoardGroup[] {
   const q = query.trim().toLowerCase();
   // The FPGA's part number and ID count too, though the list doesn't show
   // them, so "up5k" or "xc7a35t" finds the boards with that FPGA.
@@ -86,13 +98,18 @@ export function boardGroups(boards: Board[], recent: string[], query: string): B
   const shown = boards.filter(matches);
 
   const groups: BoardGroup[] = [];
+  // The project's own boards first (also in their architecture's group);
+  // with problems in its file, the group stays, empty, to say so.
+  const custom = shown.filter((b) => b.custom);
+  if (custom.length > 0 || customProblem)
+    groups.push({ key: CUSTOM_GROUP, label: CUSTOM_GROUP, boards: custom, kind: "custom" });
   const recentBoards = recent
     .map((id) => shown.find((b) => b.id === id))
     .filter((b): b is Board => b !== undefined);
   if (recentBoards.length > 0)
-    groups.push({ key: RECENT_GROUP, label: RECENT_GROUP, boards: recentBoards, recent: true });
+    groups.push({ key: RECENT_GROUP, label: RECENT_GROUP, boards: recentBoards, kind: "recent" });
   for (const g of groupByArch(shown, (b) => b)) {
-    groups.push({ key: g.label, label: g.label, boards: g.items, recent: false });
+    groups.push({ key: g.label, label: g.label, boards: g.items, kind: "arch" });
   }
   return groups;
 }

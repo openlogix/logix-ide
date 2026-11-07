@@ -30,8 +30,25 @@ describe("boardGroups", () => {
     expect(groups[0]).toBe("Recently used: tang,alhambra-ii");
     expect(groups).toContain("Gowin: tang");
     const [recent, ice40] = boardGroups(boards, ["tang"], "");
-    expect(recent.recent).toBe(true);
-    expect(ice40.recent).toBe(false);
+    expect(recent.kind).toBe("recent");
+    expect(ice40.kind).toBe("arch");
+  });
+
+  it("lists the project's own boards first, as Custom boards, and in their group too", () => {
+    const mine = { ...boards[0], id: "mine", description: "Mine", custom: true };
+    const all = withProjectBoards(boards, [mine]);
+    const groups = summary(["tang"], "", all);
+    expect(groups.slice(0, 3)).toEqual([
+      "Custom boards: mine",
+      "Recently used: tang",
+      "Lattice iCE40: mine,alhambra-ii,icebreaker",
+    ]);
+    expect(boardGroups(all, [], "")[0].kind).toBe("custom");
+    // No custom boards: no group, unless the file has problems.
+    expect(summary([], "")[0]).toBe("Lattice iCE40: alhambra-ii,icebreaker");
+    expect(boardGroups(boards, [], "", true)[0]).toMatchObject({ kind: "custom", boards: [] });
+    // Searching keeps only matches.
+    expect(summary([], "icebreaker", all)).toEqual(["Lattice iCE40: icebreaker"]);
   });
 
   it("puts the project's own boards in their architecture's group", () => {
@@ -42,7 +59,7 @@ describe("boardGroups", () => {
     expect(all.filter((b) => b.id === "arty")).toEqual([over]);
     expect(withProjectBoards(boards, [])).toBe(boards);
     const groups = summary([], "", all);
-    expect(groups[0]).toBe("Lattice iCE40: mine,alhambra-ii,icebreaker");
+    expect(groups).toContain("Lattice iCE40: mine,alhambra-ii,icebreaker");
     expect(groups).toContain("Xilinx: arty");
   });
 
