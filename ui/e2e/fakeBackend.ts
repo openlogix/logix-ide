@@ -191,6 +191,12 @@ const fake = {
     .filter(Boolean),
   /** The USB devices Tools > Connected Devices lists (`scanDevices`); one Alhambra II by default. */
   usb: null as Real.UsbDevice[] | null,
+  /** The folder Show Project Folder showed last (`showProjectFolder`). */
+  shownFolder: null as string | null,
+  /** The confirmation dialogs shown (`askConfirm`), oldest first. */
+  confirms: [] as { title: string; okLabel: string; kind: string }[],
+  /** What the user answers in confirmation dialogs (`askConfirm`). */
+  confirmAnswer: true,
   /** When set, Save As fails with this error (`saveProjectAsDialog`). */
   saveAsError: null as Real.UserError | null,
   /** Devices reported as plugged in, with their boards (`connectedDevices`). */
@@ -508,7 +514,9 @@ export const backend: typeof Real.backend = {
       name: dir.split("/").pop() ?? dir,
     };
   },
-  showProjectFolder: async () => {},
+  showProjectFolder: async (dir) => {
+    fake.shownFolder = dir;
+  },
   saveGtkwaveLayouts: async () => [],
   cancelTask: async () => false,
 
@@ -553,7 +561,10 @@ export const backend: typeof Real.backend = {
     return null;
   },
 
-  askConfirm: async () => true,
+  askConfirm: async (title, _message, okLabel, kind = "warning") => {
+    fake.confirms.push({ title, okLabel, kind });
+    return fake.confirmAnswer;
+  },
   askSaveChanges: async () => "discard",
   setDocumentState: async () => {},
   closeWindow: async () => {},

@@ -1417,14 +1417,21 @@
     });
   }
 
-  /** Project > Show Project Folder (in Finder). */
+  /**
+   * Project > Show Project Folder (in Finder). A project never saved has no
+   * folder: a dialog offers Save As… (a status line alone was easy to
+   * miss), then shows the new folder.
+   */
   async function showProjectFolder() {
-    if (!project?.dir) {
-      status = {
-        text: "This project hasn't been saved yet, so it has no folder.",
-        kind: "info",
-      };
-      return;
+    if (!project) return;
+    if (!project.dir) {
+      const save = await backend.askConfirm(
+        "This project hasn't been saved yet",
+        "Save it to give it a folder on this computer.",
+        "Save As…",
+        "info",
+      );
+      if (!save || !(await saveAs()) || !project?.dir) return;
     }
     try {
       await backend.showProjectFolder(project.dir);

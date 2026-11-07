@@ -1096,19 +1096,26 @@ pub fn check_file_name(name: String, existing: Vec<String>) -> Option<String> {
     project::check_new_file_name(&name, &existing).err()
 }
 
-/// Asks the user to confirm something destructive. True if confirmed.
+/// Asks the user to confirm an action. True if confirmed. A warning (for
+/// something destructive) unless `kind` is "info" (for an offer, such as
+/// saving a project that has no folder yet).
 #[tauri::command]
 pub async fn ask_confirm(
     app: AppHandle,
     title: String,
     message: String,
     ok_label: String,
+    kind: Option<String>,
 ) -> Result<bool, UserError> {
+    let kind = match kind.as_deref() {
+        Some("info") => MessageDialogKind::Info,
+        _ => MessageDialogKind::Warning,
+    };
     let dialog = app
         .dialog()
         .message(message)
         .title(title)
-        .kind(MessageDialogKind::Warning)
+        .kind(kind)
         .buttons(MessageDialogButtons::OkCancelCustom(
             ok_label,
             "Cancel".into(),

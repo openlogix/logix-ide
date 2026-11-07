@@ -73,7 +73,8 @@ inside another project.
   **Save As…** over an existing project replaces it; the old one goes to
   the Trash.
 - **Show Project Folder**: **Project > Show Project Folder** opens the
-  folder in Finder.
+  folder in Finder. A new project gets its folder when it's first saved, so
+  for a project not saved yet, it offers **Save As…** first.
 
 ## Boards and examples
 
@@ -189,7 +190,8 @@ or a device to skip it). Click a board's name to select it.
 
 A board that isn't in Logix's board list can be added to a project. Add a
 file named **custom-boards.json** to the project folder with any text
-editor (Logix doesn't edit it) and describe the board in it. Since it's
+editor (Logix doesn't edit it) and describe the board in it.
+**Project > Show Project Folder** opens the folder in Finder. Since it's
 part of the project, anyone who opens the project gets the same boards. The file holds the boards by
 their ID, so it can have one board or several:
 

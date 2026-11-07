@@ -646,13 +646,17 @@ export const backend = {
   checkFileName: (name: string, existing: string[]): Promise<string | null> =>
     invoke<string | null>("check_file_name", { name, existing }),
 
-  /** Asks to confirm something destructive. True if confirmed. */
+  /**
+   * Asks to confirm an action. True if confirmed. A warning (something
+   * destructive) unless `kind` is "info" (an offer, e.g. to save first).
+   */
   askConfirm: (
     title: string,
     message: string,
     okLabel: string,
+    kind: "warning" | "info" = "warning",
   ): Promise<boolean> =>
-    invoke<boolean>("ask_confirm", { title, message, okLabel }),
+    invoke<boolean>("ask_confirm", { title, message, okLabel, kind }),
 
   /** Asks what to do with unsaved changes. */
   askSaveChanges: (name: string): Promise<SaveChoice> =>

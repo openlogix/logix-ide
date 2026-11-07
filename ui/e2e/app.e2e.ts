@@ -170,6 +170,43 @@ test("a new project for a board builds right away", async ({ page }) => {
   await expect(output(page)).toContainText(/Build succeeded in .*\s*Ready\.\s*$/);
 });
 
+test("Show Project Folder on a project never saved offers Save As…, then shows the folder", async ({
+  page,
+}) => {
+  type Fake = {
+    shownFolder: string | null;
+    confirms: { title: string; okLabel: string; kind: string }[];
+    confirmAnswer: boolean;
+  };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  const answer = (yes: boolean) =>
+    page.evaluate((yes) => {
+      (window as unknown as { __fake: Fake }).__fake.confirmAnswer = yes;
+    }, yes);
+  await start(page);
+
+  // Cancel: nothing saved, no folder shown.
+  await answer(false);
+  await menu(page, "show-folder");
+  await expect.poll(async () => (await fake()).confirms.length).toBe(1);
+  expect((await fake()).confirms[0]).toEqual({
+    title: "This project hasn't been saved yet",
+    okLabel: "Save As…",
+    kind: "info",
+  });
+  expect((await fake()).shownFolder).toBeNull();
+
+  // Save As…: saved, then its new folder is shown.
+  await answer(true);
+  await menu(page, "show-folder");
+  await expect.poll(async () => (await fake()).shownFolder).toMatch(/^\/fake\/projects\//);
+  await expect(status(page)).toContainText("Saved");
+
+  // Once saved, it shows the folder without asking.
+  await menu(page, "show-folder");
+  await expect.poll(async () => (await fake()).confirms.length).toBe(2);
+});
+
 test("a build error is marked in the editor and linked in the output", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
