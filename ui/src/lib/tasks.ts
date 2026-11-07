@@ -50,9 +50,9 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   const first = errors[0];
   if (!first) return `${VERB[task].noun} failed. See the output below.`;
   // The output above already lists the file's problems at its full path.
+  // No count: the engine may stop before finding them all.
   if (first.file === CUSTOM_BOARDS_FILE) {
-    const n = errors.filter((d) => d.file === CUSTOM_BOARDS_FILE).length;
-    return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has ${plural(n, "problem")}.`;
+    return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has problems.`;
   }
   const where = location(first);
   const problem = `${where ? `${where}: ` : ""}${friendly(first.message)}`;
