@@ -35,6 +35,36 @@ import packageJson from "../../package.json";
 const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }));
 
 /**
+ * Logix Engine's compare_boards, from the boards' facts: each aspect the
+ * same, different or unknown, with the engine's sentences.
+ */
+function fakeCompare(a: Real.Board | undefined, b: Real.Board | undefined): Real.BoardComparison {
+  if (!a || !b) throw { message: "Unknown board." };
+  const aspect = (name: string, label: string, sameLabel: string, x: string, y: string, same: boolean) => ({
+    aspect: name,
+    same: same ? ("yes" as const) : ("no" as const),
+    from: x,
+    to: y,
+    text: same ? `${sameLabel}: ${x}.` : `${label}: ${x} → ${y}.`,
+  });
+  const ext = (x: Real.Board) => `.${x.pinExtension ?? "?"}`;
+  const sameFpga = !!a.fpga?.id && a.fpga.id === b.fpga?.id;
+  return {
+    sameBuild: sameFpga,
+    aspects: [
+      aspect("board", "Board", "Same board", a.description, b.description, a.id === b.id),
+      aspect("architecture", "Architecture", "Same architecture", a.archLabel, b.archLabel, a.arch === b.arch),
+      aspect("fpga", "FPGA", "Same FPGA", a.fpga?.partNumber ?? "?", b.fpga?.partNumber ?? "?", sameFpga),
+      aspect("size", "Size", "Same size", a.fpga?.size ?? "?", b.fpga?.size ?? "?", a.fpga?.size === b.fpga?.size),
+      aspect("constraint_format", "Pin file format", "Same pin file format", ext(a), ext(b), ext(a) === ext(b)),
+      a.id === b.id
+        ? { aspect: "pins", same: "yes" as const, text: "Same pins: the same board." }
+        : { aspect: "pins", same: "unknown" as const, text: "Pins: not known whether they match." },
+    ],
+  };
+}
+
+/**
  * The project's own boards as the fake engine reads them from the text of
  * custom-boards.json (on the fake disk, `fake.customBoardsOnDisk`): enough of Logix Engine's rules to test the UI (valid
  * JSON, an object, board IDs, an FPGA, variants with a selector), with each problem at the line of the board's key (line 1 for
@@ -595,6 +625,11 @@ export const backend: typeof Real.backend = {
     return fake.connected;
   },
   projectBoards: async (folder, saved) => fakeProjectBoards(boardsOnDisk(folder), folder, saved),
+  compareBoards: async (from, to, folder, saved) => {
+    const own = fakeProjectBoards(boardsOnDisk(folder), folder, saved).boards;
+    const find = (id: string) => own.find((b) => b.id === id) ?? BOARDS.find((b) => b.id === id);
+    return fakeCompare(find(from), find(to));
+  },
   // The text itself: it changes whenever the file does.
   customBoardsStamp: async (folder) => boardsOnDisk(folder),
   showOutputMenu: async () => {

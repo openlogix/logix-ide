@@ -1,4 +1,4 @@
-import type { Board, ProjectBoards } from "./backend";
+import type { Board, BoardComparison, ProjectBoards } from "./backend";
 
 /** A titled group of boards in the board picker. */
 export interface BoardGroup {
@@ -145,40 +145,47 @@ export interface NotePoint {
 }
 
 /**
- * What changing a project from board `from` to board `to` means: 2 to 4
- * points (the user's design), the first naming the change at its highest
- * level (board, FPGA, or architecture, each including the ones below), the
- * rest its implications. Empty for the same board. `pinFile` is the
- * project's pin file, such as "pinout.pcf". From the catalog's facts only.
+ * What moving a project from one board to another means for a Logix
+ * project, which keeps its sources as they are: 2 to 4 points (the user's
+ * design), the first naming the change at its highest level
+ * (architecture, FPGA or board), the rest the risks of keeping the
+ * sources. Empty for the same board. The facts come from Logix Engine's
+ * `compare_boards` (`c`); the wording is the IDE's, since what a change
+ * means depends on the project model. `pinFile` is the project's pin file,
+ * such as "pinout.pcf".
  */
-export function boardChangeNote(from: Board | null, to: Board, pinFile: string | null): NotePoint[] {
-  if (!from || from.id === to.id) return [];
+export function boardChangeNote(c: BoardComparison | null, pinFile: string | null): NotePoint[] {
+  if (!c) return [];
+  const aspect = (name: string) => c.aspects.find((a) => a.aspect === name);
+  const differs = (name: string) => aspect(name)?.same === "no";
   const change = (text: string): NotePoint => ({ text, kind: "change" });
   const risk = (text: string): NotePoint => ({ text, kind: "risky" });
   const pins = pinFile ?? "the pin file";
-  const otherArch = !!from.arch && !!to.arch && from.arch !== to.arch;
-  const otherFpga = otherArch || (!!from.fpga && !!to.fpga && from.fpga.id !== to.fpga.id);
-  if (otherArch) {
-    const ext = to.pinExtension ? `a .${to.pinExtension} pin file` : "another kind of pin file";
+  const arch = aspect("architecture");
+  if (arch && differs("architecture")) {
+    const format = aspect("constraint_format")?.to as string | undefined;
+    const needs = format ? `a ${format} pin file` : "another kind of pin file";
     return [
-      change(`Architecture change: ${from.archLabel} → ${to.archLabel}.`),
-      risk(`Needs ${ext}${pinFile ? ` instead of ${pinFile}` : ""}, with this board's pins.`),
-      risk(`Probably significant changes: ${from.archLabel} parts, such as I/O cells and PLLs, won't build.`),
+      change(arch.text),
+      risk(`Needs ${needs}${pinFile ? ` instead of ${pinFile}` : ""}, with this board's pins.`),
+      risk(`Probably significant changes: ${String(arch.from)} parts, such as I/O cells and PLLs, won't build.`),
       risk("The clock frequency and the LED and button wiring may differ: check the design."),
     ];
   }
-  if (otherFpga) {
-    const parts = from.fpga && to.fpga ? `: ${from.fpga.partNumber} → ${to.fpga.partNumber}` : "";
+  const fpga = aspect("fpga");
+  if (fpga && differs("fpga")) {
     return [
-      change(`FPGA change${parts}.`),
+      change(fpga.text),
       risk("FPGA-specific parts, such as PLLs and special cells, may need changes."),
       risk("The design may not fit, or may not reach its clock speed."),
       risk(`The pins, clock frequency and LED and button wiring may differ: check ${pins} and the design.`),
     ];
   }
+  const board = aspect("board");
+  if (!board || !differs("board")) return [];
   return [
-    change(`Board change, same FPGA${to.fpga ? ` (${to.fpga.partNumber})` : ""}.`),
-    risk(`The pins may differ: check ${pins}.`),
+    change([board.text, fpga?.text].filter(Boolean).join(" ")),
+    ...(aspect("pins")?.same === "yes" ? [] : [risk(`The pins may differ: check ${pins}.`)]),
     risk("The clock frequency and the LED and button wiring may differ: check the design."),
   ];
 }

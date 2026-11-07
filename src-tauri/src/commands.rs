@@ -236,6 +236,25 @@ pub async fn project_boards(
     })
 }
 
+/// What differs between boards `from` and `to` (Logix Engine's
+/// `compare_boards`), the project's own boards included (its
+/// custom-boards.json in `folder`), for the note on changing a project's
+/// board.
+#[tauri::command]
+pub async fn compare_boards(
+    state: State<'_, AppState>,
+    from: String,
+    to: String,
+    folder: Option<String>,
+    saved: bool,
+) -> Result<engine::BoardComparison, UserError> {
+    let engine = ready_engine(&state).await?;
+    let file = boards_file(folder.as_deref(), saved);
+    Ok(engine::compare_boards(&engine, &from, &to, file.as_ref())
+        .await
+        .context("Couldn't compare the boards.")?)
+}
+
 /// The examples Logix supports, and how many unsupported ones were hidden.
 #[tauri::command]
 pub async fn get_examples(state: State<'_, AppState>) -> Result<examples::ExampleList, UserError> {

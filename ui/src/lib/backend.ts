@@ -122,6 +122,28 @@ export interface ProjectBoards {
   problem: { message: string; diagnostics: Diagnostic[] } | null;
 }
 
+/**
+ * Two boards compared by Logix Engine's `compare_boards`: facts only (the
+ * IDE words them, `boardChangeNote`).
+ */
+export interface BoardComparison {
+  /** Whether a build for one board is valid for the other. */
+  sameBuild: boolean;
+  /**
+   * Every aspect, in the engine's order: board, architecture, fpga, size,
+   * constraint_format, pins (later engines may add more).
+   */
+  aspects: {
+    aspect: string;
+    same: "yes" | "no" | "unknown";
+    /** The two values, when known: any JSON type, by aspect (text today). */
+    from?: unknown;
+    to?: unknown;
+    /** For people, e.g. "FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.". */
+    text: string;
+  }[];
+}
+
 export type SaveChoice = "save" | "discard" | "cancel";
 
 export interface Board {
@@ -643,6 +665,14 @@ export const backend = {
    * named as the user knows it: its full path when the project is `saved`,
    * `custom-boards.json` when it isn't.
    */
+  compareBoards: (
+    from: string,
+    to: string,
+    folder: string | null,
+    saved: boolean,
+  ): Promise<BoardComparison> =>
+    invoke<BoardComparison>("compare_boards", { from, to, folder, saved }),
+
   projectBoards: (folder: string | null, saved: boolean): Promise<ProjectBoards> =>
     invoke<ProjectBoards>("project_boards", { folder, saved }),
 

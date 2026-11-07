@@ -139,6 +139,7 @@ pub fn run() {
             commands::open_project_at,
             commands::show_project_folder,
             commands::copy_project_path,
+            commands::compare_boards,
             commands::save_project_as_dialog,
             commands::check_file_name,
             commands::ask_confirm,

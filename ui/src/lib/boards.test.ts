@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByArch, boardsWithFpga, withProjectBoards } from "./boards";
-import type { Board } from "./backend";
+import type { Board, BoardComparison } from "./backend";
 
 const boards: Board[] = [
   { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
@@ -119,48 +119,55 @@ describe("groupByArch", () => {
 });
 
 describe("boardChangeNote", () => {
-  const hx4k = { id: "ice40hx4k-tq144-8k", partNumber: "ICE40HX4K-TQ144", size: "8k" };
-  const alhambra: Board = { ...boards[0], pinExtension: "pcf", fpga: hx4k };
-  const kefir: Board = { ...alhambra, id: "kefir", description: "Kéfir I" };
-  const icebreaker: Board = {
-    ...boards[3],
-    pinExtension: "pcf",
-    fpga: { id: "ice40up5k-sg48", partNumber: "ICE40UP5K-SG48", size: "5k" },
-  };
-  const colorlight: Board = {
-    ...boards[2],
-    pinExtension: "lpf",
-    fpga: { id: "lfe5u-25f", partNumber: "LFE5U-25F-6BG256C", size: "25k" },
-  };
+  // Logix Engine's compare_boards answers, as the engine words each aspect.
+  type Same = "yes" | "no" | "unknown";
+  const a = (aspect: string, same: Same, from: string | null, to: string | null, text: string) => ({
+    aspect, same, text, ...(from === null ? {} : { from }), ...(to === null ? {} : { to }),
+  });
+  const cmp = (...aspects: ReturnType<typeof a>[]): BoardComparison => ({ sameBuild: false, aspects });
+  const kefir = cmp(
+    a("board", "no", "Alhambra II", "Kéfir I", "Board: Alhambra II → Kéfir I."),
+    a("architecture", "yes", "Lattice iCE40", "Lattice iCE40", "Same architecture: Lattice iCE40."),
+    a("fpga", "yes", "ICE40HX4K-TQ144", "ICE40HX4K-TQ144", "Same FPGA: ICE40HX4K-TQ144."),
+    a("pins", "unknown", null, null, "Pins: not known whether they match."),
+  );
+  const icebreaker = cmp(
+    a("board", "no", "Alhambra II", "iCEBreaker", "Board: Alhambra II → iCEBreaker."),
+    a("architecture", "yes", "Lattice iCE40", "Lattice iCE40", "Same architecture: Lattice iCE40."),
+    a("fpga", "no", "ICE40HX4K-TQ144", "ICE40UP5K-SG48", "FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48."),
+  );
+  const colorlight = cmp(
+    a("board", "no", "Alhambra II", "ColorLight 5A-75B", "Board: Alhambra II → ColorLight 5A-75B."),
+    a("architecture", "no", "Lattice iCE40", "Lattice ECP5", "Architecture: Lattice iCE40 → Lattice ECP5."),
+    a("fpga", "no", "ICE40HX4K-TQ144", "LFE5U-25F-6BG256C", "FPGA: ICE40HX4K-TQ144 → LFE5U-25F-6BG256C."),
+    a("constraint_format", "no", ".pcf", ".lpf", "Pin file format: .pcf → .lpf."),
+  );
+  const same = cmp(a("board", "yes", "Alhambra II", "Alhambra II", "Same board: Alhambra II."));
 
-  it("names the change at its highest level, then its implications", () => {
+  it("names the change at its highest level, then what it risks for the sources", () => {
     const show = (points: { text: string; kind: string }[]) =>
       points.map((p) => `${p.kind === "risky" ? "! " : p.kind === "change" ? "> " : ""}${p.text}`);
-    expect(show(boardChangeNote(alhambra, kefir, "pinout.pcf"))).toEqual([
-      "> Board change, same FPGA (ICE40HX4K-TQ144).",
+    expect(show(boardChangeNote(kefir, "pinout.pcf"))).toEqual([
+      "> Board: Alhambra II → Kéfir I. Same FPGA: ICE40HX4K-TQ144.",
       "! The pins may differ: check pinout.pcf.",
       "! The clock frequency and the LED and button wiring may differ: check the design.",
     ]);
-    expect(show(boardChangeNote(alhambra, icebreaker, "pinout.pcf"))).toEqual([
-      "> FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
+    expect(show(boardChangeNote(icebreaker, "pinout.pcf"))).toEqual([
+      "> FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
       "! FPGA-specific parts, such as PLLs and special cells, may need changes.",
       "! The design may not fit, or may not reach its clock speed.",
       "! The pins, clock frequency and LED and button wiring may differ: check pinout.pcf and the design.",
     ]);
-    expect(show(boardChangeNote(alhambra, colorlight, "pinout.pcf"))).toEqual([
-      "> Architecture change: Lattice iCE40 → Lattice ECP5.",
+    expect(show(boardChangeNote(colorlight, "pinout.pcf"))).toEqual([
+      "> Architecture: Lattice iCE40 → Lattice ECP5.",
       "! Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
       "! Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
       "! The clock frequency and the LED and button wiring may differ: check the design.",
     ]);
-    // 2 to 4 points each.
-    for (const to of [kefir, icebreaker, colorlight]) {
-      const n = boardChangeNote(alhambra, to, "pinout.pcf").length;
-      expect(n >= 2 && n <= 4).toBe(true);
-    }
-    expect(boardChangeNote(alhambra, colorlight, null)[1].text).toBe("Needs a .lpf pin file, with this board's pins.");
-    expect(boardChangeNote(null, colorlight, null)).toEqual([]);
-    expect(boardChangeNote(alhambra, alhambra, "pinout.pcf")).toEqual([]);
+    expect(boardChangeNote(colorlight, null)[1].text).toBe("Needs a .lpf pin file, with this board's pins.");
+    // Nothing to say: no comparison, or the same board.
+    expect(boardChangeNote(null, "pinout.pcf")).toEqual([]);
+    expect(boardChangeNote(same, "pinout.pcf")).toEqual([]);
   });
 });
 

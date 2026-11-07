@@ -18,7 +18,7 @@
   import { onMount } from "svelte";
   import type { Board, Example } from "./backend";
   import { groupExamples, type ExampleEntry } from "./examples";
-  import { boardChangeNote, groupByArch } from "./boards";
+  import { groupByArch, type NotePoint } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
 
@@ -28,6 +28,7 @@
     initialBoard,
     onlyBoard = null,
     currentProject = null,
+    changeNote = [],
     onChangeBoard = () => {},
     onOpen,
     onClose,
@@ -43,6 +44,11 @@
      * new board (its name, its board, and its pin file, for the note).
      */
     currentProject?: { name: string; board: Board | null; pinFile: string | null } | null;
+    /**
+     * With `currentProject`: what moving it to the new board means, short
+     * points (`boardChangeNote`, from Logix Engine's comparison).
+     */
+    changeNote?: NotePoint[];
     /** Change the board of the current project to `onlyBoard`. */
     onChangeBoard?: () => void;
     onOpen: (example: ExampleEntry) => void;
@@ -95,12 +101,6 @@
    * custom-boards.json), so only the current-project choice is offered.
    */
   const customOnly = $derived(onlyBoardInfo?.custom === true);
-  /** What moving the current project to the new board means: short points. */
-  const changeNote = $derived(
-    currentProject && onlyBoardInfo
-      ? boardChangeNote(currentProject.board, onlyBoardInfo, currentProject.pinFile)
-      : [],
-  );
   /** The selected board's group, or the first one if it's filtered out. */
   const group = $derived(
     groups.find((g) => g.board.id === selectedBoard) ?? groups[0] ?? null,

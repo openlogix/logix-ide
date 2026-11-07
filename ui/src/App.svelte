@@ -35,7 +35,7 @@
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
-  import { boardsProblemLines, withProjectBoards } from "./lib/boards";
+  import { boardChangeNote, boardsProblemLines, withProjectBoards, type NotePoint } from "./lib/boards";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
     choose as chooseVariant,
@@ -449,6 +449,26 @@
    * board until then (the user's decision, 2026-11-07).
    */
   let pendingBoard = $state<string | null>(null);
+  /**
+   * What moving the project to `pendingBoard` means (the project options'
+   * note): Logix Engine compares the boards, the IDE words it.
+   */
+  let changeNote = $state<NotePoint[]>([]);
+  $effect(() => {
+    const from = currentBoard;
+    const to = pendingBoard;
+    changeNote = [];
+    if (!project || !from || !to || from === to) return;
+    const pinFile = projectPinFile(project);
+    backend
+      .compareBoards(from, to, boardsFolder, boardsSaved)
+      .then((c) => {
+        if (pendingBoard === to) changeNote = boardChangeNote(c, pinFile);
+      })
+      .catch(() => {
+        // Not essential: the options still work without the note.
+      });
+  });
 
   /**
    * Toolbar board change. As in the Arduino IDE, it never changes the
@@ -1903,6 +1923,7 @@
     currentProject={pendingBoard && project
       ? { name: project.name, board: currentBoardInfo, pinFile: projectPinFile(project) }
       : null}
+    {changeNote}
     onChangeBoard={() => closeExamples(true)}
     onOpen={openExample}
     onClose={() => closeExamples(false)}

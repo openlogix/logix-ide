@@ -262,6 +262,60 @@ pub async fn project_boards(
     })
 }
 
+/// Two boards compared by Logix Engine's `compare_boards`: facts only, for
+/// the IDE to word (`boardChangeNote` in the UI).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BoardComparison {
+    /// Whether a build for one board is valid for the other.
+    #[serde(alias = "same_build")]
+    pub same_build: bool,
+    /// Every aspect, in the engine's order: board, architecture, fpga,
+    /// size, constraint_format, pins (later engines may add more).
+    pub aspects: Vec<BoardAspect>,
+}
+
+/// One aspect of two boards compared.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct BoardAspect {
+    pub aspect: String,
+    /// "yes", "no" or "unknown" (not in the engine's catalog yet).
+    pub same: String,
+    /// The two values, when known: any JSON type, by aspect (text today).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to: Option<Value>,
+    /// The comparison for people, such as "FPGA: ICE40HX4K-TQ144 →
+    /// ICE40UP5K-SG48.".
+    pub text: String,
+}
+
+/// What differs between boards `from` and `to` (each in its default
+/// variant), the project's own boards included.
+pub async fn compare_boards(
+    engine: &Engine,
+    from: &str,
+    to: &str,
+    file: Option<&BoardsFile>,
+) -> Result<BoardComparison> {
+    // No display_paths: the answer names boards, not files.
+    let (boards_file, _) = boards_fields(file);
+    let answer = engine
+        .call(
+            "compare_boards",
+            json!({
+                "from_board": from,
+                "to_board": to,
+                "custom_boards_file": boards_file,
+            }),
+            None,
+        )
+        .await?
+        .map_err(|e| tool_error("compare_boards", &e))?;
+    serde_json::from_value(answer).context("Logix Engine's compare_boards answer isn't readable")
+}
+
 /// The custom boards of a board list.
 fn custom_only(boards: Vec<Board>) -> Vec<Board> {
     boards.into_iter().filter(|b| b.custom).collect()

@@ -464,7 +464,7 @@ test("changing the board offers project options: the current project first", asy
   await expect(dialog.locator("button.selected")).toHaveCount(0);
   // The change, then its implications, the risky ones red.
   await expect(current.locator(".note .point")).toHaveText([
-    "FPGA change: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
+    "FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
     /^FPGA-specific parts/,
     /^The design may not fit/,
     /^The pins, clock frequency and LED and button wiring may differ/,
@@ -492,7 +492,7 @@ test("changing the board offers project options: the current project first", asy
   await pickBoard(page, "ColorLight-5A-75B-V8");
   const other = dialog.getByRole("button", { name: /^Change the board of/ });
   await expect(other.locator(".note .point").first()).toHaveText(
-    "Architecture change: Lattice iCE40 → Lattice ECP5.",
+    "Architecture: Lattice iCE40 → Lattice ECP5.",
   );
   await expect(other.locator(".note .point.risky")).toHaveText([
     "Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
@@ -985,7 +985,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   // no examples or new projects, saying why.
   const options = page.getByRole("dialog", { name: "Examples" });
   await expect(options.getByRole("heading")).toHaveText("Project options for custom board “My UPduino”");
-  await expect(options.locator(".current .note .point").first()).toHaveText(/^Board change, same FPGA/);
+  await expect(options.locator(".current .note .point").first()).toHaveText(/^Board: UPDuino v2\.0 → My UPduino\. Same FPGA: /);
   await expect(options.locator(".custom-note")).toContainText("Custom boards have no examples");
   await expect(options.getByRole("button", { name: /^bare-minimum/ })).toHaveCount(0);
   await expect(options.getByRole("button", { name: /^blinky/ })).toHaveCount(0);
