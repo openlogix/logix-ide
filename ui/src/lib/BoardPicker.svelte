@@ -173,7 +173,7 @@
     bind:this={button}
     class="board-button"
     {disabled}
-    title={selected?.custom ? `Board: ${label}\n${FROM_PROJECT}` : `Board: ${label}`}
+    title={selected?.custom ? `Custom board: ${label}\n${FROM_PROJECT}` : `Board: ${label}`}
     aria-haspopup="listbox"
     aria-expanded={open}
     onclick={() => (open ? hide() : show())}

@@ -911,7 +911,10 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(options).toBeHidden();
   await expect(boardButton(page)).toHaveText(/My UPduino/);
   await expect(boardButton(page).locator(".custom")).toHaveCount(1);
-  await expect(boardButton(page)).toHaveAttribute("title", /From this project's custom-boards\.json/);
+  await expect(boardButton(page)).toHaveAttribute(
+    "title",
+    "Custom board: My UPduino\nFrom this project's custom-boards.json",
+  );
 
   // The project folder goes with every task and device scan (the engine
   // reads the file there), and the output says where the board is from.
