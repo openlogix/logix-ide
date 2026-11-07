@@ -265,6 +265,8 @@ export interface FormatResult {
 export interface UsbDevice {
   /** Logix Engine's device id, for Upload. Opaque and short-lived. */
   id: string;
+  /** The engine's name for people, e.g. "Alhambra II v1.0A (AlhambraBits, 0403:6010)". */
+  label: string;
   /** USB vendor and product ids, as 4 hex digits. */
   vid: string;
   pid: string;
@@ -273,6 +275,8 @@ export interface UsbDevice {
   serialNumber: string;
   /** The boards it may be, strongest first, each with its match level. */
   boards: { board: string; level: MatchLevel }[];
+  /** The boards it most likely is, by the engine (none when only weak matches). */
+  likelyBoards: string[];
   /** For Upload's candidates: how well it matches the build's board. */
   buildMatch: MatchLevel | null;
 }
@@ -287,6 +291,8 @@ export type MatchLevel = "strong" | "possible" | "weak";
 
 /** A device that may be a board but can't be opened yet. */
 export interface UnreachableDevice {
+  /** The engine's name for people, e.g. "USB device (0403:6014)". */
+  label: string;
   vid: string;
   pid: string;
   /** The suggested fix, e.g. "fix_device_permissions". */

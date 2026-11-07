@@ -279,6 +279,7 @@ function boardsOnDisk(folder: string | null): string | null {
 /** A real Alhambra II, as Logix Engine lists it. */
 const alhambraDevice: Real.UsbDevice = {
   id: "usb:1-1:0403:6010:FTATANKC",
+  label: "Alhambra II v1.0A (AlhambraBits, 0403:6010)",
   vid: "0403",
   pid: "6010",
   manufacturer: "AlhambraBits",
@@ -288,6 +289,7 @@ const alhambraDevice: Real.UsbDevice = {
     { board: "alhambra-ii", level: "strong" },
     { board: "alchitry-au", level: "weak" },
   ],
+  likelyBoards: ["alhambra-ii"],
   buildMatch: "strong",
 };
 

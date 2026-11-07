@@ -867,6 +867,7 @@ test("Upload asks which device when several fit the board", async ({ page }) => 
     const f = (window as unknown as { __fake: { uploadDevices: unknown[] } }).__fake;
     const device = (serial: string, level: string) => ({
       id: `usb:1-${serial}:0403:6010:${serial}`,
+      label: "Alhambra II v1.0A (AlhambraBits, 0403:6010)", likelyBoards: ["alhambra-ii"],
       vid: "0403", pid: "6010", manufacturer: "AlhambraBits",
       product: "Alhambra II v1.0A", serialNumber: serial,
       boards: [{ board: "alhambra-ii", level }], buildMatch: level,
@@ -916,7 +917,8 @@ test("lists the connected devices", async ({ page }) => {
   await page.evaluate(() => {
     (window as unknown as { __fake: { usb: unknown[] } }).__fake.usb = [
       {
-        id: "usb:1-4:0403:6010:", vid: "0403", pid: "6010", manufacturer: "FTDI",
+        id: "usb:1-4:0403:6010:", label: "Dual RS232-HS (FTDI, 0403:6010)", likelyBoards: [],
+        vid: "0403", pid: "6010", manufacturer: "FTDI",
         product: "Dual RS232-HS", serialNumber: "", buildMatch: null,
         boards: [{ board: "alchitry-au", level: "weak" }, { board: "icestick", level: "weak" }],
       },

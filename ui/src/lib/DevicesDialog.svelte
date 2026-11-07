@@ -9,7 +9,7 @@
   import type { Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
   import type { UsbDevice } from "./backend";
-  import { deviceBoardGroups, usbLabel } from "./devices";
+  import { deviceBoardGroups } from "./devices";
 
   let {
     devices,
@@ -108,7 +108,7 @@
               {@const open = isOpen(d.id, fits)}
               <li class="device">
                 <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
-                  >{@render chevron(open)}<span class="name">{usbLabel(d)}</span>{#if d.serialNumber}{" "}<span class="muted">· serial {d.serialNumber}</span>{/if}</button
+                  >{@render chevron(open)}<span class="name">{d.label}</span>{#if d.serialNumber}{" "}<span class="muted">· serial {d.serialNumber}</span>{/if}</button
                 >
                 {#if open}
                   <div class="groups">

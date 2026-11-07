@@ -17,6 +17,9 @@ use super::client::{tool_error, Engine};
 pub struct UsbDevice {
     /// The engine's device ID, for `program_board`. Opaque and short-lived.
     pub id: String,
+    /// The engine's name for people, e.g. "Alhambra II v1.0A (AlhambraBits,
+    /// 0403:6010)".
+    pub label: String,
     /// USB vendor and product ids, as 4 lowercase hex digits.
     pub vid: String,
     pub pid: String,
@@ -25,6 +28,9 @@ pub struct UsbDevice {
     pub serial_number: String,
     /// The boards it may be, best first (the engine's order).
     pub boards: Vec<DeviceBoard>,
+    /// The boards it most likely is, by the engine (none when its matches
+    /// are only weak).
+    pub likely_boards: Vec<String>,
     /// With a build folder: how well it matches the build's board in the
     /// build's variant.
     pub build_match: Option<MatchLevel>,
@@ -73,6 +79,8 @@ pub struct DeviceBoard {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnreachableDevice {
+    /// The engine's name for people, e.g. "USB device (0403:6014)".
+    pub label: String,
     pub vid: String,
     pub pid: String,
     /// The engine's suggested fix, e.g. `fix_device_permissions`.
@@ -118,6 +126,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
         .filter(|d| d["kind"] == "usb")
         .map(|d| UsbDevice {
             id: text(d, "id"),
+            label: text(d, "label"),
             vid: text(d, "vid"),
             pid: text(d, "pid"),
             manufacturer: text(d, "manufacturer"),
@@ -127,6 +136,14 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                 .as_array()
                 .map(|boards| boards.iter().map(parse_board).collect())
                 .unwrap_or_default(),
+            likely_boards: d["likely_boards"]
+                .as_array()
+                .map(|l| {
+                    l.iter()
+                        .filter_map(|b| b.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default(),
             build_match: MatchLevel::parse(&d["build_match"]),
         })
         .collect();
@@ -135,6 +152,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
         .map(|list| {
             list.iter()
                 .map(|d| UnreachableDevice {
+                    label: text(d, "label"),
                     vid: text(d, "vid"),
                     pid: text(d, "pid"),
                     action: d["action"]["code"].as_str().unwrap_or("").to_string(),
@@ -194,8 +212,7 @@ pub struct ConnectedBoard {
 pub struct ConnectedDevice {
     /// The engine's device ID: unique among the connected devices.
     pub id: String,
-    /// Its name for people: the product name, else the manufacturer, else
-    /// "USB device <vid>:<pid>".
+    /// Its name for people, the engine's `label`.
     pub name: String,
     /// Its serial number, empty when it has none.
     pub serial: String,
@@ -226,16 +243,10 @@ pub fn connected_devices(devices: &[UsbDevice]) -> Vec<ConnectedDevice> {
         if its.is_empty() {
             continue;
         }
-        // Stable: equal levels keep the engine's order.
-        its.sort_by_key(|c| std::cmp::Reverse(c.level));
-        let name = [&dev.product, &dev.manufacturer]
-            .into_iter()
-            .find(|n| !n.is_empty())
-            .cloned()
-            .unwrap_or_else(|| format!("USB device {}:{}", dev.vid, dev.pid));
+        // The engine lists them strongest first.
         found.push(ConnectedDevice {
             id: dev.id.clone(),
-            name,
+            name: dev.label.clone(),
             serial: dev.serial_number.clone(),
             boards: its,
         });
@@ -255,22 +266,24 @@ mod tests {
             .collect();
         json!({
             "id": format!("usb:1-1:0403:6010:{product}"), "kind": "usb",
+            "label": format!("{product} (0403:6010)"),
             "vid": "0403", "pid": "6010", "product": product,
             "bus": 1, "device": 2, "boards": boards
         })
     }
 
     #[test]
-    fn each_device_lists_its_boards_strongest_first() {
+    fn each_device_lists_its_boards_in_the_engines_order() {
+        // The engine lists them strongest first.
         let list = parse_devices(&json!({"devices": [
-            device("Alhambra II", &[("generic-a", "weak"), ("alhambra-ii", "strong")]),
+            device("Alhambra II", &[("alhambra-ii", "strong"), ("generic-a", "weak")]),
             device("Something", &[("generic-a", "possible")]),
             device("Unknown", &[]),
         ]}))
         .unwrap();
         let all = connected_devices(&list.devices);
         assert_eq!(all.len(), 2, "a device that fits no board is left out");
-        assert_eq!(all[0].name, "Alhambra II");
+        assert_eq!(all[0].name, "Alhambra II (0403:6010)");
         assert_eq!(all[0].id, "usb:1-1:0403:6010:Alhambra II");
         let levels: Vec<_> = all[0]
             .boards
@@ -307,13 +320,16 @@ mod tests {
         let list = parse_devices(&json!({
             "devices": [{
                 "id": "usb:1-1:0403:6010:FTATANKC", "kind": "usb",
+                "label": "Alhambra II v1.0A (AlhambraBits, 0403:6010)",
+                "likely_boards": ["alhambra-ii"],
                 "vid": "0403", "pid": "6010", "manufacturer": "AlhambraBits",
                 "product": "Alhambra II v1.0A", "serial_number": "FTATANKC",
                 "bus": 1, "device": 7, "build_match": "strong",
                 "boards": [{"board": "alhambra-ii", "variants": [{"selector": {"connection": "usb", "memory": "flash"}, "match": "strong"}]}]
             }],
             "unreachable": [{
-                "kind": "usb", "vid": "0403", "pid": "6014", "bus": 1, "device": 9,
+                "kind": "usb", "label": "USB device (0403:6014)",
+                "vid": "0403", "pid": "6014", "bus": 1, "device": 9,
                 "boards": [],
                 "action": {"code": "fix_device_permissions", "description": "Allow it."}
             }]
@@ -322,6 +338,9 @@ mod tests {
         let d = &list.devices[0];
         assert_eq!(d.id, "usb:1-1:0403:6010:FTATANKC");
         assert_eq!(d.serial_number, "FTATANKC");
+        assert_eq!(d.label, "Alhambra II v1.0A (AlhambraBits, 0403:6010)");
+        assert_eq!(d.likely_boards, ["alhambra-ii"]);
+        assert_eq!(list.unreachable[0].label, "USB device (0403:6014)");
         assert_eq!(d.build_match, Some(MatchLevel::Strong));
         assert_eq!(d.boards[0].board, "alhambra-ii");
         assert_eq!(d.boards[0].level, MatchLevel::Strong);
