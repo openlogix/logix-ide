@@ -900,7 +900,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   // Its project options: the current project, with the change note, and
   // no examples or new projects, saying why.
   const options = page.getByRole("dialog", { name: "Examples" });
-  await expect(options.getByRole("heading")).toHaveText("Project options for board “My UPduino”");
+  await expect(options.getByRole("heading")).toHaveText("Project options for custom board “My UPduino”");
   await expect(options.locator(".current .note .point").first()).toHaveText(/^Board change, same FPGA/);
   await expect(options.locator(".custom-note")).toContainText("Custom boards have no examples");
   await expect(options.getByRole("button", { name: /^Bare Minimum/ })).toHaveCount(0);

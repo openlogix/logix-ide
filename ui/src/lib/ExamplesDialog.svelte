@@ -203,7 +203,9 @@
         <!-- The board's name in quotes, after "board", so a name such as
              "FPGA 101 - Workshop Badge" reads as a name (the user's
              request). -->
-        {onlyBoard ? `Project options for board “${onlyBoardName}”` : "Examples"}
+        {onlyBoard
+          ? `Project options for ${customOnly ? "custom board" : "board"} “${onlyBoardName}”`
+          : "Examples"}
       </h2>
       {#if onlyBoard}
         <!-- Project options are few: no search (the user's decision). -->
