@@ -183,8 +183,9 @@ pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<engine::Board>
     Ok(catalog(&state).await?.boards)
 }
 
-/// The project's own boards, as Logix Engine reads them, or the problems
-/// it found in the file (marked in the editor like build errors).
+/// Every board the project knows, as Logix Engine merges them (the
+/// catalog's with its custom-boards.json's, marked `custom`), or the
+/// problems it found in the file. Empty without the file.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectBoards {
@@ -323,16 +324,17 @@ pub async fn run_task(
         return Err(anyhow!("A build or upload is already running.").into());
     };
     let engine = ready_engine(&state).await?;
-    // The project's own boards come first: one with a catalog board's ID
-    // replaces it, as in the engine. Its custom-boards.json is the file in
-    // the project folder (or the example a new project starts from).
+    // The boards the project knows: with a custom-boards.json (the file in
+    // the project folder, or the example a new project starts from), the
+    // engine's list with its boards merged in (one with a catalog board's
+    // ID replaces it); else the catalog's.
     let boards_file = boards_file(source_dir.as_deref(), project_dir.is_some());
-    let catalog_boards = catalog(&state).await?.boards;
-    let own = match engine::project_boards(&engine, boards_file.as_ref())
+    let known = match engine::project_boards(&engine, boards_file.as_ref())
         .await
         .context("Couldn't read the project's custom boards.")?
     {
-        Ok(own) => own,
+        Ok(merged) if boards_file.is_some() => merged,
+        Ok(_) => catalog(&state).await?.boards,
         // Problems in the file stop every task, as in the engine, whatever
         // the board.
         Err(problem) => {
@@ -342,11 +344,7 @@ pub async fn run_task(
             return Ok(engine::boards_problem_outcome(&problem));
         }
     };
-    let Some(info) = own
-        .iter()
-        .chain(catalog_boards.iter())
-        .find(|b| b.id == board)
-    else {
+    let Some(info) = known.iter().find(|b| b.id == board) else {
         return Err(anyhow!(
             "Logix doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
         )

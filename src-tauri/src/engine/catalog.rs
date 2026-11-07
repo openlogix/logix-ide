@@ -223,9 +223,11 @@ impl BoardsProblem {
     }
 }
 
-/// The project's own boards, as Logix Engine reads them from the custom
-/// boards file at `file` (`custom_boards_file`): none without a file, or
-/// the problems the engine found in it, at line and column.
+/// Every board with the project's own merged in, as Logix Engine reads them
+/// from the custom boards file at `file` (`custom_boards_file`): the
+/// catalog's and the file's, one with a catalog board's ID replacing it,
+/// the file's marked `custom`. None without a file; or the problems the
+/// engine found in it, at line and column.
 pub async fn project_boards(
     engine: &Engine,
     file: Option<&BoardsFile>,
@@ -247,7 +249,9 @@ pub async fn project_boards(
         )
         .await?;
     Ok(match answer {
-        Ok(catalog) => Ok(custom_only(parse_boards(&catalog)?)),
+        // Merged by the engine: the project's boards with the catalog's,
+        // one with a catalog board's ID replacing it.
+        Ok(catalog) => Ok(parse_boards(&catalog)?),
         Err(e) => Err(BoardsProblem::from_error(&e)),
     })
 }
@@ -304,11 +308,6 @@ pub async fn compare_boards(
         .await?
         .map_err(|e| tool_error("compare_boards", &e))?;
     serde_json::from_value(answer).context("Logix Engine's compare_boards answer isn't readable")
-}
-
-/// The custom boards of a board list.
-fn custom_only(boards: Vec<Board>) -> Vec<Board> {
-    boards.into_iter().filter(|b| b.custom).collect()
 }
 
 pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
@@ -505,10 +504,11 @@ mod tests {
             },
             "fpgas": {"f": {"architecture": "ice40"}}
         });
-        let mine = custom_only(parse_boards(&catalog).unwrap());
+        let all = parse_boards(&catalog).unwrap();
+        let mine: Vec<_> = all.iter().filter(|b| b.custom).collect();
         assert_eq!(mine.len(), 1);
         assert_eq!(mine[0].id, "mine");
-        assert!(mine[0].custom);
+        assert!(!all.iter().find(|b| b.id == "alhambra-ii").unwrap().custom);
     }
 
     #[test]

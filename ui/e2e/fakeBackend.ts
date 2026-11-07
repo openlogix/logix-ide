@@ -97,7 +97,14 @@ function fakeProjectBoards(
   }
   const lineOf = (id: string) => text.split("\n").findIndex((l) => l.includes(`"${id}"`)) + 1 || 1;
   try {
-    return { boards: fakeBoards(boards as Record<string, unknown>), problem: null };
+    // As the engine's get_catalog merges them: the file's boards with the
+    // catalog's, one with a catalog board's ID replacing it, by description.
+    const own = fakeBoards(boards as Record<string, unknown>);
+    const ids = new Set(own.map((b) => b.id));
+    const merged = [...own, ...BOARDS.filter((b) => !ids.has(b.id))].sort((x, y) =>
+      x.description.toLowerCase().localeCompare(y.description.toLowerCase()),
+    );
+    return { boards: merged, problem: null };
   } catch (e) {
     const { message, id } = e as { message: string; id: string };
     return problem(message, lineOf(id));

@@ -35,7 +35,7 @@
   import type { LSPClient } from "@codemirror/lsp-client";
   import ExamplesDialog from "./lib/ExamplesDialog.svelte";
   import BoardPicker from "./lib/BoardPicker.svelte";
-  import { boardChangeNote, boardsProblemLines, withProjectBoards, type NotePoint } from "./lib/boards";
+  import { boardChangeNote, boardsProblemLines, type NotePoint } from "./lib/boards";
   import VariantPanel from "./lib/VariantPanel.svelte";
   import {
     choose as chooseVariant,
@@ -376,10 +376,14 @@
       .then((recent) => (recentBoards = recent))
       .catch(() => {});
   }
-  /** The project's own boards (custom-boards.json), as the engine reads them. */
+  /**
+   * With the project's custom-boards.json: every board, as the engine
+   * merges them (the file's marked `custom`, one with a catalog board's ID
+   * replacing it). Empty without the file or with problems in it.
+   */
   let projectBoards = $state<Board[]>([]);
-  /** The boards to offer: the project's own first, then the catalog's. */
-  const boards = $derived(withProjectBoards(catalogBoards, projectBoards));
+  /** The boards to offer. */
+  const boards = $derived(projectBoards.length > 0 ? projectBoards : catalogBoards);
   let examples = $state<Example[]>([]);
   let examplesOpen = $state(false);
 
@@ -480,7 +484,7 @@
     // One of the project's own boards: its project options (the change
     // note), without examples or new projects (they don't have its
     // definition), and not remembered as a board for new projects.
-    if (project && projectBoards.some((b) => b.id === id)) {
+    if (project && projectBoards.some((b) => b.custom && b.id === id)) {
       pendingBoard = id;
       examplesOpen = true;
       return;

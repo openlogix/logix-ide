@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByArch, boardsWithFpga, withProjectBoards } from "./boards";
+import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByArch, boardsWithFpga } from "./boards";
 import type { Board, BoardComparison } from "./backend";
 
 const boards: Board[] = [
@@ -36,7 +36,8 @@ describe("boardGroups", () => {
 
   it("lists the project's own boards first, as Custom boards, and in their group too", () => {
     const mine = { ...boards[0], id: "mine", description: "Mine", custom: true };
-    const all = withProjectBoards(boards, [mine]);
+    // As the engine merges them: by description, not custom first.
+    const all = [...boards.slice(0, 4), mine, ...boards.slice(4)];
     const groups = summary(["tang"], "", all);
     expect(groups.slice(0, 3)).toEqual([
       "Custom boards: mine",
@@ -53,11 +54,9 @@ describe("boardGroups", () => {
 
   it("puts the project's own boards in their architecture's group", () => {
     const mine = { ...boards[0], id: "mine", description: "Mine", custom: true };
+    // The engine's merged list: "My Arty" replaced the catalog's Arty.
     const over = { ...boards[1], description: "My Arty", custom: true };
-    const all = withProjectBoards(boards, [mine, over]);
-    expect(all.slice(0, 2)).toEqual([mine, over]);
-    expect(all.filter((b) => b.id === "arty")).toEqual([over]);
-    expect(withProjectBoards(boards, [])).toBe(boards);
+    const all = [boards[0], boards[2], boards[3], mine, boards[4], over, boards[5]];
     const groups = summary([], "", all);
     expect(groups).toContain("Lattice iCE40: mine,alhambra-ii,icebreaker");
     expect(groups).toContain("Xilinx: arty");

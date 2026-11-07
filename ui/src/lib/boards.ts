@@ -61,17 +61,6 @@ export function boardsProblemLines(problem: NonNullable<ProjectBoards["problem"]
 }
 
 /**
- * The boards to offer: the project's own boards (custom-boards.json) first,
- * then the catalog's; one with a catalog board's ID replaces it, as in
- * Logix Engine.
- */
-export function withProjectBoards(catalog: Board[], own: Board[]): Board[] {
-  if (own.length === 0) return catalog;
-  const ids = new Set(own.map((b) => b.id));
-  return [...own, ...catalog.filter((b) => !ids.has(b.id))];
-}
-
-/**
  * The board picker's groups: "Custom boards", the project's own boards
  * (custom-boards.json; "custom" rather than "project", since a project's
  * catalog board is its board too: the user's naming, 2026-11-07), then the
@@ -109,7 +98,9 @@ export function boardGroups(
     .filter((b): b is Board => b !== undefined);
   if (recentBoards.length > 0)
     groups.push({ key: RECENT_GROUP, label: RECENT_GROUP, boards: recentBoards, kind: "recent" });
-  for (const g of groupByArch(shown, (b) => b)) {
+  // In their architecture's group too, first.
+  const customFirst = [...custom, ...shown.filter((b) => !b.custom)];
+  for (const g of groupByArch(customFirst, (b) => b)) {
     groups.push({ key: g.label, label: g.label, boards: g.items, kind: "arch" });
   }
   return groups;
