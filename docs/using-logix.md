@@ -6,16 +6,17 @@
   **Run Tests** ![](images/icon-test.png){ .toolbar-icon }, **Simulate** ![](images/icon-simulate.png){ .toolbar-icon },
   **Stop** ![](images/icon-stop.png){ .toolbar-icon }, and the board list.
 - **Tabs**: one per file of the project. A dot marks unsaved changes. A
-  flask marks testbenches and a chip marks the board's pin file (a pin file
-  for another kind of board has no chip, since this board doesn't use it); hover over a tab to
+  flask marks testbenches, a chip marks the board's pin file (a pin file
+  for another kind of board has no chip, since this board doesn't use it),
+  and a circuit board marks `custom-boards.json`; hover over a tab to
   see what its file is for.
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
   Other problems, such as a name that isn't declared, are found by Verify
   and marked when you click it. Hover over a mark to read it. A tab with a
-  problem has a red line under it (yellow for a warning), whether it's open
-  or not; the line goes when the problem is fixed, or for problems Verify
-  found, when you edit the file. If you turn it on in Settings, hovering
+  problem has a red circle with "!" after its name (a yellow triangle for a
+  warning), whether it's open or not; it goes when the problem is fixed, or
+  for problems Verify found, when you edit the file. If you turn it on in Settings, hovering
   over a name shows what it is.
 - **Right-click** in the editor for **Go to Definition** (jump to where the
   name you clicked is defined), Cut, Copy, Paste, **Comment/Uncomment** and
@@ -28,7 +29,9 @@
   When it's done, the result, e.g. "Build succeeded…", or **Ready.**
 - **Output**: what the FPGA tools print. References like `main.v:12` are
   links to that line. Select text in it and copy it as usual, or
-  right-click for **Copy**, **Select All** and **Clear Output**. Drag the bar above it to resize it. To hide it, drag
+  right-click for **Copy**, **Select All** and **Clear Output**. **Clear**
+  (in the status bar) and **Clear Output** empty the output and the status
+  line; the marks on files with problems stay. Drag the bar above it to resize it. To hide it, drag
   the bar all the way down, click **Hide**, or use **View > Toggle Output**;
   it comes back with **Show**, by dragging the bar up, and by default when
   you Verify, Upload, Run Tests or Simulate (see **Show the output** in

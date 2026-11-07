@@ -665,6 +665,20 @@ test("the output can be selected, copied and cleared", async ({ page }) => {
   await expect(output(page)).toHaveText("");
 });
 
+test("Clear empties the output and the status, not the problem marks", async ({ page }) => {
+  await start(page);
+  await chooseBoard(page);
+  await typeAtStart(page, "oops\n");
+  await page.getByTitle(/^Verify/).click();
+  await expect(status(page)).toContainText("Build failed");
+  await expect(tab(page, "main.v").locator(".problem-icon.error")).toBeVisible();
+  await expect(tab(page, "main.v")).toHaveAttribute("title", /^1 error\n/);
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(output(page)).toHaveText("");
+  await expect(status(page)).toHaveText("Ready.");
+  await expect(tab(page, "main.v").locator(".problem-icon.error")).toBeVisible();
+});
+
 test("the output can be hidden and comes back for a build", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
@@ -887,6 +901,8 @@ test("a project's custom-boards.json adds its own boards, sent with every task",
     .poll(async () => JSON.parse(((await fake()).scannedCustomBoards as string) ?? "null"))
     .toEqual(myBoards);
 
+  // Its own icon, a circuit board, like the pin file's chip.
+  await expect(tab(page, "custom-boards.json").locator(".tab-icon")).toHaveCount(1);
   // Highlighted as JSON, and Auto Format pretty-prints it.
   await tab(page, "custom-boards.json").click();
   await expect(page.locator(".cm-line span", { hasText: '"my-upduino"' })).toBeVisible();

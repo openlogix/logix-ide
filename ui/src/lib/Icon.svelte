@@ -10,7 +10,10 @@
     | "open"
     | "example"
     | "folder"
-    | "chip";
+    | "chip"
+    | "board"
+    | "error"
+    | "warning";
 
   let { name, size = 18 }: { name: IconName; size?: number } = $props();
 </script>
@@ -70,6 +73,26 @@
     <line x1="17" y1="8" x2="21" y2="8" />
     <line x1="17" y1="12" x2="21" y2="12" />
     <line x1="17" y1="16" x2="21" y2="16" />
+  {:else if name === "board"}
+    <!-- A circuit board: a chip on a board with mounting holes, for
+         custom-boards.json (unlike the pin file's chip) -->
+    <rect x="2.5" y="5" width="19" height="14" rx="2" />
+    <rect x="9" y="9" width="6" height="6" rx="0.5" />
+    <circle cx="5.5" cy="8" r="0.6" fill="currentColor" />
+    <circle cx="18.5" cy="8" r="0.6" fill="currentColor" />
+    <circle cx="5.5" cy="16" r="0.6" fill="currentColor" />
+    <circle cx="18.5" cy="16" r="0.6" fill="currentColor" />
+  {:else if name === "error"}
+    <!-- Circle with "!": a file with an error (not an x, which reads as
+         close or delete) -->
+    <circle cx="12" cy="12" r="9" />
+    <line x1="12" y1="7.5" x2="12" y2="13" />
+    <circle cx="12" cy="16.5" r="0.6" fill="currentColor" />
+  {:else if name === "warning"}
+    <!-- Triangle with "!": a file with a warning -->
+    <path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+    <line x1="12" y1="9" x2="12" y2="13.5" />
+    <circle cx="12" cy="17" r="0.6" fill="currentColor" />
   {:else if name === "folder"}
     <!-- Closed folder -->
     <path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

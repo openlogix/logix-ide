@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic } from "./backend";
-import { afterCommand, afterEdit, allProblems, tabMarks, taskReads } from "./problems";
+import { afterCommand, afterEdit, allProblems, problemCount, tabMarks, taskReads } from "./problems";
 
 const d = (file: string | null, severity: "error" | "warning" = "error"): Diagnostic => ({
   severity,
@@ -63,5 +63,14 @@ describe("tab marks", () => {
         ["top.v", "warning"],
       ]),
     );
+  });
+});
+
+describe("problemCount", () => {
+  it("says how many errors and warnings a file has", () => {
+    const all = [d("main.v"), d("main.v"), d("main.v", "warning"), d("top.v", "warning")];
+    expect(problemCount(all, "main.v")).toBe("2 errors, 1 warning");
+    expect(problemCount(all, "top.v")).toBe("1 warning");
+    expect(problemCount(all, "x.v")).toBe("");
   });
 });

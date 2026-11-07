@@ -26,6 +26,7 @@
     afterCommand,
     afterEdit,
     allProblems,
+    problemCount,
     tabMarks,
     taskReads,
     type LiveProblems,
@@ -609,8 +610,20 @@
     return ready ? "Ready." : "";
   });
 
+  /**
+   * Clear (status bar, and the output's menu): empties the output and the
+   * status, which is the output's last result. The files' problem marks
+   * stay: they go when the file is edited or a command runs again.
+   */
+  function clearOutput() {
+    consoleLines = [];
+    status = null;
+  }
+
   /** Each file's tab mark: its worst problem, live or from a command. */
   let fileProblems = $state(new Map<string, "error" | "warning">());
+  /** Each file's problems in words, for its tab's tooltip. */
+  let problemWords = $state(new Map<string, string>());
 
   // The problems marked in the editor and on the tabs (see problems.ts):
   // from the last commands, until the file is edited or a later command
@@ -622,6 +635,7 @@
     const all = allProblems(commandProblems, liveProblems);
     editor?.setDiagnostics(byFile(all));
     fileProblems = tabMarks(all);
+    problemWords = new Map([...fileProblems.keys()].map((f) => [f, problemCount(all, f)]));
   }
 
   /** A command's result: replaces the problems of the files it read. */
@@ -653,6 +667,7 @@
     commandProblems = [];
     liveProblems = new Map();
     fileProblems = new Map();
+    problemWords = new Map();
   }
 
   /** The live checker stopped: its problems are no longer current. */
@@ -1554,7 +1569,7 @@
       return;
     }
     if (id === "clear-output") {
-      consoleLines = [];
+      clearOutput();
       return;
     }
     // The editor's right-click menu, in a testbench (as on its tab).
@@ -1996,7 +2011,12 @@
                 class:active={f.name === activeFile}
                 class:has-error={fileProblems.get(f.name) === "error"}
                 class:has-warning={fileProblems.get(f.name) === "warning"}
-                title={roleTooltip(fileRole(f.name, mainFile(project), pinExtension), pinExtension)}
+                title={[
+                  problemWords.get(f.name),
+                  roleTooltip(fileRole(f.name, mainFile(project), pinExtension), pinExtension),
+                ]
+                  .filter(Boolean)
+                  .join("\n")}
                 onclick={() => selectFile(f.name)}
                 ondblclick={() => startRename(f.name)}
                 oncontextmenu={(e) => openTabMenu(e, f.name)}
@@ -2005,7 +2025,13 @@
                     class="tab-icon"><Icon name="test" size={12} /></span
                   >{:else if fileRole(f.name, mainFile(project), pinExtension) === "pins"}<span
                     class="tab-icon"><Icon name="chip" size={12} /></span
-                  >{/if}{f.name}{#if isFileDirty(project, f)}<span
+                  >{:else if fileRole(f.name, mainFile(project), pinExtension) === "boards"}<span
+                    class="tab-icon"><Icon name="board" size={12} /></span
+                  >{/if}{f.name}{#if fileProblems.get(f.name) === "error"}<span
+                    class="problem-icon error"><Icon name="error" size={12} /></span
+                  >{:else if fileProblems.get(f.name) === "warning"}<span
+                    class="problem-icon warning"><Icon name="warning" size={12} /></span
+                  >{/if}{#if isFileDirty(project, f)}<span
                     class="dot"
                     title="Unsaved changes">●</span
                   >{/if}
@@ -2124,7 +2150,7 @@
           <progress value={downloadFraction ?? undefined} max="1"></progress>
         {/if}
         {#if consoleVisible}
-          <button title="Clear the output" onclick={() => (consoleLines = [])}
+          <button title="Clear the output and the status" onclick={clearOutput}
             >Clear</button
           >
         {/if}
@@ -2594,11 +2620,18 @@
     opacity: 1;
     box-shadow: 0 0 0 2px var(--toolbar-fg);
   }
-  .tab.has-error {
-    box-shadow: inset 0 -2px 0 var(--error-mark);
+  /* A problem in the file: a red circle or yellow triangle with "!" after
+     its name (not a colored line, which read like the selected tab's). */
+  .problem-icon {
+    display: inline-flex;
+    vertical-align: -1px;
+    margin-left: 5px;
   }
-  .tab.has-warning {
-    box-shadow: inset 0 -2px 0 var(--warning-mark);
+  .problem-icon.error {
+    color: var(--error-mark);
+  }
+  .problem-icon.warning {
+    color: var(--warning-mark);
   }
   .console:focus {
     outline: none;

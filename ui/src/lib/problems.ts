@@ -62,3 +62,14 @@ export function tabMarks(diags: Diagnostic[]): Map<string, "error" | "warning"> 
   return marks;
 }
 
+
+/** A file's problems in words, for its tab's tooltip, e.g. "2 errors, 1 warning". */
+export function problemCount(diags: Diagnostic[], file: string): string {
+  const mine = diags.filter((d) => d.file === file);
+  const errors = mine.filter((d) => d.severity === "error").length;
+  const warnings = mine.length - errors;
+  const part = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  return [errors > 0 ? part(errors, "error") : "", warnings > 0 ? part(warnings, "warning") : ""]
+    .filter(Boolean)
+    .join(", ");
+}
