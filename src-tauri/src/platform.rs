@@ -86,6 +86,18 @@ impl Platform {
         }
     }
 
+    /// `path` as typed in this platform's shells, so it can be pasted after
+    /// `cd`: as is when that's safe, otherwise in single quotes (zsh, bash
+    /// and fish on macOS and Linux), with each `'` written as `'\''`.
+    pub fn shell_path(self, path: &str) -> String {
+        let plain = |c: char| c.is_ascii_alphanumeric() || "/._-+,:@%".contains(c);
+        if !path.is_empty() && path.chars().all(plain) {
+            path.to_string()
+        } else {
+            format!("'{}'", path.replace('\'', r"'\''"))
+        }
+    }
+
     /// Puts `text` on the clipboard (`pbcopy` on macOS). Done here rather
     /// than in the webview, whose clipboard may refuse a copy that a menu
     /// item, not a click in the page, started.
@@ -299,6 +311,22 @@ pub fn data_dir_from(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn shell_paths_are_quoted_only_when_needed() {
+        let p = Platform::MacosArm64;
+        assert_eq!(
+            p.shell_path("/Users/you/Documents/Logix/blinky"),
+            "/Users/you/Documents/Logix/blinky"
+        );
+        assert_eq!(
+            p.shell_path("/Users/you/Documents/Logix/blinky 3"),
+            "'/Users/you/Documents/Logix/blinky 3'"
+        );
+        assert_eq!(p.shell_path("/a/it's"), r"'/a/it'\''s'");
+        assert_eq!(p.shell_path("/a/$HOME*(x)"), "'/a/$HOME*(x)'");
+        assert_eq!(p.shell_path("/a/~b"), "'/a/~b'");
+    }
 
     #[test]
     fn logix_ide_home_replaces_the_data_folder() {

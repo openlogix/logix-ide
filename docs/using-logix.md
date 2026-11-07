@@ -76,7 +76,9 @@ inside another project.
   folder in Finder. A new project gets its folder when it's first saved, so
   for a project not saved yet, it offers **Save As…** first.
   **Project > Copy Project Folder Path** puts the folder's path on the
-  clipboard instead, to paste after `cd` in a terminal or into any app.
+  clipboard instead, to paste after `cd` in a terminal. A path with a
+  space or another special character is copied in quotes, as the shell
+  needs it.
 
 ## Boards and examples
 

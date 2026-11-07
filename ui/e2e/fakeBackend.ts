@@ -531,6 +531,7 @@ export const backend: typeof Real.backend = {
   },
   copyProjectPath: async (dir) => {
     fake.copiedPath = dir;
+    return `'${dir}'`; // as the real one quotes a path with a space
   },
   saveGtkwaveLayouts: async () => [],
   cancelTask: async () => false,

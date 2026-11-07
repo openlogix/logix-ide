@@ -217,8 +217,9 @@ test("Copy Project Folder Path offers Save As… first, then copies the path and
   await expect.poll(async () => (await fake()).copiedPath).toMatch(/^\/fake\/projects\//);
   expect((await fake()).confirms.length).toBe(1);
   expect((await fake()).shownFolder).toBeNull();
+  // The status line shows the text copied, as quoted for the shell.
   await expect(status(page)).toContainText(
-    `Copied the project folder's path: ${(await fake()).copiedPath}`,
+    `Copied the project folder's path: '${(await fake()).copiedPath}'`,
   );
 });
 

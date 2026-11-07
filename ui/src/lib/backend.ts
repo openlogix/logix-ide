@@ -565,9 +565,12 @@ export const backend = {
   showProjectFolder: (dir: string): Promise<void> =>
     invoke<void>("show_project_folder", { dir }),
 
-  /** Puts the project folder's path on the clipboard. */
-  copyProjectPath: (dir: string): Promise<void> =>
-    invoke<void>("copy_project_path", { dir }),
+  /**
+   * Puts the project folder's path on the clipboard, quoted for the shell
+   * when it needs it (to paste after `cd`). Returns the text copied.
+   */
+  copyProjectPath: (dir: string): Promise<string> =>
+    invoke<string>("copy_project_path", { dir }),
 
   /**
    * Copies GTKWave layouts saved from a simulation back to the project

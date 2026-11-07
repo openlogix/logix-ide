@@ -1461,8 +1461,8 @@
     }
     try {
       if (copyPath) {
-        await backend.copyProjectPath(project.dir);
-        status = { text: `Copied the project folder's path: ${project.dir}`, kind: "ok" };
+        const copied = await backend.copyProjectPath(project.dir);
+        status = { text: `Copied the project folder's path: ${copied}`, kind: "ok" };
       } else await backend.showProjectFolder(project.dir);
     } catch (e) {
       showFileError(e);
