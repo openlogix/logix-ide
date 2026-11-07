@@ -331,8 +331,6 @@
   }
   /** The project's own boards (custom-boards.json), as the engine reads them. */
   let projectBoards = $state<Board[]>([]);
-  /** Why the project's custom-boards.json can't be used, if it can't. */
-  let projectBoardsError = $state<string | null>(null);
   /** The boards to offer: the project's own first, then the catalog's. */
   const boards = $derived(withProjectBoards(catalogBoards, projectBoards));
   let examples = $state<Example[]>([]);
@@ -1033,14 +1031,13 @@
   }
 
   // The project's own boards, as Logix Engine reads them, for the board
-  // list; a file with problems is shown in a banner and as markers, and its
-  // boards are left out until it's fixed.
+  // list; a file with problems is shown as markers in it, like errors in
+  // the design, and its boards are left out until it's fixed.
   $effect(() => {
     const text = customBoards;
     if (!ready) return;
     if (text === null) {
       projectBoards = [];
-      projectBoardsError = null;
       untrack(() => markCustomBoards([]));
       return;
     }
@@ -1051,13 +1048,12 @@
         .then((found) => {
           if (customBoards !== text) return;
           projectBoards = found.boards;
-          projectBoardsError = found.problem?.message ?? null;
           markCustomBoards(found.problem?.diagnostics ?? []);
         })
         .catch((e) => {
           if (customBoards !== text) return;
           projectBoards = [];
-          projectBoardsError = toUserError(e).message;
+          log(`Couldn't read the boards in ${CUSTOM_BOARDS_FILE}: ${toUserError(e).message}`);
         });
     }, 400);
     return () => clearTimeout(timer);
@@ -1853,15 +1849,6 @@
         >Using a local Logix Engine, for diagnosis: {devEngine}. Start Logix
         normally to use the regular engine.</span
       >
-    </div>
-  {/if}
-
-  {#if project && projectBoardsError}
-    <div class="banner error custom-boards-error" role="alert">
-      <span>{projectBoardsError} Its boards aren't offered until it's fixed.</span>
-      {#if activeFile !== CUSTOM_BOARDS_FILE}
-        <button onclick={() => (activeFile = CUSTOM_BOARDS_FILE)}>Show File</button>
-      {/if}
     </div>
   {/if}
 
