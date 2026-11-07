@@ -153,6 +153,9 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BoardsProblem {
+    /// The file's full path: the console names it, since the user edits
+    /// the file outside Logix and has to find it.
+    pub file: String,
     pub message: String,
     pub diagnostics: Vec<crate::outcome::Diagnostic>,
 }
@@ -169,20 +172,20 @@ impl BoardsProblem {
             }
         }
         BoardsProblem {
-            // The file's absolute path reads as the project's file name,
-            // like problems in its other files.
+            file: given.into_owned(),
             message: error["message"]
                 .as_str()
                 .unwrap_or("Logix Engine can't use the custom boards.")
-                .replace(given.as_ref(), crate::project::CUSTOM_BOARDS_FILE),
+                .to_string(),
             diagnostics,
         }
     }
 
     /// The problems as console lines, in red: one per problem, at line and
-    /// column (`custom-boards.json:4:3: error: Trailing comma.`), like
-    /// build errors, so the user can find them in their own editor; the
-    /// engine's message when it gives no locations.
+    /// column in the file's full path
+    /// (`/Users/you/blinky/custom-boards.json:4:3: error: Trailing comma.`),
+    /// like build errors, so the user can find them in their own editor;
+    /// the engine's message when it gives no locations.
     pub fn console_lines(&self) -> Vec<String> {
         let red = |text: String| format!("\x1b[31m{text}\x1b[0m");
         if self.diagnostics.is_empty() {
@@ -191,7 +194,10 @@ impl BoardsProblem {
         self.diagnostics
             .iter()
             .map(|d| {
-                let mut at = d.file.clone().unwrap_or_default();
+                let mut at = match d.file.as_deref() {
+                    Some(crate::project::CUSTOM_BOARDS_FILE) | None => self.file.clone(),
+                    Some(other) => other.to_string(),
+                };
                 for n in [d.line, d.column].into_iter().flatten() {
                     at.push_str(&format!(":{n}"));
                 }
@@ -380,10 +386,7 @@ mod tests {
             ]
         });
         let p = BoardsProblem::from_error(&error, file);
-        assert_eq!(
-            p.message,
-            "The custom boards file has problems. custom-boards.json:4:3: Trailing comma."
-        );
+        assert_eq!(p.file, "/Users/you/blinky/custom-boards.json");
         assert_eq!(p.diagnostics.len(), 1);
         let d = &p.diagnostics[0];
         assert_eq!(
@@ -397,9 +400,10 @@ mod tests {
         );
         assert_eq!(
             p.console_lines(),
-            ["\x1b[31mcustom-boards.json:4:3: error: Trailing comma.\x1b[0m"]
+            ["\x1b[31m/Users/you/blinky/custom-boards.json:4:3: error: Trailing comma.\x1b[0m"]
         );
         let no_place = BoardsProblem {
+            file: "/Users/you/blinky/custom-boards.json".into(),
             message: "Can't read it.".into(),
             diagnostics: Vec::new(),
         };

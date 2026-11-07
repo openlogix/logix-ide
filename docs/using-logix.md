@@ -225,9 +225,12 @@ notices when you save the file in your editor. A board with the same ID as a boa
 replaces it in this project. The format is Logix Engine's custom board
 format, described in its
 [tool documentation](https://github.com/openlogix/logix-engine/blob/main/docs/tool-api.md#board-specification).
-If the file has a mistake, the output lists each one with its line and
-column (such as `custom-boards.json:4:3: error: …`), the board list's
-**Custom boards** group says the file has problems, and its boards aren't offered until it's fixed.
+If the file has a mistake, the output lists each one with the file's full
+path, line and column (such as
+`/Users/you/Documents/Logix/blinky/custom-boards.json:4:3: error: …`), the
+board list's **Custom boards** group says the file has problems, and its
+boards aren't offered until it's fixed. Verify and Upload stop, and the
+status line says how many problems the file has.
 
 ## Help
 

@@ -168,6 +168,7 @@ describe("boardsProblemLines", () => {
   it("gives one red line per problem, at line and column, like build errors", () => {
     expect(
       boardsProblemLines({
+        file: "/Users/you/blinky 3/custom-boards.json",
         message: "The custom boards file has problems.",
         diagnostics: [
           { severity: "error", file: "custom-boards.json", line: 4, column: 3, message: "Trailing comma." },
@@ -175,12 +176,12 @@ describe("boardsProblemLines", () => {
         ],
       }),
     ).toEqual([
-      "\x1b[31mcustom-boards.json:4:3: error: Trailing comma.\x1b[0m",
-      "\x1b[31mcustom-boards.json:9: warning: Odd.\x1b[0m",
+      "\x1b[31m/Users/you/blinky 3/custom-boards.json:4:3: error: Trailing comma.\x1b[0m",
+      "\x1b[31m/Users/you/blinky 3/custom-boards.json:9: warning: Odd.\x1b[0m",
     ]);
   });
   it("gives the message when there are no locations", () => {
-    expect(boardsProblemLines({ message: "Can't read it.", diagnostics: [] })).toEqual([
+    expect(boardsProblemLines({ file: "/x/custom-boards.json", message: "Can't read it.", diagnostics: [] })).toEqual([
       "\x1b[31mCan't read it.\x1b[0m",
     ]);
   });

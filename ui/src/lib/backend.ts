@@ -118,7 +118,8 @@ export interface Configuration {
  */
 export interface ProjectBoards {
   boards: Board[];
-  problem: { message: string; diagnostics: Diagnostic[] } | null;
+  /** `file`: the file's full path, which the console names. */
+  problem: { file: string; message: string; diagnostics: Diagnostic[] } | null;
 }
 
 export type SaveChoice = "save" | "discard" | "cancel";

@@ -994,7 +994,8 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   // column, the board list says so in one line and leaves its boards out,
   // and there's no banner.
   await writeFile("oops");
-  await expect(output(page)).toContainText("custom-boards.json:1:1: error: Expected value.");
+  // At the file's full path: it's edited outside Logix.
+  await expect(output(page)).toContainText(`${folder}/custom-boards.json:1:1: error: Expected value.`);
   await expect(page.locator(".banner")).toHaveCount(0);
   await boardButton(page).click();
   // The note is in the Custom boards group, which stays, empty.
@@ -1006,8 +1007,11 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await page.keyboard.press("Escape");
   // A task stops with the same problems.
   await menu(page, "verify");
-  await expect(output(page)).toContainText("custom-boards.json:1:1: error: Expected value.");
-  await expect(status(page)).not.toContainText("Build succeeded");
+  await expect(output(page)).toContainText(`${folder}/custom-boards.json:1:1: error: Expected value.`);
+  // The status line counts them rather than repeating them.
+  await expect(status(page)).toHaveText(
+    "Build failed: the project's custom-boards.json has 1 problem (above).",
+  );
 
   // Fixed: said once, and the boards are back.
   await writeFile(JSON.stringify(myBoards));

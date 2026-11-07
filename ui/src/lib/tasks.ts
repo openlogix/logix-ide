@@ -1,5 +1,6 @@
 import type { Diagnostic, Task, TaskOutcome } from "./backend";
 import { reportSummary } from "./buildReport";
+import { CUSTOM_BOARDS_FILE } from "./workingProject";
 
 const VERB: Record<Task, { running: string; done: string; noun: string }> = {
   build: { running: "Building…", done: "Build succeeded", noun: "Build" },
@@ -48,6 +49,11 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   }
   const first = errors[0];
   if (!first) return `${VERB[task].noun} failed. See the output below.`;
+  // The output above already lists the file's problems at its full path.
+  if (first.file === CUSTOM_BOARDS_FILE) {
+    const n = errors.filter((d) => d.file === CUSTOM_BOARDS_FILE).length;
+    return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has ${plural(n, "problem")} (above).`;
+  }
   const where = location(first);
   const problem = `${where ? `${where}: ` : ""}${friendly(first.message)}`;
   // A failing testbench is still simulated: its waveform shows the problem.

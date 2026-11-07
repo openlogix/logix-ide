@@ -45,6 +45,17 @@ describe("outcomeText", () => {
         devices: [],
       }),
     ).toBe("Upload failed: No Alhambra II is connected. Connect the Alhambra II by USB, then retry.");
+    // custom-boards.json: the output lists its problems, so only a count.
+    expect(
+      outcomeText("build", {
+        ok: false,
+        diagnostics: [err("custom-boards.json", 4, "Expected `,` or `}`.")],
+        report: null, cancelled: false, graphSvg: null, testbenches: [],
+        seconds: 0,
+        action: null,
+        devices: [],
+      }),
+    ).toBe("Build failed: the project's custom-boards.json has 1 problem (above).");
     expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1, action: null, devices: [] })).toBe(
       "Upload failed. See the output below.",
     );

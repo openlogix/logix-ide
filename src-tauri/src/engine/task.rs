@@ -138,7 +138,11 @@ fn layout_file(testbench: &str) -> String {
 pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOutcome {
     let mut diagnostics = problem.diagnostics.clone();
     if diagnostics.is_empty() {
-        diagnostics.push(error(&problem.message));
+        // Still in the file, so the status line can say which file.
+        diagnostics.push(Diagnostic {
+            file: Some(crate::project::CUSTOM_BOARDS_FILE.into()),
+            ..error(&problem.message)
+        });
     }
     TaskOutcome {
         ok: false,
