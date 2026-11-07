@@ -193,6 +193,8 @@ const fake = {
   usb: null as Real.UsbDevice[] | null,
   /** The folder Show Project Folder showed last (`showProjectFolder`). */
   shownFolder: null as string | null,
+  /** The path Copy Project Folder Path copied last (`copyProjectPath`). */
+  copiedPath: null as string | null,
   /** The confirmation dialogs shown (`askConfirm`), oldest first. */
   confirms: [] as { title: string; okLabel: string; kind: string }[],
   /** What the user answers in confirmation dialogs (`askConfirm`). */
@@ -526,6 +528,9 @@ export const backend: typeof Real.backend = {
   },
   showProjectFolder: async (dir) => {
     fake.shownFolder = dir;
+  },
+  copyProjectPath: async (dir) => {
+    fake.copiedPath = dir;
   },
   saveGtkwaveLayouts: async () => [],
   cancelTask: async () => false,

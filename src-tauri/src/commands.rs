@@ -1029,6 +1029,17 @@ pub fn show_project_folder(dir: String) -> Result<(), UserError> {
     Ok(())
 }
 
+/// Puts the project folder's path on the clipboard, to paste after `cd`
+/// in a terminal, in a file dialog or in an editor.
+#[tauri::command]
+pub fn copy_project_path(dir: String) -> Result<(), UserError> {
+    let platform = platform::current_implemented()?;
+    platform
+        .copy_text(&dir)
+        .context("Couldn't copy the project folder's path.")?;
+    Ok(())
+}
+
 /// Asks for a new project name and location, then creates the project
 /// there, copying the other contents of `source_dir` (except `removed`) if
 /// given. The dialog starts next to `project_dir`, the project's own

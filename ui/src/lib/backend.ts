@@ -376,6 +376,7 @@ export type MenuId =
   | "auto-format"
   | "toggle-output"
   | "show-folder"
+  | "copy-path"
   | "stop"
   | "show-diagram"
   | "devices"
@@ -563,6 +564,10 @@ export const backend = {
   /** Opens the project folder in Finder. */
   showProjectFolder: (dir: string): Promise<void> =>
     invoke<void>("show_project_folder", { dir }),
+
+  /** Puts the project folder's path on the clipboard. */
+  copyProjectPath: (dir: string): Promise<void> =>
+    invoke<void>("copy_project_path", { dir }),
 
   /**
    * Copies GTKWave layouts saved from a simulation back to the project

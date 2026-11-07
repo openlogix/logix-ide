@@ -207,6 +207,21 @@ test("Show Project Folder on a project never saved offers Save As…, then shows
   await expect.poll(async () => (await fake()).confirms.length).toBe(2);
 });
 
+test("Copy Project Folder Path offers Save As… first, then copies the path and says so", async ({
+  page,
+}) => {
+  type Fake = { copiedPath: string | null; shownFolder: string | null; confirms: unknown[] };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await start(page);
+  await menu(page, "copy-path");
+  await expect.poll(async () => (await fake()).copiedPath).toMatch(/^\/fake\/projects\//);
+  expect((await fake()).confirms.length).toBe(1);
+  expect((await fake()).shownFolder).toBeNull();
+  await expect(status(page)).toContainText(
+    `Copied the project folder's path: ${(await fake()).copiedPath}`,
+  );
+});
+
 test("a programmer's progress stays on one line, as in a terminal", async ({ page }) => {
   await start(page);
   await menu(page, "upload");

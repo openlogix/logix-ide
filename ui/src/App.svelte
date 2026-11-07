@@ -1444,11 +1444,11 @@
   }
 
   /**
-   * Project > Show Project Folder (in Finder). A project never saved has no
-   * folder: a dialog offers Save As… (a status line alone was easy to
-   * miss), then shows the new folder.
+   * Project > Show Project Folder (in Finder), or Copy Project Folder Path.
+   * A project never saved has no folder: a dialog offers Save As… (a status
+   * line alone was easy to miss), then shows or copies the new folder.
    */
-  async function showProjectFolder() {
+  async function showProjectFolder(copyPath = false) {
     if (!project) return;
     if (!project.dir) {
       const save = await backend.askConfirm(
@@ -1460,7 +1460,10 @@
       if (!save || !(await saveAs()) || !project?.dir) return;
     }
     try {
-      await backend.showProjectFolder(project.dir);
+      if (copyPath) {
+        await backend.copyProjectPath(project.dir);
+        status = { text: `Copied the project folder's path: ${project.dir}`, kind: "ok" };
+      } else await backend.showProjectFolder(project.dir);
     } catch (e) {
       showFileError(e);
     }
@@ -1607,6 +1610,10 @@
       showProjectFolder();
       return;
     }
+    if (id === "copy-path") {
+      showProjectFolder(true);
+      return;
+    }
     if (id === "devices") {
       showDevices();
       return;
@@ -1661,6 +1668,7 @@
         | "toggle-output"
         | "stop"
         | "show-folder"
+        | "copy-path"
         | "show-diagram"
         | "devices"
         | "board-info"

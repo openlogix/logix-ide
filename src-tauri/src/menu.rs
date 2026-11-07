@@ -29,6 +29,7 @@ pub const AUTO_FORMAT: &str = "auto-format";
 pub const TOGGLE_OUTPUT: &str = "toggle-output";
 pub const SIMULATE: &str = "simulate";
 pub const SHOW_FOLDER: &str = "show-folder";
+pub const COPY_PATH: &str = "copy-path";
 pub const SHOW_DIAGRAM: &str = "show-diagram";
 pub const DEVICES: &str = "devices";
 /// Tools > Board Info…: the toolbar board's FPGA, how it's programmed, and
@@ -94,6 +95,7 @@ pub const NEEDS_PROJECT: &[&str] = &[
     SHOW_DIAGRAM,
     STOP,
     SHOW_FOLDER,
+    COPY_PATH,
     AUTO_FORMAT,
 ];
 
@@ -297,6 +299,11 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             "Show Project Folder",
             "CmdOrCtrl+Alt+K",
         )?)
+        .item(
+            &MenuItemBuilder::with_id(COPY_PATH, "Copy Project Folder Path")
+                .enabled(is_enabled(COPY_PATH, &state))
+                .build(app)?,
+        )
         .build()?;
 
     // As in the Arduino IDE: Tools > Auto Format, Cmd+T; then the board's
@@ -383,7 +390,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
             }
         }
         NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
-        | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | STOP
+        | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
         | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST | BOARD_INFO => {
             let _ = app.emit("menu", id);

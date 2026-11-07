@@ -75,6 +75,8 @@ inside another project.
 - **Show Project Folder**: **Project > Show Project Folder** opens the
   folder in Finder. A new project gets its folder when it's first saved, so
   for a project not saved yet, it offers **Save As…** first.
+  **Project > Copy Project Folder Path** puts the folder's path on the
+  clipboard instead, to paste after `cd` in a terminal or into any app.
 
 ## Boards and examples
 

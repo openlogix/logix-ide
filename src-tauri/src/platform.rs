@@ -86,6 +86,32 @@ impl Platform {
         }
     }
 
+    /// Puts `text` on the clipboard (`pbcopy` on macOS). Done here rather
+    /// than in the webview, whose clipboard may refuse a copy that a menu
+    /// item, not a click in the page, started.
+    pub fn copy_text(self, text: &str) -> Result<()> {
+        match self {
+            Platform::MacosArm64 => {
+                use std::io::Write;
+                let mut child = std::process::Command::new("/usr/bin/pbcopy")
+                    .stdin(std::process::Stdio::piped())
+                    .spawn()
+                    .context("can't run 'pbcopy'")?;
+                child
+                    .stdin
+                    .take()
+                    .context("no input for 'pbcopy'")?
+                    .write_all(text.as_bytes())
+                    .context("can't write to 'pbcopy'")?;
+                if !child.wait().context("'pbcopy' didn't finish")?.success() {
+                    bail!("'pbcopy' failed");
+                }
+                Ok(())
+            }
+            other => other.ensure_implemented(),
+        }
+    }
+
     /// Opens a web page in the default browser. Only `https://` links.
     pub fn open_url(self, url: &str) -> Result<()> {
         if !url.starts_with("https://") {
