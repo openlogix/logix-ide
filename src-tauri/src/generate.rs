@@ -13,6 +13,10 @@
 //!   with the lowest name; LEDs are every `leds`, `rgb_led` and `led_matrix`
 //!   resource, and the one that blinks is the first by type (in that order),
 //!   then by name.
+//! - Bare Minimum for every board: its known pins, outputs off and drives
+//!   at their levels (Logix Engine passes the top module to nextpnr, so a
+//!   design without logic builds); with none known, an empty `main` and a
+//!   pin file that shows how to add pins.
 //! - No clock usable: the FPGA's internal oscillator where it has one this
 //!   module knows (iCE40 UltraPlus and iCE5LP: SB_HFOSC, 48 MHz; ECP5:
 //!   OSCG, about 2.4 MHz).
@@ -157,8 +161,9 @@ pub struct Generated {
 }
 
 /// The board's generated projects: `blinky` when it has LEDs and a clock
-/// (a pin or an internal oscillator), and `bare-minimum` when it has an
-/// output (an LED or a drive): the tools find no design in one without.
+/// (a pin or an internal oscillator), and `bare-minimum` always: the
+/// board's known pins (none when none are known) and a design that does
+/// nothing yet.
 /// Errors for a board this module can't handle, such as an FPGA family it
 /// doesn't know.
 pub fn generate(id: &str, board: &Board, fpga: &Fpga) -> Result<Vec<Generated>, String> {
@@ -479,15 +484,14 @@ impl<'a> Plan<'a> {
     }
 
     fn bare_minimum(&self) -> Option<Generated> {
+        let outputs = !self.leds.is_empty() || !self.all_drives().is_empty();
         let clock = match &self.clock {
+            // nextpnr-xilinx refuses an unused input in a design without
+            // outputs (no I/O buffer); no Xilinx board is like that.
+            Some(_) if self.arch == Arch::Xilinx && !outputs => None,
             Some(c @ Clock::Pin { .. }) => Some(c),
             _ => None,
         };
-        // A design without outputs is empty for the tools ("Failed to
-        // autodetect top module"), so a board needs an LED or a drive.
-        if self.leds.is_empty() && self.all_drives().is_empty() {
-            return None;
-        }
         let mut files = BTreeMap::new();
         files.insert("main.v".into(), self.bare_main_v(clock));
         for g in &self.leds {
@@ -664,6 +668,13 @@ impl<'a> Plan<'a> {
 
     fn bare_main_v(&self, clock: Option<&Clock>) -> String {
         let mut s = String::new();
+        let ports = self.ports(clock, false);
+        if ports.is_empty() {
+            s += "// The top module must be named 'main'. No pins are known for this\n";
+            s += "// board yet: add ports here, and a line for each in the pin file.\n\n";
+            s += "module main;\n\n  // Your design goes here.\n\nendmodule\n";
+            return s;
+        }
         s += "// The top module must be named 'main'. Its ports are the board's\n";
         s += "// pins in the pin file. The outputs start off; your design goes here.\n\n";
         s += "module main (\n";
@@ -845,6 +856,22 @@ impl<'a> Plan<'a> {
         for d in self.all_drives() {
             let _ = writeln!(s, "\n{c} {}", held_text(d));
             self.vector(&mut s, &d.name, &d.pins, d.io_standard.as_deref());
+        }
+        if clock.is_none() && self.leds.is_empty() && self.all_drives().is_empty() {
+            let _ = writeln!(
+                s,
+                "\n{c} No pins are known for this board yet. Add a line for each port of\n{c} main, such as:\n{c}"
+            );
+            let mut example = String::new();
+            self.arch.pin(
+                &mut example,
+                "led",
+                "<pin>",
+                (self.arch != Arch::Ice40).then_some("LVCMOS33"),
+            );
+            for line in example.lines() {
+                let _ = writeln!(s, "{c}   {line}");
+            }
         }
         s
     }
@@ -1424,16 +1451,20 @@ mod tests {
 
     #[test]
     fn boards_without_leds_or_pins() {
-        // A clock only: nothing, since a design without outputs is empty
-        // for the tools.
+        // A clock only: Bare Minimum with the clock, no blinky.
         let b = board(
             serde_json::json!({"name": "Lite", "fpga_id": "x", "resources": {
             "sys_clk": {"type": "clock", "pin": "H11", "mhz": 27, "io_standard": "LVCMOS33"}}}),
         );
-        assert!(files("lite", &b, &fpga("gowin", "GW2A-LV18PG256C8/I7")).is_empty());
-        // Nothing known: nothing generated.
+        let all = files("lite", &b, &fpga("gowin", "GW2A-LV18PG256C8/I7"));
+        assert_eq!(all.keys().collect::<Vec<_>>(), ["bare-minimum"]);
+        assert!(all["bare-minimum"]["pinout.cst"].contains("IO_LOC  \"sys_clk\" H11;"));
+        // Nothing known: an empty Bare Minimum, with how to add pins.
         let b = board(serde_json::json!({"name": "Soan", "fpga_id": "x"}));
-        assert!(files("soan", &b, &fpga("ice40", "ICE40UP5K-SG48")).is_empty());
+        let all = files("soan", &b, &fpga("ice40", "ICE40UP5K-SG48"));
+        assert_eq!(all.keys().collect::<Vec<_>>(), ["bare-minimum"]);
+        assert!(all["bare-minimum"]["main.v"].contains("module main;\n"));
+        assert!(all["bare-minimum"]["pinout.pcf"].contains("#   set_io led <pin>\n"));
     }
 
     /// Writes every catalog board's generated projects to
@@ -1468,9 +1499,6 @@ mod tests {
             let fpga = &catalog.fpgas[&b.fpga_id];
             match generate(id, b, fpga) {
                 Ok(list) => {
-                    if list.is_empty() {
-                        skipped.push(format!("{id}: no LED or drive to use"));
-                    }
                     for g in list {
                         let g = with_board_id(g, id);
                         let dir = out.join(id).join(&g.name);
