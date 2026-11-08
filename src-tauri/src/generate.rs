@@ -14,8 +14,8 @@
 //!   resource, and the one that blinks is the first by type (in that order),
 //!   then by name.
 //! - Bare Minimum for every board: its known pins, outputs off and drives
-//!   at their levels (Logix Engine passes the top module to nextpnr, so a
-//!   design without logic builds); with none known, an empty `main` and a
+//!   at their levels (Logix Engine bcfa672 or later builds a design without
+//!   logic on every family); with none known, an empty `main` and a
 //!   pin file that shows how to add pins.
 //! - No clock usable: the FPGA's internal oscillator where it has one this
 //!   module knows (iCE40 UltraPlus and iCE5LP: SB_HFOSC, 48 MHz; ECP5:
@@ -484,11 +484,7 @@ impl<'a> Plan<'a> {
     }
 
     fn bare_minimum(&self) -> Option<Generated> {
-        let outputs = !self.leds.is_empty() || !self.all_drives().is_empty();
         let clock = match &self.clock {
-            // nextpnr-xilinx refuses an unused input in a design without
-            // outputs (no I/O buffer); no Xilinx board is like that.
-            Some(_) if self.arch == Arch::Xilinx && !outputs => None,
             Some(c @ Clock::Pin { .. }) => Some(c),
             _ => None,
         };
