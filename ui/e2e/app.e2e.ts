@@ -131,9 +131,9 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   // The start screen's output: Logix's own first lines (opening a project
   // clears them).
   await page.goto("/");
-  await expect(output(page)).toContainText("114 examples available.");
+  await expect(output(page)).toContainText("117 examples available.");
   await start(page);
-  await expect(output(page)).not.toContainText("114 examples available.");
+  await expect(output(page)).not.toContainText("117 examples available.");
   // Logix Engine's 81 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
@@ -1158,13 +1158,14 @@ test("examples show their summary and notes, selected or not", async ({ page }) 
   await expect(output(page)).toContainText("Ready.");
   await page.getByRole("button", { name: "From Example…" }).click();
   const dialog = page.getByRole("dialog", { name: "Examples" });
-  await dialog.getByRole("searchbox").fill("icenode");
+  await dialog.getByRole("searchbox").fill("Primer 20K Lite");
   const blinky = dialog.getByRole("button", { name: /^blinky/ });
-  await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
+  const points = ["Blinks a segment of a 7-segment PMOD", "Not yet tried on the board."];
+  await expect(blinky.locator(".point")).toHaveText(points);
   // Not selected: the note still shows.
   await dialog.getByRole("button", { name: /^bare-minimum/ }).click();
   await expect(blinky).not.toHaveClass(/selected/);
-  await expect(blinky.locator(".point")).toHaveText(["Blinks an LED", "Not yet tried on the board."]);
+  await expect(blinky.locator(".point")).toHaveText(points);
 });
 
 test("a failed command's banner says why, with one red line", async ({ page }) => {
