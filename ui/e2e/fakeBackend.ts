@@ -121,7 +121,8 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
   // Value labels, as the catalog's boards have them.
   const labels = new Map<string, Real.Dimension["values"][number]>();
   for (const b of BOARDS) for (const d of b.dimensions) for (const v of d.values) labels.set(`${d.id}:${v.id}`, v);
-  return Object.entries(boards).map(([id, item]) => {
+  // "$schema" names the file's schema, as the engine allows (it checks the value).
+  return Object.entries(boards).filter(([id]) => id !== "$schema").map(([id, item]) => {
     current = id;
     const b = { ...(item as object), id } as { id: string; description?: string; fpga_id?: string; variants?: { selector: { connection: string; memory: string }; tested: boolean }[] };
     if (!/^[a-z0-9-]+$/.test(b.id)) fail(`${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);

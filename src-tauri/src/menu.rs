@@ -200,9 +200,9 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let about = AboutMetadata {
         name: Some("Logix IDE".into()),
         version: Some(app.package_info().version.to_string()),
-        comments: Some(format!(
-            "\"The Arduino experience, for FPGAs.\"\nPowered by Logix Engine (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
-            crate::engine::ENGINE_RELEASE_TAG
+        comments: Some(about_comments(
+            crate::engine::ENGINE_RELEASE_TAG,
+            crate::engine::boards_schema(),
         )),
         copyright: Some("Licensed under the Apache License 2.0.".into()),
         website: Some("https://www.openlogix.org/ide/".into()),
@@ -491,6 +491,18 @@ pub fn show_output_menu<R: Runtime>(window: &WebviewWindow<R>) -> tauri::Result<
 }
 
 /// Rebuilds the menu bar, e.g. after the recent projects changed.
+/// About's text: the motto, the engine release, the boards schema the
+/// engine reads once it's running (for writing custom-boards.json; older
+/// engines don't report it), and the Arduino notice.
+fn about_comments(engine_tag: &str, boards_schema: Option<&str>) -> String {
+    let schema = boards_schema
+        .map(|url| format!("\nCustom boards schema: {url}"))
+        .unwrap_or_default();
+    format!(
+        "\"The Arduino experience, for FPGAs.\"\nPowered by Logix Engine (release {engine_tag}).{schema}\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA."
+    )
+}
+
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
     match build(app) {
         Ok(menu) => {
@@ -525,6 +537,18 @@ fn recent_labels(dirs: &[PathBuf]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn about_names_the_boards_schema_when_the_engine_reports_it() {
+        let url = "https://www.openlogix.org/schemas/logix-boards-v1.json";
+        let text = about_comments("2026-11-09", Some(url));
+        assert!(
+            text.contains("Logix Engine (release 2026-11-09).\nCustom boards schema: https://www.openlogix.org/schemas/logix-boards-v1.json\n\n"),
+            "{text}"
+        );
+        // Before setup, or an older engine: no line.
+        assert!(!about_comments("2026-11-08", None).contains("schema"));
+    }
 
     #[test]
     fn help_links_are_web_pages() {

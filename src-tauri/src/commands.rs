@@ -64,6 +64,7 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
 /// again (e.g. to retry after an error).
 #[tauri::command]
 pub async fn setup(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     on_event: Channel<SetupEvent>,
 ) -> Result<(), UserError> {
@@ -81,6 +82,8 @@ pub async fn setup(
             Ok(ready) => {
                 crate::log!("Engine setup ready");
                 *engine_slot = Some(std::sync::Arc::new(ready));
+                // About shows the boards schema the engine reports.
+                crate::menu::refresh(&app);
             }
             Err(e) => {
                 crate::log!("Engine setup failed: {e:#}");

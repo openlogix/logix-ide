@@ -26,7 +26,7 @@ pub use devices::{
     connected_devices, list_devices, ConnectedDevice, DeviceList, UnreachableDevice, UsbDevice,
 };
 pub use format::format_file;
-pub use info::program_path;
+pub use info::{boards_schema, program_path};
 pub use setup::run_setup;
 pub use task::{boards_problem_outcome, run as run_task, TaskInput};
 

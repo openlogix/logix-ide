@@ -944,6 +944,8 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   };
   const folder = "/Users/you/Documents/Logix/mine";
   const myBoards = {
+    // As users write it, so editors check the file.
+    $schema: "https://www.openlogix.org/schemas/logix-boards-v1.json",
     "my-upduino": {
       description: "My UPduino",
       fpga_id: "ice40up5k-sg48",

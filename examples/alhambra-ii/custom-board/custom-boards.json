@@ -1,4 +1,5 @@
 {
+  "$schema": "https://www.openlogix.org/schemas/logix-boards-v1.json",
   "alhambra-ii-iceprog": {
     "description": "Alhambra II (iceprog)",
     "fpga_id": "ice40hx4k-tq144-8k",

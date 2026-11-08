@@ -68,10 +68,12 @@ where
         .map_err(|e| tool_error("get_engine_info", &e))
         .context(MSG_START)?;
     crate::log!(
-        "Logix Engine {} started, log file {}",
+        "Logix Engine {} started, log file {}, boards schema {}",
         info["engine_version"].as_str().unwrap_or("?"),
-        info["log_file"].as_str().unwrap_or("?")
+        info["log_file"].as_str().unwrap_or("?"),
+        info["boards_schema"].as_str().unwrap_or("(not reported)")
     );
+    super::info::remember_boards_schema(&info);
 
     let missing = missing_packages(&info);
     if !missing.is_empty() {
