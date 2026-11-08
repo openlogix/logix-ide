@@ -1,4 +1,0 @@
-# Logix IDE project settings.
-board = "upduino"
-summary = "Blinks an LED"
-notes = ["Not yet tried on the board."]
