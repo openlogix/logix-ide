@@ -1,7 +1,6 @@
-# Constraint file of the blinky example for the Arty A7-35T board.
+# Constraint file of the blinky example for the Arty A7-35T (Xilinx, Artix7) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
-# Pin source: Digilent/digilent-xdc Arty-A7-35-Master.xdc
 
 # Clock (100MHz).
 set_property -dict { PACKAGE_PIN E3    IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]

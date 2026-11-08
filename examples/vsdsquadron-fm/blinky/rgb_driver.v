@@ -3,14 +3,13 @@
 // instead.
 
 module rgb_driver (
-    input  [2:0] on,   // 1 turns a color on. [0]=red, [1]=green, [2]=blue.
-    output [2:0] pins  // The LED pins, active low, in the same order.
+    input  [2:0] on,   // 1 turns an LED on, in the order of pins.
+    output [2:0] pins  // The LED pins, active low.
 );
 
 `ifdef SYNTHESIS
 
-  // The real driver, set to its lowest current. Its outputs RGB0, RGB1
-  // and RGB2 are wired to the green, blue and red LEDs.
+  // The real driver, set to its lowest current.
   SB_RGBA_DRV #(
       .CURRENT_MODE("0b1"),
       .RGB0_CURRENT("0b000001"),
@@ -29,7 +28,7 @@ module rgb_driver (
 
 `else
 
-  // Simulation model: a pin goes low when its color is on.
+  // Simulation model: a pin goes low when its LED is on.
   assign pins = ~on;
 
 `endif

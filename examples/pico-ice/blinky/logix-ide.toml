@@ -1,4 +1,3 @@
 # Logix IDE project settings.
 board = "pico-ice"
-summary = "Blinks an LED"
-notes = ["Not yet tried on the board."]
+summary = "Blinks the RGB LED in red"

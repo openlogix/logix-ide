@@ -19,15 +19,15 @@ module main_tb;
   integer clk_num = 0;
   always @(posedge sys_clk) clk_num <= clk_num + 1;
 
-  // The LED driven by the design.
-  wire led;
+  // The design's outputs.
+  wire [3:0] leds;
 
   // A 4 bit counter, so the LED toggles every 8 clocks.
   main #(
       .N(4)
   ) dut (
       .sys_clk(sys_clk),
-      .led(led)
+      .leds(leds)
   );
 
   // Loop index for the LED checks.
@@ -37,17 +37,18 @@ module main_tb;
   initial begin
     $dumpvars(0, main_tb);
 
-    // Before the first clock, the counter starts at 0.
+    // Before the first clock, the counter starts at 0 and the LEDs
+    // are off.
     #1;
     `EXPECT_EQ(dut.counter, 4'd0)
-    `EXPECT_EQ(led, 1'b0)
+    `EXPECT_EQ(leds, {1'b0, 3'b000})
 
-    // After i clocks the counter equals i, so the LED shows bit 3
-    // of i.
+    // After i clocks the counter equals i, so leds[3] shows bit 3
+    // of i. The other LEDs stay off.
     for (i = 1; i <= 32; i = i + 1) begin
       @(posedge sys_clk);
       #1;
-      `EXPECT_EQ(led, i[3])
+      `EXPECT_EQ(leds, {i[3], 3'b000})
     end
 
     $display("End of simulation");

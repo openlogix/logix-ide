@@ -1,0 +1,14 @@
+# Constraint file of the bare-minimum example for the ECP5-Mini-12 board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (16MHz).
+LOCATE COMP "sys_clk" SITE "B9";
+IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+FREQUENCY PORT "sys_clk" 16 MHZ;
+
+# LEDs, active high.
+LOCATE COMP "leds[0]" SITE "B1";
+IOBUF  PORT "leds[0]" IO_TYPE=LVCMOS33;
+LOCATE COMP "leds[1]" SITE "B2";
+IOBUF  PORT "leds[1]" IO_TYPE=LVCMOS33;

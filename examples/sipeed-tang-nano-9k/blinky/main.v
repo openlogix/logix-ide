@@ -8,8 +8,8 @@
 module main #(
     parameter integer N = 25
 ) (
-    input  sys_clk,  // 27MHz clock
-    output led       // The blinking LED, active low.
+    input        sys_clk, // 27MHz clock
+    output       led      // The blinking LED. Active low.
 );
 
   // The blink counter. It starts at 0 when the FPGA is configured.
@@ -18,7 +18,7 @@ module main #(
   // Count up on every clock.
   always @(posedge sys_clk) counter <= counter + 1;
 
-  // The LED follows the counter's top bit.
-  assign led = counter[N-1];
+  // led follows the counter's top bit.
+  assign led = ~counter[N-1];
 
 endmodule

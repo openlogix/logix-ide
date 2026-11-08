@@ -19,7 +19,7 @@ module main_tb;
   integer clk_num = 0;
   always @(posedge sys_clk) clk_num <= clk_num + 1;
 
-  // The RGB LED pins driven by the design, active low.
+  // The design's outputs.
   wire [2:0] rgb_led;
 
   // A 4 bit counter, so the LED toggles every 8 clocks.
@@ -37,18 +37,18 @@ module main_tb;
   initial begin
     $dumpvars(0, main_tb);
 
-    // Before the first clock, the counter starts at 0 and all the
-    // colors are off.
+    // Before the first clock, the counter starts at 0 and the LEDs
+    // are off.
     #1;
     `EXPECT_EQ(dut.counter, 4'd0)
-    `EXPECT_EQ(rgb_led, 3'b111)
+    `EXPECT_EQ(rgb_led, {1'b1, 2'b11})
 
-    // After i clocks the counter equals i, so RGB0 shows bit 3 of i
-    // (low is on). The other two stay off.
+    // After i clocks the counter equals i, so rgb_led[2] shows bit 3
+    // of i. The other LEDs stay off.
     for (i = 1; i <= 32; i = i + 1) begin
       @(posedge sys_clk);
       #1;
-      `EXPECT_EQ(rgb_led, {2'b11, ~i[3]})
+      `EXPECT_EQ(rgb_led, {~i[3], 2'b11})
     end
 
     $display("End of simulation");

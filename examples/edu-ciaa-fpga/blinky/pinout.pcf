@@ -3,7 +3,7 @@
 # the pins that this example uses.
 
 # Clock (12MHz).
-set_io sys_clk 94  # input
+set_io sys_clk 94
 
-# LED (LED0, D6), active high.
-set_io led 1  # output
+# LED, active high.
+set_io led 1

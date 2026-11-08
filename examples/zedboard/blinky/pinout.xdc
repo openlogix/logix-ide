@@ -1,7 +1,6 @@
-# Constraint file of the blinky example for the ZedBoard board.
+# Constraint file of the blinky example for the ZedBoard (Xilinx, Zynq7 PL) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
-# Pin source: #-- Pin source: Digilent/digilent-xdc Zedboard-Master.xdc (GCLK, LD0-LD3)
 
 # Clock (100MHz).
 set_property -dict { PACKAGE_PIN Y9    IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]

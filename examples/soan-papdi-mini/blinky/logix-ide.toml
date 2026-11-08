@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "soan-papdi-mini"
+summary = "Blinks the RGB LED in red"

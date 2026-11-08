@@ -1,0 +1,11 @@
+// Constraint file of the bare-minimum example for the Sipeed Tang Nano 1k board.
+// It assigns the design's signals to FPGA pins, and lists only
+// the pins that this example uses.
+
+// Clock (27MHz).
+IO_LOC  "sys_clk" 47;
+IO_PORT "sys_clk" IO_TYPE=LVCMOS33;
+
+// LED, active low.
+IO_LOC  "led" 9;
+IO_PORT "led" IO_TYPE=LVCMOS33;

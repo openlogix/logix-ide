@@ -21,9 +21,9 @@ main_tb.sys_clk
 main_tb.dut.counter[3:0]
 @200
 -
--LED
-@28
+-LEDs
+@22
 [color] 2
-main_tb.led
+main_tb.leds[3:0]
 [pattern_trace] 1
 [pattern_trace] 0

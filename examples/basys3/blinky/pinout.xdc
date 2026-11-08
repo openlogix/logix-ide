@@ -1,4 +1,4 @@
-# Constraint file of the blinky example for the Basys3 board.
+# Constraint file of the blinky example for the Basys3 (Xilinx, Artix7) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
 

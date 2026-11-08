@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
 # Generates every catalog board's blinky and Bare Minimum from Logix
-# Engine's board catalog (src-tauri/src/generate.rs), into
-# src-tauri/target/generated-examples/<board>/<name>/.
+# Engine's board catalog (src-tauri/src/generate.rs) into
+# examples/<board>/blinky/ and examples/<board>/bare-minimum/ (replaced),
+# and saves the catalog it used to src-tauri/generated-examples-catalog.json,
+# from which a test checks they're up to date. Run it after the engine pin
+# or the generator changes, then review the diff.
 #
 #   scripts/generate-examples.sh                                  # the engine in LOGIX_DEV_ENGINE_BINARY
 #   scripts/generate-examples.sh --engine-repo-dir <engine clone> # a locally built engine
-#
-# For now the results are only compared with examples/ (see CLAUDE.md,
-# Examples); nothing in examples/ changes.
 
 set -e
 

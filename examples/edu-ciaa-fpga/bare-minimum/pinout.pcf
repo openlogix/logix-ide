@@ -1,0 +1,9 @@
+# Constraint file of the bare-minimum example for the EDU-CIAA-FPGA board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (12MHz).
+set_io sys_clk 94
+
+# LED, active high.
+set_io led 1

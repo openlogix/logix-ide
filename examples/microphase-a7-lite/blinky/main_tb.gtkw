@@ -22,7 +22,7 @@ main_tb.dut.counter[3:0]
 @200
 -
 -LEDs
-@22
+@28
 [color] 2
 main_tb.leds_n[1:0]
 [pattern_trace] 1

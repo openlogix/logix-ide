@@ -1,4 +1,3 @@
 # Logix IDE project settings.
 board = "orangecrab-r02-85f"
 summary = "Blinks an LED"
-notes = ["Not yet tried on the board."]

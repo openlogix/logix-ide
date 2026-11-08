@@ -2,8 +2,8 @@
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
 
-# Clock (12MHz). It comes from the iCELink chip, whose default is 12MHz.
-set_io sys_clk D1  # input
+# Clock (12MHz).
+set_io sys_clk D1
 
 # LED, active high.
-set_io led B6  # output
+set_io led B6

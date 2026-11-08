@@ -36,11 +36,12 @@ describe("groupExamples", () => {
     expect(counts).toEqual([2, 1, 0, 1]);
   });
 
-  it("says when Bare Minimum has no pins", () => {
-    const [alhambra, icebreaker] = groupExamples(boards, examples, "");
-    expect(alhambra.examples[0].bare).toBe(true);
-    expect(alhambra.examples[0].summary).toContain("board's pins");
-    expect(icebreaker.examples[0].summary).toContain("without pins");
+  it("gives every board's Bare Minimum the same summary", () => {
+    const groups = groupExamples(boards, examples, "");
+    for (const g of groups) {
+      expect(g.examples[0].bare).toBe(true);
+      expect(g.examples[0].summary).toContain("board's pins");
+    }
   });
 
   it("shows all entries of a matching board", () => {

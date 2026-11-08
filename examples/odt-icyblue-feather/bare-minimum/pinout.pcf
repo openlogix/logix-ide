@@ -1,0 +1,6 @@
+# Constraint file of the bare-minimum example for the ODT_IcyBlue_Feather board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# LED, active high.
+set_io led 2

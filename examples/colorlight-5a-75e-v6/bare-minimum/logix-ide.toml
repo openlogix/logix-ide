@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "colorlight-5a-75e-v6"
+summary = "The board's pins and an empty design, to start from scratch"

@@ -1,4 +1,3 @@
 # Logix IDE project settings.
 board = "ice40-hx8k"
 summary = "Blinks an LED"
-notes = ["Not yet tried on the board."]

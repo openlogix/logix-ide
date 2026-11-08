@@ -8,8 +8,8 @@
 module main #(
     parameter integer N = 24
 ) (
-    input        sys_clk,  // 12MHz clock
-    output [1:0] leds      // leds[1] blinks, the rest are off. Active high.
+    input        sys_clk, // 12MHz clock
+    output [1:0] leds     // leds[1] blinks, the rest are off. Active high.
 );
 
   // The blink counter. It starts at 0 when the FPGA is configured.

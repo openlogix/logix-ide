@@ -1,4 +1,3 @@
 # Logix IDE project settings.
 board = "sipeed-tang-nano"
 summary = "Blinks an LED"
-notes = ["Not yet tried on the board."]

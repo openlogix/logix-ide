@@ -21,19 +21,15 @@ export interface BoardGroup {
 }
 
 /**
- * Examples a board's pins are taken from, for new projects and
- * Bare Minimum. Keep in sync with `STARTER_EXAMPLES` in `catalog.rs`.
+ * A board's Bare Minimum entry. Every catalog board has one, generated
+ * with its blinky (`src-tauri/src/generate.rs`); the backend opens an
+ * empty design for any other board.
  */
-const STARTER_EXAMPLES = ["blinky", "ledon"];
-
-function bareMinimum(board: string, examples: Example[]): ExampleEntry {
-  const hasPins = examples.some((e) => STARTER_EXAMPLES.includes(e.name));
+function bareMinimum(board: string): ExampleEntry {
   return {
     board,
     name: BARE_MINIMUM,
-    summary: hasPins
-      ? "The board's pins and an empty design, to start from scratch"
-      : "An empty design, without pins (no example to take them from)",
+    summary: "The board's pins and an empty design, to start from scratch",
     notes: [],
     bare: true,
   };
@@ -78,7 +74,7 @@ export function groupExamples(
   const groups: BoardGroup[] = [];
   for (const board of allBoards) {
     const list = byBoard.get(board.id) ?? [];
-    const all: ExampleEntry[] = [bareMinimum(board.id, list), ...list];
+    const all: ExampleEntry[] = [bareMinimum(board.id), ...list];
     const boardMatches =
       !q ||
       board.description.toLowerCase().includes(q) ||

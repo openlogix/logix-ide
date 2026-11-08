@@ -1,0 +1,12 @@
+# Constraint file of the bare-minimum example for the Mimas ECP5 Mini board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (100MHz).
+LOCATE COMP "sys_clk" SITE "C7";
+IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+FREQUENCY PORT "sys_clk" 100 MHZ;
+
+# LED, active high.
+LOCATE COMP "led" SITE "E12";
+IOBUF  PORT "led" IO_TYPE=LVCMOS33;

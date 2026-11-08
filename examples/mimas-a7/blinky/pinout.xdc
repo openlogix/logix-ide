@@ -1,7 +1,6 @@
-# Constraint file of the blinky example for the Mimas A7 board.
+# Constraint file of the blinky example for the Mimas A7 (Xilinx, Artix7) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
-# Pin source: Numato Mimas A7 XDC oficial (identico en rev V2 y V3)
 
 # Clock (100MHz).
 set_property -dict { PACKAGE_PIN H4    IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]

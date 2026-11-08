@@ -1,7 +1,8 @@
-# Constraint file of the blinky example for the IcyBlue Feather board.
+# Constraint file of the blinky example for the ODT_IcyBlue_Feather board.
 # It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses. The design uses the internal
-# oscillator, so there is no clock pin.
+# the pins that this example uses.
+# The design uses the FPGA's internal 48MHz oscillator, so there is
+# no clock pin.
 
-# Blue user LED LED2, active high.
-set_io led 2  # output
+# LED, active high.
+set_io led 2

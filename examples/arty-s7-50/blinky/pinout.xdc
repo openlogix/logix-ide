@@ -1,7 +1,6 @@
-# Constraint file of the blinky example for the Arty S7-50 board.
+# Constraint file of the blinky example for the Arty S7-50 (Xilinx, Spartan7) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
-# Pin source: #-- Pin source: Digilent/digilent-xdc Arty-S7-50-Master.xdc
 
 # Clock (12MHz).
 set_property -dict { PACKAGE_PIN F14   IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]

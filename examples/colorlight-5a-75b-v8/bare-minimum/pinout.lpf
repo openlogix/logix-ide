@@ -1,0 +1,12 @@
+# Constraint file of the bare-minimum example for the ColorLight-5A-75B-V8 board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (25MHz).
+LOCATE COMP "sys_clk" SITE "P6";
+IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+FREQUENCY PORT "sys_clk" 25 MHZ;
+
+# LED, active low.
+LOCATE COMP "led" SITE "T6";
+IOBUF  PORT "led" IO_TYPE=LVCMOS33;

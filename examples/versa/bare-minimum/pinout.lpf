@@ -1,0 +1,12 @@
+# Constraint file of the bare-minimum example for the ECP5 Versa board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (100MHz).
+LOCATE COMP "sys_clk" SITE "P3";
+IOBUF  PORT "sys_clk" IO_TYPE=LVDS;
+FREQUENCY PORT "sys_clk" 100 MHZ;
+
+# LED, active low.
+LOCATE COMP "led" SITE "E16";
+IOBUF  PORT "led" IO_TYPE=LVCMOS25;

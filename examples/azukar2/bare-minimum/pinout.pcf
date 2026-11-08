@@ -1,0 +1,16 @@
+# Constraint file of the bare-minimum example for the AZUKAR v2 board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (12MHz).
+set_io sys_clk 49
+
+# LEDs, active high.
+set_io leds[0] 37
+set_io leds[1] 38
+set_io leds[2] 39
+set_io leds[3] 41
+set_io leds[4] 42
+set_io leds[5] 43
+set_io leds[6] 44
+set_io leds[7] 45

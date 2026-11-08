@@ -25,5 +25,14 @@ main_tb.dut.counter[3:0]
 @28
 [color] 2
 main_tb.rgb_led[2:0]
+@200
+-
+-Held
+@28
+main_tb.usb_dp
+@28
+main_tb.usb_dn
+@28
+main_tb.usb_dp_pu
 [pattern_trace] 1
 [pattern_trace] 0

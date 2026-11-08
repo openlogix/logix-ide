@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "cmod-a7-35t"
+summary = "The board's pins and an empty design, to start from scratch"

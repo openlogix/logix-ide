@@ -19,11 +19,11 @@ module main_tb;
   integer clk_num = 0;
   always @(posedge sys_clk) clk_num <= clk_num + 1;
 
-  // The RGB LED pins driven by the design, active low.
+  // The design's outputs.
   wire [2:0] rgb_led;
-
-  // The USB pins driven by the design.
-  wire usb_dp, usb_dn, usb_pu;
+  wire       usb_dp;
+  wire       usb_dn;
+  wire       usb_dp_pu;
 
   // A 4 bit counter, so the LED toggles every 8 clocks.
   main #(
@@ -31,9 +31,9 @@ module main_tb;
   ) dut (
       .sys_clk(sys_clk),
       .rgb_led(rgb_led),
-      .usb_dp (usb_dp),
-      .usb_dn (usb_dn),
-      .usb_pu (usb_pu)
+      .usb_dp(usb_dp),
+      .usb_dn(usb_dn),
+      .usb_dp_pu(usb_dp_pu)
   );
 
   // Loop index for the LED checks.
@@ -43,15 +43,17 @@ module main_tb;
   initial begin
     $dumpvars(0, main_tb);
 
-    // Before the first clock, the counter starts at 0 and all the
-    // colors are off.
+    // Before the first clock, the counter starts at 0 and the LEDs
+    // are off.
     #1;
     `EXPECT_EQ(dut.counter, 4'd0)
-    `EXPECT_EQ(rgb_led, 3'b111)
-    `EXPECT_EQ({usb_dp, usb_dn, usb_pu}, 3'b000)
+    `EXPECT_EQ(rgb_led, {2'b11, 1'b1})
+    `EXPECT_EQ(usb_dp, 1'b0)
+    `EXPECT_EQ(usb_dn, 1'b0)
+    `EXPECT_EQ(usb_dp_pu, 1'b0)
 
-    // After i clocks the counter equals i, so red shows bit 3 of i
-    // (low is on). Green and blue stay off.
+    // After i clocks the counter equals i, so The red LED shows bit 3
+    // of i. The other LEDs stay off.
     for (i = 1; i <= 32; i = i + 1) begin
       @(posedge sys_clk);
       #1;

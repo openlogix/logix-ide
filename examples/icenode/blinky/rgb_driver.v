@@ -3,8 +3,8 @@
 // instead.
 
 module rgb_driver (
-    input  [2:0] on,   // 1 turns a color on, for the pins RGB0, RGB1, RGB2.
-    output [2:0] pins  // The LED pins RGB0, RGB1, RGB2, active low.
+    input  [2:0] on,   // 1 turns an LED on, in the order of pins.
+    output [2:0] pins  // The LED pins, active low.
 );
 
 `ifdef SYNTHESIS
@@ -28,7 +28,7 @@ module rgb_driver (
 
 `else
 
-  // Simulation model: a pin goes low when its color is on.
+  // Simulation model: a pin goes low when its LED is on.
   assign pins = ~on;
 
 `endif

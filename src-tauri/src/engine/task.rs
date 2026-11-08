@@ -1178,121 +1178,18 @@ mod tests {
             if !ok {
                 failed.push(why);
             }
-            // The board's Bare Minimum, from its starter example.
-            if crate::examples::starter_example(&all, &e.board).map(|s| &s.name) == Some(&e.name) {
-                let dir = tmp.path().join(format!("b{i}"));
-                std::fs::create_dir_all(&dir).unwrap();
-                let starter = crate::project::load(&tmp.path().join(format!("e{i}"))).unwrap();
-                let bare = crate::bare::bare_files(&starter.files).unwrap();
-                for f in &bare {
-                    std::fs::write(dir.join(&f.name), &f.text).unwrap();
-                }
-                let files = bare.into_iter().map(|f| f.name).collect();
-                let label = format!("{} Bare Minimum", e.board);
-                let (ok, why) = run_one(e.board.clone(), label, dir, files).await;
-                if !ok {
-                    failed.push(why);
-                }
-            }
         }
-        for f in &failed {
-            println!("{f}");
-        }
-        assert!(failed.is_empty(), "{} failed", failed.len());
-    }
-
-    /// Every project `scripts/generate-examples.sh` wrote to
-    /// `target/generated-examples/` builds, and passes its tests, on a real
-    /// engine (slow):
-    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_IDE_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_generated_examples_build -- --ignored --nocapture`
-    #[tokio::test]
-    #[ignore]
-    async fn real_generated_examples_build() {
-        let var = |k: &str| std::env::var(k).unwrap_or_else(|_| panic!("set {k}"));
-        let engine = Engine::start(
-            Path::new(&var("LOGIX_DEV_ENGINE_BINARY")),
-            Path::new(&var("LOGIX_IDE_TEST_ENGINE_FOLDER")),
-        )
-        .await
-        .unwrap();
-        let catalog = super::super::catalog(&engine).await.unwrap();
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/generated-examples");
-        let tmp = tempfile::tempdir().unwrap();
-        let cancel = CancellationToken::new();
-        let mut failed = Vec::new();
-        let mut boards: Vec<_> = std::fs::read_dir(&root)
-            .expect("run scripts/generate-examples.sh first")
-            .map(|e| e.unwrap().path())
-            .collect();
-        boards.sort();
-        for (i, board_dir) in boards.iter().enumerate() {
-            let board = board_dir
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .into_owned();
-            let arch = catalog
-                .boards
-                .iter()
-                .find(|b| b.id == board)
-                .map(|b| b.arch.clone())
-                .unwrap_or_default();
-            let mut projects: Vec<_> = std::fs::read_dir(board_dir)
-                .unwrap()
-                .map(|e| e.unwrap().path())
-                .collect();
-            projects.sort();
-            for (j, src) in projects.iter().enumerate() {
-                let label = format!("{board}/{}", src.file_name().unwrap().to_string_lossy());
-                // A copy, since builds write next to the sources.
-                let dir = tmp.path().join(format!("g{i}-{j}"));
-                std::fs::create_dir_all(&dir).unwrap();
-                let mut files = Vec::new();
-                for f in std::fs::read_dir(src).unwrap() {
-                    let f = f.unwrap();
-                    let name = f.file_name().to_string_lossy().into_owned();
-                    std::fs::copy(f.path(), dir.join(&name)).unwrap();
-                    if name != "logix-ide.toml" {
-                        files.push(name);
-                    }
-                }
-                files.sort();
-                let constraint = crate::build_dir::constraint_file_name(&files).map(str::to_owned);
-                let mut input = TaskInput {
-                    board: &board,
-                    board_variant: None,
-                    custom_boards: None,
-                    arch: &arch,
-                    source_folder: &dir,
-                    files: &files,
-                    constraint_file: constraint.as_deref(),
-                    lint: false,
-                    target: None,
-                    device: None,
-                };
-                let mut problems = Vec::new();
-                let build = run(&engine, Task::Build, &input, |_| {}, &cancel)
-                    .await
-                    .unwrap();
-                if !build.ok {
-                    problems.push(format!("build: {:?}", build.diagnostics));
-                }
-                if files.iter().any(|f| project::is_testbench(f)) {
-                    input.target = None;
-                    let test = run(&engine, Task::Test, &input, |_| {}, &cancel)
-                        .await
-                        .unwrap();
-                    if !test.ok {
-                        problems.push(format!("test: {:?}", test.diagnostics));
-                    }
-                }
-                println!(
-                    "{label}: {}",
-                    if problems.is_empty() { "ok" } else { "FAILED" }
-                );
-                if !problems.is_empty() {
-                    failed.push(format!("{label}: {problems:?}"));
-                }
+        // Every board's Bare Minimum.
+        for (i, board) in crate::examples::bare_minimum_boards()
+            .into_iter()
+            .enumerate()
+        {
+            let dir = tmp.path().join(format!("b{i}"));
+            let files = example_files(&board, crate::examples::BARE_MINIMUM, &dir);
+            let label = format!("{board}/{}", crate::examples::BARE_MINIMUM);
+            let (ok, why) = run_one(board.clone(), label, dir, files).await;
+            if !ok {
+                failed.push(why);
             }
         }
         for f in &failed {

@@ -1,0 +1,12 @@
+# Constraint file of the bare-minimum example for the OrangeCrab r0.2 25K board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (48MHz).
+LOCATE COMP "sys_clk" SITE "A9";
+IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+FREQUENCY PORT "sys_clk" 48 MHZ;
+
+# LED, active low.
+LOCATE COMP "led" SITE "K4";
+IOBUF  PORT "led" IO_TYPE=LVCMOS33;

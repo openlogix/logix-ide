@@ -9,11 +9,12 @@ module main #(
     parameter integer N = 25
 ) (
     input        sys_clk,    // 25MHz clock
-    output [7:0] leds,       // Active high. leds[7] blinks, the rest are off.
+    output [7:0] leds,       // leds[7] blinks, the rest are off. Active high.
     output       wifi_gpio0  // Held high, see below.
 );
 
-  // Keep the ESP32's GPIO0 high, so it doesn't reset the board.
+  // Held high: wifi_gpio0. GPIO0 of the board's ESP32 WiFi module: held
+  // low, it makes the ESP32 reset the board.
   assign wifi_gpio0 = 1'b1;
 
   // The blink counter. It starts at 0 when the FPGA is configured.
@@ -23,6 +24,6 @@ module main #(
   always @(posedge sys_clk) counter <= counter + 1;
 
   // leds[7] follows the counter's top bit. The other LEDs are off.
-  assign leds = {counter[N-1], 7'b0};
+  assign leds = {counter[N-1], 7'b0000000};
 
 endmodule

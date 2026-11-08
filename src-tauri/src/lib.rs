@@ -1,4 +1,3 @@
-mod bare;
 mod build_dir;
 mod commands;
 mod download;

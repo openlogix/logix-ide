@@ -1,4 +1,3 @@
 # Logix IDE project settings.
 board = "butterstick-r10-2g-85k"
-summary = "Blinks an LED"
-notes = ["Not yet tried on the board."]
+summary = "Blinks an LED of the LED matrix in red"

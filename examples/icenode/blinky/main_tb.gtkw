@@ -21,7 +21,7 @@ main_tb.sys_clk
 main_tb.dut.counter[3:0]
 @200
 -
--RGB LED
+-LEDs
 @28
 [color] 2
 main_tb.rgb_led[2:0]

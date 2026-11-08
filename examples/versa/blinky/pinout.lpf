@@ -2,10 +2,11 @@
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
 
-# Clock (100MHz), from an LVDS oscillator on the P3/P4 pair.
+# Clock (100MHz).
 LOCATE COMP "sys_clk" SITE "P3";
 IOBUF  PORT "sys_clk" IO_TYPE=LVDS;
+FREQUENCY PORT "sys_clk" 100 MHZ;
 
-# LED, active low. Its bank runs at 2.5V.
+# LED, active low.
 LOCATE COMP "led" SITE "E16";
-IOBUF  PORT "led" PULLMODE=NONE IO_TYPE=LVCMOS25 DRIVE=4;
+IOBUF  PORT "led" IO_TYPE=LVCMOS25;

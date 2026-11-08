@@ -5,7 +5,8 @@
 # Clock (100MHz).
 LOCATE COMP "sys_clk" SITE "C7";
 IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+FREQUENCY PORT "sys_clk" 100 MHZ;
 
-# LED, active high. This is LED0.
+# LED, active high.
 LOCATE COMP "led" SITE "E12";
-IOBUF  PORT "led" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
+IOBUF  PORT "led" IO_TYPE=LVCMOS33;

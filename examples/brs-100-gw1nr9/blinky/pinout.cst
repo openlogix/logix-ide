@@ -1,11 +1,11 @@
-// Constraint file of the blinky example for the BRS-100-GW1NR9 board.
+// Constraint file of the blinky example for the BrisbaneSilicon 9k board.
 // It assigns the design's signals to FPGA pins, and lists only
 // the pins that this example uses.
 
 // Clock (27MHz).
 IO_LOC  "sys_clk" 52;
-IO_PORT "sys_clk" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
+IO_PORT "sys_clk" IO_TYPE=LVCMOS33;
 
-// LED (the first of the 6 user LEDs), active low.
+// LED, active low.
 IO_LOC  "led" 16;
-IO_PORT "led" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_PORT "led" IO_TYPE=LVCMOS33;

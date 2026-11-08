@@ -1,9 +1,9 @@
-# Constraint file of the blinky example for the iCE40UP5K breakout board.
+# Constraint file of the blinky example for the iCE40 UltraPlus Breakout board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
 
 # Clock (12MHz).
-set_io sys_clk 35  # input
+set_io sys_clk 35
 
-# LED (the red part of the RGB LED), active low.
-set_io led 41  # output
+# LED, active low.
+set_io led 41

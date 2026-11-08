@@ -1,0 +1,12 @@
+# Constraint file of the bare-minimum example for the Theta Machines ETH4K board.
+# It assigns the design's signals to FPGA pins, and lists only
+# the pins that this example uses.
+
+# Clock (25MHz).
+set_io sys_clk 52
+
+# LEDs, active high.
+set_io leds[0] 41
+set_io leds[1] 39
+set_io leds[2] 38
+set_io leds[3] 37

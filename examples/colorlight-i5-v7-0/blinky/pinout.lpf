@@ -1,11 +1,12 @@
-# Constraint file of the blinky example for the ColorLight i5 v7.0 board.
+# Constraint file of the blinky example for the ColorLight-i5 board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
 
 # Clock (25MHz).
 LOCATE COMP "sys_clk" SITE "P3";
-IOBUF  PORT "sys_clk" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
+IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+FREQUENCY PORT "sys_clk" 25 MHZ;
 
 # LED, active low.
 LOCATE COMP "led" SITE "U16";
-IOBUF  PORT "led" PULLMODE=NONE IO_TYPE=LVCMOS33 DRIVE=4;
+IOBUF  PORT "led" IO_TYPE=LVCMOS33;

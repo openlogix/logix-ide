@@ -14,9 +14,28 @@ static EXAMPLES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../examples");
 /// FPGAwars' own board.
 pub const DEFAULT_BOARD: &str = "alhambra-ii";
 
-/// Examples that make good starting points for a new project, in order of
-/// preference: simple, and using the board's clock and LEDs.
-const STARTER_EXAMPLES: &[&str] = &["blinky", "ledon"];
+/// Each catalog board's Bare Minimum, generated (`generate.rs`) like its
+/// blinky: `examples/<board>/bare-minimum/`, the board's pins and a design
+/// that does nothing yet. Not listed among the examples: the Examples
+/// dialog shows it first for every board.
+pub const BARE_MINIMUM: &str = "bare-minimum";
+
+/// `main.v` for a board without a Bare Minimum (one the catalog doesn't
+/// have): an empty design, which builds.
+pub const EMPTY_MAIN: &str = "\
+// The top module must be named 'main'.
+//
+// There's no Bare Minimum for this board to take its pins from. Add ports
+// here, and a pin file (File > New File...) that assigns them to the
+// FPGA's pins, in the format the board uses (such as a .pcf file for
+// iCE40 boards). See the board's documentation for the pins.
+
+module main;
+
+  // Your design goes here.
+
+endmodule
+";
 
 /// The examples Logix offers, and how many others were hidden.
 #[derive(Debug, Clone, Serialize)]
@@ -43,7 +62,7 @@ pub struct Example {
 pub fn all() -> Vec<Example> {
     let mut list = Vec::new();
     for board in EXAMPLES.dirs() {
-        for example in board.dirs() {
+        for example in board.dirs().filter(|d| !d.path().ends_with(BARE_MINIMUM)) {
             let name = |d: &Dir| {
                 d.path()
                     .file_name()
@@ -79,14 +98,23 @@ pub fn all() -> Vec<Example> {
     list
 }
 
-/// The example a new project for `board` starts from, if the board has one
-/// of the starter examples among `examples`.
-pub fn starter_example<'a>(examples: &'a [Example], board: &str) -> Option<&'a Example> {
-    STARTER_EXAMPLES.iter().find_map(|name| {
-        examples
-            .iter()
-            .find(|e| e.board == board && e.name == *name)
-    })
+/// Whether `board` has a Bare Minimum.
+pub fn has_bare_minimum(board: &str) -> bool {
+    EXAMPLES
+        .get_dir(Path::new(board).join(BARE_MINIMUM))
+        .is_some()
+}
+
+/// The boards with a Bare Minimum, sorted (for tests).
+#[cfg(test)]
+pub fn bare_minimum_boards() -> Vec<String> {
+    let mut list: Vec<String> = EXAMPLES
+        .dirs()
+        .filter(|b| b.get_dir(b.path().join(BARE_MINIMUM)).is_some())
+        .filter_map(|b| Some(b.path().file_name()?.to_string_lossy().into_owned()))
+        .collect();
+    list.sort();
+    list
 }
 
 /// Writes an example's files into `dst` (replaced) and returns it, so it
@@ -137,7 +165,7 @@ mod tests {
             .iter()
             .find(|e| e.board == DEFAULT_BOARD && e.name == "blinky")
             .unwrap();
-        assert_eq!(blinky.summary, "Blinking led");
+        assert_eq!(blinky.summary, "Blinks an LED");
         assert!(blinky.notes.is_empty());
         // Every example has a one-line summary; qualifiers are notes.
         assert!(list
@@ -149,11 +177,11 @@ mod tests {
             .find(|e| e.board == "sipeed-tang-primer-20k-lite" && e.name == "blinky")
             .unwrap();
         assert_eq!(primer.notes, ["Not yet tried on the board."]);
-        assert_eq!(
-            starter_example(&list, DEFAULT_BOARD).map(|e| e.name.as_str()),
-            Some("blinky")
-        );
-        assert!(starter_example(&list, "no-such-board").is_none());
+        // Bare Minimum isn't an example, but every catalog board has one.
+        assert!(list.iter().all(|e| e.name != BARE_MINIMUM));
+        assert!(has_bare_minimum(DEFAULT_BOARD));
+        assert!(!has_bare_minimum("no-such-board"));
+        assert!(bare_minimum_boards().len() >= 81);
     }
 
     /// No "template" examples (Apio's starting projects): Bare Minimum is
@@ -161,6 +189,18 @@ mod tests {
     #[test]
     fn no_template_examples() {
         assert!(all().iter().all(|e| e.name != "template"));
+    }
+
+    /// Every Bare Minimum opens as a Logix project with its board.
+    #[test]
+    fn every_bare_minimum_is_a_project() {
+        let tmp = tempfile::tempdir().unwrap();
+        for board in bare_minimum_boards() {
+            let dir = write(&board, BARE_MINIMUM, &tmp.path().join("bare")).unwrap();
+            let loaded = project::load(&dir).unwrap_or_else(|err| panic!("{board}: {err:#}"));
+            assert_eq!(loaded.board.as_deref(), Some(board.as_str()));
+            assert_eq!(loaded.files[0].name, project::MAIN_FILE);
+        }
     }
 
     /// Every example opens as a Logix project with its board.

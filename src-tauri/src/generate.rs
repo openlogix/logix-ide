@@ -2,7 +2,9 @@
 //! board catalog (`get_catalog`: each board's resources and requirements,
 //! and its FPGA), in the examples' style. Build time, not runtime: run by
 //! `scripts/generate-examples.sh`, which writes them to
-//! `src-tauri/target/generated-examples/`. Plain code, no Tauri.
+//! `examples/<board>/blinky/` and `examples/<board>/bare-minimum/`, and the
+//! catalog it used to `src-tauri/generated-examples-catalog.json`, from
+//! which a test checks they're up to date. Plain code, no Tauri.
 //!
 //! The rules (Logix Catalog's docs/model.md and docs/design.md):
 //! - Only what works on the board as shipped: a resource with a `setup`
@@ -24,7 +26,9 @@
 //!   through its RGB LED driver (SB_RGBA_DRV, in `rgb_driver.v`), as the
 //!   hand-written RGB examples did; one LED on one of those pins is a plain
 //!   output, as the iCE40-UP5K, iCESugar 1.5 and OK-iCE40Pro examples were
-//!   (both built with nextpnr).
+//!   (both built with nextpnr). Through the driver, LEDs turn on low (it
+//!   only sinks current), also when the catalog doesn't know their level
+//!   (the Soan Papdi Mini).
 //! - Pull and drive are left to each family's defaults; pin files name the
 //!   I/O standard where the family uses one, and the clock's frequency where
 //!   the toolchain reads it (ECP5 `FREQUENCY`, Xilinx `create_clock`).
@@ -405,11 +409,17 @@ impl<'a> Plan<'a> {
                 .iter()
                 .map(|p| rgb_pins.and_then(|rgb| rgb.iter().position(|q| q == p).map(|i| i as u8)))
                 .collect();
+            let mut active = active;
             let rgb_driver = if on_driver.len() == 3 && on_driver.iter().all(Option::is_some) {
-                if active != Some(Level::Low) {
-                    return Err(format!(
-                        "{id}: {name} is on the RGB LED driver's pins, which turn LEDs on low"
-                    ));
+                // The driver only sinks current: its LEDs turn on low,
+                // whatever the catalog knows.
+                match active {
+                    Some(Level::High) => {
+                        return Err(format!(
+                            "{id}: {name} is on the RGB LED driver's pins, which turn LEDs on low"
+                        ));
+                    }
+                    _ => active = Some(Level::Low),
                 }
                 Some(on_driver.into_iter().map(Option::unwrap).collect())
             } else {
@@ -494,6 +504,13 @@ impl<'a> Plan<'a> {
         let mut files = BTreeMap::new();
         files.insert("main.v".into(), self.bare_main_v(clock));
         files.insert("main_tb.v".into(), self.bare_tb_v(clock));
+        files.insert(
+            "logix-ide.toml".into(),
+            format!(
+                "# Logix IDE project settings.\nboard = \"{}\"\nsummary = \"The board's pins and an empty design, to start from scratch\"\n",
+                self.board_id_placeholder()
+            ),
+        );
         if let Some(layout) = self.gtkw(clock, false) {
             files.insert("main_tb.gtkw".into(), layout);
         }
@@ -1079,6 +1096,14 @@ impl Arch {
 // ---------------------------------------------------------------------------
 // Helpers.
 
+/// The catalog the generated examples came from, as far as the generator
+/// reads it (`generate_examples` writes it), for the test that checks
+/// `examples/` is up to date.
+#[cfg(test)]
+const SNAPSHOT_FILE: &str = "generated-examples-catalog.json";
+#[cfg(test)]
+const CATALOG_SNAPSHOT: &str = include_str!("../generated-examples-catalog.json");
+
 /// Replaced with the board's ID by the caller (`with_board_id`).
 const BOARD_ID: &str = "@BOARD_ID@";
 
@@ -1643,10 +1668,63 @@ mod tests {
         assert!(all["bare-minimum"]["pinout.pcf"].contains("#   set_io led <pin>\n"));
     }
 
-    /// Writes every catalog board's generated projects to
-    /// `src-tauri/target/generated-examples/<board>/<name>/`, from the
-    /// catalog of the engine `LOGIX_DEV_ENGINE_BINARY` names. Run by
+    /// The examples folder.
+    fn examples_dir() -> std::path::PathBuf {
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../examples")
+    }
+
+    /// Every generated project, by board then name, from a catalog.
+    fn generate_all(catalog: &Catalog) -> Vec<(String, Generated)> {
+        let mut out = Vec::new();
+        for (id, b) in catalog.boards.iter().filter(|(_, b)| !b.custom) {
+            let fpga = &catalog.fpgas[&b.fpga_id];
+            for g in generate(id, b, fpga).unwrap_or_else(|e| panic!("{e}")) {
+                out.push((id.clone(), with_board_id(g, id)));
+            }
+        }
+        out
+    }
+
+    /// The generated projects in `examples/` are what the catalog snapshot
+    /// gives (`CATALOG_SNAPSHOT`); after a catalog or generator change, run
     /// `scripts/generate-examples.sh`.
+    #[test]
+    fn generated_examples_are_up_to_date() {
+        let catalog: Catalog = serde_json::from_str(CATALOG_SNAPSHOT).unwrap();
+        let mut stale = Vec::new();
+        for (board, g) in generate_all(&catalog) {
+            let dir = examples_dir().join(&board).join(&g.name);
+            let mut on_disk: Vec<String> = std::fs::read_dir(&dir)
+                .map(|d| {
+                    d.map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+                        .collect()
+                })
+                .unwrap_or_default();
+            on_disk.sort();
+            let wanted: Vec<String> = g.files.keys().cloned().collect();
+            if on_disk != wanted {
+                stale.push(format!(
+                    "{board}/{}: files {on_disk:?}, want {wanted:?}",
+                    g.name
+                ));
+                continue;
+            }
+            for (name, text) in &g.files {
+                if std::fs::read_to_string(dir.join(name)).ok().as_deref() != Some(text) {
+                    stale.push(format!("{board}/{}/{name}", g.name));
+                }
+            }
+        }
+        assert!(
+            stale.is_empty(),
+            "Generated examples are stale, run scripts/generate-examples.sh: {stale:#?}"
+        );
+    }
+
+    /// Takes the catalog from the engine `LOGIX_DEV_ENGINE_BINARY` names,
+    /// keeps the parts the generator reads in `CATALOG_SNAPSHOT`'s file, and
+    /// writes every generated project to `examples/<board>/<name>/`
+    /// (replaced). Run by `scripts/generate-examples.sh`.
     #[tokio::test]
     #[ignore]
     async fn generate_examples() {
@@ -1657,41 +1735,63 @@ mod tests {
         let engine = crate::engine::Engine::start(std::path::Path::new(&exe), &folder)
             .await
             .unwrap();
-        let value = engine
-            .call(
-                "get_catalog",
-                serde_json::json!({"boards": {"fetch": true}, "fpgas": {"fetch": true}}),
-                None,
-            )
-            .await
-            .unwrap()
-            .unwrap();
-        let catalog: Catalog = serde_json::from_value(value).unwrap();
-        let out =
-            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("target/generated-examples");
-        let _ = std::fs::remove_dir_all(&out);
-        let (mut made, mut skipped) = (0, Vec::new());
-        for (id, b) in catalog.boards.iter().filter(|(_, b)| !b.custom) {
-            let fpga = &catalog.fpgas[&b.fpga_id];
-            match generate(id, b, fpga) {
-                Ok(list) => {
-                    for g in list {
-                        let g = with_board_id(g, id);
-                        let dir = out.join(id).join(&g.name);
-                        std::fs::create_dir_all(&dir).unwrap();
-                        for (name, text) in &g.files {
-                            std::fs::write(dir.join(name), text).unwrap();
-                        }
-                        made += 1;
-                    }
-                }
-                Err(e) => skipped.push(e),
+        let call = |tool: &'static str, args: serde_json::Value| {
+            let engine = &engine;
+            async move { engine.call(tool, args, None).await.unwrap().unwrap() }
+        };
+        let info = call("get_engine_info", serde_json::json!({})).await;
+        let full = call(
+            "get_catalog",
+            serde_json::json!({"boards": {"fetch": true}, "fpgas": {"fetch": true}}),
+        )
+        .await;
+        // The snapshot: what the generator reads, and where it came from.
+        let mut boards = serde_json::Map::new();
+        let mut fpgas = serde_json::Map::new();
+        for (id, b) in full["boards"].as_object().unwrap() {
+            if b["custom"].as_bool() == Some(true) {
+                continue;
             }
+            let mut kept = serde_json::Map::new();
+            for key in ["name", "fpga_id", "requires", "resources"] {
+                if let Some(v) = b.get(key) {
+                    kept.insert(key.into(), v.clone());
+                }
+            }
+            let fpga_id = b["fpga_id"].as_str().unwrap();
+            let f = &full["fpgas"][fpga_id];
+            fpgas.insert(
+                fpga_id.into(),
+                serde_json::json!({"architecture": f["architecture"], "part_number": f["part_number"]}),
+            );
+            boards.insert(id.clone(), kept.into());
         }
-        println!("{made} projects in {}", out.display());
-        for s in skipped {
-            println!("skipped {s}");
+        let snapshot = serde_json::json!({
+            "catalog": info["catalog"],
+            "boards": boards,
+            "fpgas": fpgas,
+        });
+        let text = serde_json::to_string_pretty(&snapshot).unwrap() + "\n";
+        std::fs::write(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(SNAPSHOT_FILE),
+            &text,
+        )
+        .unwrap();
+        let catalog: Catalog = serde_json::from_str(&text).unwrap();
+        let mut made = 0;
+        for (board, g) in generate_all(&catalog) {
+            let dir = examples_dir().join(&board).join(&g.name);
+            let _ = std::fs::remove_dir_all(&dir);
+            std::fs::create_dir_all(&dir).unwrap();
+            for (name, text) in &g.files {
+                std::fs::write(dir.join(name), text).unwrap();
+            }
+            made += 1;
         }
+        println!(
+            "{made} projects written to examples/, catalog {}",
+            info["catalog"]
+        );
     }
 
     #[test]
@@ -1704,6 +1804,15 @@ mod tests {
         let all = files("x", &b, &fpga("ice40", "ICE40UP5K-SG48"));
         assert!(!all["blinky"].contains_key("rgb_driver.v"));
         assert!(all["blinky"]["main.v"].contains("assign led = ~counter[N-1];"));
+        // Through the driver, an LED of unknown level turns on low.
+        let b = board(
+            serde_json::json!({"name": "X", "fpga_id": "x", "resources": {
+            "sys_clk": {"type": "clock", "pin": "35", "mhz": 12},
+            "rgb": {"type": "rgb_led", "red": "39", "green": "40", "blue": "41"}}}),
+        );
+        let all = files("x", &b, &fpga("ice40", "ICE40UP5K-SG48"));
+        assert!(all["blinky"]["main_tb.v"].contains("`EXPECT_EQ(rgb, {2'b11, ~i[3]})"));
+        assert!(all["blinky"]["rgb_driver.v"].contains(".RGB0PWM (on[0]),"));
         // An active-high LED on the driver's pins can't work through it.
         let b = board(
             serde_json::json!({"name": "X", "fpga_id": "x", "resources": {

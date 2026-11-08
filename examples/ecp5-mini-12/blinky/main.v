@@ -1,17 +1,15 @@
 //------------------------------------------------------------------
 //-- Blinking LED
 //------------------------------------------------------------------
-// Written for Logix from the board's published pinout. It hasn't been
-// tried on a real board yet: if it doesn't blink, please report it.
 
-// N is the counter width. led toggles every 2^(N-1) clocks.
+// N is the counter width. leds[1] toggles every 2^(N-1) clocks.
 // With the default N = 24 and a 16MHz clock, it toggles about
 // every 0.5 seconds. The testbench uses a small N to run quickly.
 module main #(
     parameter integer N = 24
 ) (
-    input  sys_clk,  // 16MHz clock
-    output led       // The blinking LED, on when high.
+    input        sys_clk, // 16MHz clock
+    output [1:0] leds     // leds[1] blinks, the rest are off. Active high.
 );
 
   // The blink counter. It starts at 0 when the FPGA is configured.
@@ -20,7 +18,7 @@ module main #(
   // Count up on every clock.
   always @(posedge sys_clk) counter <= counter + 1;
 
-  // The LED follows the counter's top bit.
-  assign led = counter[N-1];
+  // leds[1] follows the counter's top bit. The other LEDs are off.
+  assign leds = {counter[N-1], 1'b0};
 
 endmodule

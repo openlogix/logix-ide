@@ -21,10 +21,12 @@ main_tb.sys_clk
 main_tb.dut.counter[3:0]
 @200
 -
--LED
+-LED matrix
+@22
+[color] 2
+main_tb.leds[6:0]
 @28
 [color] 2
-main_tb.led
-main_tb.led_color[2:0]
+main_tb.leds_color[2:0]
 [pattern_trace] 1
 [pattern_trace] 0

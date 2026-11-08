@@ -1,23 +1,31 @@
-// Blinks the red part of the RGB LED.
+//------------------------------------------------------------------
+//-- Blinking RGB LED
+//------------------------------------------------------------------
 
-// N is the counter width. The LED toggles every 2^(N-1) clocks.
+// N is the counter width. The red LED toggles every 2^(N-1) clocks.
 // With the default N = 26 and a 48MHz clock, it toggles about
 // every 0.7 seconds. The testbench uses a small N to run quickly.
 module main #(
     parameter integer N = 26
 ) (
-    input        sys_clk,  // 48MHz clock
-    // The RGB LED pins, active low. [0]=red, [1]=green, [2]=blue.
-    output [2:0] rgb_led,
-    output       usb_dp,   // USB D+, held low.
-    output       usb_dn,   // USB D-, held low.
-    output       usb_pu    // USB D+ pull-up, active high, held off.
+    input        sys_clk,   // 48MHz clock
+    output [2:0] rgb_led,   // RGB LED: [0] red, [1] green, [2] blue; red blinks. Active low.
+    output       usb_dp,    // Held low, see below.
+    output       usb_dn,    // Held low, see below.
+    output       usb_dp_pu  // Held low, see below.
 );
 
-  // Keep the USB lines low, so the host doesn't try to talk to the board.
+  // Held low: usb_dp. Disconnects the board from the computer's USB,
+  // which would otherwise try to talk to a design without a USB stack.
   assign usb_dp = 1'b0;
+
+  // Held low: usb_dn. Disconnects the board from the computer's USB,
+  // which would otherwise try to talk to a design without a USB stack.
   assign usb_dn = 1'b0;
-  assign usb_pu = 1'b0;
+
+  // Held low: usb_dp_pu. Disconnects the board from the computer's USB,
+  // which would otherwise try to talk to a design without a USB stack.
+  assign usb_dp_pu = 1'b0;
 
   // The blink counter. It starts at 0 when the FPGA is configured.
   reg [N-1:0] counter = 0;
@@ -25,8 +33,7 @@ module main #(
   // Count up on every clock.
   always @(posedge sys_clk) counter <= counter + 1;
 
-  // Drive the RGB LED. Red follows the counter's top bit, green and blue
-  // stay off.
+  // Red follows the counter's top bit, green and blue stay off.
   rgb_driver rgb_driver (
       .on  ({2'b00, counter[N-1]}),
       .pins(rgb_led)

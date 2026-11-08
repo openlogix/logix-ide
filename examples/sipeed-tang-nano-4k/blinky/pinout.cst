@@ -1,4 +1,4 @@
-// Constraint file of the blinky example for the Sipeed Tang Nano 4K board.
+// Constraint file of the blinky example for the Sipeed Tang Nano 4k board.
 // It assigns the design's signals to FPGA pins, and lists only
 // the pins that this example uses.
 

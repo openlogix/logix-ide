@@ -17,7 +17,7 @@ use crate::examples;
 use crate::outcome;
 use crate::project::{self, ProjectFile};
 use crate::setup_events::{SetupEvent, SetupStage};
-use crate::{bare, build_dir, platform, settings, AppState, Catalog};
+use crate::{build_dir, platform, settings, AppState, Catalog};
 
 /// An error for the UI: `message` is short plain language for the user,
 /// `details` is the full technical chain for the console.
@@ -916,29 +916,18 @@ pub async fn new_project(board: Option<String>) -> Result<ProjectDoc, UserError>
 }
 
 /// A board's Bare Minimum project (Examples): its pins and a design that
-/// does nothing yet (see `bare.rs`), as a new, unsaved project.
+/// does nothing yet, generated for every catalog board (`examples.rs`,
+/// `BARE_MINIMUM`), as a new, unsaved project; its other files, such as its
+/// GTKWave layout, are copied on the first save, as an example's.
 #[tauri::command]
 pub async fn open_bare_minimum(board: String) -> Result<ProjectDoc, UserError> {
-    let all = examples::all();
-    let Some(ex) = examples::starter_example(&all, &board) else {
+    if !examples::has_bare_minimum(&board) {
         return Ok(no_pins_doc(board));
-    };
-    let name = ex.name.clone();
-    let starter = example_doc(board.clone(), &name, "untitled".into()).await?;
-    Ok(match bare::bare_files(&starter.files) {
-        Some(files) => ProjectDoc {
-            dir: None,
-            template_dir: None,
-            name: "untitled".into(),
-            files,
-            board: Some(board),
-            variant: project::Variant::new(),
-        },
-        None => no_pins_doc(board),
-    })
+    }
+    example_doc(board, examples::BARE_MINIMUM, "untitled".into()).await
 }
 
-/// A new project for a board without an example to take the pins from.
+/// A new project for a board without a Bare Minimum: an empty design.
 fn no_pins_doc(board: String) -> ProjectDoc {
     ProjectDoc {
         dir: None,
@@ -946,7 +935,7 @@ fn no_pins_doc(board: String) -> ProjectDoc {
         name: "untitled".into(),
         files: vec![ProjectFile {
             name: project::MAIN_FILE.into(),
-            text: bare::NO_PINS_MAIN.into(),
+            text: examples::EMPTY_MAIN.into(),
         }],
         board: Some(board),
         variant: project::Variant::new(),

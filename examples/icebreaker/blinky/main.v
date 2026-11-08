@@ -9,8 +9,8 @@ module main #(
     parameter integer N = 24
 ) (
     input        sys_clk,   // 12MHz clock
-    output       led,       // The blinking LED, active low.
-    output [4:0] pmod_leds  // The snap-off PMOD LEDs, active high.
+    output       led,       // The blinking LED. Active low.
+    output [4:0] pmod_leds  // Off. Active high.
 );
 
   // The blink counter. It starts at 0 when the FPGA is configured.
@@ -19,10 +19,10 @@ module main #(
   // Count up on every clock.
   always @(posedge sys_clk) counter <= counter + 1;
 
-  // The LED follows the counter's top bit.
-  assign led = counter[N-1];
+  // led follows the counter's top bit.
+  assign led = ~counter[N-1];
 
-  // Keep the snap-off PMOD LEDs off.
-  assign pmod_leds = 5'b0;
+  // pmod_leds stays off.
+  assign pmod_leds = 5'b00000;
 
 endmodule

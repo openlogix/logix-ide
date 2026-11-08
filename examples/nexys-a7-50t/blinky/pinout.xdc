@@ -1,7 +1,6 @@
-# Constraint file of the blinky example for the Nexys A7-50T board.
+# Constraint file of the blinky example for the Nexys A7-50T (Xilinx, Artix7) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
-# Pin source: Digilent/digilent-xdc Nexys-A7-50T-Master.xdc
 
 # Clock (100MHz).
 set_property -dict { PACKAGE_PIN E3    IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]

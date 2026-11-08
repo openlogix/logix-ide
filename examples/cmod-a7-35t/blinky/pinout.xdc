@@ -1,7 +1,6 @@
-# Constraint file of the blinky example for the Cmod A7-35T board.
+# Constraint file of the blinky example for the Cmod A7-35T (Xilinx, Artix7) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
-# Pin source: Digilent/digilent-xdc Cmod-A7-Master.xdc
 
 # Clock (12MHz).
 set_property -dict { PACKAGE_PIN L17   IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]

@@ -19,11 +19,11 @@ module main_tb;
   integer clk_num = 0;
   always @(posedge sys_clk) clk_num <= clk_num + 1;
 
-  // The outputs of the design.
+  // The design's outputs.
   wire [7:0] leds;
-  wire wifi_gpio0;
+  wire       wifi_gpio0;
 
-  // A 4 bit counter, so leds[7] toggles every 8 clocks.
+  // A 4 bit counter, so the LED toggles every 8 clocks.
   main #(
       .N(4)
   ) dut (
@@ -39,19 +39,19 @@ module main_tb;
   initial begin
     $dumpvars(0, main_tb);
 
-    // Before the first clock, the counter starts at 0.
+    // Before the first clock, the counter starts at 0 and the LEDs
+    // are off.
     #1;
     `EXPECT_EQ(dut.counter, 4'd0)
-    `EXPECT_EQ(leds, 8'b0)
+    `EXPECT_EQ(leds, {1'b0, 7'b0000000})
+    `EXPECT_EQ(wifi_gpio0, 1'b1)
 
     // After i clocks the counter equals i, so leds[7] shows bit 3
     // of i. The other LEDs stay off.
     for (i = 1; i <= 32; i = i + 1) begin
       @(posedge sys_clk);
       #1;
-      `EXPECT_EQ(leds[7], i[3])
-      `EXPECT_EQ(leds[6:0], 7'b0)
-      `EXPECT_EQ(wifi_gpio0, 1'b1)
+      `EXPECT_EQ(leds, {i[3], 7'b0000000})
     end
 
     $display("End of simulation");

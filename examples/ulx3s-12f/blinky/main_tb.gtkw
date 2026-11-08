@@ -25,6 +25,9 @@ main_tb.dut.counter[3:0]
 @22
 [color] 2
 main_tb.leds[7:0]
+@200
+-
+-Held
 @28
 main_tb.wifi_gpio0
 [pattern_trace] 1

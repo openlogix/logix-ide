@@ -3,14 +3,14 @@
 # the pins that this example uses.
 
 # Clock (12MHz).
-set_io sys_clk 35  # input
+set_io sys_clk 35
 
-# Green LED, active low.
-set_io led 37  # output
+# LED, active low.
+set_io led 37
 
-# LEDs on the snap-off PMOD, active high.
-set_io pmod_leds[0] 26  # output, LED1
-set_io pmod_leds[1] 27  # output, LED2
-set_io pmod_leds[2] 25  # output, LED3
-set_io pmod_leds[3] 23  # output, LED4
-set_io pmod_leds[4] 21  # output, LED5
+# LEDs, active high.
+set_io pmod_leds[0] 26
+set_io pmod_leds[1] 27
+set_io pmod_leds[2] 25
+set_io pmod_leds[3] 23
+set_io pmod_leds[4] 21

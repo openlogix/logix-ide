@@ -1,7 +1,6 @@
-# Constraint file of the blinky example for the Alchitry Au board.
+# Constraint file of the blinky example for the Alchitry Au (Xilinx, Artix7) board.
 # It assigns the design's signals to FPGA pins, and lists only
 # the pins that this example uses.
-# Pin source: alchitry/Alchitry-Labs-V2 AuPin.kt + alchitry.acf
 
 # Clock (100MHz).
 set_property -dict { PACKAGE_PIN N14   IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]
