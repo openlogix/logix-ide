@@ -1658,12 +1658,13 @@
       "name": "Soan-Papdi-Mini",
       "resources": {
         "rgb_led": {
+          "active": "low",
           "blue": "41",
           "green": "40",
           "red": "39",
           "source": {
             "kind": "maker",
-            "ref": "The maker's reply to the Logix project, 2026-11-08: 12 MHz external clock on pin 35; RGB LED red on 39, green on 40, blue on 41. Polarity not stated yet."
+            "ref": "The maker's replies to the Logix project, 2026-11-08: RGB LED red on 39, green on 40, blue on 41, active low (as pins 39-41, the iCE40 UltraPlus's open-drain RGB outputs, require)."
           },
           "type": "rgb_led"
         },
@@ -1672,7 +1673,7 @@
           "pin": "35",
           "source": {
             "kind": "maker",
-            "ref": "The maker's reply to the Logix project, 2026-11-08: 12 MHz external clock on pin 35; RGB LED red on 39, green on 40, blue on 41. Polarity not stated yet."
+            "ref": "The maker's reply to the Logix project, 2026-11-08: 12 MHz external clock on pin 35."
           },
           "type": "clock"
         }
@@ -2137,7 +2138,7 @@
     }
   },
   "catalog": {
-    "commit": "9c84405",
+    "commit": "b2792a5",
     "version": "2026-11-08"
   },
   "fpgas": {
