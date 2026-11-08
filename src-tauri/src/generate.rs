@@ -456,6 +456,9 @@ impl<'a> Plan<'a> {
         let mut files = BTreeMap::new();
         files.insert("main.v".into(), self.main_v(clock, n));
         files.insert("main_tb.v".into(), self.main_tb_v(clock));
+        if let Some(layout) = self.gtkw(Some(clock), true) {
+            files.insert("main_tb.gtkw".into(), layout);
+        }
         files.insert(
             format!("pinout.{}", self.arch.extension()),
             self.pin_file("blinky", Some(clock)),
@@ -490,6 +493,10 @@ impl<'a> Plan<'a> {
         };
         let mut files = BTreeMap::new();
         files.insert("main.v".into(), self.bare_main_v(clock));
+        files.insert("main_tb.v".into(), self.bare_tb_v(clock));
+        if let Some(layout) = self.gtkw(clock, false) {
+            files.insert("main_tb.gtkw".into(), layout);
+        }
         for g in &self.leds {
             if let Some(map) = &g.rgb_driver {
                 files.insert("rgb_driver.v".into(), rgb_driver_v(map));
@@ -688,6 +695,160 @@ impl<'a> Plan<'a> {
 
     // -- main_tb.v -----------------------------------------------------------
 
+    /// The design's outputs, as (port, width): the LEDs', then the drives'.
+    fn outputs(&self) -> Vec<(String, usize)> {
+        let mut outs = Vec::new();
+        for g in &self.leds {
+            match &g.kind {
+                LedKind::Leds { name, pins } => outs.push((name.clone(), pins.len())),
+                LedKind::Rgb { name, .. } => outs.push((name.clone(), 3)),
+                LedKind::Matrix { name, leds, .. } => {
+                    outs.push((name.clone(), leds.len()));
+                    outs.push((format!("{name}_color"), 3));
+                }
+            }
+        }
+        for d in self.all_drives() {
+            outs.push((d.name.clone(), d.pins.len()));
+        }
+        outs
+    }
+
+    /// Bare Minimum's testbench: the outputs off and the drives at their
+    /// levels, then 32 clocks (or 100ns without a clock), with a place for
+    /// the user's own checks.
+    fn bare_tb_v(&self, clock: Option<&Clock>) -> String {
+        let mut s = String::from(TB_HEAD);
+        if let Some(Clock::Pin { name, .. }) = clock {
+            let _ = writeln!(
+                s,
+                "  // Clock.\n  reg {name} = 0;\n  always #5 {name} = ~{name};\n\n  // Number of {name} rising edges so far.\n  integer clk_num = 0;\n  always @(posedge {name}) clk_num <= clk_num + 1;\n"
+            );
+        }
+        let outs = self.outputs();
+        if !outs.is_empty() {
+            s += "  // The design's outputs.\n";
+            for (name, w) in &outs {
+                let _ = writeln!(s, "  wire {}{name};", width_decl(*w));
+            }
+            s.push('\n');
+        }
+        let mut conns: Vec<String> = Vec::new();
+        if let Some(Clock::Pin { name, .. }) = clock {
+            conns.push(format!("      .{name}({name})"));
+        }
+        for (name, _) in &outs {
+            conns.push(format!("      .{name}({name})"));
+        }
+        if conns.is_empty() {
+            s += "  // The design.\n  main dut ();\n\n";
+        } else {
+            s += "  // The design.\n  main dut (\n";
+            s += &conns.join(",\n");
+            s += "\n  );\n\n";
+        }
+        s += "  // The test sequence.\n  initial begin\n    $dumpvars(0, main_tb);\n\n";
+        let mut checks = String::new();
+        for g in &self.leds {
+            for (port, value) in led_values(g, false, "1'b0") {
+                let _ = writeln!(checks, "    `EXPECT_EQ({port}, {value})");
+            }
+        }
+        for d in self.all_drives() {
+            let _ = writeln!(
+                checks,
+                "    `EXPECT_EQ({}, {})",
+                d.name,
+                level_literal(d.pins.len(), d.level)
+            );
+        }
+        if !checks.is_empty() {
+            s += "    // At the start, the LEDs are off and the held pins at their levels.\n    #1;\n";
+            s += &checks;
+            s.push('\n');
+        }
+        match clock {
+            Some(c) => {
+                let clk = clock_name(c);
+                let _ = writeln!(
+                    s,
+                    "    // Add your own checks here. This runs 32 clocks.\n    repeat (32) @(posedge {clk});"
+                );
+            }
+            None => s += "    // Add your own checks here.\n    #100;\n",
+        }
+        s += "\n    $display(\"End of simulation\");\n    $finish;\n  end\n\nendmodule\n";
+        s
+    }
+
+    /// A GTKWave layout for main_tb.v, in the hand-written examples' style:
+    /// the clock count and clock, the counter (blinky), the LEDs (the
+    /// blinking group highlighted), then the held pins. None when there is
+    /// nothing to show.
+    fn gtkw(&self, clock: Option<&Clock>, blinky: bool) -> Option<String> {
+        let mut body = String::new();
+        if let Some(c) = clock {
+            let _ = writeln!(
+                body,
+                "@420\nmain_tb.clk_num\n@28\nmain_tb.{}",
+                clock_name(c)
+            );
+        }
+        if blinky {
+            body += "@200\n-\n-Counter\n@24\nmain_tb.dut.counter[3:0]\n";
+        }
+        let signal = |name: &str, w: usize| {
+            if w == 1 {
+                format!("main_tb.{name}")
+            } else {
+                format!("main_tb.{name}[{}:0]", w - 1)
+            }
+        };
+        // Single bits and RGB LEDs in binary, wider LED vectors in hex.
+        let format = |w: usize| if w <= 3 { "@28" } else { "@22" };
+        for (i, g) in self.leds.iter().enumerate() {
+            let title = match &g.kind {
+                LedKind::Leds { pins, .. } if pins.len() == 1 => "LED",
+                LedKind::Leds { .. } => "LEDs",
+                LedKind::Rgb { .. } => "RGB LED",
+                LedKind::Matrix { .. } => "LED matrix",
+            };
+            let _ = writeln!(body, "@200\n-\n-{title}");
+            let ports: Vec<(String, usize)> = match &g.kind {
+                LedKind::Leds { name, pins } => vec![(name.clone(), pins.len())],
+                LedKind::Rgb { name, .. } => vec![(name.clone(), 3)],
+                LedKind::Matrix { name, leds, .. } => {
+                    vec![(name.clone(), leds.len()), (format!("{name}_color"), 3)]
+                }
+            };
+            for (name, w) in ports {
+                let _ = writeln!(body, "{}", format(w));
+                if blinky && i == 0 {
+                    body += "[color] 2\n";
+                }
+                let _ = writeln!(body, "{}", signal(&name, w));
+            }
+        }
+        let drives = self.all_drives();
+        if !drives.is_empty() {
+            body += "@200\n-\n-Held\n";
+            for d in drives {
+                let _ = writeln!(
+                    body,
+                    "{}\n{}",
+                    format(d.pins.len()),
+                    signal(&d.name, d.pins.len())
+                );
+            }
+        }
+        if body.is_empty() {
+            return None;
+        }
+        Some(format!(
+            "{GTKW_HEAD}{body}[pattern_trace] 1\n[pattern_trace] 0\n"
+        ))
+    }
+
     fn main_tb_v(&self, clock: &Clock) -> String {
         let mut s = String::from(TB_HEAD);
         match clock {
@@ -710,21 +871,7 @@ impl<'a> Plan<'a> {
             s,
             "  // Number of {clk} rising edges so far.\n  integer clk_num = 0;\n  always @(posedge {clk}) clk_num <= clk_num + 1;\n"
         );
-        // The outputs: (name, width).
-        let mut outs: Vec<(String, usize)> = Vec::new();
-        for g in &self.leds {
-            match &g.kind {
-                LedKind::Leds { name, pins } => outs.push((name.clone(), pins.len())),
-                LedKind::Rgb { name, .. } => outs.push((name.clone(), 3)),
-                LedKind::Matrix { name, leds, .. } => {
-                    outs.push((name.clone(), leds.len()));
-                    outs.push((format!("{name}_color"), 3));
-                }
-            }
-        }
-        for d in self.all_drives() {
-            outs.push((d.name.clone(), d.pins.len()));
-        }
+        let outs = self.outputs();
         s += "  // The design's outputs.\n";
         for (name, w) in &outs {
             let _ = writeln!(s, "  wire {}{name};", width_decl(*w));
@@ -1167,6 +1314,21 @@ fn rgb_driver_v(map: &[u8]) -> String {
     )
 }
 
+/// The hand-written examples' layout header: window, zoom and panes.
+const GTKW_HEAD: &str = "[*]
+[*] GTKWave save file for main_tb.v, used by Simulate.
+[*]
+[timestart] 0
+[size] 1000 600
+[pos] -1 -1
+*-16.786717 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] main_tb.
+[sst_width] 253
+[signals_width] 160
+[sst_expanded] 1
+[sst_vpaned_height] 158
+";
+
 const TB_HEAD: &str = "// Testbench for main.v.
 // Run it in batch mode with Run Tests, or view the signals
 // in GTKWave with Simulate.
@@ -1330,7 +1492,18 @@ mod tests {
         let blinky = &all["blinky"];
         assert_eq!(
             blinky.keys().collect::<Vec<_>>(),
-            ["logix-ide.toml", "main.v", "main_tb.v", "pinout.pcf"]
+            [
+                "logix-ide.toml",
+                "main.v",
+                "main_tb.gtkw",
+                "main_tb.v",
+                "pinout.pcf"
+            ]
+        );
+        let layout = &blinky["main_tb.gtkw"];
+        assert!(
+            layout.contains("@420\nmain_tb.clk_num\n@28\nmain_tb.sys_clk\n@200\n-\n-Counter\n@24\nmain_tb.dut.counter[3:0]\n@200\n-\n-LEDs\n@22\n[color] 2\nmain_tb.leds[7:0]\n"),
+            "{layout}"
         );
         let main = &blinky["main.v"];
         assert!(main.contains("parameter integer N = 24"), "{main}");
@@ -1346,7 +1519,12 @@ mod tests {
         assert!(blinky["logix-ide.toml"].contains("board = \"alhambra-ii\""));
         let tb = &blinky["main_tb.v"];
         assert!(tb.contains("`EXPECT_EQ(leds, {i[3], 7'b0000000})"), "{tb}");
-        // Bare Minimum: the same ports, the LEDs off.
+        // Bare Minimum: the same ports, the LEDs off, with a testbench that
+        // checks it and a layout.
+        let tb = &all["bare-minimum"]["main_tb.v"];
+        assert!(tb.contains("`EXPECT_EQ(leds, 8'b00000000)"), "{tb}");
+        assert!(tb.contains("repeat (32) @(posedge sys_clk);"), "{tb}");
+        assert!(all["bare-minimum"]["main_tb.gtkw"].contains("-LEDs\n@22\nmain_tb.leds[7:0]\n"));
         let bare = &all["bare-minimum"]["main.v"];
         assert!(bare.contains("assign leds = 8'b00000000;"), "{bare}");
         assert!(!bare.contains("counter"), "{bare}");
@@ -1460,6 +1638,8 @@ mod tests {
         let all = files("soan", &b, &fpga("ice40", "ICE40UP5K-SG48"));
         assert_eq!(all.keys().collect::<Vec<_>>(), ["bare-minimum"]);
         assert!(all["bare-minimum"]["main.v"].contains("module main;\n"));
+        assert!(all["bare-minimum"]["main_tb.v"].contains("  main dut ();\n"));
+        assert!(!all["bare-minimum"].contains_key("main_tb.gtkw"));
         assert!(all["bare-minimum"]["pinout.pcf"].contains("#   set_io led <pin>\n"));
     }
 
