@@ -542,7 +542,7 @@ export const backend: typeof Real.backend = {
   lastBoard: async () => "alhambra-ii",
   lastVariant: async () => ({}),
   recentProjects: async () => fake.recents,
-  // The fake's recent projects are all UPduino v2 projects (openProjectAt).
+  // The fake's recent projects are all UPduino v3.1 projects (openProjectAt).
   setLastBoard: async (board) => {
     fake.recentBoards = [board, ...fake.recentBoards.filter((b) => b !== board)].slice(0, 5);
     return fake.recentBoards;
@@ -567,10 +567,10 @@ export const backend: typeof Real.backend = {
     };
   },
 
-  // A saved project for the UPduino v2 (any folder), so tests can check that
+  // A saved project for the UPduino v3.1 (any folder), so tests can check that
   // opening it brings its own board.
   openProjectAt: async (dir) => {
-    const doc = bareDoc("upduino2");
+    const doc = bareDoc("upduino31");
     return {
       ...doc,
       files: doc.files,

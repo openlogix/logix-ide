@@ -131,25 +131,25 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   // The start screen's output: Logix's own first lines (opening a project
   // clears them).
   await page.goto("/");
-  await expect(output(page)).toContainText("119 examples available.");
+  await expect(output(page)).toContainText("114 examples available.");
   await start(page);
-  await expect(output(page)).not.toContainText("119 examples available.");
-  // Logix Engine's 84 boards, grouped by FPGA architecture. Only the current
+  await expect(output(page)).not.toContainText("114 examples available.");
+  // Logix Engine's 81 boards, grouped by FPGA architecture. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
   await expect(page.locator(".group")).toHaveText([
-    /Lattice iCE40\s*31/,
+    /Lattice iCE40\s*27/,
     /Lattice ECP5\s*22/,
-    /Gowin\s*8/,
+    /Gowin\s*9/,
     /Xilinx\s*23/,
   ]);
-  await expect(page.getByRole("option")).toHaveCount(31);
+  await expect(page.getByRole("option")).toHaveCount(27);
   await page.getByRole("button", { name: /Gowin/ }).click();
-  await expect(page.getByRole("option")).toHaveCount(39);
+  await expect(page.getByRole("option")).toHaveCount(36);
   await page.getByRole("button", { name: /Lattice iCE40/ }).click();
-  await expect(page.getByRole("option")).toHaveCount(8);
+  await expect(page.getByRole("option")).toHaveCount(9);
   await page.getByRole("combobox").fill("a");
-  await expect(page.getByRole("option")).not.toHaveCount(8);
+  await expect(page.getByRole("option")).not.toHaveCount(9);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toBeHidden();
   // The Alhambra II by default, and its blinky (from the examples) is
@@ -1016,12 +1016,12 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   // no examples or new projects, saying why.
   const options = page.getByRole("dialog", { name: "Examples" });
   await expect(options.getByRole("heading")).toHaveText("Project options for custom board “My UPduino”");
-  await expect(options.locator(".current .note .point").first()).toHaveText(/^Board: UPDuino v2\.0 → My UPduino\. Same FPGA: /);
+  await expect(options.locator(".current .note .point").first()).toHaveText(/^Board: UPduino v3\.1 → My UPduino\. Same FPGA: /);
   await expect(options.locator(".custom-note")).toContainText("Custom boards have no examples");
   await expect(options.getByRole("button", { name: /^bare-minimum/ })).toHaveCount(0);
   await expect(options.getByRole("button", { name: /^blinky/ })).toHaveCount(0);
   // Not applied until chosen.
-  await expect(boardButton(page)).toHaveText(/UPDuino v2/);
+  await expect(boardButton(page)).toHaveText(/UPduino v3\.1/);
   await changeTheBoard(page);
   await expect(options).toBeHidden();
   await expect(boardButton(page)).toHaveText(/My UPduino/);
@@ -1134,25 +1134,25 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await expect(info).toBeVisible();
   await expect(info).toContainText("The selected board");
   // Every board with this FPGA, the shown and selected one marked.
-  const list = info.locator("li", { hasText: /Alhambra II|Kéfir I/ });
-  await expect(list).toHaveText(["Alhambra II (shown, selected)", "Kéfir I iCE40-HX4K"]);
+  const list = info.locator("li", { hasText: /Alhambra II|AZUKAR v2/ });
+  await expect(list).toHaveText(["Alhambra II (shown, selected)", "AZUKAR v2"]);
   const back = info.getByRole("button", { name: "Back" });
   await expect(back).toHaveCount(0);
   // A board with the same FPGA shows its own info; Back returns.
-  await info.getByRole("button", { name: /^Kéfir I/ }).click();
-  await expect(info.getByRole("heading", { level: 2 })).toHaveText(/^Board: Kéfir I/);
+  await info.getByRole("button", { name: /^AZUKAR v2/ }).click();
+  await expect(info.getByRole("heading", { level: 2 })).toHaveText(/^Board: AZUKAR v2/);
   // The same list, the marks moved.
-  await expect(list).toHaveText(["Alhambra II (selected)", "Kéfir I iCE40-HX4K (shown)"]);
+  await expect(list).toHaveText(["Alhambra II (selected)", "AZUKAR v2 (shown)"]);
   await expect(info.getByRole("button", { name: "Alhambra II" })).toBeVisible();
   await back.click();
   await expect(info.getByRole("heading", { level: 2 })).toHaveText("Board: Alhambra II");
   await expect(back).toHaveCount(0);
   // Select This Board picks the board shown, as the board picker does.
-  await info.getByRole("button", { name: /^Kéfir I/ }).click();
+  await info.getByRole("button", { name: /^AZUKAR v2/ }).click();
   await info.getByRole("button", { name: "Select This Board" }).click();
   await expect(info).toBeHidden();
   await changeTheBoard(page);
-  await expect(boardButton(page)).toHaveText(/Kéfir I/);
+  await expect(boardButton(page)).toHaveText(/AZUKAR v2/);
 });
 
 test("examples show their summary and notes, selected or not", async ({ page }) => {

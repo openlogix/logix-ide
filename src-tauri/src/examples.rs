@@ -132,7 +132,7 @@ mod tests {
         assert!(list.iter().all(|e| !e.summary.contains("(untested)")));
         let primer = list
             .iter()
-            .find(|e| e.board == "sipeed-tang-primer-20k" && e.name == "blinky")
+            .find(|e| e.board == "sipeed-tang-primer-20k-lite" && e.name == "blinky")
             .unwrap();
         assert_eq!(primer.notes, ["Not yet tried on the board."]);
         assert_eq!(
@@ -143,16 +143,10 @@ mod tests {
     }
 
     /// No "template" examples (Apio's starting projects): Bare Minimum is
-    /// the starting point for every board. Kéfir I's became its ledon, so
-    /// its Bare Minimum has the board's pins.
+    /// the starting point for every board.
     #[test]
     fn no_template_examples() {
-        let list = all();
-        assert!(list.iter().all(|e| e.name != "template"));
-        assert_eq!(
-            starter_example(&list, "kefir").map(|e| e.name.as_str()),
-            Some("ledon")
-        );
+        assert!(all().iter().all(|e| e.name != "template"));
     }
 
     /// Every example opens as a Logix project with its board.
