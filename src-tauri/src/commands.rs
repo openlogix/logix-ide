@@ -59,12 +59,50 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
     }
 }
 
+/// Help > System Info: the IDE's lines, a blank line, then the engine's
+/// `report` (fetched now, so package status is current), as the engine's
+/// recipe "Show system info" describes (`system_info.rs`).
+#[tauri::command]
+pub async fn system_info(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+) -> Result<String, UserError> {
+    use crate::system_info::{self as info, EngineSource};
+    let pkg = app.package_info();
+    let local = engine::dev_engine_binary(std::env::var_os(engine::DEV_ENGINE_VARIABLE))
+        .ok()
+        .flatten();
+    let source = match &local {
+        Some(path) => EngineSource::Local(path),
+        None => EngineSource::Pinned(engine::ENGINE_RELEASE_TAG),
+    };
+    let ide = info::ide_lines(
+        "Logix IDE",
+        &pkg.version.to_string(),
+        &info::os_description(platform::current()),
+        crate::logging::current_file().as_deref(),
+        source,
+    );
+    // Setup holds the lock while it runs: then there's no engine yet.
+    let running = state.engine.try_lock().ok().and_then(|slot| slot.clone());
+    let engine_part = info::engine_part_from(running.as_deref()).await;
+    Ok(info::report(&ide, &engine_part))
+}
+
+/// Puts text on the clipboard (System Info's Copy).
+#[tauri::command]
+pub fn copy_text(text: String) -> Result<(), UserError> {
+    platform::current_implemented()?
+        .copy_text(&text)
+        .context("Couldn't copy the text.")?;
+    Ok(())
+}
+
 /// Makes sure Logix Engine and its packages (the FPGA tools) are
 /// installed and starts it, streaming progress to `on_event`. Safe to call
 /// again (e.g. to retry after an error).
 #[tauri::command]
 pub async fn setup(
-    app: tauri::AppHandle,
     state: State<'_, AppState>,
     on_event: Channel<SetupEvent>,
 ) -> Result<(), UserError> {
@@ -82,8 +120,6 @@ pub async fn setup(
             Ok(ready) => {
                 crate::log!("Engine setup ready");
                 *engine_slot = Some(std::sync::Arc::new(ready));
-                // About shows the boards schema the engine reports.
-                crate::menu::refresh(&app);
             }
             Err(e) => {
                 crate::log!("Engine setup failed: {e:#}");

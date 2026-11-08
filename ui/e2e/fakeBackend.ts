@@ -241,6 +241,8 @@ const fake = {
   usb: null as Real.UsbDevice[] | null,
   /** The folder Show Project Folder showed last (`showProjectFolder`). */
   shownFolder: null as string | null,
+  /** The text System Info's Copy copied last (`copyText`). */
+  copiedText: null as string | null,
   /** The path Copy Project Folder Path copied last (`copyProjectPath`). */
   copiedPath: null as string | null,
   /** The confirmation dialogs shown (`askConfirm`), oldest first. */
@@ -578,6 +580,20 @@ export const backend: typeof Real.backend = {
   },
   showProjectFolder: async (dir) => {
     fake.shownFolder = dir;
+  },
+  systemInfo: async () =>
+    [
+      "Logix IDE " + packageJson.version,
+      "Operating system: macOS 26.5 (macos-arm64)",
+      "Log file: /Users/you/.logix/logs/logix.log",
+      "Logix Engine used: release 2026-11-08",
+      "",
+      "Logix Engine 2026-11-08",
+      "Platform: darwin-arm64",
+      "Boards schema: https://www.openlogix.org/schemas/logix-boards-v1.json",
+    ].join("\n"),
+  copyText: async (text) => {
+    fake.copiedText = text;
   },
   copyProjectPath: async (dir) => {
     fake.copiedPath = dir;

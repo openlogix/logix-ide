@@ -48,6 +48,7 @@
   import DiagramDialog from "./lib/DiagramDialog.svelte";
   import DevicesDialog from "./lib/DevicesDialog.svelte";
   import BoardInfoDialog from "./lib/BoardInfoDialog.svelte";
+  import SystemInfoDialog from "./lib/SystemInfoDialog.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
   import { deviceSummaryLines, isBoardNotFound, needsDeviceChoice } from "./lib/devices";
@@ -955,6 +956,8 @@
   let devicesOpen = $state(false);
   /** Tools > Board Info… (or the ⓘ next to the board), while it's open. */
   let boardInfoOpen = $state(false);
+  /** Help > System Info…, while it's open. */
+  let systemInfoOpen = $state(false);
   let devices = $state<Devices | null>(null);
   let devicesError = $state<string | null>(null);
   let devicesBusy = $state(false);
@@ -1688,6 +1691,10 @@
       if (currentBoardInfo) boardInfoOpen = true;
       return;
     }
+    if (id === "system-info") {
+      systemInfoOpen = true;
+      return;
+    }
     if (id === "settings") {
       if (prefs) settingsOpen = true;
       return;
@@ -1738,6 +1745,7 @@
         | "show-diagram"
         | "devices"
         | "board-info"
+        | "system-info"
         | "settings"
         | "go-to-definition"
         | "toggle-comment"
@@ -1910,6 +1918,10 @@
     }}
     onClose={() => (boardInfoOpen = false)}
   />
+{/if}
+
+{#if systemInfoOpen}
+  <SystemInfoDialog onClose={() => (systemInfoOpen = false)} />
 {/if}
 
 {#if devicePicker}

@@ -73,7 +73,6 @@ where
         info["log_file"].as_str().unwrap_or("?"),
         info["boards_schema"].as_str().unwrap_or("(not reported)")
     );
-    super::info::remember_boards_schema(&info);
 
     let missing = missing_packages(&info);
     if !missing.is_empty() {

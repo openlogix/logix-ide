@@ -63,6 +63,12 @@ pub fn dir() -> Option<PathBuf> {
     )
 }
 
+/// This run's log file, once `init` has created it.
+pub fn current_file() -> Option<PathBuf> {
+    lock().as_ref()?;
+    dir().map(|d| path(&d, 0))
+}
+
 /// Starts this run's log file, keeping the previous ones. Without a log
 /// folder (e.g. an unsupported platform), messages only go to stderr.
 pub fn init(header: &str) {

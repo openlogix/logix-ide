@@ -420,6 +420,7 @@ export type MenuId =
   | "clear-output"
   | "run-this-test"
   | "simulate-this-test"
+  | "system-info"
   // Not a menu item: the recent projects list changed (Clear Menu).
   | "recents-changed"
   // Tools > <dimension> > <value>: the board's variant.
@@ -427,6 +428,15 @@ export type MenuId =
 
 export const backend = {
   appInfo: (): Promise<AppInfo> => invoke<AppInfo>("app_info"),
+
+  /**
+   * Help > System Info: the report for bug reports, the IDE's lines, a
+   * blank line, then the engine's (its `get_engine_info` `report`).
+   */
+  systemInfo: (): Promise<string> => invoke<string>("system_info"),
+
+  /** Puts text on the clipboard. */
+  copyText: (text: string): Promise<void> => invoke<void>("copy_text", { text }),
 
   /**
    * Makes sure Logix Engine and its packages (the FPGA tools) are

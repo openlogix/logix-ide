@@ -181,6 +181,8 @@ const RECENT_PREFIX: &str = "recent:";
 const CLEAR_RECENT: &str = "clear-recent";
 /// Help > Show Log Folder: the Logix log files (see `logging.rs`).
 const SHOW_LOGS: &str = "show-logs";
+/// Help > System Info…: the UI asks for the report (`system_info`).
+const SYSTEM_INFO: &str = "system-info";
 const CLOSE: &str = "close";
 const QUIT: &str = "quit";
 
@@ -200,9 +202,9 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let about = AboutMetadata {
         name: Some("Logix IDE".into()),
         version: Some(app.package_info().version.to_string()),
-        comments: Some(about_comments(
-            crate::engine::ENGINE_RELEASE_TAG,
-            crate::engine::boards_schema(),
+        comments: Some(format!(
+            "\"The Arduino experience, for FPGAs.\"\nPowered by Logix Engine (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
+            crate::engine::ENGINE_RELEASE_TAG
         )),
         copyright: Some("Licensed under the Apache License 2.0.".into()),
         website: Some("https://www.openlogix.org/ide/".into()),
@@ -365,6 +367,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     }
     help = help
         .separator()
+        .item(&MenuItemBuilder::with_id(SYSTEM_INFO, "System Info…").build(app)?)
         .item(&MenuItemBuilder::with_id(SHOW_LOGS, "Show Log Folder").build(app)?);
     if !mac {
         help = help.separator().about(Some(about));
@@ -392,7 +395,8 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
-        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST | BOARD_INFO => {
+        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST | BOARD_INFO
+        | SYSTEM_INFO => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {
@@ -491,18 +495,6 @@ pub fn show_output_menu<R: Runtime>(window: &WebviewWindow<R>) -> tauri::Result<
 }
 
 /// Rebuilds the menu bar, e.g. after the recent projects changed.
-/// About's text: the motto, the engine release, the boards schema the
-/// engine reads once it's running (for writing custom-boards.json; older
-/// engines don't report it), and the Arduino notice.
-fn about_comments(engine_tag: &str, boards_schema: Option<&str>) -> String {
-    let schema = boards_schema
-        .map(|url| format!("\nCustom boards schema: {url}"))
-        .unwrap_or_default();
-    format!(
-        "\"The Arduino experience, for FPGAs.\"\nPowered by Logix Engine (release {engine_tag}).{schema}\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA."
-    )
-}
-
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
     match build(app) {
         Ok(menu) => {
@@ -537,18 +529,6 @@ fn recent_labels(dirs: &[PathBuf]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn about_names_the_boards_schema_when_the_engine_reports_it() {
-        let url = "https://www.openlogix.org/schemas/logix-boards-v1.json";
-        let text = about_comments("2026-11-09", Some(url));
-        assert!(
-            text.contains("Logix Engine (release 2026-11-09).\nCustom boards schema: https://www.openlogix.org/schemas/logix-boards-v1.json\n\n"),
-            "{text}"
-        );
-        // Before setup, or an older engine: no line.
-        assert!(!about_comments("2026-11-08", None).contains("schema"));
-    }
 
     #[test]
     fn help_links_are_web_pages() {

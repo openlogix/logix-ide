@@ -12,6 +12,7 @@ mod platform;
 mod project;
 mod settings;
 mod setup_events;
+mod system_info;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -103,6 +104,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::app_info,
+            commands::system_info,
+            commands::copy_text,
             commands::setup,
             commands::run_task,
             commands::cancel_task,

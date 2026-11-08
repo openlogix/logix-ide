@@ -26,7 +26,7 @@ pub use devices::{
     connected_devices, list_devices, ConnectedDevice, DeviceList, UnreachableDevice, UsbDevice,
 };
 pub use format::format_file;
-pub use info::{boards_schema, program_path};
+pub use info::program_path;
 pub use setup::run_setup;
 pub use task::{boards_problem_outcome, run as run_task, TaskInput};
 
@@ -101,7 +101,7 @@ pub const DEV_ENGINE_VARIABLE: &str = "LOGIX_DEV_ENGINE_BINARY";
 /// released), for Logix developers and users guided by them, such as to
 /// diagnose a GitHub-built IDE. Not for normal use. Unset or empty means
 /// none; a value that isn't a file is an error.
-pub(super) fn dev_engine_binary(
+pub(crate) fn dev_engine_binary(
     value: Option<std::ffi::OsString>,
 ) -> anyhow::Result<Option<PathBuf>> {
     match value {

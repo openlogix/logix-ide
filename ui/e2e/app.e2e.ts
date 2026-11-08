@@ -227,6 +227,22 @@ test("Copy Project Folder Path offers Save As… first, then copies the path and
   );
 });
 
+test("Help > System Info shows the report and copies it", async ({ page }) => {
+  type Fake = { copiedText: string | null };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await start(page);
+  await menu(page, "system-info");
+  const dialog = page.getByRole("dialog", { name: "System Info" });
+  // The IDE's lines, a blank line, then the engine's report.
+  await expect(dialog.locator(".report")).toContainText("Logix Engine used: release 2026-11-08");
+  await expect(dialog.locator(".report")).toContainText("Boards schema: https://www.openlogix.org/schemas/logix-boards-v1.json");
+  await dialog.getByRole("button", { name: "Copy" }).click();
+  await expect(dialog).toContainText("Copied.");
+  expect((await fake()).copiedText).toMatch(/^Logix IDE .*\n\nLogix Engine 2026-11-08\n/s);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
 test("switching projects clears the output", async ({ page }) => {
   await start(page);
   await menu(page, "verify");
