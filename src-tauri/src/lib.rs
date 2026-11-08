@@ -4,6 +4,9 @@ mod commands;
 mod download;
 mod engine;
 mod examples;
+// Build time only: scripts/generate-examples.sh runs it through a test.
+#[cfg(test)]
+mod generate;
 mod language_server;
 pub mod logging;
 mod menu;
