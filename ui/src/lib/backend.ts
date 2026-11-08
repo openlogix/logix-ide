@@ -133,12 +133,13 @@ export interface BoardComparison {
   sameBuild: boolean;
   /**
    * Every aspect, in the engine's order: board, architecture, fpga, size,
-   * constraint_format, pins (later engines may add more).
+   * constraint_format, pins, clock (MHz lists), leds (counts); later
+   * engines may add more, and older ones lack clock and leds.
    */
   aspects: {
     aspect: string;
     same: "yes" | "no" | "unknown";
-    /** The two values, when known: any JSON type, by aspect (text today). */
+    /** The two values, when known: any JSON type, by aspect. */
     from?: unknown;
     to?: unknown;
     /** For people, e.g. "FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.". */

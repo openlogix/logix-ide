@@ -124,10 +124,10 @@ describe("groupByArch", () => {
 describe("boardChangeNote", () => {
   // Logix Engine's compare_boards answers, as the engine words each aspect.
   type Same = "yes" | "no" | "unknown";
-  const a = (aspect: string, same: Same, from: string | null, to: string | null, text: string) => ({
+  const a = (aspect: string, same: Same, from: unknown, to: unknown, text: string) => ({
     aspect, same, text, ...(from === null ? {} : { from }), ...(to === null ? {} : { to }),
   });
-  const cmp = (...aspects: ReturnType<typeof a>[]): BoardComparison => ({ sameBuild: false, aspects });
+  const cmp = (...aspects: BoardComparison["aspects"]): BoardComparison => ({ sameBuild: false, aspects });
   const kefir = cmp(
     a("board", "no", "Alhambra II", "Kéfir I", "Board: Alhambra II → Kéfir I."),
     a("architecture", "yes", "Lattice iCE40", "Lattice iCE40", "Same architecture: Lattice iCE40."),
@@ -153,7 +153,7 @@ describe("boardChangeNote", () => {
     expect(show(boardChangeNote(kefir, "pinout.pcf"))).toEqual([
       "> Board: Alhambra II → Kéfir I. Same FPGA: ICE40HX4K-TQ144.",
       "! The pins may differ: check pinout.pcf.",
-      "! The clock frequency and the LED and button wiring may differ: check the design.",
+      "! The clock frequency and LED and button wiring may differ: check the design.",
     ]);
     expect(show(boardChangeNote(icebreaker, "pinout.pcf"))).toEqual([
       "> FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
@@ -161,11 +161,23 @@ describe("boardChangeNote", () => {
       "! The design may not fit, or may not reach its clock speed.",
       "! The pins, clock frequency and LED and button wiring may differ: check pinout.pcf and the design.",
     ]);
+    // The engine knows both clocks: the change, or nothing when the same.
+    const clock = (same: Same, from: number[], to: number[]) =>
+      cmp(...icebreaker.aspects, a("clock", same, from, to, ""));
+    expect(boardChangeNote(clock("no", [12], [25]), "pinout.pcf")[3].text).toBe(
+      "The clock changes from 12 MHz to 25 MHz, and the pins and LED and button wiring may differ: check pinout.pcf and the design.",
+    );
+    expect(boardChangeNote(clock("yes", [12], [12]), "pinout.pcf")[3].text).toBe(
+      "The pins and LED and button wiring may differ: check pinout.pcf and the design.",
+    );
+    expect(show(boardChangeNote(cmp(...kefir.aspects, a("clock", "no", [12], [100], "")), "pinout.pcf")).slice(2)).toEqual([
+      "! The clock changes from 12 MHz to 100 MHz, and the LED and button wiring may differ: check the design.",
+    ]);
     expect(show(boardChangeNote(colorlight, "pinout.pcf"))).toEqual([
       "> Architecture: Lattice iCE40 → Lattice ECP5.",
       "! Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
       "! Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
-      "! The clock frequency and the LED and button wiring may differ: check the design.",
+      "! The clock frequency and LED and button wiring may differ: check the design.",
     ]);
     expect(boardChangeNote(colorlight, null)[1].text).toBe("Needs a .lpf pin file, with this board's pins.");
     // Nothing to say: no comparison, or the same board.

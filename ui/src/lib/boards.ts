@@ -151,6 +151,24 @@ export function boardChangeNote(c: BoardComparison | null, pinFile: string | nul
   const change = (text: string): NotePoint => ({ text, kind: "change" });
   const risk = (text: string): NotePoint => ({ text, kind: "risky" });
   const pins = pinFile ?? "the pin file";
+  // The clock, when the engine knows both boards' (`clock`, MHz lists).
+  const clock = aspect("clock");
+  const mhz = (v: unknown) =>
+    Array.isArray(v) ? v.map((f) => `${f} MHz`).join(" and ") : null;
+  const clockChange =
+    clock?.same === "no" && mhz(clock.from) && mhz(clock.to)
+      ? `The clock changes from ${mhz(clock.from)} to ${mhz(clock.to)}`
+      : null;
+  const clockSame = clock?.same === "yes";
+  /** The wiring point: the clock's change when known, then what may differ. */
+  const wiring = (mayDiffer: string[], check: string) => {
+    const unknown = [...mayDiffer, ...(clockChange || clockSame ? [] : ["clock frequency"]), "LED and button wiring"];
+    const list =
+      unknown.length === 1 ? unknown[0] : `${unknown.slice(0, -1).join(", ")} and ${unknown[unknown.length - 1]}`;
+    return clockChange
+      ? `${clockChange}, and the ${list} may differ: check ${check}.`
+      : `The ${list} may differ: check ${check}.`;
+  };
   const arch = aspect("architecture");
   if (arch && differs("architecture")) {
     const format = aspect("constraint_format")?.to as string | undefined;
@@ -159,7 +177,7 @@ export function boardChangeNote(c: BoardComparison | null, pinFile: string | nul
       change(arch.text),
       risk(`Needs ${needs}${pinFile ? ` instead of ${pinFile}` : ""}, with this board's pins.`),
       risk(`Probably significant changes: ${String(arch.from)} parts, such as I/O cells and PLLs, won't build.`),
-      risk("The clock frequency and the LED and button wiring may differ: check the design."),
+      risk(wiring([], "the design")),
     ];
   }
   const fpga = aspect("fpga");
@@ -168,7 +186,7 @@ export function boardChangeNote(c: BoardComparison | null, pinFile: string | nul
       change(fpga.text),
       risk("FPGA-specific parts, such as PLLs and special cells, may need changes."),
       risk("The design may not fit, or may not reach its clock speed."),
-      risk(`The pins, clock frequency and LED and button wiring may differ: check ${pins} and the design.`),
+      risk(wiring(["pins"], `${pins} and the design`)),
     ];
   }
   const board = aspect("board");
@@ -176,6 +194,6 @@ export function boardChangeNote(c: BoardComparison | null, pinFile: string | nul
   return [
     change([board.text, fpga?.text].filter(Boolean).join(" ")),
     ...(aspect("pins")?.same === "yes" ? [] : [risk(`The pins may differ: check ${pins}.`)]),
-    risk("The clock frequency and the LED and button wiring may differ: check the design."),
+    risk(wiring([], "the design")),
   ];
 }
