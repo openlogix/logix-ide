@@ -219,4 +219,4 @@ These are the house rules for changes, whether you prompt Claude or not:
 
 ## License
 
-Logix is licensed under the [Apache License 2.0](LICENSE).
+Logix is licensed under [MIT](LICENSE-MIT) or the [Apache License 2.0](LICENSE-APACHE), at your option.

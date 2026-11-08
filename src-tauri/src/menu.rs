@@ -206,7 +206,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             "\"The Arduino experience, for FPGAs.\"\nPowered by Logix Engine (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
             crate::engine::ENGINE_RELEASE_TAG
         )),
-        copyright: Some("Licensed under the Apache License 2.0.".into()),
+        copyright: Some("Licensed under MIT or the Apache License 2.0.".into()),
         website: Some("https://www.openlogix.org/ide/".into()),
         ..Default::default()
     };

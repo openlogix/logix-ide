@@ -1,6 +1,6 @@
 //! Downloading and installing the engine package from the engine's GitHub
 //! releases: `logix-engine-<platform>-<yyyymmdd>.tgz`, with one top-level
-//! `logix-engine/` folder holding the executable and its LICENSE.
+//! `logix-engine/` folder holding the executable and its licenses.
 
 use std::path::{Path, PathBuf};
 
@@ -122,7 +122,8 @@ mod tests {
             &archive,
             &[
                 ("logix-engine/logix-engine", b"#!/bin/sh\n"),
-                ("logix-engine/LICENSE", b"Apache"),
+                ("logix-engine/LICENSE-MIT", b"MIT"),
+                ("logix-engine/LICENSE-APACHE", b"Apache"),
             ],
         );
         let bin_dir = tmp.path().join("engine-bin");
@@ -138,7 +139,8 @@ mod tests {
         .unwrap();
 
         assert_eq!(exe, bin_dir.join("logix-engine"));
-        assert!(bin_dir.join("LICENSE").is_file());
+        assert!(bin_dir.join("LICENSE-MIT").is_file());
+        assert!(bin_dir.join("LICENSE-APACHE").is_file());
         assert!(!archive.exists());
         assert!(is_installed(&bin_dir, "logix-engine", &spec.url));
         assert!(!is_installed(&bin_dir, "logix-engine", "https://other/url"));

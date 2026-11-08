@@ -69,7 +69,7 @@ impl Layout {
             data_dir: data_dir.to_path_buf(),
         }
     }
-    /// The unpacked engine package (the executable and its LICENSE), plus
+    /// The unpacked engine package (the executable and its licenses), plus
     /// the download record.
     fn bin_dir(&self) -> PathBuf {
         self.data_dir.join("engine-bin")

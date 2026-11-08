@@ -80,8 +80,9 @@ earns your trust:
 
 - **Fully open source.** All of Logix's code is public, right here in this
   repository. Anyone can read it, check it, and suggest improvements. It's
-  free to use, change and share under the
-  [Apache License 2.0](LICENSE), except for using the name Logix.
+  free to use, change and share under [MIT](LICENSE-MIT) or the
+  [Apache License 2.0](LICENSE-APACHE), at your option, except for using
+  the name Logix.
 - **Built in the open.** Every installer is built by GitHub's servers from
   this public code, using public build scripts
   ([`.github/workflows`](.github/workflows)). No installer is ever built on
@@ -158,9 +159,10 @@ Logix only compares itself to the Arduino IDE to describe how it feels.
 
 ## License
 
-Logix is licensed under the [Apache License 2.0](LICENSE): you can use,
-copy, change, share and sell it, as long as you keep the license and
-copyright notices and mark the files you changed.
+Logix is licensed under [MIT](LICENSE-MIT) or the
+[Apache License 2.0](LICENSE-APACHE), at your option: you can use, copy,
+change, share and sell it, as long as you keep the copyright and license
+notices.
 
 The one exception is the **name "Logix"**, which isn't part of that (the
 license doesn't give rights to names or trademarks). If you make your own version,

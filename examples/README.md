@@ -6,4 +6,5 @@ with the board and a one-line description.
 
 They're maintained here, edited in place. Many started from
 [Apio](https://github.com/FPGAwars/apio)'s examples. They're licensed under
-the Apache License 2.0, like the rest of this repository.
+MIT or the Apache License 2.0, at your option, like the rest of this
+repository.
