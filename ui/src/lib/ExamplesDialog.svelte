@@ -98,7 +98,7 @@
    * The board picked is one of the project's custom boards: no examples
    * (even with a catalog board's ID, whose examples were written for the
    * catalog board) and no new project (it wouldn't have the project's
-   * custom-boards.json), so only the current-project choice is offered.
+   * boards folder), so only the current-project choice is offered.
    */
   const customOnly = $derived(onlyBoardInfo?.custom === true);
   /** The selected board's group, or the first one if it's filtered out. */
@@ -299,7 +299,7 @@
         {#if customOnly}
           <li class="empty custom-note">
             Custom boards have no examples, and new projects can't use them:
-            they're defined in this project's custom-boards.json.
+            they're defined in this project's boards folder.
           </li>
         {:else if group}
           {#each group.examples as ex (ex.name)}

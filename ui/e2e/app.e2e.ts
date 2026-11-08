@@ -952,35 +952,33 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toBeVisible();
 });
 
-test("a project's custom-boards.json, edited outside Logix, adds its own boards", async ({ page }) => {
+test("a project's boards folder, edited outside Logix, adds its own boards", async ({ page }) => {
   type Fake = {
-    customBoardsOnDisk: Record<string, string>;
+    customBoardsOnDisk: Record<string, Record<string, string>>;
     taskBoardsFolder: unknown;
     scannedBoardsFolder: unknown;
   };
   const folder = "/Users/you/Documents/Logix/mine";
-  const myBoards = {
-    // As users write it, so editors check the file.
-    $schema: "https://www.openlogix.org/schemas/logix-boards-v1.json",
-    "my-upduino": {
-      description: "My UPduino",
-      fpga_id: "ice40up5k-sg48",
-      variants: [
-        {
-          selector: { connection: "usb", memory: "flash" }, programmer: "iceprog",
-          args: "-d d:${BUS}/${DEV} ${BITSTREAM}",
-          usb: { vid: "0403", pid: "6014" }, tested: false,
-        },
-      ],
-    },
+  // boards/my-upduino.json, as users write it, so editors check the file.
+  const myBoard = {
+    $schema: "https://www.openlogix.org/schemas/logix-board-v1.json",
+    name: "My UPduino",
+    fpga_id: "ice40up5k-sg48",
+    variants: [
+      {
+        selector: { connection: "usb", memory: "flash" }, programmer: "iceprog",
+        args: "-d d:${BUS}/${DEV} ${BITSTREAM}",
+        usb: { vid: "0403", pid: "6014" }, tested: false,
+      },
+    ],
   };
-  /** Writes (or, with null, deletes) the file on the fake disk, as another editor would. */
+  /** Writes (or, with null, deletes) boards/my-upduino.json on the fake disk, as another editor would. */
   const writeFile = async (text: string | null) => {
     await page.evaluate(
       ([dir, t]) => {
         const disk = (window as unknown as { __fake: Fake }).__fake.customBoardsOnDisk;
         if (t === null) delete disk[dir as string];
-        else disk[dir as string] = t;
+        else disk[dir as string] = { "my-upduino": t as string };
         // The IDE checks the file when the window gets the focus back.
         window.dispatchEvent(new Event("focus"));
       },
@@ -988,12 +986,12 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
     );
   };
   await page.goto(`/?recents=${folder}`);
-  await writeFile(JSON.stringify(myBoards, null, 2));
+  await writeFile(JSON.stringify(myBoard, null, 2));
   await expect(output(page)).toContainText("Ready.");
   await page.getByRole("button", { name: /mine/ }).click();
   // Not a tab: it's edited outside Logix.
   await expect(tab(page, "main.v")).toBeVisible();
-  await expect(tab(page, "custom-boards.json")).toHaveCount(0);
+  await expect(tab(page, "my-upduino.json")).toHaveCount(0);
 
   // Listed first in "Custom boards" (expanded), and first in its
   // architecture's group too, with the board icon and a tooltip saying
@@ -1009,7 +1007,7 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
     .locator("xpath=following-sibling::li[1]");
   await expect(first).toHaveText(/My UPduino/);
   await expect(first.locator(".custom")).toHaveCount(1);
-  await expect(first).toHaveAttribute("title", /custom-boards\.json/);
+  await expect(first).toHaveAttribute("title", /boards folder/);
   await page.getByRole("combobox").fill("My UPduino");
   await page.getByRole("option", { name: "My UPduino", exact: true }).first().click();
   // Its project options: the current project, with the change note, and
@@ -1028,14 +1026,14 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await expect(boardButton(page).locator(".custom")).toHaveCount(1);
   await expect(boardButton(page)).toHaveAttribute(
     "title",
-    "Custom board: My UPduino\nFrom this project's custom-boards.json",
+    "Custom board: My UPduino\nFrom this project's boards folder",
   );
 
   // The project folder goes with every task and device scan (the engine
   // reads the file there), and the output says where the board is from.
   await menu(page, "verify");
   await expect(status(page)).toContainText("Build succeeded");
-  await expect(output(page)).toContainText("The board is from this project's custom-boards.json.");
+  await expect(output(page)).toContainText("The board is from this project's boards folder.");
   const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
   expect((await fake()).taskBoardsFolder).toBe(folder);
   await expect.poll(async () => (await fake()).scannedBoardsFolder).toBe(folder);
@@ -1046,12 +1044,12 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await writeFile("oops");
   // At the file's full path: it's edited outside Logix. Noticed in the
   // background, so "Ready." comes again after it: it's always last when idle.
-  await expect(output(page)).toContainText(`${folder}/custom-boards.json:1:1: error: Expected value.`);
+  await expect(output(page)).toContainText(`${folder}/boards/my-upduino.json:1:1: error: Expected value.`);
   await expect(output(page)).toContainText(/Expected value\.\s*Ready\.\s*$/);
   await expect(page.locator(".banner")).toHaveCount(0);
   await boardButton(page).click();
   // The note is in the Custom boards group, which stays, empty.
-  await expect(page.locator(".problem-note")).toContainText("custom-boards.json has problems");
+  await expect(page.locator(".problem-note")).toContainText("boards folder has problems");
   await expect(page.locator(".group").first()).toContainText("Custom boards");
   await expect(page.locator(".group").first().locator(".count")).toHaveText("0");
   await page.getByRole("combobox").fill("My UPduino");
@@ -1059,15 +1057,15 @@ test("a project's custom-boards.json, edited outside Logix, adds its own boards"
   await page.keyboard.press("Escape");
   // A task stops with the same problems.
   await menu(page, "verify");
-  await expect(output(page)).toContainText(`${folder}/custom-boards.json:1:1: error: Expected value.`);
+  await expect(output(page)).toContainText(`${folder}/boards/my-upduino.json:1:1: error: Expected value.`);
   // The status line counts them rather than repeating them.
   await expect(status(page)).toHaveText(
-    "Build failed: the project's custom-boards.json has problems.",
+    "Build failed: the project's boards folder has problems.",
   );
 
   // Fixed: said once, and the boards are back.
-  await writeFile(JSON.stringify(myBoards));
-  await expect(output(page)).toContainText("custom-boards.json has no problems now.");
+  await writeFile(JSON.stringify(myBoard));
+  await expect(output(page)).toContainText("boards folder has no problems now.");
   await expect(output(page)).toContainText(/has no problems now\.\s*Ready\.\s*$/);
   await boardButton(page).click();
   await expect(page.locator(".problem-note")).toHaveCount(0);

@@ -1,6 +1,6 @@
 import type { Diagnostic, Task, TaskOutcome } from "./backend";
 import { reportSummary } from "./buildReport";
-import { CUSTOM_BOARDS_FILE } from "./workingProject";
+import { BOARDS_FOLDER_NAME, isBoardFile } from "./workingProject";
 
 const VERB: Record<Task, { running: string; done: string; noun: string }> = {
   build: { running: "Building…", done: "Build succeeded", noun: "Build" },
@@ -51,10 +51,10 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   if (!first) return `${VERB[task].noun} failed. See the output below.`;
   // The output above already lists the file's problems at its full path.
   // No count: the engine may stop before finding them all.
-  // Named `custom-boards.json`, or by its full path in a saved project.
+  // A board file, `boards/<id>.json`, or by its full path in a saved project.
   const file = first.file ?? "";
-  if (file === CUSTOM_BOARDS_FILE || file.endsWith(`/${CUSTOM_BOARDS_FILE}`)) {
-    return `${VERB[task].noun} failed: the project's ${CUSTOM_BOARDS_FILE} has problems.`;
+  if (isBoardFile(file)) {
+    return `${VERB[task].noun} failed: the project's ${BOARDS_FOLDER_NAME} has problems.`;
   }
   // A located error is the tool's own line, already in the output just
   // above: repeated here it read twice (the user's choice, 2026-11-07).

@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub use catalog::{
-    boards_fields, catalog, compare_boards, project_boards, Board, BoardComparison, BoardsFile,
+    boards_fields, catalog, compare_boards, project_boards, Board, BoardComparison, BoardsFolder,
     BoardsProblem, Catalog, Variant,
 };
 pub use client::Engine;

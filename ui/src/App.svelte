@@ -70,7 +70,7 @@
     isFileDirty,
     MAIN_FILE,
     mainFile,
-    CUSTOM_BOARDS_FILE,
+    BOARDS_FOLDER_NAME,
     markSaved,
     renameFile,
     projectModules,
@@ -275,7 +275,7 @@
 
   /**
    * Lines from a background check, not from a command the user ran (such
-   * as custom-boards.json changing on disk). The user waits for "Ready."
+   * as boards folder changing on disk). The user waits for "Ready."
    * before going on, so when nothing runs it comes again after them: it's
    * always the last line while Logix is idle.
    */
@@ -378,7 +378,7 @@
       .catch(() => {});
   }
   /**
-   * With the project's custom-boards.json: every board, as the engine
+   * With the project's boards folder: every board, as the engine
    * merges them (the file's marked `custom`, one with a catalog board's ID
    * replacing it). Empty without the file or with problems in it.
    */
@@ -1059,7 +1059,7 @@
     log(
       `${VERB[task]} ${p.name}${which} for ${boardName(board)}${summary ? ` (${summary})` : ""}…`,
     );
-    if (boardInfo?.custom) log(`The board is from this project's ${CUSTOM_BOARDS_FILE}.`);
+    if (boardInfo?.custom) log(`The board is from this project's ${BOARDS_FOLDER_NAME}.`);
     try {
       const outcome = await backend.runTask(
         task,
@@ -1150,20 +1150,20 @@
   const dirty = $derived(project !== null && isDirty(project));
 
   /**
-   * The folder whose custom-boards.json holds the project's own boards:
+   * The folder whose boards folder holds the project's own boards:
    * the project's (or, for a new project, the example it starts from).
    * The file is edited outside Logix; its path goes with every engine call
    * that deals with boards, and Logix Engine reads it from disk.
    */
   const boardsFolder = $derived(project ? copySource(project) : null);
-  /** Whether the project is saved: its custom-boards.json then reads as its full path. */
+  /** Whether the project is saved: its boards folder then reads as its full path. */
   const boardsSaved = $derived(!!project?.dir);
-  /** custom-boards.json as last seen on disk: its folder and stamp (null without the file). */
+  /** boards folder as last seen on disk: its folder and stamp (null without the file). */
   let boardsSeen = $state<{ folder: string | null; stamp: string | null } | null>(null);
-  /** The problems Logix Engine found in custom-boards.json (null if none). */
+  /** The problems Logix Engine found in boards folder (null if none). */
   let boardsProblem = $state<ProjectBoards["problem"]>(null);
 
-  /** Notices custom-boards.json being added, changed or removed on disk. */
+  /** Notices boards folder being added, changed or removed on disk. */
   async function checkCustomBoards() {
     const folder = boardsFolder;
     let stamp: string | null;
@@ -1215,17 +1215,17 @@
         boardsProblem = found.problem;
         if (found.problem && JSON.stringify(found.problem) !== JSON.stringify(before)) {
           notice(
-            `${CUSTOM_BOARDS_FILE} has problems; its boards are left out until they're fixed:`,
+            `The ${BOARDS_FOLDER_NAME} has problems; its boards are left out until they're fixed:`,
             ...boardsProblemLines(found.problem),
           );
         } else if (!found.problem && before) {
-          notice(`${CUSTOM_BOARDS_FILE} has no problems now.`);
+          notice(`The ${BOARDS_FOLDER_NAME} has no problems now.`);
         }
       })
       .catch((e) => {
         if (boardsSeen !== seen) return;
         projectBoards = [];
-        notice(`Couldn't read the boards in ${CUSTOM_BOARDS_FILE}: ${toUserError(e).message}`);
+        notice(`Couldn't read the boards in the ${BOARDS_FOLDER_NAME}: ${toUserError(e).message}`);
       });
   });
   /**
@@ -2034,7 +2034,7 @@
       value={currentBoard}
       disabled={boards.length === 0}
       problemNote={boardsProblem
-        ? `This project's ${CUSTOM_BOARDS_FILE} has problems (see the output). Its boards are left out until they're fixed.`
+        ? `This project's ${BOARDS_FOLDER_NAME} has problems (see the output). Its boards are left out until they're fixed.`
         : null}
       placeholder={boards.length ? "Select board…" : "Loading boards…"}
       onPick={setBoard}

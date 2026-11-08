@@ -114,10 +114,10 @@ export interface Configuration {
 
 /**
  * The project's own boards as Logix Engine reads them from its
- * custom-boards.json (the file on disk), or the problems it found there:
+ * boards folder (the file on disk), or the problems it found there:
  * its message, and a diagnostic for each problem at line and column, the
  * file named as the user knows it (its full path in a saved project,
- * `custom-boards.json` in one never saved).
+ * `boards folder` in one never saved).
  */
 export interface ProjectBoards {
   boards: Board[];
@@ -166,7 +166,7 @@ export interface Board {
   dimensions: Dimension[];
   /** The combinations that exist; the first is the default. */
   configurations: Configuration[];
-  /** One of the project's own boards (custom-boards.json), not a catalog board. */
+  /** One of the project's own boards (boards folder), not a catalog board. */
   custom: boolean;
   /** The board's FPGA, from Logix Engine's catalog (null if it doesn't say). */
   fpga: Fpga | null;
@@ -663,26 +663,26 @@ export const backend = {
 
   /**
    * The connected USB devices, matched to the catalog's boards and those of
-   * the custom-boards.json in `folder` (the project's folder, `copySource`;
+   * the boards folder in `folder` (the project's folder, `copySource`;
    * null for none). `saved`: whether the project is saved, which decides
-   * how messages name the file (its full path, or `custom-boards.json`).
+   * how messages name the file (its full path, or `boards folder`).
    */
   scanDevices: (folder: string | null, saved: boolean): Promise<Devices> =>
     invoke<Devices>("scan_devices", { folder, saved }),
 
   /**
    * The connected USB devices that fit boards (the catalog's and those of
-   * the custom-boards.json in `folder`), with their boards (silent).
+   * the boards folder in `folder`), with their boards (silent).
    */
   connectedDevices: (folder: string | null, saved: boolean): Promise<ConnectedDevice[]> =>
     invoke<ConnectedDevice[]>("connected_devices", { folder, saved }),
 
   /**
    * The project's own boards, as Logix Engine reads them from the
-   * custom-boards.json in `folder` (the file on disk, edited outside
+   * boards folder in `folder` (the file on disk, edited outside
    * Logix; none without it), or the problems it found in it, the file
    * named as the user knows it: its full path when the project is `saved`,
-   * `custom-boards.json` when it isn't.
+   * `boards folder` when it isn't.
    */
   compareBoards: (
     from: string,
@@ -696,7 +696,7 @@ export const backend = {
     invoke<ProjectBoards>("project_boards", { folder, saved }),
 
   /**
-   * A value that changes whenever the custom-boards.json in `folder` is
+   * A value that changes whenever the boards folder in `folder` is
    * added, changed or removed on disk (null without it), polled to notice
    * edits made outside Logix.
    */

@@ -136,39 +136,39 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
     })
 }
 
-/// The project's custom boards file as Logix Engine gets it: the file on
-/// disk (`custom_boards_file`), and how the engine's messages name it
-/// (`display_paths`). The user's rules (2026-11-07): files are named
-/// relative to the project, except those Logix doesn't show, named by their
-/// full path. custom-boards.json isn't shown, so a saved project's reads as
-/// its full path; a project never saved has no folder, and its file is the
-/// example's, so it reads `custom-boards.json`.
+/// The project's custom boards folder as Logix Engine gets it: the folder
+/// on disk (`custom_boards_folder`), and how the engine's messages name it
+/// and its files (`display_paths`). The user's rules (2026-11-07): files are
+/// named relative to the project, except those Logix doesn't show, named by
+/// their full path. Board files aren't shown, so a saved project's read as
+/// their full path; a project never saved has no folder, and its boards are
+/// the example's, so they read `boards/<id>.json`.
 #[derive(Debug, Clone)]
-pub struct BoardsFile {
+pub struct BoardsFolder {
     pub path: std::path::PathBuf,
     pub shown_as: String,
 }
 
-impl BoardsFile {
-    /// The file at `path`, of a saved project or not.
-    pub fn new(path: std::path::PathBuf, saved: bool) -> BoardsFile {
+impl BoardsFolder {
+    /// The folder at `path`, of a saved project or not.
+    pub fn new(path: std::path::PathBuf, saved: bool) -> BoardsFolder {
         let shown_as = if saved {
             path.to_string_lossy().into_owned()
         } else {
-            crate::project::CUSTOM_BOARDS_FILE.into()
+            crate::project::CUSTOM_BOARDS_FOLDER.into()
         };
-        BoardsFile { path, shown_as }
+        BoardsFolder { path, shown_as }
     }
 
     /// The engine's `display_paths` for it.
     pub fn display_paths(&self) -> Value {
-        json!({"files": [{"path": self.path, "as": self.shown_as}]})
+        json!({"folders": [{"path": self.path, "as": self.shown_as}]})
     }
 }
 
-/// `custom_boards_file` and `display_paths` for a request: the file and
+/// `custom_boards_folder` and `display_paths` for a request: the folder and
 /// how it reads, or nulls without one.
-pub fn boards_fields(file: Option<&BoardsFile>) -> (Value, Value) {
+pub fn boards_fields(file: Option<&BoardsFolder>) -> (Value, Value) {
     match file {
         Some(f) => (json!(f.path), f.display_paths()),
         None => (Value::Null, Value::Null),
@@ -177,7 +177,7 @@ pub fn boards_fields(file: Option<&BoardsFile>) -> (Value, Value) {
 
 /// Why the project's `custom-boards.json` can't be used: Logix Engine's
 /// message, and a diagnostic for each problem, at line and column, the
-/// file named as the request said (`BoardsFile`), for the console.
+/// file named as the request said (`BoardsFolder`), for the console.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BoardsProblem {
@@ -224,13 +224,13 @@ impl BoardsProblem {
 }
 
 /// Every board with the project's own merged in, as Logix Engine reads them
-/// from the custom boards file at `file` (`custom_boards_file`): the
+/// from the custom boards file at `file` (`custom_boards_folder`): the
 /// catalog's and the file's, one with a catalog board's ID replacing it,
 /// the file's marked `custom`. None without a file; or the problems the
 /// engine found in it, at line and column.
 pub async fn project_boards(
     engine: &Engine,
-    file: Option<&BoardsFile>,
+    file: Option<&BoardsFolder>,
 ) -> Result<std::result::Result<Vec<Board>, BoardsProblem>> {
     let Some(file) = file else {
         return Ok(Ok(Vec::new()));
@@ -242,7 +242,7 @@ pub async fn project_boards(
                 "boards": {"fetch": true},
                 "fpgas": {"fetch": true},
                 "architectures": {"fetch": true},
-                "custom_boards_file": file.path,
+                "custom_boards_folder": file.path,
                 "display_paths": file.display_paths(),
             }),
             None,
@@ -291,7 +291,7 @@ pub async fn compare_boards(
     engine: &Engine,
     from: &str,
     to: &str,
-    file: Option<&BoardsFile>,
+    file: Option<&BoardsFolder>,
 ) -> Result<BoardComparison> {
     // No display_paths: the answer names boards, not files.
     let (boards_file, _) = boards_fields(file);
@@ -301,7 +301,7 @@ pub async fn compare_boards(
             json!({
                 "from_board": from,
                 "to_board": to,
-                "custom_boards_file": boards_file,
+                "custom_boards_folder": boards_file,
             }),
             None,
         )
@@ -347,7 +347,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
             let info = &archs[arch.as_str()];
             Board {
                 id: id.clone(),
-                description: b["description"].as_str().unwrap_or(id).to_string(),
+                description: b["name"].as_str().unwrap_or(id).to_string(),
                 arch_label: info["label"].as_str().map(String::from).unwrap_or_else(|| {
                     if arch.is_empty() {
                         "Other".into()
@@ -377,8 +377,8 @@ mod tests {
     fn parses_boards_with_their_architecture() {
         let catalog = json!({
             "boards": {
-                "icezum": {"description": "Icezum Alhambra", "fpga_id": "ice40hx1k-tq144"},
-                "alhambra-ii": {"description": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k"},
+                "icezum": {"name": "Icezum Alhambra", "fpga_id": "ice40hx1k-tq144"},
+                "alhambra-ii": {"name": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k"},
                 "odd": {"fpga_id": "unknown"}
             },
             "fpgas": {
@@ -401,7 +401,7 @@ mod tests {
     fn parses_variants() {
         let catalog = json!({
             "boards": {
-                "sugar": {"description": "Sugar", "fpga_id": "f",
+                "sugar": {"name": "Sugar", "fpga_id": "f",
                     "dimensions": [{"id": "memory", "label": "Memory", "values": [
                         {"id": "flash", "label": "Flash"},
                         {"id": "ram", "label": "RAM", "help": "Lost at power-off."}]}],
@@ -431,16 +431,16 @@ mod tests {
         // The engine names the file as display_paths said.
         let error = json!({
             "category": "request",
-            "message": "The custom boards file has problems. custom-boards.json:4:3: Trailing comma.",
+            "message": "The custom boards folder has problems. boards/mine.json:4:3: Trailing comma.",
             "diagnostics": [
-                {"file": "custom-boards.json", "line": 4, "column": 3,
+                {"file": "boards/mine.json", "line": 4, "column": 3,
                  "severity": "error", "text": "Trailing comma."},
             ]
         });
         let p = BoardsProblem::from_error(&error);
         assert_eq!(
             p.console_lines(),
-            ["\x1b[31mcustom-boards.json:4:3: error: Trailing comma.\x1b[0m"]
+            ["\x1b[31mboards/mine.json:4:3: error: Trailing comma.\x1b[0m"]
         );
         let no_place = BoardsProblem {
             message: "Can't read it.".into(),
@@ -450,17 +450,17 @@ mod tests {
     }
 
     #[test]
-    fn a_boards_file_reads_as_the_user_knows_it() {
-        let path = std::path::PathBuf::from("/Users/you/blinky 3/custom-boards.json");
-        // Saved: its full path (Logix doesn't show it).
-        let saved = BoardsFile::new(path.clone(), true);
+    fn a_boards_folder_reads_as_the_user_knows_it() {
+        let path = std::path::PathBuf::from("/Users/you/blinky 3/boards");
+        // Saved: its full path (Logix doesn't show its files).
+        let saved = BoardsFolder::new(path.clone(), true);
         assert_eq!(
             saved.display_paths(),
-            json!({"files": [{"path": path, "as": "/Users/you/blinky 3/custom-boards.json"}]})
+            json!({"folders": [{"path": path, "as": "/Users/you/blinky 3/boards"}]})
         );
-        // Never saved: the example's file, named relative to the project.
-        let new = BoardsFile::new("/app/examples/x/custom-boards.json".into(), false);
-        assert_eq!(new.shown_as, "custom-boards.json");
+        // Never saved: the example's folder, named relative to the project.
+        let new = BoardsFolder::new("/app/examples/x/boards".into(), false);
+        assert_eq!(new.shown_as, "boards");
         assert_eq!(boards_fields(None), (Value::Null, Value::Null));
     }
 
@@ -468,8 +468,8 @@ mod tests {
     fn reads_each_boards_fpga() {
         let catalog = json!({
             "boards": {
-                "alhambra-ii": {"description": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k"},
-                "mine": {"description": "Mine", "custom": true, "fpga_id": "lfe5u-25f"},
+                "alhambra-ii": {"name": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k"},
+                "mine": {"name": "Mine", "custom": true, "fpga_id": "lfe5u-25f"},
             },
             "fpgas": {
                 "ice40hx4k-tq144-8k": {
@@ -500,7 +500,7 @@ mod tests {
         let catalog = json!({
             "boards": {
                 "mine": {"description": "Mine", "fpga_id": "f", "custom": true},
-                "alhambra-ii": {"description": "Alhambra II", "fpga_id": "f"},
+                "alhambra-ii": {"name": "Alhambra II", "fpga_id": "f"},
             },
             "fpgas": {"f": {"architecture": "ice40"}}
         });

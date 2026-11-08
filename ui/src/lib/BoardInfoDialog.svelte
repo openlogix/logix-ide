@@ -72,7 +72,7 @@
     </header>
     <div class="body">
       {#if current.custom}
-        <p class="muted">One of this project's own boards, from custom-boards.json.</p>
+        <p class="muted">One of this project's own boards, from its boards folder.</p>
       {/if}
       <table>
         <tbody>

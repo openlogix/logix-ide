@@ -6,7 +6,7 @@
   Examples window). No groups from connected devices: the user's decision,
   since which boards a device may be is a guess. Unlike a native list, picking the current
   board is reported too (Logix then offers its examples). The project's own
-  boards (custom-boards.json) come first, in "Custom boards" (expanded
+  boards (boards folder) come first, in "Custom boards" (expanded
   until collapsed), and in their architecture's group too; they carry a
   small board icon, here and on the button, with a tooltip saying where
   they come from. A file with problems leaves the group empty, with one
@@ -36,7 +36,7 @@
     disabled?: boolean;
     /** The button's text when there's no board (e.g. "Loading boards…"). */
     placeholder: string;
-    /** A line at the top of the list, e.g. that custom-boards.json has problems (null for none). */
+    /** A line at the top of the list, e.g. that boards folder has problems (null for none). */
     problemNote?: string | null;
     /** A board was picked (possibly the current one). */
     onPick: (id: string) => void;
@@ -71,7 +71,7 @@
     ),
   );
   /** Where the project's own boards come from, for their tooltips. */
-  const FROM_PROJECT = "From this project's custom-boards.json";
+  const FROM_PROJECT = "From this project's boards folder";
   const selected = $derived(boards.find((b) => b.id === value) ?? null);
   /** An entry's tooltip: where a custom board comes from, and its FPGA. */
   const entryTitle = (b: Board) =>

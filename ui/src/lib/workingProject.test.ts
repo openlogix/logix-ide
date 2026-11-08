@@ -31,9 +31,9 @@ const savedDoc: ProjectDoc = {
 };
 
 describe("workingProject", () => {
-  it("has no special case for custom-boards.json, which isn't a tab", () => {
-    expect(fileRole("custom-boards.json", "main.v")).toBe("design");
-    expect(starterText("custom-boards.json")).toBe("");
+  it("has no special case for board files, which aren't tabs", () => {
+    expect(fileRole("mine.json", "main.v")).toBe("design");
+    expect(starterText("mine.json")).toBe("");
   });
 
   it("starts clean", () => {

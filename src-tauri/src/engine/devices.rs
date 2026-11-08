@@ -100,11 +100,11 @@ pub struct DeviceList {
 /// and the project's own, from its custom boards file.
 pub async fn list_devices(
     engine: &Engine,
-    boards_file: Option<&super::BoardsFile>,
+    boards_file: Option<&super::BoardsFolder>,
 ) -> Result<DeviceList> {
     let args = match boards_file {
         Some(file) => json!({
-            "custom_boards_file": file.path,
+            "custom_boards_folder": file.path,
             "display_paths": file.display_paths(),
         }),
         None => json!({}),

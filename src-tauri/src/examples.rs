@@ -99,15 +99,29 @@ pub fn write(board: &str, name: &str, dst: &Path) -> Result<PathBuf> {
         std::fs::remove_dir_all(dst).with_context(|| format!("can't remove {}", dst.display()))?;
     }
     std::fs::create_dir_all(dst).with_context(|| format!("can't create {}", dst.display()))?;
-    for file in example.files() {
-        let Some(file_name) = file.path().file_name() else {
+    write_dir(example, example.path(), dst)?;
+    Ok(dst.to_path_buf())
+}
+
+/// Writes `dir`'s files, and its subfolders' (such as `boards/`), under
+/// `dst`, by their paths relative to `root`.
+fn write_dir(dir: &Dir<'_>, root: &Path, dst: &Path) -> Result<()> {
+    for file in dir.files() {
+        let Ok(rel) = file.path().strip_prefix(root) else {
             continue;
         };
-        let path = dst.join(file_name);
+        let path = dst.join(rel);
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .with_context(|| format!("can't create {}", parent.display()))?;
+        }
         std::fs::write(&path, file.contents())
             .with_context(|| format!("can't write {}", path.display()))?;
     }
-    Ok(dst.to_path_buf())
+    for sub in dir.dirs() {
+        write_dir(sub, root, dst)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

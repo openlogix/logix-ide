@@ -7,14 +7,14 @@ export interface BoardGroup {
   label: string;
   boards: Board[];
   /**
-   * "custom" (the project's custom-boards.json) and "recent" (Recently
+   * "custom" (the project's boards folder) and "recent" (Recently
    * used) start expanded; architecture groups start collapsed, and their
    * state is remembered. All can be collapsed.
    */
   kind: "custom" | "recent" | "arch";
 }
 
-/** The board picker's group of the project's own boards (custom-boards.json). */
+/** The board picker's group of the project's own boards (boards folder). */
 export const CUSTOM_GROUP = "Custom boards";
 /** The board picker's group of the boards chosen most recently. */
 export const RECENT_GROUP = "Recently used";
@@ -45,8 +45,8 @@ export function groupByArch<T>(
 
 /**
  * The console lines for problems Logix Engine found in the project's
- * custom-boards.json, in red: one per problem at line and column, the
- * file named as the engine was asked (`/Users/you/blinky/custom-boards.json:4:3:
+ * boards folder, in red: one per problem at line and column, the
+ * file named as the engine was asked (`/Users/you/blinky/boards folder:4:3:
  * error: Trailing comma.` in a saved project), like build errors, so the
  * user can find them in the editor they edit it with; the engine's message
  * when it gives no locations.
@@ -62,7 +62,7 @@ export function boardsProblemLines(problem: NonNullable<ProjectBoards["problem"]
 
 /**
  * The board picker's groups: "Custom boards", the project's own boards
- * (custom-boards.json; "custom" rather than "project", since a project's
+ * (boards folder; "custom" rather than "project", since a project's
  * catalog board is its board too: the user's naming, 2026-11-07), then the
  * boards chosen most recently (`recent`, newest first, the ones still
  * offered), then every board by FPGA architecture, the project's own

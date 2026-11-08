@@ -9,10 +9,10 @@
 //! - `logix-ide.toml`: the project's settings, such as its board and the
 //!   board's variant (TOML, so it can hold comments; Logix keeps them when
 //!   it updates a value);
-//! - optionally `custom-boards.json`: the project's own boards, in Logix
-//!   Engine's custom boards format, edited outside Logix (no tab); Logix
-//!   passes its path to the engine, which reads it and reports its
-//!   problems at line and column.
+//! - optionally `boards/`: the project's own boards, a file per board named
+//!   by its ID (`boards/my-board.json`), in Logix Catalog's format, edited
+//!   outside Logix (no tabs); Logix passes the folder's path to the engine,
+//!   which reads it and reports its problems at file, line and column.
 //!
 //! The UI holds the files in memory. Creating, renaming and deleting files
 //! take effect on save, like text edits.
@@ -28,30 +28,46 @@ pub const MAIN_FILE: &str = "main.v";
 /// Accepted main file names, in order of preference.
 pub const MAIN_FILES: &[&str] = &["main.v", "main.sv"];
 pub const SETTINGS_FILE: &str = "logix-ide.toml";
-/// The project's own boards: a Logix Engine custom boards file (a JSON map
-/// from board ID to definition), edited outside Logix.
-pub const CUSTOM_BOARDS_FILE: &str = "custom-boards.json";
+/// The project's own boards: a folder of board files in Logix Catalog's
+/// format, one board each, named by board ID (`boards/my-board.json`),
+/// edited outside Logix. Logix Engine reads it as `custom_boards_folder`.
+pub const CUSTOM_BOARDS_FOLDER: &str = "boards";
 
-/// The custom boards file of the project in `folder` (or of the example a
+/// The custom boards folder of the project in `folder` (or of the example a
 /// new project starts from), when there is one: the path Logix passes to
-/// the engine as `custom_boards_file`.
-pub fn custom_boards_file(folder: &Path) -> Option<PathBuf> {
-    let file = folder.join(CUSTOM_BOARDS_FILE);
-    file.is_file().then_some(file)
+/// the engine as `custom_boards_folder`.
+pub fn custom_boards_folder(folder: &Path) -> Option<PathBuf> {
+    let dir = folder.join(CUSTOM_BOARDS_FOLDER);
+    dir.is_dir().then_some(dir)
 }
 
-/// A value that changes whenever the custom boards file in `folder` is
-/// added, changed or removed on disk (its size and modification time),
-/// polled by the UI to notice edits made outside Logix. None without it.
+/// A value that changes whenever a board file in the custom boards folder
+/// of `folder` is added, changed or removed on disk (each `.json` file's
+/// name, size and modification time), polled by the UI to notice edits made
+/// outside Logix. None without the folder.
 pub fn custom_boards_stamp(folder: &Path) -> Option<String> {
-    let meta = std::fs::metadata(custom_boards_file(folder)?).ok()?;
-    let modified = meta
-        .modified()
-        .ok()
-        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    Some(format!("{}:{modified}", meta.len()))
+    let dir = custom_boards_folder(folder)?;
+    let mut parts: Vec<String> = std::fs::read_dir(&dir)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().ends_with(".json"))
+        .filter_map(|e| {
+            let meta = e.metadata().ok()?;
+            let modified = meta
+                .modified()
+                .ok()
+                .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                .map(|d| d.as_nanos())
+                .unwrap_or(0);
+            Some(format!(
+                "{}:{}:{modified}",
+                e.file_name().to_string_lossy(),
+                meta.len()
+            ))
+        })
+        .collect();
+    parts.sort();
+    Some(parts.join("|"))
 }
 
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
@@ -1123,14 +1139,16 @@ mod tests {
     }
 
     #[test]
-    fn the_custom_boards_file_is_not_a_tab() {
-        assert!(!is_editable("custom-boards.json"));
-        assert!(check_new_file_name("custom-boards.json", &[]).is_err());
+    fn the_custom_boards_folder_is_not_a_tab() {
+        assert!(!is_editable("boards/mine.json"));
+        assert!(check_new_file_name("mine.json", &[]).is_err());
         let tmp = tempfile::tempdir().unwrap();
-        assert_eq!(custom_boards_file(tmp.path()), None);
+        assert_eq!(custom_boards_folder(tmp.path()), None);
         assert_eq!(custom_boards_stamp(tmp.path()), None);
         std::fs::write(tmp.path().join("main.v"), "m").unwrap();
-        std::fs::write(tmp.path().join("custom-boards.json"), "[]").unwrap();
+        let dir = tmp.path().join("boards");
+        std::fs::create_dir(&dir).unwrap();
+        std::fs::write(dir.join("mine.json"), "{}").unwrap();
         std::fs::write(tmp.path().join("data.json"), "{}").unwrap();
         let names: Vec<_> = load(tmp.path())
             .unwrap()
@@ -1139,27 +1157,33 @@ mod tests {
             .map(|f| f.name)
             .collect();
         assert_eq!(names, ["main.v"]);
-        let file = tmp.path().join("custom-boards.json");
-        assert_eq!(custom_boards_file(tmp.path()), Some(file.clone()));
-        // Edits on disk change the stamp; deleting the file removes it.
+        assert_eq!(custom_boards_folder(tmp.path()), Some(dir.clone()));
+        // Edits on disk change the stamp: a changed, added or removed board
+        // file; other files don't count; removing the folder removes it.
         let before = custom_boards_stamp(tmp.path()).unwrap();
-        std::fs::write(&file, "{ }").unwrap();
-        assert_ne!(custom_boards_stamp(tmp.path()).unwrap(), before);
-        std::fs::remove_file(&file).unwrap();
+        std::fs::write(dir.join("mine.json"), "{ }").unwrap();
+        let changed = custom_boards_stamp(tmp.path()).unwrap();
+        assert_ne!(changed, before);
+        std::fs::write(dir.join("README.md"), "notes").unwrap();
+        assert_eq!(custom_boards_stamp(tmp.path()).unwrap(), changed);
+        std::fs::write(dir.join("other.json"), "{}").unwrap();
+        assert_ne!(custom_boards_stamp(tmp.path()).unwrap(), changed);
+        std::fs::remove_dir_all(&dir).unwrap();
         assert_eq!(custom_boards_stamp(tmp.path()), None);
     }
 
     #[test]
-    fn save_as_keeps_the_custom_boards_file() {
+    fn save_as_keeps_the_custom_boards_folder() {
         let tmp = tempfile::tempdir().unwrap();
         let (from, to) = (tmp.path().join("a"), tmp.path().join("b"));
         std::fs::create_dir(&from).unwrap();
         std::fs::write(from.join("main.v"), "m").unwrap();
-        std::fs::write(from.join("custom-boards.json"), "{}").unwrap();
+        std::fs::create_dir(from.join("boards")).unwrap();
+        std::fs::write(from.join("boards").join("mine.json"), "{}").unwrap();
         let files = load(&from).unwrap().files;
         save_as(&to, Some(&from), &files, &[], None, NO_VARIANT, |_| Ok(())).unwrap();
         assert_eq!(
-            std::fs::read_to_string(to.join("custom-boards.json")).unwrap(),
+            std::fs::read_to_string(to.join("boards").join("mine.json")).unwrap(),
             "{}"
         );
     }

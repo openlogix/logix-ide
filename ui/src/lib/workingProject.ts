@@ -129,10 +129,20 @@ export type FileRole =
   | "otherPins";
 
 /**
- * The project's own boards: a Logix Engine custom boards file (board ID to
- * definition) in the project folder, edited outside Logix (not a tab).
+ * The project's own boards: a folder in the project, a board file each in
+ * Logix Catalog's format, named by board ID (`boards/my-board.json`),
+ * edited outside Logix (not tabs). Logix Engine reads it as
+ * `custom_boards_folder`.
  */
-export const CUSTOM_BOARDS_FILE = "custom-boards.json";
+export const CUSTOM_BOARDS_FOLDER = "boards";
+
+/** How messages name the project's custom boards folder. */
+export const BOARDS_FOLDER_NAME = "boards folder";
+
+/** Whether `file` (as a diagnostic names it) is one of the project's board files. */
+export function isBoardFile(file: string): boolean {
+  return file.endsWith(".json") && (file.startsWith(`${CUSTOM_BOARDS_FOLDER}/`) || file.includes(`/${CUSTOM_BOARDS_FOLDER}/`));
+}
 
 /** Pin constraint file extensions (as `CONSTRAINT_EXTENSIONS` in `build_dir.rs`). */
 const PIN_FILE = /\.(pcf|lpf|cst|xdc)$/i;

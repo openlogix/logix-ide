@@ -235,11 +235,11 @@ pub struct ProjectBoards {
 /// The custom boards file of the project in `folder` (its folder, or the
 /// example a new project starts from): the file on disk, which the user
 /// edits outside Logix; Logix Engine reads it and reports its problems at
-/// line and column, named as the user knows it (`engine::BoardsFile`: its
+/// line and column, named as the user knows it (`engine::BoardsFolder`: its
 /// full path when the project is `saved`, `custom-boards.json` when it
 /// isn't). None without a folder or without the file.
-fn boards_file(folder: Option<&str>, saved: bool) -> Option<engine::BoardsFile> {
-    project::custom_boards_file(Path::new(folder?)).map(|f| engine::BoardsFile::new(f, saved))
+fn boards_file(folder: Option<&str>, saved: bool) -> Option<engine::BoardsFolder> {
+    project::custom_boards_folder(Path::new(folder?)).map(|f| engine::BoardsFolder::new(f, saved))
 }
 
 /// A value that changes whenever the project's custom-boards.json is

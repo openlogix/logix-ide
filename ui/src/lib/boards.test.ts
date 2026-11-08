@@ -193,13 +193,13 @@ describe("boardsProblemLines", () => {
       boardsProblemLines({
         message: "The custom boards file has problems.",
         diagnostics: [
-          { severity: "error", file: "/Users/you/blinky 3/custom-boards.json", line: 4, column: 3, message: "Trailing comma." },
-          { severity: "warning", file: "/Users/you/blinky 3/custom-boards.json", line: 9, column: null, message: "Odd." },
+          { severity: "error", file: "/Users/you/blinky 3/boards/mine.json", line: 4, column: 3, message: "Trailing comma." },
+          { severity: "warning", file: "/Users/you/blinky 3/boards/mine.json", line: 9, column: null, message: "Odd." },
         ],
       }),
     ).toEqual([
-      "\x1b[31m/Users/you/blinky 3/custom-boards.json:4:3: error: Trailing comma.\x1b[0m",
-      "\x1b[31m/Users/you/blinky 3/custom-boards.json:9: warning: Odd.\x1b[0m",
+      "\x1b[31m/Users/you/blinky 3/boards/mine.json:4:3: error: Trailing comma.\x1b[0m",
+      "\x1b[31m/Users/you/blinky 3/boards/mine.json:9: warning: Odd.\x1b[0m",
     ]);
   });
   it("gives the message when there are no locations", () => {

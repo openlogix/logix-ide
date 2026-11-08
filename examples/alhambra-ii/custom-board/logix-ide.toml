@@ -1,6 +1,6 @@
 # Logix IDE project settings.
 board = "alhambra-ii"
-summary = "Demonstrates the use of custom board definitions (custom-boards.json)"
+summary = "Demonstrates the use of custom board definitions (the boards folder)"
 notes = [
-  "Defines a new board, Alhambra II (iceprog), in custom-boards.json. To use it, switch to it in the board list after opening the example.",
+  "Defines a new board, Alhambra II (iceprog), in boards/alhambra-ii-iceprog.json. To use it, switch to it in the board list after opening the example.",
 ]

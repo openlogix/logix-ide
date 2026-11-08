@@ -45,28 +45,28 @@ describe("outcomeText", () => {
         devices: [],
       }),
     ).toBe("Upload failed: No Alhambra II is connected. Connect the Alhambra II by USB, then retry.");
-    // custom-boards.json: the output lists its problems, so only the file.
+    // A board file: the output lists its problems, so only the folder.
     expect(
       outcomeText("build", {
         ok: false,
-        diagnostics: [err("custom-boards.json", 4, "Expected `,` or `}`.")],
+        diagnostics: [err("boards/mine.json", 4, "Expected `,` or `}`.")],
         report: null, cancelled: false, graphSvg: null, testbenches: [],
         seconds: 0,
         action: null,
         devices: [],
       }),
-    ).toBe("Build failed: the project's custom-boards.json has problems.");
+    ).toBe("Build failed: the project's boards folder has problems.");
     // In a saved project, the engine names it by its full path.
     expect(
       outcomeText("build", {
         ok: false,
-        diagnostics: [err("/Users/you/blinky 3/custom-boards.json", 4, "Expected `,` or `}`.")],
+        diagnostics: [err("/Users/you/blinky 3/boards/mine.json", 4, "Expected `,` or `}`.")],
         report: null, cancelled: false, graphSvg: null, testbenches: [],
         seconds: 0,
         action: null,
         devices: [],
       }),
-    ).toBe("Build failed: the project's custom-boards.json has problems.");
+    ).toBe("Build failed: the project's boards folder has problems.");
     expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1, action: null, devices: [] })).toBe(
       "Upload failed. See the output below.",
     );

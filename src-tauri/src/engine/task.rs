@@ -78,11 +78,11 @@ pub struct TaskInput<'a> {
     /// "usb", "memory": "ram"}`); `None` for the board's default.
     pub board_variant: Option<&'a super::Variant>,
     /// The project's custom boards file (`custom-boards.json` in the
-    /// project folder, on disk), as `custom_boards_file` with every engine
+    /// project folder, on disk), as `custom_boards_folder` with every engine
     /// call that deals with boards, when the project has one, with the
     /// `display_paths` that name it. Problems in it stop the task before it
     /// runs (`boards_problem_outcome`).
-    pub custom_boards: Option<&'a super::BoardsFile>,
+    pub custom_boards: Option<&'a super::BoardsFolder>,
     /// The board's FPGA architecture, for the build report.
     pub arch: &'a str,
     /// The prepared build folder: the project's files and other contents.
@@ -140,7 +140,7 @@ pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOu
     if diagnostics.is_empty() {
         // Still in the file, so the status line can say which file.
         diagnostics.push(Diagnostic {
-            file: Some(crate::project::CUSTOM_BOARDS_FILE.into()),
+            file: Some(crate::project::CUSTOM_BOARDS_FOLDER.into()),
             ..error(&problem.message)
         });
     }
@@ -175,7 +175,7 @@ where
         on_event,
         cancel,
         sources: design_files(input.files),
-        custom_boards_file: super::boards_fields(input.custom_boards).0,
+        custom_boards_folder: super::boards_fields(input.custom_boards).0,
         display_paths: super::boards_fields(input.custom_boards).1,
         folder: input.source_folder.to_string_lossy().into_owned(),
         build_folder: build_folder(input.source_folder),
@@ -218,7 +218,7 @@ struct Runner<'a, F> {
     folder: String,
     /// The project's custom boards file (or null), for every engine call
     /// that deals with boards, and how messages name it (`display_paths`).
-    custom_boards_file: Value,
+    custom_boards_folder: Value,
     display_paths: Value,
     build_folder: PathBuf,
 }
@@ -272,7 +272,7 @@ where
                     json!({
                         "board": input.board,
                         "board_variant": input.board_variant,
-                        "custom_boards_file": self.custom_boards_file,
+                        "custom_boards_folder": self.custom_boards_folder,
                         "display_paths": self.display_paths,
                         "top_module": TOP_MODULE,
                         "source_folder": self.folder,
@@ -297,7 +297,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards_file": self.custom_boards_file,
+                        "custom_boards_folder": self.custom_boards_folder,
                         "display_paths": self.display_paths,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
@@ -332,7 +332,7 @@ where
                     json!({
                         "build_folder": self.build_folder(),
                         "device": device,
-                        "custom_boards_file": self.custom_boards_file,
+                        "custom_boards_folder": self.custom_boards_folder,
                         "display_paths": self.display_paths,
                     }),
                 )
@@ -363,7 +363,7 @@ where
                 "list_devices",
                 json!({
                     "build_folder": self.build_folder(),
-                    "custom_boards_file": self.custom_boards_file,
+                    "custom_boards_folder": self.custom_boards_folder,
                     "display_paths": self.display_paths,
                 }),
             )
@@ -409,7 +409,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards_file": self.custom_boards_file,
+                        "custom_boards_folder": self.custom_boards_folder,
                         "display_paths": self.display_paths,
                     "source_folder": self.folder,
                     "source_files": self.sources,
@@ -446,7 +446,7 @@ where
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards_file": self.custom_boards_file,
+                        "custom_boards_folder": self.custom_boards_folder,
                         "display_paths": self.display_paths,
                     "source_folder": self.folder,
                     "source_files": self.sources,

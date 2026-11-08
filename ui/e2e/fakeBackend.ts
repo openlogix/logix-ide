@@ -65,37 +65,45 @@ function fakeCompare(a: Real.Board | undefined, b: Real.Board | undefined): Real
 }
 
 /**
- * The project's own boards as the fake engine reads them from the text of
- * custom-boards.json (on the fake disk, `fake.customBoardsOnDisk`): enough of Logix Engine's rules to test the UI (valid
- * JSON, an object, board IDs, an FPGA, variants with a selector), with each problem at the line of the board's key (line 1 for
- * invalid JSON), and the FPGA's family taken from its ID. The file is named
- * as the IDE asks the engine to (display_paths): its full path when the
- * project is `saved`, `custom-boards.json` when it isn't.
+ * The project's own boards as the fake engine reads them from the board
+ * files in its boards folder (on the fake disk, `fake.customBoardsOnDisk`,
+ * board ID to file text): enough of Logix Engine's rules to test the UI
+ * (valid JSON, an object, board IDs, an FPGA, variants with a selector),
+ * with each problem at line 1 of its file, and the FPGA's family taken from
+ * its ID. Files are named as the IDE asks the engine to (display_paths):
+ * the folder's full path when the project is `saved`, `boards` when it
+ * isn't, then the file name.
  */
 function fakeProjectBoards(
-  text: string | null,
+  files: Record<string, string> | null,
   folder: string | null,
   saved: boolean,
 ): Real.ProjectBoards {
-  if (text === null || text.trim() === "") return { boards: [], problem: null };
-  const file = saved ? `${folder}/custom-boards.json` : "custom-boards.json";
-  const problem = (message: string, line = 1): Real.ProjectBoards => ({
-    boards: [],
-    problem: {
-      message: `The custom boards file has problems. ${file}:${line}:1: ${message}`,
-      diagnostics: [{ severity: "error", file, line, column: 1, message }],
-    },
-  });
-  let boards: unknown;
-  try {
-    boards = JSON.parse(text);
-  } catch {
-    return problem("Expected value.");
+  if (files === null) return { boards: [], problem: null };
+  const base = saved ? `${folder}/boards` : "boards";
+  const problem = (message: string, id: string): Real.ProjectBoards => {
+    const file = `${base}/${id}.json`;
+    return {
+      boards: [],
+      problem: {
+        message: `The custom boards folder has problems. ${file}:1:1: ${message}`,
+        diagnostics: [{ severity: "error", file, line: 1, column: 1, message }],
+      },
+    };
+  };
+  const boards: Record<string, unknown> = {};
+  for (const [id, text] of Object.entries(files)) {
+    let board: unknown;
+    try {
+      board = JSON.parse(text);
+    } catch {
+      return problem("Expected value.", id);
+    }
+    if (typeof board !== "object" || board === null || Array.isArray(board)) {
+      return problem("Expected a board: an object with name, fpga_id and variants.", id);
+    }
+    boards[id] = board;
   }
-  if (typeof boards !== "object" || boards === null || Array.isArray(boards)) {
-    return problem("Invalid type: expected a map.");
-  }
-  const lineOf = (id: string) => text.split("\n").findIndex((l) => l.includes(`"${id}"`)) + 1 || 1;
   try {
     // As the engine's get_catalog merges them: the file's boards with the
     // catalog's, one with a catalog board's ID replacing it, by description.
@@ -107,7 +115,7 @@ function fakeProjectBoards(
     return { boards: merged, problem: null };
   } catch (e) {
     const { message, id } = e as { message: string; id: string };
-    return problem(message, lineOf(id));
+    return problem(message, id);
   }
 }
 
@@ -121,10 +129,9 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
   // Value labels, as the catalog's boards have them.
   const labels = new Map<string, Real.Dimension["values"][number]>();
   for (const b of BOARDS) for (const d of b.dimensions) for (const v of d.values) labels.set(`${d.id}:${v.id}`, v);
-  // "$schema" names the file's schema, as the engine allows (it checks the value).
-  return Object.entries(boards).filter(([id]) => id !== "$schema").map(([id, item]) => {
+  return Object.entries(boards).map(([id, item]) => {
     current = id;
-    const b = { ...(item as object), id } as { id: string; description?: string; fpga_id?: string; variants?: { selector: { connection: string; memory: string }; tested: boolean }[] };
+    const b = { ...(item as object), id } as { id: string; name?: string; fpga_id?: string; variants?: { selector: { connection: string; memory: string }; tested: boolean }[] };
     if (!/^[a-z0-9-]+$/.test(b.id)) fail(`${JSON.stringify(b.id)} isn't a board ID: use lowercase letters, digits and hyphens.`);
     if (!b.fpga_id) fail("Missing field `fpga_id`.");
     if (!b.variants?.length) fail("A board needs at least one variant.");
@@ -142,7 +149,7 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
     return {
       ...like,
       id: b.id!,
-      description: b.description ?? b.id!,
+      description: b.name ?? b.id!,
       fpga: sameFpga ?? { id: b.fpga_id!, partNumber: b.fpga_id!.toUpperCase(), size: "" },
       dimensions: dims,
       configurations: b.variants!.map((v) => ({
@@ -267,13 +274,14 @@ const fake = {
   /** The boards chosen most recently, newest first (`setLastBoard`). */
   recentBoards: [] as string[],
   /**
-   * The custom-boards.json files on the fake disk, by project folder: the
-   * file the user edits outside Logix (change it to simulate an edit).
+   * The boards folders on the fake disk, by project folder: board ID to
+   * the text of its file, which the user edits outside Logix (change it to
+   * simulate an edit).
    */
-  customBoardsOnDisk: {} as Record<string, string>,
-  /** The folder whose custom-boards.json the last task run used (`runTask`). */
+  customBoardsOnDisk: {} as Record<string, Record<string, string>>,
+  /** The folder whose boards folder the last task run used (`runTask`). */
   taskBoardsFolder: null as string | null,
-  /** The folder whose custom-boards.json the last connected-devices scan used. */
+  /** The folder whose boards folder the last connected-devices scan used. */
   scannedBoardsFolder: null as string | null,
   /** The variant of the last task run (`runTask`). */
   taskVariant: null as Real.Variant | null,
@@ -286,8 +294,8 @@ const fake = {
 };
 (window as unknown as { __fake: typeof fake }).__fake = fake;
 
-/** The text of the custom-boards.json in `folder` on the fake disk (null without it). */
-function boardsOnDisk(folder: string | null): string | null {
+/** The board files in `folder`'s boards folder on the fake disk (null without it). */
+function boardsOnDisk(folder: string | null): Record<string, string> | null {
   return folder === null ? null : (fake.customBoardsOnDisk[folder] ?? null);
 }
 
@@ -662,7 +670,10 @@ export const backend: typeof Real.backend = {
     return fakeCompare(find(from), find(to));
   },
   // The text itself: it changes whenever the file does.
-  customBoardsStamp: async (folder) => boardsOnDisk(folder),
+  customBoardsStamp: async (folder) => {
+    const files = boardsOnDisk(folder);
+    return files === null ? null : JSON.stringify(files);
+  },
   showOutputMenu: async () => {
     fake.outputMenu += 1;
   },
