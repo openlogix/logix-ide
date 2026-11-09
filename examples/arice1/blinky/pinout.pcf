@@ -1,12 +1,9 @@
-# Constraint file of the blinky example for the ARiCE v1 board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of ARiCE v1 used by main.v.
 
-# Clock (12MHz).
+# sys_clk: 12 MHz clock.
 set_io sys_clk 35
 
-# LEDs, active low.
-# On the FPGA's dedicated RGB LED driver pins.
+# rgb_led: 3 LEDs (active low), on the FPGA's RGB LED driver pads.
 set_io rgb_led[0] 39
 set_io rgb_led[1] 40
 set_io rgb_led[2] 41

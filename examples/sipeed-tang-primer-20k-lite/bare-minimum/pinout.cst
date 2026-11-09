@@ -1,7 +1,5 @@
-// Constraint file of the bare-minimum example for the Sipeed Tang Primer 20K Lite board.
-// It assigns the design's signals to FPGA pins, and lists only
-// the pins that this example uses.
+// Pins of Sipeed Tang Primer 20K Lite used by main.v.
 
-// Clock (27MHz).
-IO_LOC  "sys_clk" H11;
+// sys_clk: 27 MHz clock.
+IO_LOC "sys_clk" H11;
 IO_PORT "sys_clk" IO_TYPE=LVCMOS33;

@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "upduino3"
-summary = "Blinks the RGB LED in red"
+summary = "Blinks the RGB LED in green about once a second."
+notes = ["No clock works as shipped: the design uses the FPGA's internal oscillator."]

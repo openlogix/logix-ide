@@ -1,34 +1,24 @@
-// Testbench for main.v.
-// Run it in batch mode with Run Tests, or view the signals
-// in GTKWave with Simulate.
-
-// Checks that 'actual_val' equals 'expected_val'. On a mismatch, reports
-// an error with both values. Run Tests stops at the first error; Simulate
-// runs to the end so the signals can be viewed.
-`define EXPECT_EQ(actual_val, expected_val) if ((actual_val) !== (expected_val)) $error("expected 'h%h, actual 'h%h", (expected_val), (actual_val));
+// Testbench for the ODT_IcyBlue_Feather's bare minimum: checks that the LED
+// is off. Run Tests checks it; Simulate shows the signals.
 
 `timescale 1ns / 1ps
 
+// Reports an error, with both values, when actual_val isn't expected_val.
+`define EXPECT_EQ(actual_val, expected_val) if ((actual_val) !== (expected_val)) $error("expected %b, got %b", (expected_val), (actual_val));
+
 module main_tb;
 
-  // The design's outputs.
-  wire       led;
+  wire led;
 
-  // The design.
-  main dut (
-      .led(led)
-  );
+  main dut (.led(led));
 
-  // The test sequence.
   initial begin
     $dumpvars(0, main_tb);
 
-    // At the start, the LEDs are off and the held pins at their levels.
-    #1;
-    `EXPECT_EQ(led, 1'b0)
+    #100;
+    `EXPECT_EQ(led, 1'b0)  // Off (lit when 1).
 
     // Add your own checks here.
-    #100;
 
     $display("End of simulation");
     $finish;

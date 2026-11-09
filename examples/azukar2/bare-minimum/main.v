@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the AZUKAR v2: the board's pins, ready for your design.
+// It does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk, // 12MHz clock
-    output [7:0] leds     // Off. Active high.
+  input sys_clk,     // 12 MHz clock.
+  output [7:0] leds  // 8 LEDs, lit when 1.
 );
 
-  // leds stays off.
+  // Everything off for now.
   assign leds = 8'b00000000;
 
   // Your design goes here.

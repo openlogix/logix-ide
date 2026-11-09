@@ -1,9 +1,7 @@
-# Constraint file of the blinky example for the EDU-CIAA-FPGA board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of EDU-CIAA-FPGA used by main.v.
 
-# Clock (12MHz).
+# sys_clk: 12 MHz clock.
 set_io sys_clk 94
 
-# LED, active high.
+# led: LED (active high).
 set_io led 1

@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the Sipeed Tang Primer 20K Dock: the board's pins, ready
+// for your design. It does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk, // 27MHz clock
-    output [5:0] leds     // Off. Active level unknown, taken as high.
+  input sys_clk,     // 27 MHz clock.
+  output [5:0] leds  // 6 LEDs, lit when 1.
 );
 
-  // leds stays off.
+  // Everything off for now.
   assign leds = 6'b000000;
 
   // Your design goes here.

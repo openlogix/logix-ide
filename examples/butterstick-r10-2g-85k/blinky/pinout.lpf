@@ -1,32 +1,31 @@
-# Constraint file of the blinky example for the butterstick r1.0 board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of butterstick r1.0 used by main.v.
 
-# Clock (30MHz).
+# sys_clk: 30 MHz clock.
 LOCATE COMP "sys_clk" SITE "B12";
-IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+IOBUF PORT "sys_clk" IO_TYPE=LVCMOS33;
 FREQUENCY PORT "sys_clk" 30 MHZ;
 
-# LED matrix, active high: an LED lights when its pin and a color's are on.
+# leds: LED matrix, 7 RGB LEDs (active high): an LED lights when its pin
+# in leds and a color pin in leds_colors are both 1.
 LOCATE COMP "leds[0]" SITE "C13";
-IOBUF  PORT "leds[0]" IO_TYPE=LVCMOS33;
 LOCATE COMP "leds[1]" SITE "D12";
-IOBUF  PORT "leds[1]" IO_TYPE=LVCMOS33;
 LOCATE COMP "leds[2]" SITE "U2";
-IOBUF  PORT "leds[2]" IO_TYPE=LVCMOS33;
 LOCATE COMP "leds[3]" SITE "T3";
-IOBUF  PORT "leds[3]" IO_TYPE=LVCMOS33;
 LOCATE COMP "leds[4]" SITE "D13";
-IOBUF  PORT "leds[4]" IO_TYPE=LVCMOS33;
 LOCATE COMP "leds[5]" SITE "E13";
-IOBUF  PORT "leds[5]" IO_TYPE=LVCMOS33;
 LOCATE COMP "leds[6]" SITE "C16";
-IOBUF  PORT "leds[6]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds[0]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds[1]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds[2]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds[3]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds[4]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds[5]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds[6]" IO_TYPE=LVCMOS33;
 
-# The matrix's colors: [0] red, [1] green, [2] blue.
-LOCATE COMP "leds_color[0]" SITE "T1";
-IOBUF  PORT "leds_color[0]" IO_TYPE=LVCMOS33;
-LOCATE COMP "leds_color[1]" SITE "U1";
-IOBUF  PORT "leds_color[1]" IO_TYPE=LVCMOS33;
-LOCATE COMP "leds_color[2]" SITE "R1";
-IOBUF  PORT "leds_color[2]" IO_TYPE=LVCMOS33;
+# leds_colors: the LED matrix's colors, [0] red, [1] green, [2] blue.
+LOCATE COMP "leds_colors[0]" SITE "T1";
+LOCATE COMP "leds_colors[1]" SITE "U1";
+LOCATE COMP "leds_colors[2]" SITE "R1";
+IOBUF PORT "leds_colors[0]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds_colors[1]" IO_TYPE=LVCMOS33;
+IOBUF PORT "leds_colors[2]" IO_TYPE=LVCMOS33;

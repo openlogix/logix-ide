@@ -1,11 +1,6 @@
-# Constraint file of the blinky example for the UPduino v3.0 board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
-# The design uses the FPGA's internal 48MHz oscillator, so there is
-# no clock pin.
+# Pins of UPduino v3.0 used by main.v.
 
-# RGB LED, active low: [0] red, [1] green, [2] blue.
-# On the FPGA's dedicated RGB LED driver pins.
+# rgb_led: RGB LED (active low), on the FPGA's RGB LED driver pads.
 set_io rgb_led[0] 41
 set_io rgb_led[1] 39
 set_io rgb_led[2] 40

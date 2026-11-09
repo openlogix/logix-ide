@@ -1,11 +1,9 @@
-// Constraint file of the blinky example for the BrisbaneSilicon 9k board.
-// It assigns the design's signals to FPGA pins, and lists only
-// the pins that this example uses.
+// Pins of BrisbaneSilicon 9k used by main.v.
 
-// Clock (27MHz).
-IO_LOC  "sys_clk" 52;
+// sys_clk: 27 MHz clock.
+IO_LOC "sys_clk" 52;
 IO_PORT "sys_clk" IO_TYPE=LVCMOS33;
 
-// LED, active low.
-IO_LOC  "led" 16;
+// led: LED (active low).
+IO_LOC "led" 16;
 IO_PORT "led" IO_TYPE=LVCMOS33;

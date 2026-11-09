@@ -1,16 +1,14 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the iCEBreaker: the board's pins, ready for your
+// design. It does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk,   // 12MHz clock
-    output       led,       // An LED, off. Active low.
-    output [4:0] pmod_leds  // Off. Active high.
+  input sys_clk,         // 12 MHz clock.
+  output led,            // LED, lit when 0.
+  output [4:0] pmod_leds // 5 LEDs, lit when 1.
 );
 
-  // led stays off.
+  // Everything off for now.
   assign led = 1'b1;
-
-  // pmod_leds stays off.
   assign pmod_leds = 5'b00000;
 
   // Your design goes here.

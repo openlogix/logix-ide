@@ -1,12 +1,10 @@
-# Constraint file of the bare-minimum example for the Icesugar Pro board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of Icesugar Pro used by main.v.
 
-# Clock (25MHz).
+# sys_clk: 25 MHz clock.
 LOCATE COMP "sys_clk" SITE "P6";
-IOBUF  PORT "sys_clk" IO_TYPE=LVCMOS33;
+IOBUF PORT "sys_clk" IO_TYPE=LVCMOS33;
 FREQUENCY PORT "sys_clk" 25 MHZ;
 
-# LED, active low.
+# led: LED (active low).
 LOCATE COMP "led" SITE "A11";
-IOBUF  PORT "led" IO_TYPE=LVCMOS33;
+IOBUF PORT "led" IO_TYPE=LVCMOS33;

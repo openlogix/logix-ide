@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the Alinx ARTIX-7 AX7035: the board's pins, ready for
+// your design. It does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk, // 50MHz clock
-    output [3:0] leds_n   // Off. Active low.
+  input sys_clk,       // 50 MHz clock.
+  output [3:0] leds_n  // 4 LEDs, lit when 0.
 );
 
-  // leds_n stays off.
+  // Everything off for now.
   assign leds_n = 4'b1111;
 
   // Your design goes here.

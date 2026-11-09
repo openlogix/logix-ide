@@ -1,11 +1,9 @@
-# Constraint file of the blinky example for the The Go Board board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of The Go Board used by main.v.
 
-# Clock (25MHz).
+# sys_clk: 25 MHz clock.
 set_io sys_clk 15
 
-# LEDs, active high.
+# leds: 4 LEDs (active high).
 set_io leds[0] 56
 set_io leds[1] 57
 set_io leds[2] 59

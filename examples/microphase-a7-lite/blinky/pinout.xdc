@@ -1,11 +1,9 @@
-# Constraint file of the blinky example for the MicroPhase A7-Lite (Xilinx, Artix7) board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of MicroPhase A7-Lite (Xilinx, Artix7) used by main.v.
 
-# Clock (50MHz).
-set_property -dict { PACKAGE_PIN J19   IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]
+# sys_clk: 50 MHz clock.
+set_property -dict { PACKAGE_PIN J19 IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]
 create_clock -period 20.000 [get_ports {sys_clk}]
 
-# LEDs, active low.
-set_property -dict { PACKAGE_PIN M18   IOSTANDARD LVCMOS33 } [get_ports {leds_n[0]}]
-set_property -dict { PACKAGE_PIN N18   IOSTANDARD LVCMOS33 } [get_ports {leds_n[1]}]
+# leds_n: 2 LEDs (active low).
+set_property -dict { PACKAGE_PIN M18 IOSTANDARD LVCMOS33 } [get_ports {leds_n[0]}]
+set_property -dict { PACKAGE_PIN N18 IOSTANDARD LVCMOS33 } [get_ports {leds_n[1]}]

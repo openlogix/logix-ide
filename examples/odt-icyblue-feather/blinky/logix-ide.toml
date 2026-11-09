@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "odt-icyblue-feather"
-summary = "Blinks an LED"
+summary = "Blinks the LED about once a second."
+notes = ["The design uses the FPGA's internal oscillator: no board clock is described."]

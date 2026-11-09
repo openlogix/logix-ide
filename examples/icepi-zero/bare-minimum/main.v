@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the Icepi Zero: the board's pins, ready for your design.
+// It does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk, // 50MHz clock
-    output [4:0] leds     // Off. Active high.
+  input sys_clk,     // 50 MHz clock.
+  output [4:0] leds  // 5 LEDs, lit when 1.
 );
 
-  // leds stays off.
+  // Everything off for now.
   assign leds = 5'b00000;
 
   // Your design goes here.

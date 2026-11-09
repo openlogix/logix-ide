@@ -1,24 +1,17 @@
-//------------------------------------------------------------------
-//-- Blinking LED
-//------------------------------------------------------------------
+// Blinky for the BrisbaneSilicon EPM11: blinks its LED about once a second.
 
-// N is the counter width. led toggles every 2^(N-1) clocks.
-// With the default N = 25 and a 27MHz clock, it toggles about
-// every 0.6 seconds. The testbench uses a small N to run quickly.
 module main #(
-    parameter integer N = 25
+  parameter N = 25  // Counter width: 2^25 cycles at 27 MHz is about 1.2 s.
 ) (
-    input        sys_clk, // 27MHz clock
-    output       led      // The blinking LED. Active low.
+  input sys_clk, // 27 MHz clock.
+  output led     // LED, lit when 0.
 );
 
-  // The blink counter. It starts at 0 when the FPGA is configured.
+  // Counts clock cycles. Its top bit is 1 half the time.
   reg [N-1:0] counter = 0;
+  always @(posedge sys_clk) counter <= counter + 1'b1;
 
-  // Count up on every clock.
-  always @(posedge sys_clk) counter <= counter + 1;
-
-  // led follows the counter's top bit.
+  // The LED is lit while the top bit is 1 (it lights at 0, so inverted).
   assign led = ~counter[N-1];
 
 endmodule

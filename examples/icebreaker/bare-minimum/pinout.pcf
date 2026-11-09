@@ -1,14 +1,12 @@
-# Constraint file of the bare-minimum example for the iCEBreaker board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of iCEBreaker used by main.v.
 
-# Clock (12MHz).
+# sys_clk: 12 MHz clock.
 set_io sys_clk 35
 
-# LED, active low.
+# led: LED (active low).
 set_io led 37
 
-# LEDs, active high.
+# pmod_leds: 5 LEDs (active high).
 set_io pmod_leds[0] 26
 set_io pmod_leds[1] 27
 set_io pmod_leds[2] 25

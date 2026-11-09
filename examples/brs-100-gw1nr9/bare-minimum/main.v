@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the BrisbaneSilicon 9k: the board's pins, ready for your
+// design. It does nothing yet: the LED is held off.
 
 module main (
-    input        sys_clk, // 27MHz clock
-    output       led      // An LED, off. Active low.
+  input sys_clk, // 27 MHz clock.
+  output led     // LED, lit when 0.
 );
 
-  // led stays off.
+  // Everything off for now.
   assign led = 1'b1;
 
   // Your design goes here.

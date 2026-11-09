@@ -1,12 +1,9 @@
-# Constraint file of the blinky example for the Soan-Papdi-Mini board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of Soan-Papdi-Mini used by main.v.
 
-# Clock (12MHz).
+# sys_clk: 12 MHz clock.
 set_io sys_clk 35
 
-# RGB LED, active low: [0] red, [1] green, [2] blue.
-# On the FPGA's dedicated RGB LED driver pins.
+# rgb_led: RGB LED (active low), on the FPGA's RGB LED driver pads.
 set_io rgb_led[0] 39
 set_io rgb_led[1] 40
 set_io rgb_led[2] 41

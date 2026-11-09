@@ -1,11 +1,14 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the ECP5-Evaluation-Board: the board's pins, ready for
+// your design. It does nothing yet: the LED is held off.
+//
+// The 12 MHz clock from the board's FTDI chip reaches the FPGA only with
+// jumper JP2 shorted, so there's no clock pin here.
 
 module main (
-    output       led  // An LED, off. Active low.
+  output led  // LED, lit when 0.
 );
 
-  // led stays off.
+  // Everything off for now.
   assign led = 1'b1;
 
   // Your design goes here.

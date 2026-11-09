@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "sipeed-tang-primer-20k-dock"
-summary = "Blinks an LED"
+summary = "Blinks LED 0 about once a second."
+notes = ["The LEDs' on level isn't known: if they're lit when they should be off, invert them."]

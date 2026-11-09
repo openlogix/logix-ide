@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the MicroPhase A7-Lite: the board's pins, ready for your
+// design. It does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk, // 50MHz clock
-    output [1:0] leds_n   // Off. Active low.
+  input sys_clk,       // 50 MHz clock.
+  output [1:0] leds_n  // 2 LEDs, lit when 0.
 );
 
-  // leds_n stays off.
+  // Everything off for now.
   assign leds_n = 2'b11;
 
   // Your design goes here.

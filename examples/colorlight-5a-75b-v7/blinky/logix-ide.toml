@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "colorlight-5a-75b-v7"
-summary = "Blinks an LED"
+summary = "Blinks the LED about once a second."

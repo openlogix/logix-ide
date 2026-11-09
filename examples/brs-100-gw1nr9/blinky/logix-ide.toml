@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "brs-100-gw1nr9"
-summary = "Blinks an LED"
+summary = "Blinks the LED about once a second."

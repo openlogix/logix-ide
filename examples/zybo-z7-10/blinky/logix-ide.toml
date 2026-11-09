@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "zybo-z7-10"
-summary = "Blinks an LED"
+summary = "Blinks LED 0 about once a second."

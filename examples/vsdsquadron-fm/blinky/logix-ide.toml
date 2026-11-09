@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "vsdsquadron-fm"
-summary = "Blinks the RGB LED in red"
+summary = "Blinks the RGB LED in green about once a second."
+notes = ["Boards of the first revision (serial number 20241201_J) have a 25 MHz oscillator: there the LED blinks about twice as fast."]

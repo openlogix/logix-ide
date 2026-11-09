@@ -1,9 +1,5 @@
-# Constraint file of the blinky example for the ECP5-Evaluation-Board board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
-# The design uses the FPGA's internal 2.4MHz oscillator, so there is
-# no clock pin.
+# Pins of ECP5-Evaluation-Board used by main.v.
 
-# LED, active low.
+# led: LED (active low).
 LOCATE COMP "led" SITE "A13";
-IOBUF  PORT "led" IO_TYPE=LVCMOS25;
+IOBUF PORT "led" IO_TYPE=LVCMOS25;

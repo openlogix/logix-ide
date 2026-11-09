@@ -1,24 +1,17 @@
-//------------------------------------------------------------------
-//-- Blinking LED
-//------------------------------------------------------------------
+// Blinky for the ECP5-Mini-12: blinks LED 0 about once a second.
 
-// N is the counter width. leds[1] toggles every 2^(N-1) clocks.
-// With the default N = 24 and a 16MHz clock, it toggles about
-// every 0.5 seconds. The testbench uses a small N to run quickly.
 module main #(
-    parameter integer N = 24
+  parameter N = 24  // Counter width: 2^24 cycles at 16 MHz is about 1.0 s.
 ) (
-    input        sys_clk, // 16MHz clock
-    output [1:0] leds     // leds[1] blinks, the rest are off. Active high.
+  input sys_clk,     // 16 MHz clock.
+  output [1:0] leds  // 2 LEDs, lit when 1.
 );
 
-  // The blink counter. It starts at 0 when the FPGA is configured.
+  // Counts clock cycles. Its top bit is 1 half the time.
   reg [N-1:0] counter = 0;
+  always @(posedge sys_clk) counter <= counter + 1'b1;
 
-  // Count up on every clock.
-  always @(posedge sys_clk) counter <= counter + 1;
-
-  // leds[1] follows the counter's top bit. The other LEDs are off.
-  assign leds = {counter[N-1], 1'b0};
+  // LED 0 is lit while the top bit is 1; the others stay off.
+  assign leds = {1'b0, counter[N-1]};
 
 endmodule

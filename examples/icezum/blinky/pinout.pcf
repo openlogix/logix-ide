@@ -1,11 +1,9 @@
-# Constraint file of the blinky example for the Icezum Alhambra board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of Icezum Alhambra used by main.v.
 
-# Clock (12MHz).
+# sys_clk: 12 MHz clock.
 set_io sys_clk 21
 
-# LEDs, active high.
+# leds: 8 LEDs (active high).
 set_io leds[0] 95
 set_io leds[1] 96
 set_io leds[2] 97

@@ -1,21 +1,18 @@
-# Constraint file of the bare-minimum example for the Fomu board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of Fomu used by main.v.
 
-# Clock (48MHz).
+# sys_clk: 48 MHz clock.
 set_io sys_clk F4
 
-# RGB LED, active low: [0] red, [1] green, [2] blue.
-# On the FPGA's dedicated RGB LED driver pins.
+# rgb_led: RGB LED (active low), on the FPGA's RGB LED driver pads.
 set_io rgb_led[0] B5
 set_io rgb_led[1] C5
 set_io rgb_led[2] A5
 
-# Held low: usb_dp.
+# usb_dp: held low (disconnects the board from USB).
 set_io usb_dp A1
 
-# Held low: usb_dn.
+# usb_dn: held low (disconnects the board from USB).
 set_io usb_dn A2
 
-# Held low: usb_dp_pu.
+# usb_dp_pu: held low (disconnects the board from USB).
 set_io usb_dp_pu A4

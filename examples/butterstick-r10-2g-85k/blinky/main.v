@@ -1,26 +1,23 @@
-//------------------------------------------------------------------
-//-- Blinking LED matrix
-//------------------------------------------------------------------
+// Blinky for the butterstick r1.0: blinks LED 0 in green about once a
+// second.
+//
+// Its seven RGB LEDs are a matrix: an LED lights when its pin in leds and
+// a color pin in leds_colors are both 1.
 
-// N is the counter width. leds[6] toggles every 2^(N-1) clocks.
-// With the default N = 25 and a 30MHz clock, it toggles about
-// every 0.6 seconds. The testbench uses a small N to run quickly.
 module main #(
-    parameter integer N = 25
+  parameter N = 25  // Counter width: 2^25 cycles at 30 MHz is about 1.1 s.
 ) (
-    input        sys_clk,    // 30MHz clock
-    output [6:0] leds,       // LED matrix: leds[6] blinks red. Active high.
-    output [2:0] leds_color  // Its colors: [0] red, [1] green, [2] blue. Active high.
+  input sys_clk,            // 30 MHz clock.
+  output [6:0] leds,        // LED matrix: one pin per LED, lit when 1.
+  output [2:0] leds_colors  // LED matrix colors: [0] red, [1] green, [2] blue.
 );
 
-  // The blink counter. It starts at 0 when the FPGA is configured.
+  // Counts clock cycles. Its top bit is 1 half the time.
   reg [N-1:0] counter = 0;
+  always @(posedge sys_clk) counter <= counter + 1'b1;
 
-  // Count up on every clock.
-  always @(posedge sys_clk) counter <= counter + 1;
-
-  // leds[6] follows the counter's top bit, in red.
-  assign leds = {counter[N-1], 6'b000000};
-  assign leds_color = {2'b00, 1'b1};
+  // Green only, and LED 0 lit while the top bit is 1; the others stay off.
+  assign leds_colors = 3'b010;
+  assign leds = {6'b000000, counter[N-1]};
 
 endmodule

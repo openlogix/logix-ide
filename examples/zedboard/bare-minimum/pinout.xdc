@@ -1,13 +1,11 @@
-# Constraint file of the bare-minimum example for the ZedBoard (Xilinx, Zynq7 PL) board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of ZedBoard (Xilinx, Zynq7 PL) used by main.v.
 
-# Clock (100MHz).
-set_property -dict { PACKAGE_PIN Y9    IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]
+# sys_clk: 100 MHz clock.
+set_property -dict { PACKAGE_PIN Y9 IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]
 create_clock -period 10.000 [get_ports {sys_clk}]
 
-# LEDs, active high.
-set_property -dict { PACKAGE_PIN T22   IOSTANDARD LVCMOS33 } [get_ports {leds[0]}]
-set_property -dict { PACKAGE_PIN T21   IOSTANDARD LVCMOS33 } [get_ports {leds[1]}]
-set_property -dict { PACKAGE_PIN U22   IOSTANDARD LVCMOS33 } [get_ports {leds[2]}]
-set_property -dict { PACKAGE_PIN U21   IOSTANDARD LVCMOS33 } [get_ports {leds[3]}]
+# leds: 4 LEDs (active high).
+set_property -dict { PACKAGE_PIN T22 IOSTANDARD LVCMOS33 } [get_ports {leds[0]}]
+set_property -dict { PACKAGE_PIN T21 IOSTANDARD LVCMOS33 } [get_ports {leds[1]}]
+set_property -dict { PACKAGE_PIN U22 IOSTANDARD LVCMOS33 } [get_ports {leds[2]}]
+set_property -dict { PACKAGE_PIN U21 IOSTANDARD LVCMOS33 } [get_ports {leds[3]}]

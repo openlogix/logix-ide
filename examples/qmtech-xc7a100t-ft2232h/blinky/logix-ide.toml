@@ -1,3 +1,3 @@
 # Logix IDE project settings.
 board = "qmtech-xc7a100t-ft2232h"
-summary = "Blinks an LED"
+summary = "Blinks LED 0 about once a second."

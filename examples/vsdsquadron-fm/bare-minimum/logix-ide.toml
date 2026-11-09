@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "vsdsquadron-fm"
-summary = "The board's pins and an empty design, to start from scratch"
+summary = "The board's pins, ready for your design."
+notes = ["Boards of the first revision (serial number 20241201_J) have a 25 MHz oscillator, not 12 MHz."]

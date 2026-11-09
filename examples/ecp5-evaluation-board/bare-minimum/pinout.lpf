@@ -1,7 +1,5 @@
-# Constraint file of the bare-minimum example for the ECP5-Evaluation-Board board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of ECP5-Evaluation-Board used by main.v.
 
-# LED, active low.
+# led: LED (active low).
 LOCATE COMP "led" SITE "A13";
-IOBUF  PORT "led" IO_TYPE=LVCMOS25;
+IOBUF PORT "led" IO_TYPE=LVCMOS25;

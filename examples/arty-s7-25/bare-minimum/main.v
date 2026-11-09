@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the Arty S7-25: the board's pins, ready for your design.
+// It does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk, // 12MHz clock
-    output [3:0] leds     // Off. Active high.
+  input sys_clk,     // 12 MHz clock.
+  output [3:0] leds  // 4 LEDs, lit when 1.
 );
 
-  // leds stays off.
+  // Everything off for now.
   assign leds = 4'b0000;
 
   // Your design goes here.

@@ -1,13 +1,11 @@
-# Constraint file of the blinky example for the Pynq-Z1 (Xilinx, Zynq7 PL) board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of Pynq-Z1 (Xilinx, Zynq7 PL) used by main.v.
 
-# Clock (125MHz).
-set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]
+# sys_clk: 125 MHz clock.
+set_property -dict { PACKAGE_PIN H16 IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]
 create_clock -period 8.000 [get_ports {sys_clk}]
 
-# LEDs, active high.
-set_property -dict { PACKAGE_PIN R14   IOSTANDARD LVCMOS33 } [get_ports {leds[0]}]
-set_property -dict { PACKAGE_PIN P14   IOSTANDARD LVCMOS33 } [get_ports {leds[1]}]
-set_property -dict { PACKAGE_PIN N16   IOSTANDARD LVCMOS33 } [get_ports {leds[2]}]
-set_property -dict { PACKAGE_PIN M14   IOSTANDARD LVCMOS33 } [get_ports {leds[3]}]
+# leds: 4 LEDs (active high).
+set_property -dict { PACKAGE_PIN R14 IOSTANDARD LVCMOS33 } [get_ports {leds[0]}]
+set_property -dict { PACKAGE_PIN P14 IOSTANDARD LVCMOS33 } [get_ports {leds[1]}]
+set_property -dict { PACKAGE_PIN N16 IOSTANDARD LVCMOS33 } [get_ports {leds[2]}]
+set_property -dict { PACKAGE_PIN M14 IOSTANDARD LVCMOS33 } [get_ports {leds[3]}]

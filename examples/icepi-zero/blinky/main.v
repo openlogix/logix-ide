@@ -1,24 +1,17 @@
-//------------------------------------------------------------------
-//-- Blinking LED
-//------------------------------------------------------------------
+// Blinky for the Icepi Zero: blinks LED 0 about once a second.
 
-// N is the counter width. leds[4] toggles every 2^(N-1) clocks.
-// With the default N = 26 and a 50MHz clock, it toggles about
-// every 0.7 seconds. The testbench uses a small N to run quickly.
 module main #(
-    parameter integer N = 26
+  parameter N = 26  // Counter width: 2^26 cycles at 50 MHz is about 1.3 s.
 ) (
-    input        sys_clk, // 50MHz clock
-    output [4:0] leds     // leds[4] blinks, the rest are off. Active high.
+  input sys_clk,     // 50 MHz clock.
+  output [4:0] leds  // 5 LEDs, lit when 1.
 );
 
-  // The blink counter. It starts at 0 when the FPGA is configured.
+  // Counts clock cycles. Its top bit is 1 half the time.
   reg [N-1:0] counter = 0;
+  always @(posedge sys_clk) counter <= counter + 1'b1;
 
-  // Count up on every clock.
-  always @(posedge sys_clk) counter <= counter + 1;
-
-  // leds[4] follows the counter's top bit. The other LEDs are off.
-  assign leds = {counter[N-1], 4'b0000};
+  // LED 0 is lit while the top bit is 1; the others stay off.
+  assign leds = {4'b0000, counter[N-1]};
 
 endmodule

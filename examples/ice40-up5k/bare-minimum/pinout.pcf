@@ -1,9 +1,7 @@
-# Constraint file of the bare-minimum example for the iCE40 UltraPlus Breakout board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of iCE40 UltraPlus Breakout used by main.v.
 
-# Clock (12MHz).
+# sys_clk: 12 MHz clock.
 set_io sys_clk 35
 
-# LED, active low.
+# led: LED (active low), on the FPGA's RGB LED driver pad RGB2.
 set_io led 41

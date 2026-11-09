@@ -1,12 +1,12 @@
-// The top module must be named 'main'. Its ports are the board's
-// pins in the pin file. The outputs start off; your design goes here.
+// Bare minimum for the Basys3: the board's pins, ready for your design. It
+// does nothing yet: the LEDs are held off.
 
 module main (
-    input        sys_clk, // 100MHz clock
-    output [15:0]leds     // Off. Active high.
+  input sys_clk,      // 100 MHz clock.
+  output [15:0] leds  // 16 LEDs, lit when 1.
 );
 
-  // leds stays off.
+  // Everything off for now.
   assign leds = 16'b0000000000000000;
 
   // Your design goes here.

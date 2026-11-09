@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "pico-ice"
-summary = "Blinks the RGB LED in red"
+summary = "Blinks the RGB LED in green about once a second."
+notes = ["The design uses the FPGA's internal oscillator: no board clock is described."]

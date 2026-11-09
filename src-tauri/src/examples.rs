@@ -165,7 +165,7 @@ mod tests {
             .iter()
             .find(|e| e.board == DEFAULT_BOARD && e.name == "blinky")
             .unwrap();
-        assert_eq!(blinky.summary, "Blinks an LED");
+        assert_eq!(blinky.summary, "Blinks LED 0 about once a second.");
         assert!(blinky.notes.is_empty());
         // Every example has a one-line summary; qualifiers are notes.
         assert!(list
