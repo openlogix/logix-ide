@@ -98,9 +98,18 @@
                 aria-expanded={shown}
                 disabled={searching}
                 onclick={() => toggle(g.id)}
-                ><span class="chevron" aria-hidden="true">{shown ? "▾" : "▸"}</span>
+                ><svg class="chevron" class:open={shown} viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
+                  ><path
+                    d="M4 2.5 L8 6 L4 9.5"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >
                 <span class="family-label">{g.label}</span>
-                <span class="muted">{count(g.fpgaCount, "FPGA")} · {count(g.boardCount, "board")}</span></button
+                <span class="count">{count(g.fpgaCount, "FPGA")} · {count(g.boardCount, "board")}</span></button
               >
               {#if shown}
                 <table>
@@ -201,29 +210,42 @@
     padding: 0;
     list-style: none;
   }
+  /* The family headings look like the board picker's group headings. */
   .family-toggle {
+    position: sticky;
+    top: 0;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 6px;
     width: 100%;
-    padding: 5px 4px;
+    margin-top: 2px;
+    padding: 6px 12px 4px;
     border: none;
-    border-radius: 4px;
-    background: none;
+    background: var(--group-bg);
+    color: var(--group-fg);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     text-align: left;
-  }
-  .family-toggle:hover:not(:disabled) {
-    background: var(--hover, rgba(127, 127, 127, 0.12));
   }
   .family-toggle:disabled {
     cursor: default;
   }
-  .chevron {
-    width: 10px;
-    color: var(--muted);
-  }
   .family-label {
-    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+  }
+  .chevron {
+    flex: none;
+    transition: transform 0.1s;
+  }
+  .chevron.open {
+    transform: rotate(90deg);
+  }
+  .count {
+    margin-left: auto;
+    font-weight: 400;
   }
   table {
     width: 100%;
