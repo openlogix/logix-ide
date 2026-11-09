@@ -23,8 +23,6 @@
   let error = $state<string | null>(null);
   let query = $state("");
   let expanded = $state<Set<string>>(new Set());
-  /** The FPGA whose ID was just copied. */
-  let copied = $state<string | null>(null);
 
   $effect(() => {
     backend
@@ -42,15 +40,6 @@
     if (next.has(id)) next.delete(id);
     else next.add(id);
     expanded = next;
-  }
-
-  async function copy(id: string) {
-    try {
-      await backend.copyText(id);
-      copied = id;
-    } catch (e) {
-      error = (e as { message?: string }).message ?? String(e);
-    }
   }
 
   function onKey(e: KeyboardEvent) {
@@ -116,7 +105,7 @@
               {#if shown}
                 <table>
                   <thead>
-                    <tr><th>FPGA</th><th>Size</th><th>FPGA ID</th><th></th><th class="num">Boards</th></tr>
+                    <tr><th>FPGA</th><th>Size</th><th>FPGA ID</th><th class="num">Boards</th></tr>
                   </thead>
                   <tbody>
                     {#each g.fpgas as f (f.id)}
@@ -124,15 +113,7 @@
                         <td>{f.partNumber}</td>
                         <td>{f.size}</td>
                         <td class="id"><code>{f.id}</code></td>
-                        <td
-                          ><button
-                            class="copy"
-                            title="Copy the FPGA ID"
-                            aria-label="Copy {f.id}"
-                            onclick={() => copy(f.id)}>{copied === f.id ? "Copied" : "Copy"}</button
-                          ></td
-                        >
-                        <td class="num" title={f.boards.join("\n")}>{f.boards.length}</td>
+                        <td class="num" title={f.boards.join("\n")}>{f.boards.length || ""}</td>
                       </tr>
                     {/each}
                   </tbody>
@@ -271,13 +252,6 @@
   }
   code {
     font-size: 12px;
-  }
-  .copy {
-    padding: 0 6px;
-    font-size: 11px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--bg);
   }
   .muted {
     color: var(--muted);

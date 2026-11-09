@@ -122,8 +122,7 @@ yours, you can also type its FPGA in the board list's search, such as
 **Tools > Supported FPGAs…** lists every FPGA Logix supports, by family,
 with how many boards have each, including FPGAs that no board in the list
 has yet. Click a family to see its FPGAs, or search by part number. A
-board file of your own names its FPGA by its **FPGA ID**: **Copy** puts it
-on the clipboard.
+board file of your own names its FPGA by its **FPGA ID**.
 
 ![The Supported FPGAs window](images/supported-fpgas.png)
 
