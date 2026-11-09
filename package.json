@@ -3,7 +3,7 @@
   "private": true,
   "license": "MIT OR Apache-2.0",
   "version": "0.1.0",
-  "description": "\"The Arduino experience, for FPGAs\": a simple IDE for FPGAs, powered by Logix Engine",
+  "description": "The Arduino experience, for FPGAs: a simple IDE for FPGAs, powered by Logix Engine",
   "type": "module",
   "appConstants": {
     "engineReleaseRepo": "openlogix/logix-engine",

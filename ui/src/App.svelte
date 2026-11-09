@@ -2099,7 +2099,7 @@
       {#if welcome}
         <div class="welcome" aria-label="Start">
           <h2>Welcome to Logix IDE</h2>
-          <p class="motto">"The Arduino experience, for FPGAs"</p>
+          <p class="motto">The Arduino experience, for FPGAs</p>
           {#if setupError}
             <p>
               Logix needs its FPGA tools to work. See the message above, and

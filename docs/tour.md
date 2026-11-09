@@ -6,7 +6,7 @@ with the details.
 
 ## What Logix is
 
-**"The Arduino experience, for FPGAs."** If you've used the Arduino IDE,
+**The Arduino experience, for FPGAs.** If you've used the Arduino IDE,
 Logix will feel familiar: you write code, click **Verify** to check it, and
 click **Upload** to put it on your board. The difference is the language:
 you write **Verilog**, which describes hardware, instead of C++.

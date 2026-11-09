@@ -89,7 +89,7 @@ jobs:
           cat > BUILD-INFO.json <<EOF
           {
             "package-name": "logix",
-            "description": "\"The Arduino experience, for FPGAs\"",
+            "description": "The Arduino experience, for FPGAs",
             "logix-version": "$LOGIX_IDE_BUILD_VERSION",
             "repo": "${REPO}",
             "repo-branch": "${REPO_BRANCH}",
@@ -211,7 +211,7 @@ jobs:
         run: |
           cat > RELEASE-BODY.txt <<EOF
 
-          **Logix IDE: "The Arduino experience, for FPGAs."**
+          **Logix IDE: The Arduino experience, for FPGAs.**
 
           [Website](https://www.openlogix.org/ide/) ·
           [Documentation](https://openlogix.github.io/logix-ide/)

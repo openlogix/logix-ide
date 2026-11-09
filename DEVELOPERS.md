@@ -210,7 +210,7 @@ These are the house rules for changes, whether you prompt Claude or not:
 - **Commits are made by the developer**, after reviewing the change and
   running `scripts/test.sh`. Claude doesn't commit unless asked.
 - **Keep Logix simple**, like the Arduino IDE: ease of use for beginners
-  comes before power-user features. Its motto is **"The Arduino experience, for FPGAs."**
+  comes before power-user features. Its motto is **The Arduino experience, for FPGAs.**
 - **Logix Engine does the FPGA work**; Logix is a front end. When Logix
   needs something from the engine, prefer changing the engine over working
   around it.

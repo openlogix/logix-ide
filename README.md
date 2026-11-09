@@ -4,7 +4,7 @@
 [![Tests](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml)
 [![Docs](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml)
 
-**"The Arduino experience, for FPGAs."**
+**The Arduino experience, for FPGAs.**
 
 [Website](https://www.openlogix.org/ide/) · [Documentation](https://openlogix.github.io/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases)
 
