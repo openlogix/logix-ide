@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByFamily, boardsWithFpga } from "./boards";
+import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByFamily } from "./boards";
 import type { Board, BoardComparison } from "./backend";
 
 const boards: Board[] = [
@@ -87,21 +87,6 @@ describe("FPGAs", () => {
   it("names the FPGA for people", () => {
     expect(fpgaLabel(withFpga[0])).toBe("Lattice iCE40 ICE40HX4K-TQ144 (8k)");
     expect(fpgaLabel(boards[4])).toBe("");
-  });
-
-  it("lists every board with the same FPGA, itself included, by name", () => {
-    const ids = (b: Board) => boardsWithFpga(withFpga, b).map((x) => x.id);
-    expect(ids(withFpga[0])).toEqual(["alhambra-ii", "kefir"]);
-    // The same list from each of them.
-    expect(ids(withFpga[2])).toEqual(["alhambra-ii", "kefir"]);
-    expect(ids(withFpga[1])).toEqual(["icebreaker"]);
-    // A custom board with a catalog FPGA is listed with the others.
-    const mine = { ...withFpga[0], id: "mine", description: "Mine", custom: true };
-    expect(boardsWithFpga([...withFpga, mine], mine).map((x) => x.id)).toEqual([
-      "alhambra-ii", "kefir", "mine",
-    ]);
-    // A board whose FPGA isn't known: just it.
-    expect(ids({ ...withFpga[0], id: "odd", fpga: null })).toEqual(["odd"]);
   });
 });
 

@@ -113,18 +113,6 @@ export function fpgaLabel(b: Board): string {
 }
 
 /**
- * Every board with the same FPGA as `b` (the catalog's FPGA ID), `b`
- * included, by name: the same list for each of them, so Board Info's list
- * stays put while browsing it. Just `b` when its FPGA isn't known.
- */
-export function boardsWithFpga(boards: Board[], b: Board): Board[] {
-  const id = b.fpga?.id;
-  const same = id ? boards.filter((x) => x.fpga?.id === id) : [];
-  if (!same.some((x) => x.id === b.id)) same.push(b);
-  return same.sort((x, y) => x.description.localeCompare(y.description));
-}
-
-/**
  * One point of a board-change note: the change itself (the first point),
  * or one of its implications, all risky (shown in red: the user's
  * decision, since every implication is a possible problem).

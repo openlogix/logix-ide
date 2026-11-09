@@ -226,7 +226,7 @@ pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<engine::Board>
     Ok(catalog(&state).await?.boards)
 }
 
-/// Every FPGA the engine supports, by family (Tools > Supported FPGAs).
+/// Every FPGA the engine supports, by family (the Board Explorer).
 #[tauri::command]
 pub async fn get_fpga_families(
     state: State<'_, AppState>,

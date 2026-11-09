@@ -33,7 +33,7 @@ To get it, see [Installing Logix](installing.md).
 | ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals in GTKWave |
 | ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running |
 | | Board list | Picks your board; the ones you used recently come first |
-| | ⓘ | Shows the board's FPGA and the boards with the same FPGA |
+| | ⓘ | Shows the board in the Board Explorer: its FPGA, pins and examples |
 
 Below the toolbar are a tab for each file, the editor and the output, and at
 the bottom of the window a status line that says what Logix is doing. Mistakes in the grammar, like a
@@ -87,7 +87,7 @@ uses, and programs the board. If it can't find the board,
 **Tools > Connected Devices…** shows what's plugged in, and
 [Troubleshooting](troubleshooting.md#upload-cant-find-the-board) has tips.
 
-![The board list: connected boards first, then all boards by FPGA type](images/boards.png)
+![The board list: recently used boards first, then all boards by FPGA family](images/boards.png)
 
 ## Test without a board
 

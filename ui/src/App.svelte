@@ -955,7 +955,6 @@
   // ---- Connected devices (Tools > Connected Devices) ----
 
   let devicesOpen = $state(false);
-  /** Tools > Board Info… (or the ⓘ next to the board), while it's open. */
   /** The Board Explorer, open at an item (null: closed). */
   let explorer = $state<{ initial: ExplorerRef | null } | null>(null);
   /** Opens the Board Explorer at the toolbar's board, if any. */
@@ -2051,9 +2050,9 @@
     />
     {#if currentBoardInfo}
       <button
-        class="board-info"
+        class="board-explorer"
         title="The board in the Board Explorer: its FPGA, resources, examples, and the boards with the same FPGA"
-        aria-label="Board info"
+        aria-label="Show the board in the Board Explorer"
         onclick={openExplorer}>ⓘ</button
       >
     {/if}
@@ -2385,8 +2384,8 @@
   /* Whether the selected board is plugged in: a dot and a word. A button
      (it opens Connected Devices), so it must override `.toolbar button`,
      the round icon buttons: hence `.toolbar .board-link`. */
-  /* The ⓘ next to the board: Board Info. */
-  .toolbar .board-info {
+  /* The ⓘ next to the board: the Board Explorer at the board. */
+  .toolbar .board-explorer {
     width: auto;
     height: auto;
     margin-left: -4px;
@@ -2399,7 +2398,7 @@
     background: transparent;
     cursor: pointer;
   }
-  .toolbar .board-info:hover {
+  .toolbar .board-explorer:hover {
     background: rgba(255, 255, 255, 0.12);
   }
   .toolbar .board-link {

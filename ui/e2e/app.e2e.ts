@@ -1032,7 +1032,7 @@ test("a project's boards folder, edited outside Logix, adds its own boards", asy
     "Custom board: My UPduino\nFrom this project's boards folder",
   );
   // The Board Explorer lists it with the catalog's boards, marked as in the picker.
-  await page.getByRole("button", { name: "Board info" }).click();
+  await page.getByRole("button", { name: "Show the board in the Board Explorer" }).click();
   const explorer = page.getByRole("dialog", { name: "Board Explorer" });
   await expect(explorer.getByLabel("Details")).toContainText("Custom board");
   await expect(explorer.getByLabel("Details")).toContainText("This project's boards folder");
@@ -1132,7 +1132,7 @@ test("the Board Explorer shows the board's FPGA and the boards with the same FPG
   await page.keyboard.press("Escape");
 
   // The ⓘ next to the board opens the Explorer at the board.
-  await page.getByRole("button", { name: "Board info" }).click();
+  await page.getByRole("button", { name: "Show the board in the Board Explorer" }).click();
   const explorer = page.getByRole("dialog", { name: "Board Explorer" });
   const details = explorer.getByLabel("Details");
   await expect(details.getByRole("heading", { level: 3 })).toHaveText("Alhambra II");

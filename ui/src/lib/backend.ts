@@ -471,7 +471,7 @@ export const backend = {
 
   /**
    * Every FPGA Logix Engine supports, by family in the engine's order, each
-   * family's FPGAs by part number (Tools > Supported FPGAs). Needs the FPGA
+   * family's FPGAs by part number (the Board Explorer). Needs the FPGA
    * tools ready.
    */
   getFpgaFamilies: (): Promise<FpgaFamily[]> => invoke<FpgaFamily[]>("get_fpga_families"),
