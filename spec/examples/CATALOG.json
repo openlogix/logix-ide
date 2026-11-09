@@ -1,8 +1,7 @@
 {
   "catalog": {
     "version": "2026-11-09",
-    "commit": "25cc472",
-    "local": true
+    "commit": "25cc472"
   },
   "boards": {
     "alchitry-au": {
