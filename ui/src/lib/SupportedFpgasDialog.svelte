@@ -109,7 +109,9 @@
                   /></svg
                 >
                 <span class="family-label">{g.label}</span>
-                <span class="count">{count(g.fpgaCount, "FPGA")} · {count(g.boardCount, "board")}</span></button
+                <span class="count">{count(g.fpgaCount, "FPGA")}</span><span class="sep" aria-hidden="true">·</span><span
+                  class="count boards">{count(g.boardCount, "board")}</span
+                ></button
               >
               {#if shown}
                 <table>
@@ -243,8 +245,15 @@
   .chevron.open {
     transform: rotate(90deg);
   }
+  /* Two columns, right aligned, so the counts line up from family to family. */
   .count {
-    margin-left: auto;
+    width: 10ch;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .sep {
     font-weight: 400;
   }
   table {

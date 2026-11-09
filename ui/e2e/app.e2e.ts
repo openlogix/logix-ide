@@ -1162,10 +1162,10 @@ test("Supported FPGAs lists every FPGA by family, with its boards", async ({ pag
   const dialog = page.getByRole("dialog", { name: "Supported FPGAs" });
   const families = dialog.getByRole("list", { name: "FPGA families" });
   // Every family, collapsed, counting its FPGAs and boards; GW5A has none.
-  const toggles = families.getByRole("button", { name: /FPGAs? ·/ });
-  await expect(toggles.first()).toHaveText(/^\s*Lattice iCE40\s*40 FPGAs · 27 boards$/);
+  const toggles = families.getByRole("button", { name: /FPGAs?.*boards?/ });
+  await expect(toggles.first()).toHaveText(/^\s*Lattice iCE40\s*40 FPGAs\s*·\s*27 boards$/);
   const gw5a = families.getByRole("button", { name: /Gowin GW5A/ });
-  await expect(gw5a).toHaveText(/48 FPGAs · 0 boards/);
+  await expect(gw5a).toHaveText(/48 FPGAs\s*·\s*0 boards/);
   await expect(gw5a).toHaveAttribute("aria-expanded", "false");
   await gw5a.click();
   await expect(gw5a).toHaveAttribute("aria-expanded", "true");
