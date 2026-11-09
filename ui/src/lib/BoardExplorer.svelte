@@ -12,6 +12,7 @@
   import { untrack } from "svelte";
   import { backend, type Board, type Example, type FpgaFamily } from "./backend";
   import { expanded, expandGroup, toggleGroup } from "./expandedGroups.svelte";
+  import Icon from "./Icon.svelte";
   import {
     KINDS,
     buildModel,
@@ -74,6 +75,9 @@
     const f = familyOfRef(model, current);
     if (f && current.kind !== "family") untrack(() => expandGroup(f.label));
   });
+
+  /** The tooltip of a custom board's mark, as in the board picker. */
+  const FROM_PROJECT = "From this project's boards folder";
 
   /** Shows an item: its details, and its kind's list. */
   function show(ref: Ref) {
@@ -179,7 +183,11 @@
                 {@const isSel = sameRef(item.ref, current)}
                 <li>
                   <button class="item" class:selected={isSel} onclick={() => show(item.ref)} use:scrollIfSelected={isSel}>
-                    <span class="item-label">{item.label}</span>
+                    <span class="item-label"
+                      >{item.label}{#if item.custom}<span class="custom" title={FROM_PROJECT}
+                          ><Icon name="board" size={12} /></span
+                        >{/if}</span
+                    >
                     <span class="hint">{item.hint}</span>
                   </button>
                 </li>
@@ -194,7 +202,11 @@
       <div class="details" aria-label="Details">
         {#if details}
           <div class="kind-label">{details.kindLabel}</div>
-          <h3>{details.title}</h3>
+          <h3>
+            {details.title}{#if currentBoard?.custom}<span class="custom" title={FROM_PROJECT}
+                ><Icon name="board" size={14} /></span
+              >{/if}
+          </h3>
           <table class="facts">
             <tbody>
               {#each details.facts as f (f.label)}
@@ -221,7 +233,9 @@
                 <ul class="links">
                   {#each s.links as l (l.ref.kind + l.ref.id)}
                     <li>
-                      <button class="link" onclick={() => show(l.ref)}>{l.label}</button>
+                      <button class="link" onclick={() => show(l.ref)}>{l.label}</button
+                      >{#if l.custom}<span class="custom" title={FROM_PROJECT}><Icon name="board" size={12} /></span
+                        >{/if}
                       {#if l.hint}<span class="muted">{l.hint}</span>{/if}
                     </li>
                   {/each}
@@ -431,6 +445,14 @@
     color: var(--muted);
     font-size: 12px;
     white-space: nowrap;
+  }
+  /* A custom board's mark: the board picker's. */
+  .custom {
+    display: inline-flex;
+    flex: none;
+    opacity: 0.6;
+    vertical-align: -2px;
+    margin-left: 4px;
   }
   .item.selected .hint {
     color: inherit;

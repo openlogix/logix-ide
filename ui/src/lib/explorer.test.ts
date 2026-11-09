@@ -146,6 +146,14 @@ describe("detailsOf", () => {
     expect(ice.sections[1]).toBe("Every design must: Drive flash_cs (16) high");
     expect(ice.sections[2]).toBe("Resources: Not described yet.");
     expect(text(detailsOf(model, { kind: "board", id: "mine" }))!.facts).toContain("From: This project's boards folder");
+    // Marked as the project's own, in the lists, the details and the links.
+    expect(detailsOf(model, { kind: "board", id: "mine" })!.kindLabel).toBe("Custom board");
+    expect(listGroups(model, "board", "mine")[0].items[0].custom).toBe(true);
+    const links = detailsOf(model, { kind: "fpga", id: "ice40up5k-sg48" })!.sections[0];
+    expect(links.kind === "links" && links.links.map((l) => [l.label, !!l.custom])).toEqual([
+      ["iCEBreaker", false],
+      ["My Board", true],
+    ]);
   });
 
   it("links an example to its board, FPGA and family", () => {

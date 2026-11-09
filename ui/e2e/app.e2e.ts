@@ -1031,6 +1031,15 @@ test("a project's boards folder, edited outside Logix, adds its own boards", asy
     "title",
     "Custom board: My UPduino\nFrom this project's boards folder",
   );
+  // The Board Explorer lists it with the catalog's boards, marked as in the picker.
+  await page.getByRole("button", { name: "Board info" }).click();
+  const explorer = page.getByRole("dialog", { name: "Board Explorer" });
+  await expect(explorer.getByLabel("Details")).toContainText("Custom board");
+  await expect(explorer.getByLabel("Details")).toContainText("This project's boards folder");
+  const mine = explorer.locator(".item.selected");
+  await expect(mine).toHaveText(/My UPduino/);
+  await expect(mine.locator(".custom")).toHaveAttribute("title", "From this project's boards folder");
+  await page.keyboard.press("Escape");
 
   // The project folder goes with every task and device scan (the engine
   // reads the file there), and the output says where the board is from.

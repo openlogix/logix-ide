@@ -95,6 +95,8 @@ export interface ListItem {
   label: string;
   hint: string;
   family: string;
+  /** One of the project's own boards (boards folder). */
+  custom?: boolean;
 }
 
 /** A list's group: a family's items (families are one group, `label` null). */
@@ -168,7 +170,9 @@ function allItems(m: Model, kind: Kind): ListItem[] {
         })
         .sort(byName);
     case "board":
-      return [...m.boards.values()].map((b) => item(b.id, b.description, b.fpga?.partNumber ?? "")).sort(byName);
+      return [...m.boards.values()]
+        .map((b) => ({ ...item(b.id, b.description, b.fpga?.partNumber ?? ""), custom: b.custom }))
+        .sort(byName);
     case "example":
       return [...m.examples.values()]
         .map((e) => item(exampleId(e), e.name, labelOf(m, { kind: "board", id: e.board })))
@@ -236,13 +240,21 @@ export interface ResourceRow {
 }
 
 /** A section of the details: links, lines of text, or the resources. */
+/** A link in the details: the item, its name, a hint, and whether it's a custom board. */
+export interface Link {
+  ref: Ref;
+  label: string;
+  hint: string;
+  custom?: boolean;
+}
+
 export type Section =
-  | { title: string; kind: "links"; links: { ref: Ref; label: string; hint: string }[]; empty: string }
+  | { title: string; kind: "links"; links: Link[]; empty: string }
   | { title: string; kind: "lines"; lines: string[] }
   | { title: string; kind: "resources"; rows: ResourceRow[]; empty: string };
 
 export interface Details {
-  /** "Board", "FPGA" and so on, before the title. */
+  /** "Board", "FPGA" and so on, before the title ("Custom board" for the project's own). */
   kindLabel: string;
   title: string;
   facts: Fact[];
@@ -251,13 +263,13 @@ export interface Details {
 
 const KIND_LABEL: Record<Kind, string> = { family: "FPGA family", fpga: "FPGA", board: "Board", example: "Example" };
 
-function boardLinks(m: Model, boards: Board[]): { ref: Ref; label: string; hint: string }[] {
+function boardLinks(m: Model, boards: Board[]): Link[] {
   return [...boards]
-    .sort((a, b) => a.description.localeCompare(b.description))
-    .map((b) => ({ ref: { kind: "board", id: b.id }, label: b.description, hint: b.custom ? "custom" : "" }));
+    .sort((a, b) => caseless(a.description, b.description))
+    .map((b) => ({ ref: { kind: "board", id: b.id }, label: b.description, hint: "", custom: b.custom }));
 }
 
-function exampleLinks(m: Model, examples: Example[], withBoard: boolean): { ref: Ref; label: string; hint: string }[] {
+function exampleLinks(m: Model, examples: Example[], withBoard: boolean): Link[] {
   return examples.map((e) => ({
     ref: { kind: "example", id: exampleId(e) },
     label: e.name,
@@ -332,6 +344,7 @@ export function detailsOf(m: Model, ref: Ref): Details | null {
     case "board": {
       const b = m.boards.get(ref.id);
       if (!b) return null;
+      if (b.custom) base.kindLabel = "Custom board";
       const same = b.fpga ? (m.boardsOfFpga.get(b.fpga.id) ?? []).filter((x) => x.id !== b.id) : [];
       return {
         ...base,
