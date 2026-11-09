@@ -47,9 +47,9 @@
   } from "./lib/variants";
   import DiagramDialog from "./lib/DiagramDialog.svelte";
   import DevicesDialog from "./lib/DevicesDialog.svelte";
-  import BoardInfoDialog from "./lib/BoardInfoDialog.svelte";
+  import BoardExplorer from "./lib/BoardExplorer.svelte";
+  import type { Ref as ExplorerRef } from "./lib/explorer";
   import SystemInfoDialog from "./lib/SystemInfoDialog.svelte";
-  import SupportedFpgasDialog from "./lib/SupportedFpgasDialog.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
   import { deviceSummaryLines, isBoardNotFound, needsDeviceChoice } from "./lib/devices";
@@ -956,10 +956,14 @@
 
   let devicesOpen = $state(false);
   /** Tools > Board Info… (or the ⓘ next to the board), while it's open. */
-  let boardInfoOpen = $state(false);
+  /** The Board Explorer, open at an item (null: closed). */
+  let explorer = $state<{ initial: ExplorerRef | null } | null>(null);
+  /** Opens the Board Explorer at the toolbar's board, if any. */
+  function openExplorer() {
+    explorer = { initial: currentBoard ? { kind: "board", id: currentBoard } : null };
+  }
   /** Help > System Info…, while it's open. */
   let systemInfoOpen = $state(false);
-  let supportedFpgasOpen = $state(false);
   let devices = $state<Devices | null>(null);
   let devicesError = $state<string | null>(null);
   let devicesBusy = $state(false);
@@ -1271,7 +1275,6 @@
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && simulationTestbench(project) !== null,
     testbenchOpen: project !== null && isTestbench(activeFile),
-    board: currentBoardInfo !== null,
     variantMenus: variantMenus(currentBoardInfo, currentVariant),
   });
 
@@ -1689,12 +1692,8 @@
       showDevices();
       return;
     }
-    if (id === "board-info") {
-      if (currentBoardInfo) boardInfoOpen = true;
-      return;
-    }
-    if (id === "supported-fpgas") {
-      supportedFpgasOpen = true;
+    if (id === "board-explorer") {
+      openExplorer();
       return;
     }
     if (id === "system-info") {
@@ -1750,8 +1749,7 @@
         | "copy-path"
         | "show-diagram"
         | "devices"
-        | "board-info"
-        | "supported-fpgas"
+        | "board-explorer"
         | "system-info"
         | "settings"
         | "go-to-definition"
@@ -1914,21 +1912,22 @@
   />
 {/if}
 
-{#if boardInfoOpen && currentBoardInfo}
-  <BoardInfoDialog
-    board={currentBoardInfo}
+{#if explorer}
+  <BoardExplorer
     {boards}
+    {examples}
+    initial={explorer.initial}
     selected={currentBoard}
-    onPick={(id) => {
-      boardInfoOpen = false;
+    onPickBoard={(id) => {
+      explorer = null;
       setBoard(id);
     }}
-    onClose={() => (boardInfoOpen = false)}
+    onOpenExample={(ex) => {
+      explorer = null;
+      openExample(ex);
+    }}
+    onClose={() => (explorer = null)}
   />
-{/if}
-
-{#if supportedFpgasOpen}
-  <SupportedFpgasDialog {boards} onClose={() => (supportedFpgasOpen = false)} />
 {/if}
 
 {#if systemInfoOpen}
@@ -2053,9 +2052,9 @@
     {#if currentBoardInfo}
       <button
         class="board-info"
-        title="Board info: its FPGA, how it's programmed, and the boards with the same FPGA"
+        title="The board in the Board Explorer: its FPGA, resources, examples, and the boards with the same FPGA"
         aria-label="Board info"
-        onclick={() => (boardInfoOpen = true)}>ⓘ</button
+        onclick={openExplorer}>ⓘ</button
       >
     {/if}
     {#if currentBoardInfo && currentBoardInfo.dimensions.length > 0}

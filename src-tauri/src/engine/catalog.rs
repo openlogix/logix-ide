@@ -38,9 +38,16 @@ pub struct Board {
     /// One of the project's own boards (`custom-boards.json`), rather than
     /// a catalog board.
     pub custom: bool,
-    /// The board's FPGA, for Board Info and the board picker's hints and
-    /// search. `None` when the engine doesn't describe it.
+    /// The board's FPGA, for the Board Explorer and the board picker's
+    /// hints and search. `None` when the engine doesn't describe it.
     pub fpga: Option<Fpga>,
+    /// What the board wires to FPGA pins, by port name, as the engine gives
+    /// it (each with its `type` and that type's fields), for the Board
+    /// Explorer. Empty when none are known.
+    pub resources: serde_json::Map<String, Value>,
+    /// What every design for the board must do (drives and setups), as the
+    /// engine gives it. Empty when nothing.
+    pub requires: Vec<Value>,
 }
 
 /// A board's FPGA, as Logix Engine's catalog describes it.
@@ -120,7 +127,7 @@ pub struct Catalog {
     pub families: Vec<FpgaFamily>,
 }
 
-/// An FPGA family and its FPGAs, for Tools > Supported FPGAs.
+/// An FPGA family and its FPGAs, for the Board Explorer.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FpgaFamily {
@@ -128,6 +135,9 @@ pub struct FpgaFamily {
     pub id: String,
     /// Its name for people, such as "Gowin GW1N", from the engine.
     pub label: String,
+    /// The extension of its pin files, such as "cst". `None` when the
+    /// engine doesn't say.
+    pub pin_extension: Option<String>,
     /// Its FPGAs, by part number.
     pub fpgas: Vec<Fpga>,
 }
@@ -353,9 +363,15 @@ pub(super) fn parse_families(catalog: &Value) -> Vec<FpgaFamily> {
                     id.to_uppercase()
                 }
             });
+            let pin_extension = i["constraint_extension"].as_str().map(String::from);
             (
                 i["order"].as_u64().unwrap_or(u64::MAX),
-                FpgaFamily { id, label, fpgas },
+                FpgaFamily {
+                    id,
+                    label,
+                    pin_extension,
+                    fpgas,
+                },
             )
         })
         .collect();
@@ -415,6 +431,8 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 configurations,
                 custom: b["custom"].as_bool().unwrap_or(false),
                 fpga,
+                resources: b["resources"].as_object().cloned().unwrap_or_default(),
+                requires: b["requires"].as_array().cloned().unwrap_or_default(),
             }
         })
         .collect();
@@ -431,7 +449,9 @@ mod tests {
         let catalog = json!({
             "boards": {
                 "icezum": {"name": "Icezum Alhambra", "fpga_id": "ice40hx1k-tq144"},
-                "alhambra-ii": {"name": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k"},
+                "alhambra-ii": {"name": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k",
+                    "resources": {"clk": {"type": "clock", "pin": "49", "mhz": 12}},
+                    "requires": [{"type": "setup", "text": "Set the jumper."}]},
                 "odd": {"fpga_id": "unknown"}
             },
             "fpgas": {
@@ -448,6 +468,10 @@ mod tests {
         assert_eq!(boards[2].family, "");
         assert!(parse_boards(&json!({})).is_err());
         assert!(boards[0].dimensions.is_empty());
+        // Resources and requirements as the engine gives them.
+        assert_eq!(boards[0].resources["clk"]["mhz"], 12);
+        assert_eq!(boards[0].requires[0]["type"], "setup");
+        assert!(boards[1].resources.is_empty() && boards[1].requires.is_empty());
     }
 
     #[test]
@@ -575,7 +599,7 @@ mod tests {
             },
             "families": {
                 "ice40": {"label": "Lattice iCE40", "order": 0},
-                "gw2a": {"label": "Gowin GW2A", "order": 3},
+                "gw2a": {"label": "Gowin GW2A", "order": 3, "constraint_extension": "cst"},
             },
         });
         let families = parse_families(&catalog);
@@ -596,6 +620,8 @@ mod tests {
         );
         assert_eq!(families[1].fpgas[0].id, "a");
         assert_eq!(families[1].fpgas[0].size, "18k");
+        assert_eq!(families[1].pin_extension.as_deref(), Some("cst"));
+        assert_eq!(families[2].pin_extension, None);
     }
 
     #[test]

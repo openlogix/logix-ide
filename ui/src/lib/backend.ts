@@ -155,6 +155,8 @@ export interface FpgaFamily {
   id: string;
   /** e.g. "Gowin GW1N". */
   label: string;
+  /** Its pin files' extension, e.g. "cst" (null if unknown). */
+  pinExtension: string | null;
   fpgas: { id: string; partNumber: string; size: string }[];
 }
 
@@ -179,6 +181,13 @@ export interface Board {
   custom: boolean;
   /** The board's FPGA, from Logix Engine's catalog (null if it doesn't say). */
   fpga: Fpga | null;
+  /**
+   * What the board wires to FPGA pins, by port name, as Logix Engine gives
+   * it: each with its `type` (clock, leds, uart…) and that type's fields.
+   */
+  resources?: Record<string, Record<string, unknown>>;
+  /** What every design for the board must do (drives and setups), as the engine gives it. */
+  requires?: Record<string, unknown>[];
 }
 
 /** A board's FPGA. */
@@ -388,8 +397,6 @@ export interface MenuState {
   simulate: boolean;
   /** The open tab is a testbench (the editor menu's Run This Test, Simulate). */
   testbenchOpen: boolean;
-  /** The toolbar has a board Logix knows (Tools > Board Info). */
-  board: boolean;
   /** One Tools submenu per dimension of the board's variants. */
   variantMenus: VariantMenu[];
 }
@@ -421,8 +428,7 @@ export type MenuId =
   | "stop"
   | "show-diagram"
   | "devices"
-  | "board-info"
-  | "supported-fpgas"
+  | "board-explorer"
   | "settings"
   | "go-to-definition"
   | "toggle-comment"

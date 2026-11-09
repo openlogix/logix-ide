@@ -1113,7 +1113,7 @@ test("Simulate says Opening GTKWave… until its window appears", async ({ page 
   await expect(status(page)).toContainText("Build succeeded");
 });
 
-test("Board Info shows the board's FPGA and the boards with the same FPGA", async ({ page }) => {
+test("the Board Explorer shows the board's FPGA and the boards with the same FPGA", async ({ page }) => {
   await start(page);
   // The board picker: the FPGA as a hover hint, and search by it.
   await boardButton(page).click();
@@ -1122,67 +1122,75 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await expect(alhambra).toHaveAttribute("title", "FPGA: Lattice iCE40 ICE40HX4K-TQ144 (8k)");
   await page.keyboard.press("Escape");
 
-  // The ⓘ next to the board, and Tools > Board Info.
+  // The ⓘ next to the board opens the Explorer at the board.
   await page.getByRole("button", { name: "Board info" }).click();
-  const info = page.getByRole("dialog", { name: "Board Info" });
-  await expect(info).toContainText("ICE40HX4K-TQ144");
-  await expect(info).toContainText("Lattice iCE40");
-  await expect(info).toContainText(".pcf");
-  await expect(info).toContainText("USB · Flash (default)");
+  const explorer = page.getByRole("dialog", { name: "Board Explorer" });
+  const details = explorer.getByLabel("Details");
+  await expect(details.getByRole("heading", { level: 3 })).toHaveText("Alhambra II");
+  await expect(details).toContainText("ICE40HX4K-TQ144");
+  await expect(details).toContainText("Lattice iCE40");
+  await expect(details).toContainText(".pcf");
+  await expect(details).toContainText("USB · Flash (default)");
+  // Its resources, from the engine's catalog.
+  const resources = details.locator("table.resources");
+  await expect(resources.getByRole("row", { name: /^Clock|clk/ }).first()).toContainText("12 MHz");
+  // It's selected in the Boards list, its family's group open.
+  await expect(explorer.getByRole("tab", { name: "Boards" })).toHaveAttribute("aria-selected", "true");
+  await expect(explorer.locator(".item.selected")).toHaveText(/Alhambra II/);
+  await expect(explorer.getByRole("button", { name: "Select This Board" })).toBeDisabled();
   await page.keyboard.press("Escape");
-  await expect(info).toBeHidden();
-  await menu(page, "board-info");
-  await expect(info).toBeVisible();
-  await expect(info).toContainText("The selected board");
-  // Every board with this FPGA, the shown and selected one marked.
-  const list = info.locator("li", { hasText: /Alhambra II|AZUKAR v2/ });
-  await expect(list).toHaveText(["Alhambra II (shown, selected)", "AZUKAR v2"]);
-  const back = info.getByRole("button", { name: "Back" });
+  await expect(explorer).toBeHidden();
+
+  // Tools > Board Explorer opens it too. A board with the same FPGA shows its own details; Back returns.
+  await menu(page, "board-explorer");
+  await expect(details.getByRole("heading", { level: 3 })).toHaveText("Alhambra II");
+  const back = explorer.getByRole("button", { name: "Back" });
   await expect(back).toHaveCount(0);
-  // A board with the same FPGA shows its own info; Back returns.
-  await info.getByRole("button", { name: /^AZUKAR v2/ }).click();
-  await expect(info.getByRole("heading", { level: 2 })).toHaveText(/^Board: AZUKAR v2/);
-  // The same list, the marks moved.
-  await expect(list).toHaveText(["Alhambra II (selected)", "AZUKAR v2 (shown)"]);
-  await expect(info.getByRole("button", { name: "Alhambra II" })).toBeVisible();
+  await details.getByRole("button", { name: "AZUKAR v2" }).click();
+  await expect(details.getByRole("heading", { level: 3 })).toHaveText("AZUKAR v2");
   await back.click();
-  await expect(info.getByRole("heading", { level: 2 })).toHaveText("Board: Alhambra II");
-  await expect(back).toHaveCount(0);
+  await expect(details.getByRole("heading", { level: 3 })).toHaveText("Alhambra II");
   // Select This Board picks the board shown, as the board picker does.
-  await info.getByRole("button", { name: /^AZUKAR v2/ }).click();
-  await info.getByRole("button", { name: "Select This Board" }).click();
-  await expect(info).toBeHidden();
+  await details.getByRole("button", { name: "AZUKAR v2" }).click();
+  await explorer.getByRole("button", { name: "Select This Board" }).click();
+  await expect(explorer).toBeHidden();
   await changeTheBoard(page);
   await expect(boardButton(page)).toHaveText(/AZUKAR v2/);
 });
 
-test("Supported FPGAs lists every FPGA by family, with its boards", async ({ page }) => {
+test("the Board Explorer links families, FPGAs, boards and examples", async ({ page }) => {
   await start(page);
-  await menu(page, "supported-fpgas");
-  const dialog = page.getByRole("dialog", { name: "Supported FPGAs" });
-  const families = dialog.getByRole("list", { name: "FPGA families" });
-  // Every family, collapsed, counting its FPGAs and boards; GW5A has none.
-  const toggles = families.getByRole("button", { name: /FPGAs?.*boards?/ });
-  await expect(toggles.first()).toHaveText(/^\s*Lattice iCE40\s*40 FPGAs\s*·\s*27 boards$/);
-  const gw5a = families.getByRole("button", { name: /Gowin GW5A/ });
-  await expect(gw5a).toHaveText(/48 FPGAs\s*·\s*0 boards/);
-  await expect(gw5a).toHaveAttribute("aria-expanded", "false");
-  await gw5a.click();
-  await expect(gw5a).toHaveAttribute("aria-expanded", "true");
-  const row = dialog.getByRole("row", { name: /GW5A-EV25LQ100C1/ });
-  await expect(row).toContainText("gw5a-ev25lq100c1-i0");
-  // No boards: the count is blank.
-  await expect(row.getByRole("cell").last()).toHaveText("");
-  // Searching shows the matches in every family; a board count's hint names them.
-  await dialog.getByRole("searchbox").fill("hx4k");
-  await expect(toggles).toHaveCount(1);
-  const hx4k = dialog.getByRole("row", { name: /ice40hx4k-tq144-8k/ });
-  await expect(hx4k.getByRole("cell").last()).toHaveAttribute("title", /Alhambra II/);
-  await expect(hx4k.getByRole("cell").last()).toHaveText("4");
-  await dialog.getByRole("searchbox").fill("zzz");
-  await expect(dialog).toContainText("No FPGA matches");
-  await page.keyboard.press("Escape");
-  await expect(dialog).toBeHidden();
+  await menu(page, "board-explorer");
+  const explorer = page.getByRole("dialog", { name: "Board Explorer" });
+  const details = explorer.getByLabel("Details");
+  const title = details.getByRole("heading", { level: 3 });
+  // Families: every family the engine supports, with or without boards.
+  await explorer.getByRole("tab", { name: "Families" }).click();
+  const list = explorer.getByRole("list", { name: "Families" });
+  await expect(list.getByRole("button")).toHaveCount(8);
+  await list.getByRole("button", { name: /Gowin GW5A/ }).click();
+  await expect(title).toHaveText("Gowin GW5A");
+  await expect(details).toContainText("No boards yet.");
+  await expect(details).toContainText("FPGAs48");
+  // A family's FPGA, then its board, then the board's example, and back up by links.
+  await explorer.getByRole("tab", { name: "FPGAs" }).click();
+  await explorer.getByRole("searchbox").fill("up5k-sg48");
+  await explorer.getByRole("button", { name: /^ICE40UP5K-SG48/ }).click();
+  await expect(title).toHaveText("ICE40UP5K-SG48");
+  await expect(details).toContainText("ice40up5k-sg48");
+  await details.getByRole("button", { name: "iCEBreaker", exact: true }).click();
+  await expect(title).toHaveText("iCEBreaker");
+  await expect(explorer.getByRole("tab", { name: "Boards" })).toHaveAttribute("aria-selected", "true");
+  await details.getByRole("button", { name: "blinky" }).click();
+  await expect(title).toHaveText("blinky");
+  await details.getByRole("button", { name: "Lattice iCE40" }).click();
+  await expect(title).toHaveText("Lattice iCE40");
+  // Open Example opens the example shown.
+  await explorer.getByRole("button", { name: "Back" }).click();
+  await expect(title).toHaveText("blinky");
+  await explorer.getByRole("button", { name: "Open Example" }).click();
+  await expect(explorer).toBeHidden();
+  await expect(status(page)).toHaveText("Opened example icebreaker/blinky.");
 });
 
 test("examples show their summary and notes, selected or not", async ({ page }) => {

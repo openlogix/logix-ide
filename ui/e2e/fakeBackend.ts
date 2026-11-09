@@ -33,7 +33,7 @@ import graphOutput from "./fixtures/graph.txt?raw";
 import graphSvg from "./fixtures/graph.svg?raw";
 import packageJson from "../../package.json";
 
-const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }));
+const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }) as unknown as Real.Board);
 const FPGA_FAMILIES: Real.FpgaFamily[] = fpgaFamilies;
 
 /**

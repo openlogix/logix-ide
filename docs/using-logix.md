@@ -106,25 +106,25 @@ used**, then all boards by FPGA family. The words next to the list
 to be plugged in; Upload then checks. Click them to see the connected
 devices and the boards each may be.
 
-### Board info
+### Board Explorer
 
-The **ⓘ** next to the board (or **Tools > Board Info…**) shows the board's
-FPGA, its pin file kind and the ways to program it, and lists all the
-boards with the same FPGA: click one to see its info (**Back** returns),
-and **Select This Board** to select the board shown. To find a board like
-yours, you can also type its FPGA in the board list's search, such as
-`up5k` or `xc7a35t`, and hover over a board to see its FPGA.
+**Tools > Board Explorer…** (or the **ⓘ** next to the board, which opens
+it at the selected board) shows everything Logix knows about FPGAs and
+boards: the FPGA families, the FPGAs Logix supports (also those no board
+has yet), the boards (your project's own included) and the examples. Pick
+**Families**, **FPGAs**, **Boards** or **Examples** to list them, grouped
+by family like the board list, and search them. Select one to see its
+details on the right: a board's FPGA, how to program it, its resources
+(clocks, LEDs, buttons and the pins they're on) and examples; an FPGA's
+family, its FPGA ID (what a board file of your own names) and the boards
+that use it; and so on. Everything named there is a link: click it to see
+its details, and **Back** returns. **Select This Board** selects the board
+shown, and **Open Example** opens the example shown.
 
-![The Board Info window for the Alhambra II](images/board-info.png)
+To find a board like yours, look at its FPGA's boards, or type the FPGA in
+the board list's search, such as `up5k` or `xc7a35t`.
 
-### Supported FPGAs
-
-**Tools > Supported FPGAs…** lists every FPGA Logix supports, by family,
-with how many boards have each, including FPGAs that no board in the list
-has yet. Click a family to see its FPGAs, or search by part number. A
-board file of your own names its FPGA by its **FPGA ID**.
-
-![The Supported FPGAs window](images/supported-fpgas.png)
+![The Board Explorer showing the Alhambra II](images/board-explorer.png)
 
 ### Board options
 

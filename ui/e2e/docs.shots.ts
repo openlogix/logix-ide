@@ -128,20 +128,12 @@ test("project options after a board change", async ({ page }) => {
   await shot(page, "project-options");
 });
 
-test("board info", async ({ page }) => {
+test("board explorer", async ({ page }) => {
   await startWithBoard(page);
-  await menu(page, "board-info");
-  await expect(page.getByRole("dialog", { name: "Board Info" })).toContainText("ICE40HX4K-TQ144");
-  await shot(page, "board-info");
-});
-
-test("supported FPGAs", async ({ page }) => {
-  await startWithBoard(page);
-  await menu(page, "supported-fpgas");
-  const dialog = page.getByRole("dialog", { name: "Supported FPGAs" });
-  await dialog.getByRole("button", { name: /Lattice iCE40/ }).click();
-  await expect(dialog).toContainText("ICE40HX4K-TQ144");
-  await shot(page, "supported-fpgas");
+  await menu(page, "board-explorer");
+  const dialog = page.getByRole("dialog", { name: "Board Explorer" });
+  await expect(dialog.getByLabel("Details")).toContainText("ICE40HX4K-TQ144");
+  await shot(page, "board-explorer");
 });
 
 test("toolbar icons", async ({ page }) => {
