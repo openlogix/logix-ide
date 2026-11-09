@@ -831,7 +831,7 @@ test("dragging the divider to the bottom hides the output", async ({ page }) => 
   await expect(output(page)).toBeHidden();
   await expect(page.locator(".status-bar")).toBeVisible();
   // Show brings it back at its earlier height.
-  await page.getByRole("button", { name: /Show/ }).click();
+  await page.getByRole("button", { name: /^Show ▴/ }).click();
   await expect(output(page)).toBeVisible();
   const after = await page.locator(".console-area").boundingBox();
   expect(Math.round(after!.height)).toBe(Math.round(before!.height));
