@@ -76,7 +76,7 @@
       {/if}
       <table>
         <tbody>
-          <tr><th scope="row">FPGA family</th><td>{current.archLabel}</td></tr>
+          <tr><th scope="row">FPGA family</th><td>{current.familyLabel}</td></tr>
           {#if current.fpga}
             <tr><th scope="row">FPGA</th><td>{current.fpga.partNumber}</td></tr>
             {#if current.fpga.size}

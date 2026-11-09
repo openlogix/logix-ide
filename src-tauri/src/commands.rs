@@ -389,7 +389,7 @@ pub async fn run_task(
         )
         .into());
     };
-    let arch = info.arch.clone();
+    let family = info.family.clone();
     let pin_extension = info.pin_extension.clone();
     // The values the user chose, as they are: the engine uses the board's
     // first variant with them ({} for its default).
@@ -460,7 +460,7 @@ pub async fn run_task(
         board: &board,
         board_variant: Some(&board_variant),
         custom_boards: boards_file.as_ref(),
-        arch: &arch,
+        family: &family,
         source_folder: &dir,
         files: &names,
         constraint_file: constraint.as_deref(),

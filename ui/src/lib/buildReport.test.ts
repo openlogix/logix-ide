@@ -3,7 +3,7 @@ import type { BuildReport } from "./backend";
 import { percent, reportLines, reportSummary, usages } from "./buildReport";
 
 const ice40: BuildReport = {
-  arch: "ice40",
+  family: "ice40",
   resources: [
     { name: "ICESTORM_LC", used: 27, available: 7680 },
     { name: "ICESTORM_RAM", used: 0, available: 32 },
@@ -31,7 +31,7 @@ describe("build report", () => {
 
   it("uses the toolchain's names from an engine without a summary", () => {
     const other: BuildReport = {
-      arch: "newfpga",
+      family: "newfpga",
       resources: [
         { name: "CELL", used: 5, available: 100 },
         { name: "RAM", used: 0, available: 4 },

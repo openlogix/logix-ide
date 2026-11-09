@@ -1,26 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByArch, boardsWithFpga } from "./boards";
+import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByFamily, boardsWithFpga } from "./boards";
 import type { Board, BoardComparison } from "./backend";
 
 const boards: Board[] = [
-  { id: "alhambra-ii", description: "Alhambra II", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", arch: "xilinx", archLabel: "Xilinx", archOrder: 3, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "colorlight", description: "ColorLight 5A-75B", arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "icebreaker", description: "iCEBreaker", arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "mystery", description: "Mystery Board", arch: "", archLabel: "Other", archOrder: 99, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "tang", description: "Tang Nano 9K", arch: "gowin", archLabel: "Gowin", archOrder: 2, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "alhambra-ii", description: "Alhambra II", family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", family: "artix7", familyLabel: "Xilinx Artix-7", familyOrder: 5, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "colorlight", description: "ColorLight 5A-75B", family: "ecp5", familyLabel: "Lattice ECP5", familyOrder: 1, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "icebreaker", description: "iCEBreaker", family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "mystery", description: "Mystery Board", family: "", familyLabel: "Other", familyOrder: 99, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "tang", description: "Tang Nano 9K", family: "gw1n", familyLabel: "Gowin GW1N", familyOrder: 2, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
 ];
 
 const summary = (recent: string[], q: string, list: Board[] = boards) =>
   boardGroups(list, recent, q).map((g) => `${g.label}: ${g.boards.map((b) => b.id).join(",")}`);
 
 describe("boardGroups", () => {
-  it("groups by architecture, in a fixed order", () => {
+  it("groups by FPGA family, in a fixed order", () => {
     expect(summary([], "")).toEqual([
       "Lattice iCE40: alhambra-ii,icebreaker",
       "Lattice ECP5: colorlight",
-      "Gowin: tang",
-      "Xilinx: arty",
+      "Gowin GW1N: tang",
+      "Xilinx Artix-7: arty",
       "Other: mystery",
     ]);
   });
@@ -28,10 +28,10 @@ describe("boardGroups", () => {
   it("lists the recently used boards first, newest first, and in their group too", () => {
     const groups = summary(["tang", "gone-board", "alhambra-ii"], "");
     expect(groups[0]).toBe("Recently used: tang,alhambra-ii");
-    expect(groups).toContain("Gowin: tang");
+    expect(groups).toContain("Gowin GW1N: tang");
     const [recent, ice40] = boardGroups(boards, ["tang"], "");
     expect(recent.kind).toBe("recent");
-    expect(ice40.kind).toBe("arch");
+    expect(ice40.kind).toBe("family");
   });
 
   it("lists the project's own boards first, as Custom boards, and in their group too", () => {
@@ -52,20 +52,20 @@ describe("boardGroups", () => {
     expect(summary([], "icebreaker", all)).toEqual(["Lattice iCE40: icebreaker"]);
   });
 
-  it("puts the project's own boards in their architecture's group", () => {
+  it("puts the project's own boards in their family's group", () => {
     const mine = { ...boards[0], id: "mine", description: "Mine", custom: true };
     // The engine's merged list: "My Arty" replaced the catalog's Arty.
     const over = { ...boards[1], description: "My Arty", custom: true };
     const all = [boards[0], boards[2], boards[3], mine, boards[4], over, boards[5]];
     const groups = summary([], "", all);
     expect(groups).toContain("Lattice iCE40: mine,alhambra-ii,icebreaker");
-    expect(groups).toContain("Xilinx: arty");
+    expect(groups).toContain("Xilinx Artix-7: arty");
   });
 
-  it("searches names, ids and architectures", () => {
+  it("searches names, ids and families", () => {
     expect(summary([], "ICE40")).toEqual(["Lattice iCE40: alhambra-ii,icebreaker"]);
-    expect(summary([], "gowin")).toEqual(["Gowin: tang"]);
-    expect(summary(["alhambra-ii"], "tang")).toEqual(["Gowin: tang"]);
+    expect(summary([], "gowin")).toEqual(["Gowin GW1N: tang"]);
+    expect(summary(["alhambra-ii"], "tang")).toEqual(["Gowin GW1N: tang"]);
     expect(summary([], "zzz")).toEqual([]);
   });
 });
@@ -105,19 +105,19 @@ describe("FPGAs", () => {
   });
 });
 
-describe("groupByArch", () => {
-  it("keeps the engine's order and puts unknown architectures last", () => {
-    const arch = (arch: string, archLabel: string, archOrder: number) => ({ arch, archLabel, archOrder });
+describe("groupByFamily", () => {
+  it("keeps the engine's order and puts unknown families last", () => {
+    const family = (family: string, familyLabel: string, familyOrder: number) => ({ family, familyLabel, familyOrder });
     const items = [
-      { n: "a", ...arch("zeta", "ZETA", 99) },
-      { n: "b", ...arch("xilinx", "Xilinx", 3) },
-      { n: "c", ...arch("ice40", "Lattice iCE40", 0) },
-      { n: "d", ...arch("alpha", "ALPHA", 99) },
+      { n: "a", ...family("zeta", "ZETA", 99) },
+      { n: "b", ...family("artix7", "Xilinx Artix-7", 5) },
+      { n: "c", ...family("ice40", "Lattice iCE40", 0) },
+      { n: "d", ...family("alpha", "ALPHA", 99) },
     ];
-    const groups = groupByArch(items, (i) => i).map(
+    const groups = groupByFamily(items, (i) => i).map(
       (g) => `${g.label}:${g.items.map((i) => i.n).join("")}`,
     );
-    expect(groups).toEqual(["Lattice iCE40:c", "Xilinx:b", "ALPHA:d", "ZETA:a"]);
+    expect(groups).toEqual(["Lattice iCE40:c", "Xilinx Artix-7:b", "ALPHA:d", "ZETA:a"]);
   });
 });
 
@@ -130,18 +130,18 @@ describe("boardChangeNote", () => {
   const cmp = (...aspects: BoardComparison["aspects"]): BoardComparison => ({ sameBuild: false, aspects });
   const kefir = cmp(
     a("board", "no", "Alhambra II", "Kéfir I", "Board: Alhambra II → Kéfir I."),
-    a("architecture", "yes", "Lattice iCE40", "Lattice iCE40", "Same architecture: Lattice iCE40."),
+    a("family", "yes", "Lattice iCE40", "Lattice iCE40", "Same FPGA family: Lattice iCE40."),
     a("fpga", "yes", "ICE40HX4K-TQ144", "ICE40HX4K-TQ144", "Same FPGA: ICE40HX4K-TQ144."),
     a("pins", "unknown", null, null, "Pins: not known whether they match."),
   );
   const icebreaker = cmp(
     a("board", "no", "Alhambra II", "iCEBreaker", "Board: Alhambra II → iCEBreaker."),
-    a("architecture", "yes", "Lattice iCE40", "Lattice iCE40", "Same architecture: Lattice iCE40."),
+    a("family", "yes", "Lattice iCE40", "Lattice iCE40", "Same FPGA family: Lattice iCE40."),
     a("fpga", "no", "ICE40HX4K-TQ144", "ICE40UP5K-SG48", "FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48."),
   );
   const colorlight = cmp(
     a("board", "no", "Alhambra II", "ColorLight 5A-75B", "Board: Alhambra II → ColorLight 5A-75B."),
-    a("architecture", "no", "Lattice iCE40", "Lattice ECP5", "Architecture: Lattice iCE40 → Lattice ECP5."),
+    a("family", "no", "Lattice iCE40", "Lattice ECP5", "FPGA family: Lattice iCE40 → Lattice ECP5."),
     a("fpga", "no", "ICE40HX4K-TQ144", "LFE5U-25F-6BG256C", "FPGA: ICE40HX4K-TQ144 → LFE5U-25F-6BG256C."),
     a("constraint_format", "no", ".pcf", ".lpf", "Pin file format: .pcf → .lpf."),
   );
@@ -174,12 +174,25 @@ describe("boardChangeNote", () => {
       "! The clock changes from 12 MHz to 100 MHz, and the LED and button wiring may differ: check the design.",
     ]);
     expect(show(boardChangeNote(colorlight, "pinout.pcf"))).toEqual([
-      "> Architecture: Lattice iCE40 → Lattice ECP5.",
+      "> FPGA family: Lattice iCE40 → Lattice ECP5.",
       "! Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
       "! Probably significant changes: Lattice iCE40 parts, such as I/O cells and PLLs, won't build.",
       "! The clock frequency and LED and button wiring may differ: check the design.",
     ]);
     expect(boardChangeNote(colorlight, null)[1].text).toBe("Needs a .lpf pin file, with this board's pins.");
+    // A related family with the same kind of pin file, such as GW1N and GW2A.
+    const primer = cmp(
+      a("board", "no", "Tang Nano 9K", "Tang Primer 20K Dock", "Board: Tang Nano 9K → Tang Primer 20K Dock."),
+      a("family", "no", "Gowin GW1N", "Gowin GW2A", "FPGA family: Gowin GW1N → Gowin GW2A."),
+      a("fpga", "no", "GW1NR-LV9QN88PC6/I5", "GW2A-LV18PG256C8/I7", "FPGA: GW1NR-LV9QN88PC6/I5 → GW2A-LV18PG256C8/I7."),
+      a("constraint_format", "yes", ".cst", ".cst", "Same pin file format: .cst."),
+    );
+    expect(show(boardChangeNote(primer, "pinout.cst"))).toEqual([
+      "> FPGA family: Gowin GW1N → Gowin GW2A.",
+      "! Gowin GW1N parts, such as PLLs and special cells, may need changes.",
+      "! The design may not fit, or may not reach its clock speed.",
+      "! The pins, clock frequency and LED and button wiring may differ: check pinout.cst and the design.",
+    ]);
     // Nothing to say: no comparison, or the same board.
     expect(boardChangeNote(null, "pinout.pcf")).toEqual([]);
     expect(boardChangeNote(same, "pinout.pcf")).toEqual([]);

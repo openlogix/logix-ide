@@ -100,8 +100,8 @@ pub struct Diagnostic {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildReport {
-    /// FPGA family, e.g. "ice40", "ecp5", "gowin", "xilinx".
-    pub arch: String,
+    /// FPGA family, e.g. "ice40", "ecp5", "gw1n", "artix7".
+    pub family: String,
     /// The FPGA's resources, with the toolchain's (family-specific) names.
     pub resources: Vec<Resource>,
     /// The main resources in plain words, from the engine's

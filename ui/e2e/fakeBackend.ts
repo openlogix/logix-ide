@@ -53,7 +53,7 @@ function fakeCompare(a: Real.Board | undefined, b: Real.Board | undefined): Real
     sameBuild: sameFpga,
     aspects: [
       aspect("board", "Board", "Same board", a.description, b.description, a.id === b.id),
-      aspect("architecture", "Architecture", "Same architecture", a.archLabel, b.archLabel, a.arch === b.arch),
+      aspect("family", "FPGA family", "Same FPGA family", a.familyLabel, b.familyLabel, a.family === b.family),
       aspect("fpga", "FPGA", "Same FPGA", a.fpga?.partNumber ?? "?", b.fpga?.partNumber ?? "?", sameFpga),
       aspect("size", "Size", "Same size", a.fpga?.size ?? "?", b.fpga?.size ?? "?", a.fpga?.size === b.fpga?.size),
       aspect("constraint_format", "Pin file format", "Same pin file format", ext(a), ext(b), ext(a) === ext(b)),
@@ -124,8 +124,12 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
   const fail = (message: string): never => {
     throw { message, id: current };
   };
-  const family = (fpga: string) =>
-    fpga.startsWith("ice40") ? "ice40" : fpga.startsWith("lfe5") ? "ecp5" : fpga.startsWith("gw") ? "gowin" : "xilinx";
+  // The family of an FPGA ID, by the start of its part number.
+  const prefixes: [string, string][] = [
+    ["ice40", "ice40"], ["ice5", "ice40"], ["lfe5", "ecp5"], ["gw1n", "gw1n"], ["gw2a", "gw2a"],
+    ["gw5a", "gw5a"], ["xc7a", "artix7"], ["xc7s", "spartan7"], ["xc7z", "zynq7000"],
+  ];
+  const family = (fpga: string) => prefixes.find(([p]) => fpga.startsWith(p))?.[1] ?? "";
   // Value labels, as the catalog's boards have them.
   const labels = new Map<string, Real.Dimension["values"][number]>();
   for (const b of BOARDS) for (const d of b.dimensions) for (const v of d.values) labels.set(`${d.id}:${v.id}`, v);
@@ -136,8 +140,8 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
     if (!b.fpga_id) fail("Missing field `fpga_id`.");
     if (!b.variants?.length) fail("A board needs at least one variant.");
     if (b.variants!.some((v) => !v.selector)) fail("Missing field `selector`.");
-    const arch = family(b.fpga_id!);
-    const like = BOARDS.find((x) => x.arch === arch)!;
+    const fam = family(b.fpga_id!);
+    const like = BOARDS.find((x) => x.family === fam)!;
     const dims = ["connection", "memory"].map((id) => ({
       id,
       label: id === "connection" ? "Connection" : "Memory",
@@ -386,7 +390,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
       diagnostics: [],
       testbenches: [],
       report: {
-        arch: "ice40",
+        family: "ice40",
         resources: [
           { name: "ICESTORM_LC", used: 27, available: 7680 },
           { name: "SB_GB", used: 1, available: 8 },

@@ -15,7 +15,7 @@ import {
 const plain: Board = {
   id: "alhambra-ii",
   description: "Alhambra II",
-  arch: "ice40", archLabel: "Lattice iCE40", archOrder: 0,
+  family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0,
   pinExtension: "pcf",
   custom: false,
   fpga: null,
@@ -42,7 +42,7 @@ const arty: Board = {
 const stick: Board = {
   id: "stick",
   description: "Stick",
-  arch: "ecp5", archLabel: "Lattice ECP5", archOrder: 1,
+  family: "ecp5", familyLabel: "Lattice ECP5", familyOrder: 1,
   pinExtension: "lpf",
   custom: false,
   fpga: null,

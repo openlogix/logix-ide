@@ -59,7 +59,11 @@ pub struct Board {
 
 #[derive(Debug, Deserialize)]
 pub struct Fpga {
-    pub architecture: String,
+    /// The FPGA family, such as "gw1n", for people.
+    pub family: String,
+    /// The toolchain that builds it, such as "gowin", from the engine's
+    /// `families`: it picks the pin file dialect.
+    pub toolchain: String,
     pub part_number: String,
 }
 
@@ -186,11 +190,11 @@ pub fn generate(id: &str, board: &Board, fpga: &Fpga) -> Result<Vec<Generated>, 
 // The plan: what a board's designs use.
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum Arch {
+enum Toolchain {
     Ice40,
     Ecp5,
     Gowin,
-    Xilinx,
+    Openxc7,
 }
 
 /// The internal oscillators this module knows.
@@ -284,7 +288,7 @@ impl LedKind {
 
 struct Plan<'a> {
     board: &'a Board,
-    arch: Arch,
+    toolchain: Toolchain,
     clock: Option<Clock>,
     leds: Vec<LedGroup>,
     drives: Vec<Drive>,
@@ -307,25 +311,30 @@ fn rgb_driver_pins(part: &str) -> Option<[&'static str; 3]> {
     }
 }
 
-fn internal_osc(arch: Arch, part: &str) -> Option<Osc> {
+fn internal_osc(toolchain: Toolchain, part: &str) -> Option<Osc> {
     let part = part.to_ascii_uppercase();
-    match arch {
-        Arch::Ice40 if part.starts_with("ICE40UP") || part.starts_with("ICE5LP") => {
+    match toolchain {
+        Toolchain::Ice40 if part.starts_with("ICE40UP") || part.starts_with("ICE5LP") => {
             Some(Osc::Hfosc)
         }
-        Arch::Ecp5 => Some(Osc::Oscg),
+        Toolchain::Ecp5 => Some(Osc::Oscg),
         _ => None,
     }
 }
 
 impl<'a> Plan<'a> {
     fn new(id: &str, board: &'a Board, fpga: &Fpga) -> Result<Plan<'a>, String> {
-        let arch = match fpga.architecture.as_str() {
-            "ice40" => Arch::Ice40,
-            "ecp5" => Arch::Ecp5,
-            "gowin" => Arch::Gowin,
-            "xilinx" => Arch::Xilinx,
-            other => return Err(format!("{id}: unknown architecture {other}")),
+        let toolchain = match fpga.toolchain.as_str() {
+            "ice40" => Toolchain::Ice40,
+            "ecp5" => Toolchain::Ecp5,
+            "gowin" => Toolchain::Gowin,
+            "openxc7" => Toolchain::Openxc7,
+            other => {
+                return Err(format!(
+                    "{id}: unknown toolchain {other} (FPGA family {})",
+                    fpga.family
+                ))
+            }
         };
         let usable = |r: &Resource| !r.needs_setup();
         let clock = board
@@ -346,7 +355,7 @@ impl<'a> Plan<'a> {
                 }),
                 _ => None,
             })
-            .or_else(|| internal_osc(arch, &fpga.part_number).map(Clock::Internal));
+            .or_else(|| internal_osc(toolchain, &fpga.part_number).map(Clock::Internal));
         let rgb_pins = rgb_driver_pins(&fpga.part_number);
         let mut leds = Vec::new();
         for (name, r) in board.resources.iter().filter(|(_, r)| usable(r)) {
@@ -444,7 +453,7 @@ impl<'a> Plan<'a> {
             .collect();
         Ok(Plan {
             board,
-            arch,
+            toolchain,
             clock,
             leds,
             drives,
@@ -470,7 +479,7 @@ impl<'a> Plan<'a> {
             files.insert("main_tb.gtkw".into(), layout);
         }
         files.insert(
-            format!("pinout.{}", self.arch.extension()),
+            format!("pinout.{}", self.toolchain.extension()),
             self.pin_file("blinky", Some(clock)),
         );
         if let Clock::Internal(osc) = clock {
@@ -520,7 +529,7 @@ impl<'a> Plan<'a> {
             }
         }
         files.insert(
-            format!("pinout.{}", self.arch.extension()),
+            format!("pinout.{}", self.toolchain.extension()),
             self.pin_file("bare-minimum", clock),
         );
         Some(Generated {
@@ -945,7 +954,7 @@ impl<'a> Plan<'a> {
     // -- The pin file ----------------------------------------------------------
 
     fn pin_file(&self, example: &str, clock: Option<&Clock>) -> String {
-        let c = self.arch.comment();
+        let c = self.toolchain.comment();
         let mut s = String::new();
         let _ = writeln!(
             s,
@@ -967,12 +976,13 @@ impl<'a> Plan<'a> {
         }) = clock
         {
             let _ = writeln!(s, "\n{c} Clock ({}).", mhz_text(*mhz));
-            self.arch.pin(&mut s, name, pin, io_standard.as_deref());
-            match self.arch {
-                Arch::Ecp5 => {
+            self.toolchain
+                .pin(&mut s, name, pin, io_standard.as_deref());
+            match self.toolchain {
+                Toolchain::Ecp5 => {
                     let _ = writeln!(s, "FREQUENCY PORT \"{name}\" {} MHZ;", num(*mhz));
                 }
-                Arch::Xilinx => {
+                Toolchain::Openxc7 => {
                     let _ = writeln!(
                         s,
                         "create_clock -period {:.3} [get_ports {{{name}}}]",
@@ -1023,11 +1033,11 @@ impl<'a> Plan<'a> {
                 "\n{c} No pins are known for this board yet. Add a line for each port of\n{c} main, such as:\n{c}"
             );
             let mut example = String::new();
-            self.arch.pin(
+            self.toolchain.pin(
                 &mut example,
                 "led",
                 "<pin>",
-                (self.arch != Arch::Ice40).then_some("LVCMOS33"),
+                (self.toolchain != Toolchain::Ice40).then_some("LVCMOS33"),
             );
             for line in example.lines() {
                 let _ = writeln!(s, "{c}   {line}");
@@ -1038,28 +1048,28 @@ impl<'a> Plan<'a> {
 
     fn vector(&self, s: &mut String, name: &str, pins: &[String], io: Option<&str>) {
         if pins.len() == 1 {
-            self.arch.pin(s, name, &pins[0], io);
+            self.toolchain.pin(s, name, &pins[0], io);
         } else {
             for (i, p) in pins.iter().enumerate() {
-                self.arch.pin(s, &format!("{name}[{i}]"), p, io);
+                self.toolchain.pin(s, &format!("{name}[{i}]"), p, io);
             }
         }
     }
 }
 
-impl Arch {
+impl Toolchain {
     fn extension(self) -> &'static str {
         match self {
-            Arch::Ice40 => "pcf",
-            Arch::Ecp5 => "lpf",
-            Arch::Gowin => "cst",
-            Arch::Xilinx => "xdc",
+            Toolchain::Ice40 => "pcf",
+            Toolchain::Ecp5 => "lpf",
+            Toolchain::Gowin => "cst",
+            Toolchain::Openxc7 => "xdc",
         }
     }
 
     fn comment(self) -> &'static str {
         match self {
-            Arch::Gowin => "//",
+            Toolchain::Gowin => "//",
             _ => "#",
         }
     }
@@ -1067,22 +1077,22 @@ impl Arch {
     /// One pin's lines.
     fn pin(self, s: &mut String, port: &str, pin: &str, io: Option<&str>) {
         let _ = match self {
-            Arch::Ice40 => writeln!(s, "set_io {port} {pin}"),
-            Arch::Ecp5 => {
+            Toolchain::Ice40 => writeln!(s, "set_io {port} {pin}"),
+            Toolchain::Ecp5 => {
                 let _ = writeln!(s, "LOCATE COMP \"{port}\" SITE \"{pin}\";");
                 match io {
                     Some(io) => writeln!(s, "IOBUF  PORT \"{port}\" IO_TYPE={io};"),
                     None => Ok(()),
                 }
             }
-            Arch::Gowin => {
+            Toolchain::Gowin => {
                 let _ = writeln!(s, "IO_LOC  \"{port}\" {pin};");
                 match io {
                     Some(io) => writeln!(s, "IO_PORT \"{port}\" IO_TYPE={io};"),
                     None => Ok(()),
                 }
             }
-            Arch::Xilinx => match io {
+            Toolchain::Openxc7 => match io {
                 Some(io) => writeln!(
                     s,
                     "set_property -dict {{ PACKAGE_PIN {pin:<5} IOSTANDARD {io} }} [get_ports {{{port}}}]"
@@ -1474,9 +1484,11 @@ mod tests {
         serde_json::from_value(v).unwrap()
     }
 
-    fn fpga(arch: &str, part: &str) -> Fpga {
+    /// An FPGA of a family built by `toolchain`.
+    fn fpga(toolchain: &str, part: &str) -> Fpga {
         Fpga {
-            architecture: arch.into(),
+            family: "test".into(),
+            toolchain: toolchain.into(),
             part_number: part.into(),
         }
     }
@@ -1643,7 +1655,7 @@ mod tests {
                 "leds": {"type": "leds", "pins": ["H5", "J5"], "active": "high", "io_standard": "LVCMOS33"}
             }
         }));
-        let xdc = &files("arty", &b, &fpga("xilinx", "XC7A35TICSG324-1L"))["blinky"]["pinout.xdc"];
+        let xdc = &files("arty", &b, &fpga("openxc7", "XC7A35TICSG324-1L"))["blinky"]["pinout.xdc"];
         assert!(xdc.contains("set_property -dict { PACKAGE_PIN E3    IOSTANDARD LVCMOS33 } [get_ports {sys_clk}]\ncreate_clock -period 10.000 [get_ports {sys_clk}]"), "{xdc}");
         assert!(xdc.contains("[get_ports {leds[1]}]"), "{xdc}");
     }
@@ -1742,7 +1754,7 @@ mod tests {
         let info = call("get_engine_info", serde_json::json!({})).await;
         let full = call(
             "get_catalog",
-            serde_json::json!({"boards": {"fetch": true}, "fpgas": {"fetch": true}}),
+            serde_json::json!({"boards": {"fetch": true}, "fpgas": {"fetch": true}, "families": {"fetch": true}}),
         )
         .await;
         // The snapshot: what the generator reads, and where it came from.
@@ -1762,7 +1774,11 @@ mod tests {
             let f = &full["fpgas"][fpga_id];
             fpgas.insert(
                 fpga_id.into(),
-                serde_json::json!({"architecture": f["architecture"], "part_number": f["part_number"]}),
+                serde_json::json!({
+                    "family": f["family"],
+                    "toolchain": full["families"][f["family"].as_str().unwrap()]["toolchain"],
+                    "part_number": f["part_number"],
+                }),
             );
             boards.insert(id.clone(), kept.into());
         }

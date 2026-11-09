@@ -83,8 +83,8 @@ pub struct TaskInput<'a> {
     /// `display_paths` that name it. Problems in it stop the task before it
     /// runs (`boards_problem_outcome`).
     pub custom_boards: Option<&'a super::BoardsFolder>,
-    /// The board's FPGA architecture, for the build report.
-    pub arch: &'a str,
+    /// The board's FPGA family, for the build report.
+    pub family: &'a str,
     /// The prepared build folder: the project's files and other contents.
     pub source_folder: &'a Path,
     /// The project's file names (top-level files).
@@ -310,7 +310,7 @@ where
         match result {
             Ok(build) => {
                 outcome.diagnostics.extend(diagnostics(&build["warnings"]));
-                outcome.report = Some(report(input.arch, &build));
+                outcome.report = Some(report(input.family, &build));
                 outcome.ok = true;
             }
             Err(e) if is_cancelled(&e) => return Ok(false),
@@ -622,7 +622,7 @@ pub(super) fn diagnostics(list: &Value) -> Vec<Diagnostic> {
 }
 
 /// The build's resource use and clock speeds.
-fn report(arch: &str, build: &Value) -> BuildReport {
+fn report(family: &str, build: &Value) -> BuildReport {
     let resources = build["resources_usage"]
         .as_object()
         .map(|map| {
@@ -679,7 +679,7 @@ fn report(arch: &str, build: &Value) -> BuildReport {
             .unwrap_or_default(),
     };
     BuildReport {
-        arch: arch.to_string(),
+        family: family.to_string(),
         resources,
         summary,
         clocks,
@@ -805,7 +805,7 @@ mod tests {
                 available: 7680
             }]
         );
-        assert_eq!(r.arch, "ice40");
+        assert_eq!(r.family, "ice40");
         assert_eq!(
             r.resources,
             [Resource {
@@ -969,7 +969,7 @@ mod tests {
             board: "alhambra-ii",
             board_variant: None,
             custom_boards: None,
-            arch: "ice40",
+            family: "ice40",
             source_folder: &dir,
             files: &files,
             constraint_file: constraint.as_deref(),
@@ -1125,11 +1125,11 @@ mod tests {
         let mut failed = Vec::new();
         let all = crate::examples::all();
         let run_one = |board: String, label: String, dir: PathBuf, files: Vec<String>| {
-            let arch = catalog
+            let family = catalog
                 .boards
                 .iter()
                 .find(|b| b.id == board)
-                .map(|b| b.arch.clone())
+                .map(|b| b.family.clone())
                 .unwrap_or_default();
             let engine = &engine;
             let cancel = &cancel;
@@ -1139,7 +1139,7 @@ mod tests {
                     board: &board,
                     board_variant: None,
                     custom_boards: None,
-                    arch: &arch,
+                    family: &family,
                     source_folder: &dir,
                     files: &files,
                     constraint_file: constraint.as_deref(),
@@ -1243,7 +1243,7 @@ mod tests {
                 board: "alhambra-ii",
                 board_variant: None,
                 custom_boards: None,
-                arch: "ice40",
+                family: "ice40",
                 source_folder: &dir,
                 files: &files,
                 constraint_file: Some("pinout.pcf"),

@@ -8,10 +8,10 @@ export interface BoardGroup {
   boards: Board[];
   /**
    * "custom" (the project's boards folder) and "recent" (Recently
-   * used) start expanded; architecture groups start collapsed, and their
+   * used) start expanded; FPGA family groups start collapsed, and their
    * state is remembered. All can be collapsed.
    */
-  kind: "custom" | "recent" | "arch";
+  kind: "custom" | "recent" | "family";
 }
 
 /** The board picker's group of the project's own boards (boards folder). */
@@ -19,27 +19,27 @@ export const CUSTOM_GROUP = "Custom boards";
 /** The board picker's group of the boards chosen most recently. */
 export const RECENT_GROUP = "Recently used";
 
-/** What groups a board by FPGA architecture, as Logix Engine describes it. */
-type Arch = Pick<Board, "arch" | "archLabel" | "archOrder">;
+/** What groups a board by FPGA family, as Logix Engine describes it. */
+type Family = Pick<Board, "family" | "familyLabel" | "familyOrder">;
 
 /**
- * Splits `items` by FPGA architecture (`board` gives an item's board), in
- * Logix Engine's order (its catalog's `architectures`), then others by name.
+ * Splits `items` by FPGA family (`board` gives an item's board), in Logix
+ * Engine's order (its catalog's `families`), then others by name.
  */
-export function groupByArch<T>(
+export function groupByFamily<T>(
   items: T[],
-  board: (item: T) => Arch,
+  board: (item: T) => Family,
 ): { label: string; items: T[] }[] {
-  const archs = new Map<string, Arch>();
+  const families = new Map<string, Family>();
   for (const item of items) {
     const b = board(item);
-    if (!archs.has(b.arch)) archs.set(b.arch, b);
+    if (!families.has(b.family)) families.set(b.family, b);
   }
-  return [...archs.values()]
-    .sort((a, b) => a.archOrder - b.archOrder || a.archLabel.localeCompare(b.archLabel))
+  return [...families.values()]
+    .sort((a, b) => a.familyOrder - b.familyOrder || a.familyLabel.localeCompare(b.familyLabel))
     .map((a) => ({
-      label: a.archLabel,
-      items: items.filter((item) => board(item).arch === a.arch),
+      label: a.familyLabel,
+      items: items.filter((item) => board(item).family === a.family),
     }));
 }
 
@@ -65,9 +65,9 @@ export function boardsProblemLines(problem: NonNullable<ProjectBoards["problem"]
  * (boards folder; "custom" rather than "project", since a project's
  * catalog board is its board too: the user's naming, 2026-11-07), then the
  * boards chosen most recently (`recent`, newest first, the ones still
- * offered), then every board by FPGA architecture, the project's own
+ * offered), then every board by FPGA family, the project's own
  * boards included. With a search query, only boards whose name, id,
- * architecture or FPGA (part number or ID) contains it; empty groups are
+ * family or FPGA (part number or ID) contains it; empty groups are
  * left out, except "Custom boards" when `customProblem` (its file has
  * problems, so the group says so instead of listing boards).
  */
@@ -82,13 +82,13 @@ export function boardGroups(
   // them, so "up5k" or "xc7a35t" finds the boards with that FPGA.
   const matches = (b: Board) =>
     !q ||
-    [b.description, b.id, b.archLabel, b.fpga?.partNumber ?? "", b.fpga?.id ?? ""].some((t) =>
+    [b.description, b.id, b.familyLabel, b.fpga?.partNumber ?? "", b.fpga?.id ?? ""].some((t) =>
       t.toLowerCase().includes(q),
     );
   const shown = boards.filter(matches);
 
   const groups: BoardGroup[] = [];
-  // The project's own boards first (also in their architecture's group);
+  // The project's own boards first (also in their family's group);
   // with problems in its file, the group stays, empty, to say so.
   const custom = shown.filter((b) => b.custom);
   if (custom.length > 0 || customProblem)
@@ -98,10 +98,10 @@ export function boardGroups(
     .filter((b): b is Board => b !== undefined);
   if (recentBoards.length > 0)
     groups.push({ key: RECENT_GROUP, label: RECENT_GROUP, boards: recentBoards, kind: "recent" });
-  // In their architecture's group too, first.
+  // In their family's group too, first.
   const customFirst = [...custom, ...shown.filter((b) => !b.custom)];
-  for (const g of groupByArch(customFirst, (b) => b)) {
-    groups.push({ key: g.label, label: g.label, boards: g.items, kind: "arch" });
+  for (const g of groupByFamily(customFirst, (b) => b)) {
+    groups.push({ key: g.label, label: g.label, boards: g.items, kind: "family" });
   }
   return groups;
 }
@@ -109,7 +109,7 @@ export function boardGroups(
 /** A board's FPGA for people, e.g. "Lattice iCE40 ICE40HX4K-TQ144 (8k)"; "" if unknown. */
 export function fpgaLabel(b: Board): string {
   if (!b.fpga) return "";
-  return `${b.archLabel} ${b.fpga.partNumber}${b.fpga.size ? ` (${b.fpga.size})` : ""}`;
+  return `${b.familyLabel} ${b.fpga.partNumber}${b.fpga.size ? ` (${b.fpga.size})` : ""}`;
 }
 
 /**
@@ -138,7 +138,7 @@ export interface NotePoint {
  * What moving a project from one board to another means for a Logix
  * project, which keeps its sources as they are: 2 to 4 points (the user's
  * design), the first naming the change at its highest level
- * (architecture, FPGA or board), the rest the risks of keeping the
+ * (FPGA family, FPGA or board), the rest the risks of keeping the
  * sources. Empty for the same board. The facts come from Logix Engine's
  * `compare_boards` (`c`); the wording is the IDE's, since what a change
  * means depends on the project model. `pinFile` is the project's pin file,
@@ -169,15 +169,25 @@ export function boardChangeNote(c: BoardComparison | null, pinFile: string | nul
       ? `${clockChange}, and the ${list} may differ: check ${check}.`
       : `The ${list} may differ: check ${check}.`;
   };
-  const arch = aspect("architecture");
-  if (arch && differs("architecture")) {
-    const format = aspect("constraint_format")?.to as string | undefined;
-    const needs = format ? `a ${format} pin file` : "another kind of pin file";
+  const family = aspect("family");
+  if (family && differs("family")) {
+    // Another pin file format means another toolchain: little carries over.
+    if (differs("constraint_format")) {
+      const format = aspect("constraint_format")?.to as string | undefined;
+      const needs = format ? `a ${format} pin file` : "another kind of pin file";
+      return [
+        change(family.text),
+        risk(`Needs ${needs}${pinFile ? ` instead of ${pinFile}` : ""}, with this board's pins.`),
+        risk(`Probably significant changes: ${String(family.from)} parts, such as I/O cells and PLLs, won't build.`),
+        risk(wiring([], "the design")),
+      ];
+    }
+    // A related family, such as GW1N and GW2A: the same kind of pin file.
     return [
-      change(arch.text),
-      risk(`Needs ${needs}${pinFile ? ` instead of ${pinFile}` : ""}, with this board's pins.`),
-      risk(`Probably significant changes: ${String(arch.from)} parts, such as I/O cells and PLLs, won't build.`),
-      risk(wiring([], "the design")),
+      change(family.text),
+      risk(`${String(family.from)} parts, such as PLLs and special cells, may need changes.`),
+      risk("The design may not fit, or may not reach its clock speed."),
+      risk(wiring(["pins"], `${pins} and the design`)),
     ];
   }
   const fpga = aspect("fpga");

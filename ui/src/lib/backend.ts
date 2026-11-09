@@ -132,7 +132,7 @@ export interface BoardComparison {
   /** Whether a build for one board is valid for the other. */
   sameBuild: boolean;
   /**
-   * Every aspect, in the engine's order: board, architecture, fpga, size,
+   * Every aspect, in the engine's order: board, family, fpga, size,
    * constraint_format, pins, clock (MHz lists), leds (counts); later
    * engines may add more, and older ones lack clock and leds.
    */
@@ -154,12 +154,12 @@ export interface Board {
   id: string;
   /** e.g. "Alhambra II (Lattice, iCE40)". */
   description: string;
-  /** FPGA architecture, e.g. "ice40", "ecp5", "gowin", "xilinx" ("" if unknown). */
-  arch: string;
-  /** The architecture's name for people, from Logix Engine, e.g. "Lattice iCE40". */
-  archLabel: string;
-  /** The architecture's place in Logix Engine's order, for the board list. */
-  archOrder: number;
+  /** FPGA family, e.g. "ice40", "ecp5", "gw1n", "artix7" ("" if unknown). */
+  family: string;
+  /** The family's name for people, from Logix Engine, e.g. "Lattice iCE40". */
+  familyLabel: string;
+  /** The family's place in Logix Engine's order, for the board list. */
+  familyOrder: number;
   /** The extension of the board's pin files, from Logix Engine, e.g. "pcf" (null if unknown). */
   pinExtension: string | null;
   /** How the board is programmed: Connection and Memory, for every board. */
@@ -210,8 +210,8 @@ export interface TestbenchResult {
 
 /** Resource usage and clocks after a successful build. */
 export interface BuildReport {
-  /** FPGA family, e.g. "ice40", "ecp5", "gowin", "xilinx". */
-  arch: string;
+  /** FPGA family, e.g. "ice40", "ecp5", "gw1n", "artix7". */
+  family: string;
   /** With the toolchain's family-specific names, e.g. "ICESTORM_LC". */
   resources: { name: string; used: number; available: number }[];
   /**

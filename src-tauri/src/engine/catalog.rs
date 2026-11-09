@@ -17,13 +17,14 @@ pub struct Board {
     pub id: String,
     /// Human-readable name, e.g. "Alhambra II (Lattice, iCE40)".
     pub description: String,
-    /// The FPGA architecture's ID, such as "ice40", as the engine names it.
-    pub arch: String,
-    /// The architecture's name for people, such as "Lattice iCE40", from
-    /// the engine's catalog (`architectures`), for grouping the board list.
-    pub arch_label: String,
-    /// The architecture's place in the engine's order, for the board list.
-    pub arch_order: u32,
+    /// The FPGA family's ID, such as "ice40" or "gw1n", as the engine
+    /// names it.
+    pub family: String,
+    /// The family's name for people, such as "Lattice iCE40", from the
+    /// engine's catalog (`families`), for grouping the board list.
+    pub family_label: String,
+    /// The family's place in the engine's order, for the board list.
+    pub family_order: u32,
     /// The extension of the board's pin files, such as "pcf", from the
     /// engine's catalog, so the UI can tell which pin file is used. `None`
     /// when the engine doesn't say.
@@ -125,7 +126,7 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
             json!({
                 "boards": {"fetch": true},
                 "fpgas": {"fetch": true},
-                "architectures": {"fetch": true}
+                "families": {"fetch": true}
             }),
             None,
         )
@@ -241,7 +242,7 @@ pub async fn project_boards(
             json!({
                 "boards": {"fetch": true},
                 "fpgas": {"fetch": true},
-                "architectures": {"fetch": true},
+                "families": {"fetch": true},
                 "custom_boards_folder": file.path,
                 "display_paths": file.display_paths(),
             }),
@@ -264,7 +265,7 @@ pub struct BoardComparison {
     /// Whether a build for one board is valid for the other.
     #[serde(alias = "same_build")]
     pub same_build: bool,
-    /// Every aspect, in the engine's order: board, architecture, fpga,
+    /// Every aspect, in the engine's order: board, family, fpga,
     /// size, constraint_format, pins (later engines may add more).
     pub aspects: Vec<BoardAspect>,
 }
@@ -317,14 +318,14 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
     let fpgas = &catalog["fpgas"];
     // The engine's facts about each FPGA family; an engine without them
     // (older) leaves the label as the ID and the order last.
-    let archs = &catalog["architectures"];
+    let families = &catalog["families"];
     let mut list: Vec<Board> = boards
         .iter()
         .map(|(id, b)| {
             // The FPGA: always a catalog FPGA, by ID.
             let fpga_id = b["fpga_id"].as_str().unwrap_or("");
             let fpga_def = &fpgas[fpga_id];
-            let arch = fpga_def["architecture"].as_str().unwrap_or("").to_string();
+            let family = fpga_def["family"].as_str().unwrap_or("").to_string();
             let fpga = fpga_def["part_number"].as_str().map(|part| Fpga {
                 id: fpga_id.to_string(),
                 part_number: part.to_string(),
@@ -344,20 +345,20 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                         .collect()
                 })
                 .unwrap_or_default();
-            let info = &archs[arch.as_str()];
+            let info = &families[family.as_str()];
             Board {
                 id: id.clone(),
                 description: b["name"].as_str().unwrap_or(id).to_string(),
-                arch_label: info["label"].as_str().map(String::from).unwrap_or_else(|| {
-                    if arch.is_empty() {
+                family_label: info["label"].as_str().map(String::from).unwrap_or_else(|| {
+                    if family.is_empty() {
                         "Other".into()
                     } else {
-                        arch.to_uppercase()
+                        family.to_uppercase()
                     }
                 }),
-                arch_order: info["order"].as_u64().map_or(u32::MAX, |o| o as u32),
+                family_order: info["order"].as_u64().map_or(u32::MAX, |o| o as u32),
                 pin_extension: info["constraint_extension"].as_str().map(String::from),
-                arch,
+                family,
                 dimensions,
                 configurations,
                 custom: b["custom"].as_bool().unwrap_or(false),
@@ -374,7 +375,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_boards_with_their_architecture() {
+    fn parses_boards_with_their_family() {
         let catalog = json!({
             "boards": {
                 "icezum": {"name": "Icezum Alhambra", "fpga_id": "ice40hx1k-tq144"},
@@ -382,17 +383,17 @@ mod tests {
                 "odd": {"fpga_id": "unknown"}
             },
             "fpgas": {
-                "ice40hx1k-tq144": {"architecture": "ice40"},
-                "ice40hx4k-tq144-8k": {"architecture": "ice40"}
+                "ice40hx1k-tq144": {"family": "ice40"},
+                "ice40hx4k-tq144-8k": {"family": "ice40"}
             }
         });
         let boards = parse_boards(&catalog).unwrap();
         let ids: Vec<_> = boards.iter().map(|b| b.id.as_str()).collect();
         assert_eq!(ids, ["alhambra-ii", "icezum", "odd"]);
-        assert_eq!(boards[0].arch, "ice40");
+        assert_eq!(boards[0].family, "ice40");
         assert_eq!(boards[0].fpga, None, "no part number in this catalog");
         assert_eq!(boards[2].description, "odd");
-        assert_eq!(boards[2].arch, "");
+        assert_eq!(boards[2].family, "");
         assert!(parse_boards(&json!({})).is_err());
         assert!(boards[0].dimensions.is_empty());
     }
@@ -410,7 +411,7 @@ mod tests {
                         {"selector": {"connection": "usb", "memory": "ram"}, "label": "USB · RAM", "programmer": "p", "args": "a", "tested": false,
                          "user_notes": "Try it."}]}
             },
-            "fpgas": {"f": {"architecture": "ecp5"}}
+            "fpgas": {"f": {"family": "ecp5"}}
         });
         let b = &parse_boards(&catalog).unwrap()[0];
         assert_eq!(
@@ -473,9 +474,9 @@ mod tests {
             },
             "fpgas": {
                 "ice40hx4k-tq144-8k": {
-                    "architecture": "ice40", "part_number": "ICE40HX4K-TQ144", "size": "8k"},
+                    "family": "ice40", "part_number": "ICE40HX4K-TQ144", "size": "8k"},
                 "lfe5u-25f": {
-                    "architecture": "ecp5", "part_number": "LFE5U-25F-6BG256C", "size": "25k"},
+                    "family": "ecp5", "part_number": "LFE5U-25F-6BG256C", "size": "25k"},
             },
         });
         let boards = parse_boards(&catalog).unwrap();
@@ -490,7 +491,7 @@ mod tests {
         );
         // A custom board's FPGA: a catalog FPGA too.
         let mine = boards.iter().find(|b| b.id == "mine").unwrap();
-        assert_eq!(mine.arch, "ecp5");
+        assert_eq!(mine.family, "ecp5");
         assert_eq!(mine.fpga.as_ref().unwrap().id, "lfe5u-25f");
         assert_eq!(mine.fpga.as_ref().unwrap().part_number, "LFE5U-25F-6BG256C");
     }
@@ -502,7 +503,7 @@ mod tests {
                 "mine": {"description": "Mine", "fpga_id": "f", "custom": true},
                 "alhambra-ii": {"name": "Alhambra II", "fpga_id": "f"},
             },
-            "fpgas": {"f": {"architecture": "ice40"}}
+            "fpgas": {"f": {"family": "ice40"}}
         });
         let all = parse_boards(&catalog).unwrap();
         let mine: Vec<_> = all.iter().filter(|b| b.custom).collect();
@@ -512,36 +513,36 @@ mod tests {
     }
 
     #[test]
-    fn architectures_come_from_the_engine() {
+    fn families_come_from_the_engine() {
         let catalog = json!({
             "boards": {
                 "arty": {"description": "Arty", "fpga_id": "xc7a35t"},
                 "odd": {"description": "Odd", "fpga_id": "other"},
             },
             "fpgas": {
-                "xc7a35t": {"architecture": "xilinx"},
-                "other": {"architecture": "newfamily"},
+                "xc7a35t": {"family": "artix7"},
+                "other": {"family": "newfamily"},
             },
-            "architectures": {
-                "xilinx": {"label": "Xilinx", "short_label": "Xilinx", "constraint_extension": "xdc", "order": 3},
+            "families": {
+                "artix7": {"label": "Xilinx Artix-7", "short_label": "Artix-7", "constraint_extension": "xdc", "order": 5, "toolchain": "openxc7"},
             },
         });
         let boards = parse_boards(&catalog).unwrap();
         let arty = boards.iter().find(|b| b.id == "arty").unwrap();
         assert_eq!(
             (
-                arty.arch_label.as_str(),
-                arty.arch_order,
+                arty.family_label.as_str(),
+                arty.family_order,
                 arty.pin_extension.as_deref()
             ),
-            ("Xilinx", 3, Some("xdc"))
+            ("Xilinx Artix-7", 5, Some("xdc"))
         );
         // A family the engine doesn't describe: its ID, last, no extension.
         let odd = boards.iter().find(|b| b.id == "odd").unwrap();
         assert_eq!(
             (
-                odd.arch_label.as_str(),
-                odd.arch_order,
+                odd.family_label.as_str(),
+                odd.family_order,
                 odd.pin_extension.as_deref()
             ),
             ("NEWFAMILY", u32::MAX, None)

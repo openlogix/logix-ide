@@ -18,7 +18,7 @@
   import { onMount } from "svelte";
   import type { Board, Example } from "./backend";
   import { groupExamples, type ExampleEntry } from "./examples";
-  import { groupByArch, type NotePoint } from "./boards";
+  import { groupByFamily, type NotePoint } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
 
@@ -74,15 +74,15 @@
       (g) => !onlyBoard || g.board.id === onlyBoard,
     ),
   );
-  /** The boards column, by FPGA architecture (collapsible groups). */
-  const archGroups = $derived(groupByArch(groups, (g) => g.board));
+  /** The boards column, by FPGA family (collapsible groups). */
+  const familyGroups = $derived(groupByFamily(groups, (g) => g.board));
   const searching = $derived(query.trim() !== "");
 
   // Show the initial board's group expanded (once, when opened).
   {
     // svelte-ignore state_referenced_locally
     const first = boards.find((b) => b.id === initialBoard);
-    if (first) expandGroup(first.archLabel);
+    if (first) expandGroup(first.familyLabel);
   }
 
   const onlyBoardInfo = $derived(boards.find((b) => b.id === onlyBoard) ?? null);
@@ -232,18 +232,18 @@
     <div class="body" class:single={onlyBoard}>
       {#if !onlyBoard}
       <ul class="boards" aria-label="Boards">
-        {#each archGroups as ag (ag.label)}
+        {#each familyGroups as ag (ag.label)}
           {@const shown = searching || expanded.has(ag.label)}
-          <li class="arch">
+          <li class="family">
             <button
-              class="arch-toggle"
+              class="family-toggle"
               aria-expanded={shown}
               onclick={() => toggleGroup(ag.label)}
               ><svg class="chevron" class:open={shown} viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
                   ><path d="M4 2.5 L8 6 L4 9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg
                 >
               {ag.label}
-              <span class="arch-count">{ag.items.length}</span></button
+              <span class="family-count">{ag.items.length}</span></button
             >
           </li>
           {#each shown ? ag.items : [] as g (g.board.id)}
@@ -398,13 +398,13 @@
     border-right: 1px solid var(--border);
     background: var(--tabs-bg);
   }
-  .arch {
+  .family {
     position: sticky;
     top: -4px;
     z-index: 1;
     background: var(--tabs-bg);
   }
-  .boards .arch-toggle {
+  .boards .family-toggle {
     align-items: center;
     gap: 6px;
     padding: 8px 14px 4px;
@@ -414,7 +414,7 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }
-  .boards .arch-toggle:hover {
+  .boards .family-toggle:hover {
     background: transparent;
     color: var(--fg);
   }
@@ -425,7 +425,7 @@
   .chevron.open {
     transform: rotate(90deg);
   }
-  .arch-count {
+  .family-count {
     margin-left: auto;
     font-weight: 400;
   }

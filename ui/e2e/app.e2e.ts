@@ -134,22 +134,25 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   await expect(output(page)).toContainText("117 examples available.");
   await start(page);
   await expect(output(page)).not.toContainText("117 examples available.");
-  // Logix Engine's 81 boards, grouped by FPGA architecture. Only the current
+  // Logix Engine's 81 boards, grouped by FPGA family. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
   await expect(page.locator(".group")).toHaveText([
     /Lattice iCE40\s*27/,
     /Lattice ECP5\s*22/,
-    /Gowin\s*9/,
-    /Xilinx\s*23/,
+    /Gowin GW1N\s*6/,
+    /Gowin GW2A\s*3/,
+    /Xilinx Artix-7\s*16/,
+    /Xilinx Spartan-7\s*2/,
+    /Xilinx Zynq-7000\s*5/,
   ]);
   await expect(page.getByRole("option")).toHaveCount(27);
-  await page.getByRole("button", { name: /Gowin/ }).click();
-  await expect(page.getByRole("option")).toHaveCount(36);
+  await page.getByRole("button", { name: /Gowin GW1N/ }).click();
+  await expect(page.getByRole("option")).toHaveCount(33);
   await page.getByRole("button", { name: /Lattice iCE40/ }).click();
-  await expect(page.getByRole("option")).toHaveCount(9);
+  await expect(page.getByRole("option")).toHaveCount(6);
   await page.getByRole("combobox").fill("a");
-  await expect(page.getByRole("option")).not.toHaveCount(9);
+  await expect(page.getByRole("option")).not.toHaveCount(6);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toBeHidden();
   // The Alhambra II by default, and its blinky (from the examples) is
@@ -519,7 +522,7 @@ test("changing the board offers project options: the current project first", asy
   await pickBoard(page, "ColorLight-5A-75B-V8");
   const other = dialog.getByRole("button", { name: /^Change the board of/ });
   await expect(other.locator(".note .point").first()).toHaveText(
-    "Architecture: Lattice iCE40 → Lattice ECP5.",
+    "FPGA family: Lattice iCE40 → Lattice ECP5.",
   );
   await expect(other.locator(".note .point.risky")).toHaveText([
     "Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
@@ -556,7 +559,7 @@ test("shows if the board is connected, and lists recently used boards first", as
   await expect(link).toHaveText("Connected");
   await expect(link).toHaveAttribute("title", /may be the Alhambra II/);
   await boardButton(page).click();
-  // No groups from connected devices: only the architectures.
+  // No groups from connected devices: only the families.
   await expect(page.locator(".group", { hasText: "Connected" })).toHaveCount(0);
   await expect(page.locator(".group").first()).toHaveText(/Lattice iCE40/);
   await page.keyboard.press("Escape");
@@ -609,7 +612,7 @@ test("shows if the board is connected, and lists recently used boards first", as
   await expect(recent).toHaveText(/^\s*Recently used\s*2\s*$/);
   await expect(page.getByRole("option").nth(0)).toHaveText(/iCEBreaker/);
   await expect(page.getByRole("option").nth(1)).toHaveText(/Arty A7-35T/);
-  // It collapses like an architecture's group.
+  // It collapses like a family's group.
   const toggle = recent.getByRole("button");
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await toggle.click();
@@ -628,18 +631,18 @@ test("opens a board's bare-minimum from the examples", async ({ page }) => {
     ),
   );
   const dialog = page.getByRole("dialog", { name: "Examples" });
-  // Boards are grouped by architecture; the current board's group is open.
+  // Boards are grouped by FPGA family; the current board's group is open.
   const boards = dialog.getByRole("list", { name: "Boards" });
   await expect(boards.getByRole("button", { name: /Lattice iCE40/ })).toHaveAttribute(
     "aria-expanded",
     "true",
   );
-  await expect(boards.getByRole("button", { name: /Xilinx/ })).toHaveAttribute(
+  await expect(boards.getByRole("button", { name: /Xilinx Artix-7/ })).toHaveAttribute(
     "aria-expanded",
     "false",
   );
   await expect(boards.getByRole("button", { name: /^Alchitry Au \(/ })).toHaveCount(0);
-  await boards.getByRole("button", { name: /Xilinx/ }).click();
+  await boards.getByRole("button", { name: /Xilinx Artix-7/ }).click();
   await expect(boards.getByRole("button", { name: /^Alchitry Au \(/ })).toBeVisible();
   await dialog.getByRole("button", { name: /^bare-minimum/ }).click();
   await dialog.getByRole("button", { name: "New Project" }).click();
@@ -994,7 +997,7 @@ test("a project's boards folder, edited outside Logix, adds its own boards", asy
   await expect(tab(page, "my-upduino.json")).toHaveCount(0);
 
   // Listed first in "Custom boards" (expanded), and first in its
-  // architecture's group too, with the board icon and a tooltip saying
+  // family's group too, with the board icon and a tooltip saying
   // where it comes from.
   await boardButton(page).click();
   await expect(page.locator(".group").first()).toContainText("Custom boards");

@@ -60,9 +60,9 @@ export function groupExamples(
       .map((id) => ({
         id,
         description: id,
-        arch: "",
-        archLabel: "Other",
-        archOrder: Number.MAX_SAFE_INTEGER,
+        family: "",
+        familyLabel: "Other",
+        familyOrder: Number.MAX_SAFE_INTEGER,
         pinExtension: null,
         dimensions: [],
         configurations: [],

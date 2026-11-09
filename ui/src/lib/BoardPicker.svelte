@@ -2,12 +2,12 @@
   The toolbar's board picker, like Arduino IDE 2's board selector: a button
   with the board's name that opens a searchable list: the boards chosen
   most recently first ("Recently used", expanded until collapsed), then all
-  boards by FPGA architecture (collapsed groups, their state shared with the
+  boards by FPGA family (collapsed groups, their state shared with the
   Examples window). No groups from connected devices: the user's decision,
   since which boards a device may be is a guess. Unlike a native list, picking the current
   board is reported too (Logix then offers its examples). The project's own
   boards (boards folder) come first, in "Custom boards" (expanded
-  until collapsed), and in their architecture's group too; they carry a
+  until collapsed), and in their family's group too; they carry a
   small board icon, here and on the button, with a tooltip saying where
   they come from. A file with problems leaves the group empty, with one
   quiet line in it saying so.
@@ -88,9 +88,9 @@
     open = true;
     query = "";
     const current = boards.find((b) => b.id === value);
-    if (current) expandGroup(current.archLabel);
+    if (current) expandGroup(current.familyLabel);
     await tick();
-    // Start at the current board, in its architecture's group.
+    // Start at the current board, in its family's group.
     const here = entries.filter((e) => e.board.id === value);
     active = (here[here.length - 1] ?? entries[0])?.key ?? null;
     input?.focus();

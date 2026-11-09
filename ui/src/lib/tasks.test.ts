@@ -143,7 +143,7 @@ describe("build report in the status", () => {
         testbenches: [],
         cancelled: false, graphSvg: null,
         report: {
-          arch: "ice40",
+          family: "ice40",
           resources: [{ name: "ICESTORM_LC", used: 27, available: 7680 }],
           summary: [{ name: "logic cells", used: 27, available: 7680 }],
           clocks: [{ name: "sys_clk", fmaxMhz: 194.36 }],

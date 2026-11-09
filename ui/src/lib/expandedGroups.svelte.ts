@@ -1,4 +1,4 @@
-// Which architecture groups are expanded in the board lists (the toolbar's
+// Which FPGA family groups are expanded in the board lists (the toolbar's
 // board picker and the Examples window share it). Collapsed by default;
 // remembered per viewer in localStorage.
 import { SvelteSet } from "svelte/reactivity";
