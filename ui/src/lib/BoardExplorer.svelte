@@ -52,8 +52,6 @@
   /** The items shown, the current one last (Back goes to the one before). */
   let history = $state<Ref[]>(untrack(() => (initial ? [initial] : [])));
   let tab = $state<Kind>(untrack(() => initial?.kind ?? "board"));
-  /** Sections showing all their links, by title. */
-  let showAll = $state<Set<string>>(new Set());
 
   $effect(() => {
     backend
@@ -82,18 +80,12 @@
     if (sameRef(ref, current)) return;
     history = [...history, ref];
     tab = ref.kind;
-    showAll = new Set();
   }
 
   function back() {
     if (history.length < 2) return;
     history = history.slice(0, -1);
     tab = history[history.length - 1].kind;
-    showAll = new Set();
-  }
-
-  function more(title: string) {
-    showAll = new Set([...showAll, title]);
   }
 
   function onKey(e: KeyboardEvent) {
@@ -112,8 +104,6 @@
       },
     };
   }
-
-  const SHORT = 12;
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -228,18 +218,14 @@
               {#if s.links.length === 0}
                 <p class="muted">{s.empty}</p>
               {:else}
-                {@const all = showAll.has(s.title) || s.links.length <= SHORT + 2}
                 <ul class="links">
-                  {#each all ? s.links : s.links.slice(0, SHORT) as l (l.ref.kind + l.ref.id)}
+                  {#each s.links as l (l.ref.kind + l.ref.id)}
                     <li>
                       <button class="link" onclick={() => show(l.ref)}>{l.label}</button>
                       {#if l.hint}<span class="muted">{l.hint}</span>{/if}
                     </li>
                   {/each}
                 </ul>
-                {#if !all}
-                  <button class="more" onclick={() => more(s.title)}>Show all {s.links.length}</button>
-                {/if}
               {/if}
             {:else if s.rows.length === 0}
               <p class="muted">{s.empty}</p>
@@ -516,17 +502,6 @@
     color: var(--accent);
     font: inherit;
     text-align: left;
-    text-decoration: underline;
-    cursor: pointer;
-  }
-  .more {
-    margin-top: 4px;
-    padding: 0;
-    border: none;
-    background: none;
-    color: var(--muted);
-    font: inherit;
-    font-size: 12px;
     text-decoration: underline;
     cursor: pointer;
   }

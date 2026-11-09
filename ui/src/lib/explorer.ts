@@ -135,6 +135,11 @@ export function labelOf(m: Model, ref: Ref): string {
   }
 }
 
+/** Compares names for sorting, ignoring case. */
+function caseless(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { sensitivity: "base" });
+}
+
 function count(n: number, what: string): string {
   return `${n} ${what}${n === 1 ? "" : "s"}`;
 }
@@ -151,7 +156,7 @@ function allItems(m: Model, kind: Kind): ListItem[] {
     hint,
     family: familyOf(m, kind, id),
   });
-  const byName = (a: ListItem, b: ListItem) => a.label.localeCompare(b.label);
+  const byName = (a: ListItem, b: ListItem) => caseless(a.label, b.label);
   switch (kind) {
     case "family":
       return m.families.map((f) => item(f.id, f.label, count(familyBoards(m, f.id).length, "board")));
@@ -167,7 +172,7 @@ function allItems(m: Model, kind: Kind): ListItem[] {
     case "example":
       return [...m.examples.values()]
         .map((e) => item(exampleId(e), e.name, labelOf(m, { kind: "board", id: e.board })))
-        .sort((a, b) => a.hint.localeCompare(b.hint) || byName(a, b));
+        .sort((a, b) => byName(a, b) || caseless(a.hint, b.hint));
   }
 }
 

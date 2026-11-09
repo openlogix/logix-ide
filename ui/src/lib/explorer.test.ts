@@ -66,7 +66,7 @@ describe("listGroups", () => {
       "Lattice iCE40: Alhambra II (ICE40HX4K-TQ144-8K), iCEBreaker (ICE40UP5K-SG48), Kéfir I (ICE40HX4K-TQ144-8K), My Board (ICE40UP5K-SG48)",
     );
     expect(show("example")).toEqual([
-      "Lattice iCE40: blinky (Alhambra II), counter (Alhambra II), blinky (iCEBreaker)",
+      "Lattice iCE40: blinky (Alhambra II), blinky (iCEBreaker), counter (Alhambra II)",
     ]);
   });
 
