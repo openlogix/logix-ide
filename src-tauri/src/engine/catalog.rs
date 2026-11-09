@@ -48,6 +48,10 @@ pub struct Board {
     /// What every design for the board must do (drives and setups), as the
     /// engine gives it. Empty when nothing.
     pub requires: Vec<Value>,
+    /// The board's own `ai_hints`, lines of text for AI agents, and people,
+    /// writing designs for it (resources carry their own in `resources`),
+    /// for the Board Explorer. Empty when none.
+    pub ai_hints: Vec<String>,
 }
 
 /// A board's FPGA, as Logix Engine's catalog describes it.
@@ -433,6 +437,14 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 fpga,
                 resources: b["resources"].as_object().cloned().unwrap_or_default(),
                 requires: b["requires"].as_array().cloned().unwrap_or_default(),
+                ai_hints: b["ai_hints"]
+                    .as_array()
+                    .map(|h| {
+                        h.iter()
+                            .filter_map(|l| l.as_str().map(String::from))
+                            .collect()
+                    })
+                    .unwrap_or_default(),
             }
         })
         .collect();
@@ -451,7 +463,8 @@ mod tests {
                 "icezum": {"name": "Icezum Alhambra", "fpga_id": "ice40hx1k-tq144"},
                 "alhambra-ii": {"name": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k",
                     "resources": {"clk": {"type": "clock", "pin": "49", "mhz": 12}},
-                    "requires": [{"type": "setup", "text": "Set the jumper."}]},
+                    "requires": [{"type": "setup", "text": "Set the jumper."}],
+                    "ai_hints": ["A hint."]},
                 "odd": {"fpga_id": "unknown"}
             },
             "fpgas": {
@@ -472,6 +485,8 @@ mod tests {
         assert_eq!(boards[0].resources["clk"]["mhz"], 12);
         assert_eq!(boards[0].requires[0]["type"], "setup");
         assert!(boards[1].resources.is_empty() && boards[1].requires.is_empty());
+        assert_eq!(boards[0].ai_hints, ["A hint."]);
+        assert!(boards[1].ai_hints.is_empty());
     }
 
     #[test]

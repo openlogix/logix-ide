@@ -372,6 +372,7 @@ export function detailsOf(m: Model, ref: Ref): Details | null {
             ? [{ title: "Every design must", kind: "lines" as const, lines: b.requires.map(requirementText) }]
             : []),
           { title: "Resources", kind: "resources", rows: resourceRows(b), empty: "Not described yet." },
+          ...(aiHintLines(b).length ? [{ title: "AI hints", kind: "lines" as const, lines: aiHintLines(b) }] : []),
           { title: "Examples", kind: "links", links: exampleLinks(m, m.examplesOfBoard.get(b.id) ?? [], false), empty: "None." },
           { title: "Boards with the same FPGA", kind: "links", links: boardLinks(m, same), empty: "None." },
         ],
@@ -422,6 +423,18 @@ export function requirementText(q: Json): string {
   }
   if (q.type === "setup") return str(q.text);
   return str(q.text ?? q.type);
+}
+
+/**
+ * A board's `ai_hints`, the board's own first, then each resource's by port
+ * name ("rgb_led: …"): text for AI agents writing designs, shown as is.
+ */
+export function aiHintLines(b: Pick<Board, "aiHints" | "resources">): string[] {
+  const own = b.aiHints ?? [];
+  const per = Object.entries(b.resources ?? {})
+    .sort(([a], [z]) => a.localeCompare(z))
+    .flatMap(([name, r]) => (Array.isArray(r.ai_hints) ? r.ai_hints.map((h) => `${name}: ${str(h)}`) : []));
+  return [...own, ...per];
 }
 
 /**

@@ -188,6 +188,8 @@ export interface Board {
   resources?: Record<string, Record<string, unknown>>;
   /** What every design for the board must do (drives and setups), as the engine gives it. */
   requires?: Record<string, unknown>[];
+  /** The board's own hints for AI agents, and people, writing designs for it (its resources have their own `ai_hints`). */
+  aiHints?: string[];
 }
 
 /** A board's FPGA. */

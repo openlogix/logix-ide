@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Board, Example, FpgaFamily } from "./backend";
-import { buildModel, detailsOf, listGroups, resourceRows, requirementText, type Details } from "./explorer";
+import { aiHintLines, buildModel, detailsOf, listGroups, resourceRows, requirementText, type Details } from "./explorer";
 
 const families: FpgaFamily[] = [
   {
@@ -42,7 +42,7 @@ const boards = [
   board("icebreaker", "iCEBreaker", "ice40up5k-sg48", {
     requires: [{ type: "drive", name: "flash_cs", pins: ["16"], level: "high" }],
   }),
-  board("mine", "My Board", "ice40up5k-sg48", { custom: true }),
+  board("mine", "My Board", "ice40up5k-sg48", { custom: true, aiHints: ["A board hint."] }),
 ];
 
 const examples: Example[] = [
@@ -146,6 +146,8 @@ describe("detailsOf", () => {
     expect(ice.sections[1]).toBe("Every design must: Drive flash_cs (16) high");
     expect(ice.sections[2]).toBe("Resources: Not described yet.");
     expect(text(detailsOf(model, { kind: "board", id: "mine" }))!.facts).toContain("From: This project's boards folder");
+    // AI hints after the resources, only for boards that have some.
+    expect(text(detailsOf(model, { kind: "board", id: "mine" }))!.sections).toContain("AI hints: A board hint.");
     // Marked as the project's own, in the lists, the details and the links.
     expect(detailsOf(model, { kind: "board", id: "mine" })!.kindLabel).toBe("Custom board");
     expect(listGroups(model, "board", "mine")[0].items[0].custom).toBe(true);
@@ -195,6 +197,20 @@ describe("resources", () => {
       ["uart", "UART", "TX 9, RX 6", ""],
     ]);
     expect(resourceRows({})).toEqual([]);
+  });
+
+  it("lists AI hints, the board's own first, then each resource's by name", () => {
+    expect(
+      aiHintLines({
+        aiHints: ["Board hint."],
+        resources: {
+          rgb_led: { type: "rgb_led", ai_hints: ["Use the driver.", "1 turns it on."] },
+          clk: { type: "clock", ai_hints: ["Clock hint."] },
+          led: { type: "leds" },
+        },
+      }),
+    ).toEqual(["Board hint.", "clk: Clock hint.", "rgb_led: Use the driver.", "rgb_led: 1 turns it on."]);
+    expect(aiHintLines({})).toEqual([]);
   });
 
   it("words requirements", () => {
