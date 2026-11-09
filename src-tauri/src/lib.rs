@@ -53,6 +53,7 @@ pub struct AppState {
 #[derive(Clone)]
 struct Catalog {
     boards: Vec<engine::Board>,
+    families: Vec<engine::FpgaFamily>,
     examples: examples::ExampleList,
 }
 
@@ -126,6 +127,7 @@ pub fn run() {
             commands::save_gtkwave_layouts,
             commands::format_file,
             commands::get_boards,
+            commands::get_fpga_families,
             commands::project_boards,
             commands::custom_boards_stamp,
             commands::get_examples,

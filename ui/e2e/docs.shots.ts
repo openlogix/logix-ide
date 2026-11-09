@@ -135,6 +135,15 @@ test("board info", async ({ page }) => {
   await shot(page, "board-info");
 });
 
+test("supported FPGAs", async ({ page }) => {
+  await startWithBoard(page);
+  await menu(page, "supported-fpgas");
+  const dialog = page.getByRole("dialog", { name: "Supported FPGAs" });
+  await dialog.getByRole("button", { name: /Lattice iCE40/ }).click();
+  await expect(dialog).toContainText("ICE40HX4K-TQ144");
+  await shot(page, "supported-fpgas");
+});
+
 test("toolbar icons", async ({ page }) => {
   // The toolbar buttons as small images for the docs text (icon-<name>.png),
   // taken from the real UI so they always match it: no toolbar color around

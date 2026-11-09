@@ -149,6 +149,15 @@ export interface BoardComparison {
 
 export type SaveChoice = "save" | "discard" | "cancel";
 
+/** An FPGA family and its FPGAs, from Logix Engine's catalog. */
+export interface FpgaFamily {
+  /** e.g. "gw1n", as `Board.family` names it. */
+  id: string;
+  /** e.g. "Gowin GW1N". */
+  label: string;
+  fpgas: { id: string; partNumber: string; size: string }[];
+}
+
 export interface Board {
   /** Board id, e.g. "alhambra-ii". */
   id: string;
@@ -413,6 +422,7 @@ export type MenuId =
   | "show-diagram"
   | "devices"
   | "board-info"
+  | "supported-fpgas"
   | "settings"
   | "go-to-definition"
   | "toggle-comment"
@@ -452,6 +462,13 @@ export const backend = {
 
   /** All boards, sorted by description. Needs the FPGA tools ready. */
   getBoards: (): Promise<Board[]> => invoke<Board[]>("get_boards"),
+
+  /**
+   * Every FPGA Logix Engine supports, by family in the engine's order, each
+   * family's FPGAs by part number (Tools > Supported FPGAs). Needs the FPGA
+   * tools ready.
+   */
+  getFpgaFamilies: (): Promise<FpgaFamily[]> => invoke<FpgaFamily[]>("get_fpga_families"),
 
   /**
    * The examples Logix supports, sorted by board and name, and the number

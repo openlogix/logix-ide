@@ -49,6 +49,7 @@
   import DevicesDialog from "./lib/DevicesDialog.svelte";
   import BoardInfoDialog from "./lib/BoardInfoDialog.svelte";
   import SystemInfoDialog from "./lib/SystemInfoDialog.svelte";
+  import SupportedFpgasDialog from "./lib/SupportedFpgasDialog.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
   import { deviceSummaryLines, isBoardNotFound, needsDeviceChoice } from "./lib/devices";
@@ -958,6 +959,7 @@
   let boardInfoOpen = $state(false);
   /** Help > System Info…, while it's open. */
   let systemInfoOpen = $state(false);
+  let supportedFpgasOpen = $state(false);
   let devices = $state<Devices | null>(null);
   let devicesError = $state<string | null>(null);
   let devicesBusy = $state(false);
@@ -1691,6 +1693,10 @@
       if (currentBoardInfo) boardInfoOpen = true;
       return;
     }
+    if (id === "supported-fpgas") {
+      supportedFpgasOpen = true;
+      return;
+    }
     if (id === "system-info") {
       systemInfoOpen = true;
       return;
@@ -1745,6 +1751,7 @@
         | "show-diagram"
         | "devices"
         | "board-info"
+        | "supported-fpgas"
         | "system-info"
         | "settings"
         | "go-to-definition"
@@ -1918,6 +1925,10 @@
     }}
     onClose={() => (boardInfoOpen = false)}
   />
+{/if}
+
+{#if supportedFpgasOpen}
+  <SupportedFpgasDialog {boards} onClose={() => (supportedFpgasOpen = false)} />
 {/if}
 
 {#if systemInfoOpen}

@@ -19,7 +19,7 @@ use std::sync::{Arc, Mutex};
 
 pub use catalog::{
     boards_fields, catalog, compare_boards, project_boards, Board, BoardComparison, BoardsFolder,
-    BoardsProblem, Catalog, Variant,
+    BoardsProblem, Catalog, FpgaFamily, Variant,
 };
 pub use client::Engine;
 pub use devices::{

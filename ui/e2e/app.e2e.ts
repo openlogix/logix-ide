@@ -1156,6 +1156,39 @@ test("Board Info shows the board's FPGA and the boards with the same FPGA", asyn
   await expect(boardButton(page)).toHaveText(/AZUKAR v2/);
 });
 
+test("Supported FPGAs lists every FPGA by family, with its boards", async ({ page }) => {
+  await start(page);
+  await menu(page, "supported-fpgas");
+  const dialog = page.getByRole("dialog", { name: "Supported FPGAs" });
+  const families = dialog.getByRole("list", { name: "FPGA families" });
+  // Every family, collapsed, counting its FPGAs and boards; GW5A has none.
+  const toggles = families.getByRole("button", { name: /FPGAs? ·/ });
+  await expect(toggles.first()).toHaveText(/^▸\s*Lattice iCE40\s*40 FPGAs · 27 boards$/);
+  const gw5a = families.getByRole("button", { name: /Gowin GW5A/ });
+  await expect(gw5a).toHaveText(/48 FPGAs · 0 boards/);
+  await expect(gw5a).toHaveAttribute("aria-expanded", "false");
+  await gw5a.click();
+  await expect(gw5a).toHaveAttribute("aria-expanded", "true");
+  const row = dialog.getByRole("row", { name: /GW5A-EV25LQ100C1/ });
+  await expect(row).toContainText("gw5a-ev25lq100c1-i0");
+  await expect(row.getByRole("cell").last()).toHaveText("0");
+  // Copy puts the FPGA ID on the clipboard, for a board file.
+  await row.getByRole("button", { name: "Copy gw5a-ev25lq100c1-i0" }).click();
+  await expect(row.getByRole("button", { name: "Copy gw5a-ev25lq100c1-i0" })).toHaveText("Copied");
+  expect(await page.evaluate(() => (window as unknown as { __fake: { copiedText: string } }).__fake.copiedText)).toBe(
+    "gw5a-ev25lq100c1-i0",
+  );
+  // Searching shows the matches in every family; a board count's hint names them.
+  await dialog.getByRole("searchbox").fill("hx4k");
+  await expect(toggles).toHaveCount(1);
+  const hx4k = dialog.getByRole("row", { name: /ICE40HX4K-TQ144/ });
+  await expect(hx4k.getByRole("cell").last()).toHaveAttribute("title", /Alhambra II/);
+  await dialog.getByRole("searchbox").fill("zzz");
+  await expect(dialog).toContainText("No FPGA matches");
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+});
+
 test("examples show their summary and notes, selected or not", async ({ page }) => {
   await page.goto("/");
   await expect(output(page)).toContainText("Ready.");

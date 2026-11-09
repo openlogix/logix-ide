@@ -23,6 +23,7 @@ export * from "../src/lib/backend";
 
 // Real engine data and output (see e2e/fixtures/README.md).
 import catalog from "./fixtures/catalog.json";
+import fpgaFamilies from "./fixtures/fpgas.json";
 import { configurationOf, resolve } from "../src/lib/variants";
 import { boardsProblemLines } from "../src/lib/boards";
 import verifyOutput from "./fixtures/verify.txt?raw";
@@ -33,6 +34,7 @@ import graphSvg from "./fixtures/graph.svg?raw";
 import packageJson from "../../package.json";
 
 const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }));
+const FPGA_FAMILIES: Real.FpgaFamily[] = fpgaFamilies;
 
 /**
  * Logix Engine's compare_boards, from the boards' facts: each aspect the
@@ -442,6 +444,7 @@ export const backend: typeof Real.backend = {
   },
 
   getBoards: async () => BOARDS,
+  getFpgaFamilies: async () => FPGA_FAMILIES,
 
   getExamples: async () => ({
     examples: catalog.examples,

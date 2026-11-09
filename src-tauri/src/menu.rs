@@ -35,6 +35,9 @@ pub const DEVICES: &str = "devices";
 /// Tools > Board Info…: the toolbar board's FPGA, how it's programmed, and
 /// the boards with the same FPGA.
 pub const BOARD_INFO: &str = "board-info";
+/// Tools > Supported FPGAs…: every FPGA the engine supports, by family,
+/// with how many boards have each.
+pub const SUPPORTED_FPGAS: &str = "supported-fpgas";
 pub const SETTINGS: &str = "settings";
 pub const GO_TO_DEFINITION: &str = "go-to-definition";
 pub const TOGGLE_COMMENT: &str = "toggle-comment";
@@ -337,6 +340,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
                 .enabled(is_enabled(BOARD_INFO, &state))
                 .build(app)?,
         )
+        .item(&MenuItemBuilder::with_id(SUPPORTED_FPGAS, "Supported FPGAs…").build(app)?)
         .item(&MenuItemBuilder::with_id(DEVICES, "Connected Devices…").build(app)?)
         .build()?;
 
@@ -396,7 +400,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
         | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST | BOARD_INFO
-        | SYSTEM_INFO => {
+        | SUPPORTED_FPGAS | SYSTEM_INFO => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {

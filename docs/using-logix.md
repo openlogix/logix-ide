@@ -117,6 +117,16 @@ yours, you can also type its FPGA in the board list's search, such as
 
 ![The Board Info window for the Alhambra II](images/board-info.png)
 
+### Supported FPGAs
+
+**Tools > Supported FPGAs…** lists every FPGA Logix supports, by family,
+with how many boards have each, including FPGAs that no board in the list
+has yet. Click a family to see its FPGAs, or search by part number. A
+board file of your own names its FPGA by its **FPGA ID**: **Copy** puts it
+on the clipboard.
+
+![The Supported FPGAs window](images/supported-fpgas.png)
+
 ### Board options
 
 Next to the board, Logix shows how it's programmed: the connection (such

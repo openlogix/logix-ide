@@ -198,7 +198,7 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
         return Ok(c.clone());
     }
     let engine = ready_engine(state).await?;
-    let engine::Catalog { boards } = engine::catalog(&engine)
+    let engine::Catalog { boards, families } = engine::catalog(&engine)
         .await
         .context("Couldn't get the list of boards.")?;
     // Examples for boards the engine doesn't support can't be built.
@@ -212,7 +212,11 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
         hidden: total - list.len(),
         examples: list,
     };
-    let c = Catalog { boards, examples };
+    let c = Catalog {
+        boards,
+        families,
+        examples,
+    };
     *slot = Some(c.clone());
     Ok(c)
 }
@@ -220,6 +224,14 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
 #[tauri::command]
 pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<engine::Board>, UserError> {
     Ok(catalog(&state).await?.boards)
+}
+
+/// Every FPGA the engine supports, by family (Tools > Supported FPGAs).
+#[tauri::command]
+pub async fn get_fpga_families(
+    state: State<'_, AppState>,
+) -> Result<Vec<engine::FpgaFamily>, UserError> {
+    Ok(catalog(&state).await?.families)
 }
 
 /// Every board the project knows, as Logix Engine merges them (the

@@ -111,11 +111,25 @@ pub fn selector(v: &serde_json::Value) -> Variant {
         .unwrap_or_default()
 }
 
-/// The engine's boards.
+/// The engine's boards and FPGAs.
 #[derive(Debug, Clone)]
 pub struct Catalog {
     /// All boards, sorted by description.
     pub boards: Vec<Board>,
+    /// Every FPGA the engine supports, by family, in the engine's order.
+    pub families: Vec<FpgaFamily>,
+}
+
+/// An FPGA family and its FPGAs, for Tools > Supported FPGAs.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FpgaFamily {
+    /// The family's ID, such as "gw1n", as boards' `family` names it.
+    pub id: String,
+    /// Its name for people, such as "Gowin GW1N", from the engine.
+    pub label: String,
+    /// Its FPGAs, by part number.
+    pub fpgas: Vec<Fpga>,
 }
 
 /// Reads the engine's catalog.
@@ -134,6 +148,7 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
         .map_err(|e| tool_error("get_catalog", &e))?;
     Ok(Catalog {
         boards: parse_boards(&catalog)?,
+        families: parse_families(&catalog),
     })
 }
 
@@ -309,6 +324,43 @@ pub async fn compare_boards(
         .await?
         .map_err(|e| tool_error("compare_boards", &e))?;
     serde_json::from_value(answer).context("Logix Engine's compare_boards answer isn't readable")
+}
+
+/// Every FPGA of `get_catalog`'s answer, by family, in the engine's order
+/// (families the engine doesn't describe last, by ID).
+pub(super) fn parse_families(catalog: &Value) -> Vec<FpgaFamily> {
+    let info = &catalog["families"];
+    let mut by_family: BTreeMap<String, Vec<Fpga>> = BTreeMap::new();
+    if let Some(fpgas) = catalog["fpgas"].as_object() {
+        for (id, f) in fpgas {
+            let family = f["family"].as_str().unwrap_or("").to_string();
+            by_family.entry(family).or_default().push(Fpga {
+                id: id.clone(),
+                part_number: f["part_number"].as_str().unwrap_or(id).to_string(),
+                size: f["size"].as_str().unwrap_or("").to_string(),
+            });
+        }
+    }
+    let mut list: Vec<(u64, FpgaFamily)> = by_family
+        .into_iter()
+        .map(|(id, mut fpgas)| {
+            fpgas.sort_by(|a, b| a.part_number.cmp(&b.part_number));
+            let i = &info[id.as_str()];
+            let label = i["label"].as_str().map(String::from).unwrap_or_else(|| {
+                if id.is_empty() {
+                    "Other".into()
+                } else {
+                    id.to_uppercase()
+                }
+            });
+            (
+                i["order"].as_u64().unwrap_or(u64::MAX),
+                FpgaFamily { id, label, fpgas },
+            )
+        })
+        .collect();
+    list.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.id.cmp(&b.1.id)));
+    list.into_iter().map(|(_, f)| f).collect()
 }
 
 pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
@@ -510,6 +562,40 @@ mod tests {
         assert_eq!(mine.len(), 1);
         assert_eq!(mine[0].id, "mine");
         assert!(!all.iter().find(|b| b.id == "alhambra-ii").unwrap().custom);
+    }
+
+    #[test]
+    fn fpgas_are_listed_by_family_in_the_engines_order() {
+        let catalog = json!({
+            "fpgas": {
+                "b": {"family": "gw2a", "part_number": "GW2A-B", "size": "18k"},
+                "a": {"family": "gw2a", "part_number": "GW2A-A", "size": "18k"},
+                "i": {"family": "ice40", "part_number": "ICE40HX1K", "size": "1k"},
+                "x": {"family": "newfamily", "part_number": "X1"},
+            },
+            "families": {
+                "ice40": {"label": "Lattice iCE40", "order": 0},
+                "gw2a": {"label": "Gowin GW2A", "order": 3},
+            },
+        });
+        let families = parse_families(&catalog);
+        let summary: Vec<_> = families
+            .iter()
+            .map(|f| {
+                let parts: Vec<_> = f.fpgas.iter().map(|x| x.part_number.as_str()).collect();
+                format!("{} ({}): {}", f.label, f.id, parts.join(", "))
+            })
+            .collect();
+        assert_eq!(
+            summary,
+            [
+                "Lattice iCE40 (ice40): ICE40HX1K",
+                "Gowin GW2A (gw2a): GW2A-A, GW2A-B",
+                "NEWFAMILY (newfamily): X1",
+            ]
+        );
+        assert_eq!(families[1].fpgas[0].id, "a");
+        assert_eq!(families[1].fpgas[0].size, "18k");
     }
 
     #[test]
