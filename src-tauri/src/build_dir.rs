@@ -16,13 +16,9 @@ pub const CONSTRAINT_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc"];
 
 /// Records which project the folder was prepared for.
 const KEY_FILE: &str = ".logix-build-key";
-/// The engine (and other tools, in projects simulated with them before) put one of
-/// these in the GTKWave layouts (.gtkw) they generate; files without them
-/// were saved by the user from GTKWave.
-const GTKW_AUTO_MARKERS: &[&str] = &[
-    "THIS FILE WAS GENERATED AUTOMATICALLY BY LOGIX ENGINE",
-    "THIS FILE WAS GENERATED AUTOMATICALLY BY APIO",
-];
+/// The engine puts one of these in the GTKWave layouts (.gtkw) it
+/// generates; files without them were saved by the user from GTKWave.
+const GTKW_AUTO_MARKERS: &[&str] = &["THIS FILE WAS GENERATED AUTOMATICALLY BY LOGIX ENGINE"];
 /// The engine's output folder, kept between builds.
 const OUTPUT_DIR: &str = "_build";
 

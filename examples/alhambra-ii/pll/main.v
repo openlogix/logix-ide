@@ -17,7 +17,7 @@ module main #(
   wire pll_locked;
 
   // PLL 12MHz -> 48MHz. pll.v was generated with
-  //   apio raw -- icepll -i 12 -o 48 -q -m -f pll.v
+  //   icepll -i 12 -o 48 -q -m -f pll.v
   // and then edited by hand (see pll.v).
   pll pll (
       .clock_in(ext_clk),

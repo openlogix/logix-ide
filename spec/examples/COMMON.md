@@ -20,7 +20,6 @@ Project on disk, `logix-ide.toml`):
 | `main.v` | The design, top module `main` |
 | `pinout.<ext>` | The pin file, `<ext>` from the board's family (`constraint_extension`: `pcf`, `lpf`, `cst` or `xdc`) |
 | `main_tb.v` | The testbench |
-| `main_tb.gtkw` | The GTKWave layout Simulate opens, when there are signals to show |
 | `logix-ide.toml` | `# Logix IDE project settings.`, then `board`, `summary` and optional `notes` (see below) |
 
 `logix-ide.toml` names the board's default variant by leaving `[variant]`
@@ -119,9 +118,6 @@ with both values.
 
 ## GTKWave layout
 
-`main_tb.gtkw` lists the signals worth watching, in this order: the clock,
-the design's state (such as its counter), the outputs that show the
-behavior (the LEDs), then the held drives. Signals by their testbench
-names (`main_tb.<name>`, or `main_tb.dut.<name>` inside the design), with
-`-<title>` comment lines between groups. No layout when there's nothing
-to show.
+No `.gtkw` file (the user's decision, 2026-11-10): Simulate opens the
+engine's default layout for the testbench, which the engine may improve
+over time. A layout the user saves from GTKWave is the user's, and stays.
