@@ -63,7 +63,7 @@ More in [Using Logix](using-logix.md#projects).
 
 ## Start from an example
 
-**File > New Project > From Example…** lists the examples for each board, with a search box.
+**File > Examples…** lists the examples for each board, with a search box.
 Every board's list starts with **bare-minimum**: the board's pins and a
 design that does nothing yet, to start from scratch. Choosing a board never
 changes your files.
@@ -109,8 +109,8 @@ hardware you meant.
 ## Your first blink
 
 1. Pick your board in the toolbar.
-2. On the start screen, click **From Example…** (or **File > New
-   Project > From Example…**), then open blinky.
+2. On the start screen, click **Examples…** (or **File > Examples…**),
+   then open blinky.
 3. Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }.
 4. Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }. The LED blinks.
 

@@ -551,7 +551,7 @@ export const backend = {
     invoke<FormatResult>("format_file", { name, text }),
 
   /**
-   * File > New Project > Empty Project: an unsaved project for `board`
+   * File > New Project: an unsaved project for `board`
    * (or else the last chosen board) with the board's pins and an empty
    * design (its Bare Minimum), so it builds right away.
    */

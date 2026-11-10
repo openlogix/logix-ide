@@ -13,7 +13,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 use crate::{platform, settings};
 
 /// Menu ids forwarded to the UI (see `onMenu` in `src/lib/backend.ts`).
-/// File > New Project > Empty Project.
+/// File > New Project.
 pub const NEW: &str = "new";
 /// File > Close Project: back to the start screen.
 pub const CLOSE_PROJECT: &str = "close-project";
@@ -234,12 +234,11 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
 
     // "Project" in the names: these act on the whole project, New File on
     // one file in it.
-    let new_project = SubmenuBuilder::new(app, "New Project")
-        .item(&item(NEW, "Empty Project", "CmdOrCtrl+N")?)
-        .item(&item(EXAMPLES, "From Example…", "CmdOrCtrl+Shift+E")?)
-        .build()?;
+    // Examples right below New Project, easy to find, as the Arduino IDE's
+    // File > Examples.
     let mut file = SubmenuBuilder::new(app, "File")
-        .item(&new_project)
+        .item(&item(NEW, "New Project", "CmdOrCtrl+N")?)
+        .item(&item(EXAMPLES, "Examples…", "CmdOrCtrl+Shift+E")?)
         .item(&item(OPEN, "Open Project…", "CmdOrCtrl+O")?)
         .item(&recent)
         .item(&item(CLOSE_PROJECT, "Close Project", "CmdOrCtrl+W")?)

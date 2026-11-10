@@ -16,12 +16,12 @@ async function pickBoard(page: Page, name: string) {
 
 /**
  * Opens the app, waits until the (fake) FPGA tools are ready, and starts
- * with the Alhambra II's blinky (the start screen's From Example…).
+ * with the Alhambra II's blinky (the start screen's Examples…).
  */
 async function start(page: Page) {
   await page.goto("/");
   await expect(output(page)).toContainText("Ready.");
-  await page.getByRole("button", { name: "From Example…" }).click();
+  await page.getByRole("button", { name: "Examples…" }).click();
   const dialog = page.getByRole("dialog", { name: "Examples" });
   await dialog.getByRole("button", { name: /^blinky/ }).click();
   await dialog.getByRole("button", { name: "New Project" }).click();
@@ -1205,7 +1205,7 @@ test("the Board Explorer links families, FPGAs, boards and examples", async ({ p
 test("examples show their summary and notes, selected or not", async ({ page }) => {
   await page.goto("/");
   await expect(output(page)).toContainText("Ready.");
-  await page.getByRole("button", { name: "From Example…" }).click();
+  await page.getByRole("button", { name: "Examples…" }).click();
   const dialog = page.getByRole("dialog", { name: "Examples" });
   await dialog.getByRole("searchbox").fill("Primer 20K Lite");
   const blinky = dialog.getByRole("button", { name: /^blinky/ });

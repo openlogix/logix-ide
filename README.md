@@ -106,7 +106,7 @@ security setting on your Mac.
 
 1. Start Logix and wait for **Ready.** at the bottom of the window. Choose
    your board in the list at the top (the **iCESugar v1.5** at first), then
-   click **From Example…** on the start screen and open **blinky**.
+   click **Examples…** on the start screen and open **blinky**.
 2. Click the **Verify** button <img src="docs/images/icon-verify.png" alt="Verify button" height="20">.
    Logix builds the design and shows how much of the FPGA it uses.
 3. Plug in your board. When Logix sees it, the word next to the board list

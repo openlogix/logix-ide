@@ -209,7 +209,7 @@ function blinkyDoc(board: string): ProjectDoc {
   };
 }
 
-/** A board's Bare Minimum (also File > New Project > Empty Project). */
+/** A board's Bare Minimum (also File > New Project). */
 function bareDoc(board: string): ProjectDoc {
   return {
     dir: null,

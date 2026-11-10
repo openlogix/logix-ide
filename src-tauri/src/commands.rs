@@ -915,7 +915,7 @@ pub async fn open_last_project() -> Result<Option<ProjectDoc>, UserError> {
     Ok(Some(loaded.into()))
 }
 
-/// File > New Project > Empty Project: an unsaved project for `board` (or
+/// File > New Project: an unsaved project for `board` (or
 /// else the last chosen board, or the default one) with the board's pins
 /// and a design that does nothing yet: its Bare Minimum (see
 /// `open_bare_minimum`). It builds right away.

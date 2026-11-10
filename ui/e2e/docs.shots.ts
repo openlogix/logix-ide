@@ -15,9 +15,9 @@ const menu = (page: Page, id: string) =>
 async function startWithBoard(page: Page) {
   await page.goto("/");
   await expect(page.locator(".console")).toContainText("Ready.");
-  // Open the Alhambra II blinky from the start screen's From Example….
+  // Open the Alhambra II blinky from the start screen's Examples….
   await expect(page.locator(".board-button")).toHaveText(/Alhambra II/);
-  await page.getByRole("button", { name: "From Example…" }).click();
+  await page.getByRole("button", { name: "Examples…" }).click();
   const examples = page.getByRole("dialog", { name: "Examples" });
   await examples.getByRole("button", { name: /^blinky/ }).click();
   await examples.getByRole("button", { name: "New Project" }).click();

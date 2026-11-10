@@ -58,10 +58,9 @@ files inside subfolders aren't part of the design: Logix only builds the
 ones at the top of the folder. Keep each project in its own folder, not
 inside another project.
 
-- **New project**: **File > New Project > Empty Project** gives
-  the selected board's pin file and an empty design (the board's **Bare
-  Minimum**), ready to build. **File > New Project > From Example…**
-  starts from one of the board's examples instead.
+- **New project**: **File > New Project** gives the selected board's pin
+  file and an empty design (the board's **Bare Minimum**), ready to build.
+  **File > Examples…** starts from one of the board's examples instead.
 - **New file**: the **+** at the end of the tabs, or **File > New File…**.
   Double-click a tab to rename it; right-click it to
   rename or delete it. These changes, like edits, are saved when you save
@@ -150,7 +149,7 @@ boards, such as the Xilinx boards, flash hasn't been tried yet. A few
 upload to RAM only, such as the Zybo and PYNQ boards and the ULX3S. After
 **Upload**, the output says where the design went.
 
-**File > New Project > From Example…** lists the examples for each board, with a search box.
+**File > Examples…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA type in the same way.
 
 ![The Examples window: boards on the left, the selected board's examples on the right](images/examples.png)
@@ -278,8 +277,8 @@ opens the folder with Logix's log, to attach to a report (see
 
 | Action | Shortcut |
 | :--- | :--- |
-| New empty project | ++cmd+n++ |
-| New project from an example | ++shift+cmd+e++ |
+| New project | ++cmd+n++ |
+| Examples | ++shift+cmd+e++ |
 | Open project | ++cmd+o++ |
 | Close project | ++cmd+w++ |
 | New file | ++shift+cmd+n++ |

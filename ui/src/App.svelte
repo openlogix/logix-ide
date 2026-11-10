@@ -1466,7 +1466,7 @@
     return board !== null && board === homeBoard ? homeVariant : {};
   }
 
-  /** File > New Project > Empty Project: the board's pins and an empty
+  /** File > New Project: the board's pins and an empty
    * design (its Bare Minimum). */
   async function newProject() {
     const board = currentBoard;
@@ -2133,7 +2133,7 @@
             </button>
             <button disabled={examples.length === 0} onclick={showExamples}>
               <span class="start-icon"><Icon name="example" size={26} /></span>
-              <span class="start-title">From Example…</span>
+              <span class="start-title">Examples…</span>
               <span class="start-hint">Blinky and more, ready to build</span>
             </button>
           </div>
