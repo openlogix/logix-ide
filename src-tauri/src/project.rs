@@ -419,10 +419,11 @@ pub fn enclosing_project(path: &Path) -> Option<PathBuf> {
 }
 
 /// The built-in projects folder, like Arduino's sketchbook:
-/// `~/Documents/logix-ide` (no spaces, lowercase, named for the projects'
-/// format: the website repo's `CLAUDE.md`, Folder names).
+/// `~/Documents/OpenLogix/IDE`: every Open Logix product that keeps projects
+/// has its folder in `~/Documents/OpenLogix/`, in the OS's capitalization
+/// (the website repo's `CLAUDE.md`, Folder names).
 pub fn builtin_projects_root() -> Option<PathBuf> {
-    dirs::document_dir().map(|d| d.join("logix-ide"))
+    dirs::document_dir().map(|d| d.join("OpenLogix").join("IDE"))
 }
 
 /// Where new projects go: the folder chosen in Settings, or else the

@@ -43,7 +43,7 @@ missing `;`, are underlined as you type.
 
 The main file is always `main.v`, and its module is named `main`. Other
 Verilog files and the board's pin file show up as tabs, and testbenches end
-with `_tb.v`. New projects go to `~/Documents/logix-ide`.
+with `_tb.v`. New projects go to `~/Documents/OpenLogix/IDE`.
 
 This is blinky, the first example to try. A counter counts clock
 cycles, and its top bit drives the LED, so the LED blinks:
