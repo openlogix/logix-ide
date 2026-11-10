@@ -31,7 +31,7 @@ pub const SIMULATE: &str = "simulate";
 pub const SHOW_FOLDER: &str = "show-folder";
 pub const COPY_PATH: &str = "copy-path";
 pub const SHOW_DIAGRAM: &str = "show-diagram";
-/// Project > Build Report…: the last build's resources and clocks, from the
+/// Project > Show Build Report…: the last build's resources and clocks, from the
 /// engine's report (`BuildReport.svelte`).
 pub const BUILD_REPORT: &str = "build-report";
 pub const DEVICES: &str = "devices";
@@ -129,7 +129,7 @@ pub struct MenuState {
     /// This Test and Simulate (hidden otherwise, to keep it short).
     pub testbench_open: bool,
     /// The project has a build report: Verify or Upload built it since it
-    /// was opened (Build Report…).
+    /// was opened (Show Build Report…).
     #[serde(default)]
     pub build_report: bool,
     /// One Tools submenu per dimension of the current board's variants,
@@ -297,7 +297,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .separator()
         .item(&item(SHOW_DIAGRAM, "Show Diagram", "CmdOrCtrl+Shift+D")?)
         .item(
-            &MenuItemBuilder::with_id(BUILD_REPORT, "Build Report…")
+            &MenuItemBuilder::with_id(BUILD_REPORT, "Show Build Report…")
                 .enabled(is_enabled(BUILD_REPORT, &state))
                 .build(app)?,
         )

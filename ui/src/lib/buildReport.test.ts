@@ -35,7 +35,8 @@ describe("build report window", () => {
     const r = (used: number, percent: number | null) => ({
       name: "X", description: null, used, available: 100, percent,
     });
-    expect(percentText(r(0, 0))).toBe("0%");
+    expect(percentText(r(0, 0))).toBe("");
+    expect(percentText(r(0, null))).toBe("");
     expect(percentText(r(1, 0))).toBe("<0.1%");
     expect(percentText(r(1, 0.4))).toBe("0.4%");
     expect(percentText(r(1, 33.3))).toBe("33%");

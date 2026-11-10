@@ -33,11 +33,13 @@ export function unusedCount(report: BuildReport): number {
 }
 
 /**
- * A share for the table: "n/a" when the engine found nextpnr's numbers
- * invalid, "<0.1%" for something used but less than that, one decimal under
- * 1%, whole numbers otherwise.
+ * A share for the table: empty for an unused resource (so the used ones
+ * stand out), "n/a" when the engine found nextpnr's numbers invalid,
+ * "<0.1%" for something used but less than that, one decimal under 1%,
+ * whole numbers otherwise.
  */
 export function percentText(r: ReportResource): string {
+  if (r.used === 0) return "";
   if (r.percent === null) return "n/a";
   if (r.used > 0 && r.percent < 0.1) return "<0.1%";
   if (r.percent > 0 && r.percent < 1) return `${r.percent.toFixed(1)}%`;

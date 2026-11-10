@@ -601,7 +601,7 @@
   let taskStep = $state<{ message: string; percent: number | null } | null>(
     null,
   );
-  /** The open project's last build report (Verify or Upload), for Build Report…. */
+  /** The open project's last build report (Verify or Upload), for Show Build Report…. */
   let buildReport = $state<{ report: BuildReport; title: string } | null>(null);
   let buildReportOpen = $state(false);
   /** The Build Report window's "Show unused resources", kept between builds. */
@@ -1094,8 +1094,15 @@
       taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
       if (task === "test") log("", ...testbenchLines(outcome));
-      if (outcome.ok && outcome.report) {
-        if (outcome.report.text) log("", ...outcome.report.text.split("\n"));
+      // The report is always the last build's: a failed or stopped build
+      // has none, so the previous one's goes (Upload's report is its
+      // build's, even when programming fails).
+      if (task === "build" || task === "upload") {
+        buildReport = null;
+        buildReportOpen = false;
+      }
+      if (outcome.report) {
+        if (outcome.ok && outcome.report.text) log("", ...outcome.report.text.split("\n"));
         const when = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         const boardName = boards.find((b) => b.id === board)?.description ?? board;
         buildReport = { report: outcome.report, title: `${p.name} · ${boardName} · ${when}` };
@@ -2338,7 +2345,7 @@
         {/if}
         <span class="status-text" role="status">{statusText}</span>
         {#if status?.report && buildReport && !isBusy && !activity}
-          <button class="status-link" onclick={() => (buildReportOpen = true)}>Build Report…</button>
+          <button class="status-link" onclick={() => (buildReportOpen = true)}>Show Build Report…</button>
         {/if}
         {#if running && taskStep && !activity}
           <span class="setup-detail"

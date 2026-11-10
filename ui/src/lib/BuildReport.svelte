@@ -1,5 +1,5 @@
 <!--
-  Project > Build Report… (also the status bar's Build Report link after
+  Project > Show Build Report… (also the status bar's Build Report link after
   Verify or Upload): the last build's resources and clocks, as Logix
   Engine's `build` gives them (its recipe "Show problems in the editor",
   docs/tool-api.md). Each resource by the toolchain's own name, which
@@ -94,7 +94,7 @@
         </thead>
         <tbody>
           {#each rows as r (r.name)}
-            <tr class:unused={r.used === 0}>
+            <tr>
               <td class="name">{r.name}</td>
               <td>{r.description ?? ""}</td>
               <td class="num">{r.used.toLocaleString()}</td>
@@ -228,7 +228,12 @@
     user-select: text;
   }
   .clocks {
+    width: auto;
     margin-top: 16px;
+  }
+  .clocks td,
+  .clocks th {
+    padding-right: 24px;
   }
   th,
   td {
@@ -253,9 +258,6 @@
     font-family: ui-monospace, Menlo, Consolas, monospace;
     font-size: 12px;
     white-space: nowrap;
-  }
-  .unused {
-    color: var(--muted);
   }
   .invalid {
     color: var(--muted);
