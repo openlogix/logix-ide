@@ -74,7 +74,7 @@ export function reportText(title: string, rows: ReportResource[], report: BuildR
       ...rows.map((r) => [
         r.name,
         r.description ?? "",
-        String(r.used),
+        r.used === 0 ? "" : String(r.used),
         String(r.available),
         percentText(r),
       ]),

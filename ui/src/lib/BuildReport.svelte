@@ -97,7 +97,7 @@
             <tr>
               <td class="name">{r.name}</td>
               <td>{r.description ?? ""}</td>
-              <td class="num">{r.used.toLocaleString()}</td>
+              <td class="num">{r.used === 0 ? "" : r.used.toLocaleString()}</td>
               <td class="num">{r.available.toLocaleString()}</td>
               <td class="num" class:invalid={r.percent === null}
                 title={r.percent === null ? "The tools reported numbers that don't fit" : undefined}

@@ -204,14 +204,16 @@ test("Build Report shows the used resources, all on request, and copies them", a
   await expect(rows.first()).toContainText("ICESTORM_RAM");
   await dialog.getByRole("button", { name: "Copy" }).click();
   await expect(dialog).toContainText("Copied.");
-  expect((await fake()).copiedText).toMatch(/^Build Report: .* · Alhambra II · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +0 +32\n/s);
+  expect((await fake()).copiedText).toMatch(/^Build Report: .* · Alhambra II · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +32\n/s);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   // Kept until the project changes; also from the menu, with unused shown.
   await menu(page, "build-report");
   await expect(dialog.getByLabel(/Show unused resources/)).toBeChecked();
-  // Unused rows have no share, rather than "0%".
-  await expect(rows.filter({ hasText: "ICESTORM_RAM" }).locator("td").last()).toHaveText("");
+  // Unused rows have no count or share, rather than "0" and "0%".
+  const ram = rows.filter({ hasText: "ICESTORM_RAM" }).locator("td");
+  await expect(ram.nth(2)).toHaveText("");
+  await expect(ram.last()).toHaveText("");
   await page.keyboard.press("Escape");
   // A failed build has no report: the last successful one's goes.
   await typeAtStart(page, "oops\n");
