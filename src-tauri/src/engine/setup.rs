@@ -1,6 +1,6 @@
 //! Engine setup at startup: make sure the pinned engine release is
-//! installed, start it, and let it install its packages (toolchains) if any
-//! are missing. Once they are installed, startup needs no network: the
+//! downloaded, start it, and let it download its packages (toolchains) if
+//! any are missing. Once they are downloaded, startup needs no network: the
 //! engine checks its packages locally.
 
 use anyhow::{Context, Result};
@@ -18,11 +18,11 @@ use crate::setup_events::{SetupEvent, SetupStage};
 // language, and the full chain (shown in the console) keeps the details.
 const MSG_DOWNLOAD: &str =
     "Couldn't download Logix Engine. Check your internet connection, then click Retry.";
-const MSG_UNPACK: &str = "Couldn't install Logix Engine on this computer.";
+const MSG_UNPACK: &str = "Couldn't set up Logix Engine on this computer.";
 const MSG_PREPARE: &str = "Couldn't prepare the folder for Logix Engine.";
 const MSG_START: &str = "Couldn't start Logix Engine.";
 const MSG_PACKAGES: &str =
-    "Couldn't install the FPGA tools. Check your internet connection, then click Retry.";
+    "Couldn't download the FPGA tools. Check your internet connection, then click Retry.";
 
 /// Makes the engine ready to use and returns it running. `emit` receives
 /// progress events. The caller sends `Ready` afterwards.
@@ -50,7 +50,7 @@ where
             (exe, layout.dev_engine_folder())
         }
         None => (
-            install_release(platform, &layout, &emit).await?,
+            download_release(platform, &layout, &emit).await?,
             layout.engine_folder(),
         ),
     };
@@ -77,30 +77,30 @@ where
     let missing = missing_packages(&info);
     if !missing.is_empty() {
         emit(SetupEvent::Stage {
-            stage: SetupStage::InstallingEnginePackages,
+            stage: SetupStage::DownloadingEnginePackages,
         });
         log(format!(
-            "Installing FPGA tools for Logix Engine ({}). The first run can take a few minutes...",
+            "Downloading FPGA tools for Logix Engine ({}). The first run can take a few minutes...",
             missing.join(", ")
         ));
         engine
             .call(
-                "install_packages",
+                "download_packages",
                 json!({}),
                 Some(progress_sink(emit.clone())),
             )
             .await
             .context(MSG_PACKAGES)?
-            .map_err(|e| tool_error("install_packages", &e))
+            .map_err(|e| tool_error("download_packages", &e))
             .context(MSG_PACKAGES)?;
-        log("FPGA tools for Logix Engine installed.".into());
+        log("FPGA tools for Logix Engine downloaded.".into());
     }
     Ok(engine)
 }
 
-/// Installs the pinned engine release if it isn't yet (download and
+/// Downloads the pinned engine release if it isn't yet (download and
 /// unpack, with progress), and returns its executable.
-async fn install_release<F>(
+async fn download_release<F>(
     platform: platform::Platform,
     layout: &Layout,
     emit: &F,
@@ -111,7 +111,7 @@ where
     let log = |line: String| emit(SetupEvent::Log { line });
     let spec = bundle::package_spec(platform, ENGINE_RELEASE_REPO, ENGINE_RELEASE_TAG);
     let bin_dir = layout.bin_dir();
-    if !bundle::is_installed(&bin_dir, platform.engine_exe_name(), &spec.url) {
+    if !bundle::is_unpacked(&bin_dir, platform.engine_exe_name(), &spec.url) {
         emit(SetupEvent::Stage {
             stage: SetupStage::DownloadingEngine,
         });
@@ -130,17 +130,17 @@ where
         .context(MSG_DOWNLOAD)?;
         let bin_dir = bin_dir.clone();
         tokio::task::spawn_blocking(move || {
-            bundle::install(platform, &archive, &spec, &tmp_dir, &bin_dir)
+            bundle::unpack(platform, &archive, &spec, &tmp_dir, &bin_dir)
         })
         .await
         .context(MSG_UNPACK)?
         .context(MSG_UNPACK)?;
-        log("Logix Engine installed.".into());
+        log("Logix Engine downloaded.".into());
     }
     Ok(bin_dir.join(platform.engine_exe_name()))
 }
 
-/// Names of the packages `get_engine_info` reports as not installed
+/// Names of the packages `get_engine_info` reports as not ready
 /// (missing or broken).
 fn missing_packages(info: &Value) -> Vec<String> {
     info["packages"]
@@ -148,7 +148,7 @@ fn missing_packages(info: &Value) -> Vec<String> {
         .map(|packages| {
             packages
                 .iter()
-                .filter(|p| p["status"] != "installed")
+                .filter(|p| p["status"] != "ready")
                 .filter_map(|p| p["name"].as_str().map(String::from))
                 .collect()
         })
@@ -184,7 +184,7 @@ mod tests {
     #[test]
     fn finds_missing_packages() {
         let info = json!({"packages": [
-            {"name": "oss-cad-suite", "version": "2026-10-22", "status": "installed"},
+            {"name": "oss-cad-suite", "version": "2026-10-22", "status": "ready"},
             {"name": "openxc7", "version": "2026-10-22", "status": "missing"},
             {"name": "verible", "version": "2026-10-22", "status": "broken"},
         ]});
@@ -200,7 +200,7 @@ mod tests {
             progress_sink(move |e| events.lock().unwrap().push(e))
         };
         sink(Progress {
-            message: Some("Installing oss-cad-suite".into()),
+            message: Some("Downloading oss-cad-suite".into()),
             percent: None,
         });
         sink(Progress {
@@ -211,14 +211,14 @@ mod tests {
             *events.lock().unwrap(),
             vec![
                 SetupEvent::Log {
-                    line: "Installing oss-cad-suite...".into()
+                    line: "Downloading oss-cad-suite...".into()
                 },
                 SetupEvent::Progress {
-                    message: "Installing oss-cad-suite".into(),
+                    message: "Downloading oss-cad-suite".into(),
                     percent: None
                 },
                 SetupEvent::Progress {
-                    message: "Installing oss-cad-suite".into(),
+                    message: "Downloading oss-cad-suite".into(),
                     percent: Some(40)
                 },
             ]
@@ -226,7 +226,7 @@ mod tests {
     }
 
     /// Runs the setup flow's engine part against a real engine binary, with
-    /// automatic install off so it needs no network:
+    /// automatic download off so it needs no network:
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> cargo test real_engine_starts -- --ignored`
     #[tokio::test]
     #[ignore]
@@ -247,19 +247,19 @@ mod tests {
         assert!(!missing_packages(&info).is_empty(), "{info}");
         // An unknown package is a tool error, not a failed call.
         let err = engine
-            .call("install_packages", json!({"packages": ["nope"]}), None)
+            .call("download_packages", json!({"packages": ["nope"]}), None)
             .await
             .unwrap()
             .unwrap_err();
         assert_eq!(err["category"], "request");
     }
 
-    /// Installs the real `verible` package (8 MB) through the setup's
+    /// Downloads the real `verible` package (8 MB) through the setup's
     /// progress path and checks the banner gets percentages:
-    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> cargo test real_engine_install_progress -- --ignored --nocapture`
+    /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> cargo test real_engine_download_progress -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
-    async fn real_engine_install_progress() {
+    async fn real_engine_download_progress() {
         let exe = std::env::var("LOGIX_DEV_ENGINE_BINARY").expect("set LOGIX_DEV_ENGINE_BINARY");
         let tmp = tempfile::tempdir().unwrap();
         let folder = tmp.path().join("engine");
@@ -274,7 +274,7 @@ mod tests {
         };
         engine
             .call(
-                "install_packages",
+                "download_packages",
                 json!({"packages": ["verible"]}),
                 Some(sink),
             )

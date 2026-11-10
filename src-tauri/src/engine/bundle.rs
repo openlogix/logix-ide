@@ -1,4 +1,4 @@
-//! Downloading and installing the engine package from the engine's GitHub
+//! Downloading and unpacking the engine package from the engine's GitHub
 //! releases: `logix-engine-<platform>-<yyyymmdd>.tgz`, with one top-level
 //! `logix-engine/` folder holding the executable and its licenses.
 
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::download::{remove_dir_if_exists, unpack_tgz};
 use crate::platform::Platform;
 
-/// Written next to the installed executable; records which release URL the
+/// Written next to the unpacked executable; records which release URL the
 /// package came from so a changed pinned release triggers a new download.
 const METADATA_FILE: &str = "download-metadata.json";
 
@@ -40,8 +40,8 @@ pub fn package_spec(platform: Platform, repo: &str, tag: &str) -> PackageSpec {
     }
 }
 
-/// True if `bin_dir` holds a complete install that came from `url`.
-pub fn is_installed(bin_dir: &Path, exe_name: &str, url: &str) -> bool {
+/// True if `bin_dir` holds a complete unpack that came from `url`.
+pub fn is_unpacked(bin_dir: &Path, exe_name: &str, url: &str) -> bool {
     if !bin_dir.join(exe_name).is_file() {
         return false;
     }
@@ -51,9 +51,9 @@ pub fn is_installed(bin_dir: &Path, exe_name: &str, url: &str) -> bool {
         .is_some_and(|m| m.url == url)
 }
 
-/// Unpacks a downloaded package and installs it as `bin_dir`, replacing any
-/// previous install. Returns the executable. Blocking.
-pub fn install(
+/// Unpacks a downloaded package as `bin_dir`, replacing any previous
+/// one. Returns the executable. Blocking.
+pub fn unpack(
     platform: Platform,
     archive: &Path,
     spec: &PackageSpec,
@@ -79,7 +79,7 @@ pub fn install(
     let exe = bin_dir.join(exe_name);
     platform.prepare_unpacked_bundle(bin_dir, &exe)?;
 
-    // Written last, so an interrupted install is never treated as complete.
+    // Written last, so an interrupted unpack is never treated as complete.
     let metadata = serde_json::to_vec_pretty(&Metadata {
         url: spec.url.clone(),
     })?;
@@ -113,7 +113,7 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn installs_package_and_detects_it() {
+    fn unpacks_package_and_detects_it() {
         let tmp = tempfile::tempdir().unwrap();
         let spec = package_spec(Platform::MacosArm64, "openlogix/logix-engine", "2026-11-03");
         let archive = tmp.path().join(&spec.file_name);
@@ -127,9 +127,9 @@ mod tests {
             ],
         );
         let bin_dir = tmp.path().join("engine-bin");
-        assert!(!is_installed(&bin_dir, "logix-engine", &spec.url));
+        assert!(!is_unpacked(&bin_dir, "logix-engine", &spec.url));
 
-        let exe = install(
+        let exe = unpack(
             Platform::MacosArm64,
             &archive,
             &spec,
@@ -142,8 +142,8 @@ mod tests {
         assert!(bin_dir.join("LICENSE-MIT").is_file());
         assert!(bin_dir.join("LICENSE-APACHE").is_file());
         assert!(!archive.exists());
-        assert!(is_installed(&bin_dir, "logix-engine", &spec.url));
-        assert!(!is_installed(&bin_dir, "logix-engine", "https://other/url"));
+        assert!(is_unpacked(&bin_dir, "logix-engine", &spec.url));
+        assert!(!is_unpacked(&bin_dir, "logix-engine", "https://other/url"));
         use std::os::unix::fs::PermissionsExt;
         let mode = std::fs::metadata(&exe).unwrap().permissions().mode();
         assert_ne!(mode & 0o111, 0, "not executable");
@@ -155,7 +155,7 @@ mod tests {
         let spec = package_spec(Platform::MacosArm64, "openlogix/logix-engine", "2026-11-03");
         let archive = tmp.path().join(&spec.file_name);
         make_tgz(&archive, &[("apio/apio", b"x")]);
-        let err = install(
+        let err = unpack(
             Platform::MacosArm64,
             &archive,
             &spec,

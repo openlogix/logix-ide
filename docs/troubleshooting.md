@@ -12,7 +12,7 @@ xattr -c ~/Downloads/logix-darwin-arm64-<date>.dmg
 Then open it and drag Logix IDE to **Applications** again. See
 [Installing](installing.md).
 
-## The FPGA tools don't install
+## The FPGA tools don't download
 
 On its first start, Logix needs an internet connection to download the FPGA
 tools. If it fails, a red bar shows the problem; check your connection and
@@ -85,7 +85,7 @@ the testbench doesn't reach `$finish`.
 
 ## Starting over
 
-To reinstall the FPGA tools and reset the settings, quit Logix and delete the
+To download the FPGA tools again and reset the settings, quit Logix and delete the
 `~/.logix` folder. Your projects aren't affected. The next start downloads
 the tools again.
 

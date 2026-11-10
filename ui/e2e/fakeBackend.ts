@@ -293,7 +293,7 @@ const fake = {
   taskVariant: null as Real.Variant | null,
   /** The board and variant last saved (`saveProject`, Save As). */
   saved: null as { board: string | null; variant: Real.Variant } | null,
-  /** Ends a setup held at the engine's package install (`/?engineSetup`). */
+  /** Ends a setup held at the engine's package download (`/?engineSetup`). */
   finishSetup: () => handlers.finishSetup?.(),
   /** GTKWave's window appeared after Simulate (true), or not in time (false). */
   gtkwaveOpened: (found: boolean) => handlers.gtkwaveOpened?.(found),
@@ -427,14 +427,14 @@ export const backend: typeof Real.backend = {
     if (new URLSearchParams(location.search).has("devEngine")) {
       onEvent({ kind: "devEngine", path: "/Users/you/logix-engine/target/debug/logix-engine" });
     }
-    // With `/?engineSetup`, setup stops in the engine's package install
+    // With `/?engineSetup`, setup stops in the engine's package download
     // until a test calls `__fake.finishSetup()`.
     if (new URLSearchParams(location.search).has("engineSetup")) {
-      onEvent({ kind: "stage", stage: "installingEnginePackages" });
-      onEvent({ kind: "log", line: "Installing oss-cad-suite..." });
+      onEvent({ kind: "stage", stage: "downloadingEnginePackages" });
+      onEvent({ kind: "log", line: "Downloading oss-cad-suite..." });
       onEvent({
         kind: "progress",
-        message: "Installing oss-cad-suite",
+        message: "Downloading oss-cad-suite",
         percent: 42,
       });
       await new Promise<void>((resolve) => (handlers.finishSetup = resolve));

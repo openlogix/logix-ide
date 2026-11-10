@@ -99,7 +99,7 @@ pub fn copy_text(text: String) -> Result<(), UserError> {
 }
 
 /// Makes sure Logix Engine and its packages (the FPGA tools) are
-/// installed and starts it, streaming progress to `on_event`. Safe to call
+/// downloaded and starts it, streaming progress to `on_event`. Safe to call
 /// again (e.g. to retry after an error).
 #[tauri::command]
 pub async fn setup(

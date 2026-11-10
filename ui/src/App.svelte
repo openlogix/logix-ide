@@ -232,8 +232,8 @@
     null,
   );
 
-  /** The engine's package install: current phase and its percentage. */
-  let installStep = $state<{ message: string; percent: number | null } | null>(
+  /** The engine's package download: current phase and its percentage. */
+  let downloadStep = $state<{ message: string; percent: number | null } | null>(
     null,
   );
 
@@ -241,8 +241,8 @@
   const downloadFraction = $derived(
     download
       ? progressFraction(download.received, download.total)
-      : installStep?.percent != null
-        ? installStep.percent / 100
+      : downloadStep?.percent != null
+        ? downloadStep.percent / 100
         : null,
   );
 
@@ -326,13 +326,13 @@
       case "stage":
         stage = event.stage;
         if (event.stage !== "downloadingEngine") download = null;
-        if (event.stage !== "installingEnginePackages") installStep = null;
+        if (event.stage !== "downloadingEnginePackages") downloadStep = null;
         break;
       case "download":
         download = { received: event.received, total: event.total };
         break;
       case "progress":
-        installStep = { message: event.message, percent: event.percent };
+        downloadStep = { message: event.message, percent: event.percent };
         break;
       case "log":
         log(event.line);
@@ -661,10 +661,10 @@
         formatBytes(download.received) +
         (download.total ? ` of ${formatBytes(download.total)}` : "")
       );
-    if (installStep?.message)
+    if (downloadStep?.message)
       return (
-        installStep.message +
-        (installStep.percent != null ? ` ${installStep.percent}%` : "")
+        downloadStep.message +
+        (downloadStep.percent != null ? ` ${downloadStep.percent}%` : "")
       );
     return "";
   });
@@ -1878,8 +1878,8 @@
   const stageText: Record<SetupStage, string> = {
     checking: "Checking FPGA tools…",
     downloadingEngine: "Downloading Logix Engine…",
-    installingEnginePackages:
-      "Installing FPGA tools. The first run can take a few minutes…",
+    downloadingEnginePackages:
+      "Downloading FPGA tools. The first run can take a few minutes…",
     ready: "",
   };
 </script>

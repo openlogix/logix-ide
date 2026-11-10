@@ -51,13 +51,13 @@ export function withReason(err: UserError): string {
 export type SetupStage =
   | "checking"
   | "downloadingEngine"
-  | "installingEnginePackages"
+  | "downloadingEnginePackages"
   | "ready";
 
 /**
  * Progress events sent while setting up Logix Engine (see
- * `SetupEvent` in Rust). `progress` is the engine's package install: the
- * current phase (e.g. "Installing oss-cad-suite") and its percentage.
+ * `SetupEvent` in Rust). `progress` is the engine's package download: the
+ * current phase (e.g. "Downloading oss-cad-suite") and its percentage.
  */
 export type SetupEvent =
   | { kind: "stage"; stage: SetupStage }
@@ -459,7 +459,7 @@ export const backend = {
 
   /**
    * Makes sure Logix Engine and its packages (the FPGA tools) are
-   * installed and starts it. Resolves when ready, rejects with a
+   * downloaded and starts it. Resolves when ready, rejects with a
    * `UserError` on failure. Safe to call again to retry.
    */
   setup: (onEvent: (event: SetupEvent) => void): Promise<void> => {

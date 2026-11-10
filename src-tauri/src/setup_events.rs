@@ -1,15 +1,15 @@
 //! Progress events sent to the UI while the IDE sets up its tools at
-//! startup: downloading Logix Engine, then installing its packages.
+//! startup: downloading Logix Engine, then its packages.
 
 use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum SetupStage {
-    /// Checking what's installed.
+    /// Checking what's downloaded.
     Checking,
     DownloadingEngine,
-    InstallingEnginePackages,
+    DownloadingEnginePackages,
     Ready,
 }
 
@@ -29,8 +29,8 @@ pub enum SetupEvent {
         received: u64,
         total: Option<u64>,
     },
-    /// The engine's install progress: the current phase's message (such as
-    /// "Installing oss-cad-suite") and its percentage, when known.
+    /// The engine's download progress: the current phase's message (such as
+    /// "Downloading oss-cad-suite") and its percentage, when known.
     Progress {
         message: String,
         percent: Option<u32>,

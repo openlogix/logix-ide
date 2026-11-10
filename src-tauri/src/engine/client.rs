@@ -30,7 +30,7 @@ use tokio_util::sync::CancellationToken;
 /// Progress of one engine operation, as the engine reports it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Progress {
-    /// The current phase's message, such as "Installing oss-cad-suite".
+    /// The current phase's message, such as "Downloading oss-cad-suite".
     /// Only sent when a phase starts.
     pub message: Option<String>,
     /// The current phase's percentage, when the phase has one.
@@ -412,9 +412,9 @@ mod tests {
     fn reads_phase_percentages() {
         // A phase starts: its message, no percentage yet.
         assert_eq!(
-            Progress::new(100.0, Some("Installing openxc7".into())),
+            Progress::new(100.0, Some("Downloading openxc7".into())),
             Progress {
-                message: Some("Installing openxc7".into()),
+                message: Some("Downloading openxc7".into()),
                 percent: None
             }
         );
@@ -501,12 +501,12 @@ mod tests {
     #[test]
     fn tool_errors_keep_the_details() {
         let err = tool_error(
-            "install_packages",
+            "download_packages",
             &serde_json::json!({"category": "setup", "message": "Download failed", "details": "HTTP 404"}),
         );
         assert_eq!(
             err.to_string(),
-            "install_packages failed: Download failed\nHTTP 404"
+            "download_packages failed: Download failed\nHTTP 404"
         );
         let err = tool_error("x", &serde_json::json!({"message": "Oops", "details": ""}));
         assert_eq!(err.to_string(), "x failed: Oops");

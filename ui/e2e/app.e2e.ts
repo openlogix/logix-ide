@@ -64,13 +64,13 @@ async function typeAtStart(page: Page, text: string) {
   await page.keyboard.type(text);
 }
 
-test("shows the engine's package install progress", async ({ page }) => {
+test("shows the engine's package download progress", async ({ page }) => {
   await page.goto("/?engineSetup");
   const bar = page.locator(".status-bar");
-  await expect(status(page)).toContainText("Installing FPGA tools.");
-  await expect(bar).toContainText("Installing oss-cad-suite 42%");
+  await expect(status(page)).toContainText("Downloading FPGA tools.");
+  await expect(bar).toContainText("Downloading oss-cad-suite 42%");
   await expect(bar.locator("progress")).toHaveJSProperty("value", 0.42);
-  await expect(output(page)).toContainText("Installing oss-cad-suite...");
+  await expect(output(page)).toContainText("Downloading oss-cad-suite...");
   await page.evaluate(() =>
     (
       window as unknown as { __fake: { finishSetup: () => void } }
