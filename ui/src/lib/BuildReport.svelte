@@ -245,7 +245,8 @@
   th {
     position: sticky;
     top: 0;
-    background: var(--bg);
+    background: var(--group-bg);
+    color: var(--group-fg);
     font-weight: 600;
   }
   .num {
@@ -258,6 +259,9 @@
     font-family: ui-monospace, Menlo, Consolas, monospace;
     font-size: 12px;
     white-space: nowrap;
+  }
+  .name {
+    font-weight: 600;
   }
   .invalid {
     color: var(--muted);
