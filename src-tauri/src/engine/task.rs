@@ -1030,11 +1030,14 @@ mod tests {
         assert!(test.testbenches[0].passed);
         let tb = dir.join("main_tb.v");
         let tb_text = std::fs::read_to_string(&tb).unwrap();
-        std::fs::write(
-            &tb,
-            tb_text.replacen("`EXPECT_EQ(leds, 8'b0)", "`EXPECT_EQ(leds, 8'b1)", 1),
-        )
-        .unwrap();
+        // Expect LED 0 lit where the example expects all off, so the test fails.
+        let wrong = tb_text.replacen(
+            "`EXPECT_EQ(leds, 8'b00000000)",
+            "`EXPECT_EQ(leds, 8'b00000001)",
+            1,
+        );
+        assert_ne!(wrong, tb_text, "the example's testbench changed");
+        std::fs::write(&tb, wrong).unwrap();
         input.target = Some("main_tb.v");
         let failed = run(&engine, Task::Test, &input, sink.clone(), &cancel)
             .await
