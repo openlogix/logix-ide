@@ -601,7 +601,7 @@
   let taskStep = $state<{ message: string; percent: number | null } | null>(
     null,
   );
-  /** The open project's last build report (Verify or Upload), for Show Build Report…. */
+  /** The open project's last build's report (Verify, Upload or Show Build Report…). */
   let buildReport = $state<{ report: BuildReport; title: string } | null>(null);
   let buildReportOpen = $state(false);
   /** The Build Report window's "Show unused resources", kept between builds. */
@@ -854,6 +854,7 @@
     test: "Testing",
     simulate: "Simulating",
     graph: "Drawing the diagram of",
+    report: "Building the report of",
   };
 
   // ---- Live errors while typing (Verible's language server) ----
@@ -1097,7 +1098,7 @@
       // The report is always the last build's: a failed or stopped build
       // has none, so the previous one's goes (Upload's report is its
       // build's, even when programming fails).
-      if (task === "build" || task === "upload") {
+      if (task === "build" || task === "upload" || task === "report") {
         buildReport = null;
         buildReportOpen = false;
       }
@@ -1106,6 +1107,7 @@
         const when = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         const boardName = boards.find((b) => b.id === board)?.description ?? board;
         buildReport = { report: outcome.report, title: `${p.name} · ${boardName} · ${when}` };
+        if (task === "report" && outcome.ok) buildReportOpen = true;
       }
       if (
         task === "upload" &&
@@ -1294,7 +1296,6 @@
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && simulationTestbench(project) !== null,
     testbenchOpen: project !== null && isTestbench(activeFile),
-    buildReport: project !== null && buildReport !== null,
     variantMenus: variantMenus(currentBoardInfo, currentVariant),
   });
 
@@ -1686,6 +1687,8 @@
       "run-tests": "test",
       simulate: "simulate",
       "show-diagram": "graph",
+      // Builds first, so the report is of the files as they are now.
+      "build-report": "report",
     };
     const task = tasks[id];
     if (task) {
@@ -1722,10 +1725,6 @@
     }
     if (id === "system-info") {
       systemInfoOpen = true;
-      return;
-    }
-    if (id === "build-report") {
-      if (buildReport) buildReportOpen = true;
       return;
     }
     if (id === "settings") {

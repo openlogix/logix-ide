@@ -17,6 +17,9 @@ pub enum Task {
     Simulate,
     /// Draw a module of the design as an SVG.
     Graph,
+    /// Show Build Report: build without lint, for the report of the files
+    /// as they are now (the engine skips a build that's up to date).
+    Report,
 }
 
 /// A testbench that ran.

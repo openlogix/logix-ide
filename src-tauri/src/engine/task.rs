@@ -192,7 +192,9 @@ where
         devices: Vec::new(),
     };
     let finished = match task {
-        Task::Build | Task::Upload => runner.build(task, input, &mut outcome).await?,
+        Task::Build | Task::Upload | Task::Report => {
+            runner.build(task, input, &mut outcome).await?
+        }
         Task::Test => runner.test(input, &mut outcome).await?,
         Task::Simulate => runner.simulate(input, &mut outcome).await?,
         Task::Graph => runner.graph(input, &mut outcome).await?,

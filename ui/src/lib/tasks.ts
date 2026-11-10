@@ -3,6 +3,7 @@ import { BOARDS_FOLDER_NAME, isBoardFile } from "./workingProject";
 
 const VERB: Record<Task, { running: string; done: string; noun: string }> = {
   build: { running: "Building…", done: "Build succeeded", noun: "Build" },
+  report: { running: "Building the report…", done: "Build succeeded", noun: "Build" },
   upload: { running: "Uploading…", done: "Upload succeeded", noun: "Upload" },
   test: { running: "Running tests…", done: "Tests passed", noun: "Test" },
   simulate: {

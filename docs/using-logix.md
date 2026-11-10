@@ -180,8 +180,11 @@ button ![Stop button](images/icon-stop.png){ .toolbar-icon } stops a build or up
 
 ### Build Report
 
-For every resource the design uses, click **Show Build Report…** in the status
-bar after a build, or choose **Project > Show Build Report…**. Each resource has
+For every resource the design uses, choose **Project > Show Build
+Report…**. It builds the design first, as it is in the editor, so the
+report is always up to date (when nothing changed, that's instant). Right
+after **Verify** or **Upload**, the **Show Build Report…** link in the
+status bar shows the report of that build. Each resource has
 the name the FPGA tools use, such as `ICESTORM_LC` or `SLICE_LUTX` (the
 name to search for), a short description, how many the design uses and
 how many the FPGA has. The clocks follow, with their maximum speeds.

@@ -492,8 +492,9 @@ export const backend: typeof Real.backend = {
       test: "Running main_tb.v",
       simulate: "Running main_tb.v",
       graph: "Drawing the graph",
+      report: "Synthesizing",
     }[task];
-    const phases = task === "build" || task === "upload";
+    const phases = task === "build" || task === "upload" || task === "report";
     onEvent({ kind: "progress", message: phase, percent: null });
     for (const line of lines) {
       onLine(line);

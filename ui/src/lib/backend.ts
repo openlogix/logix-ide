@@ -211,7 +211,8 @@ export interface Example {
   notes: string[];
 }
 
-export type Task = "build" | "upload" | "test" | "simulate" | "graph";
+/** "report" is Show Build Report: a build without lint, then the report. */
+export type Task = "build" | "upload" | "test" | "simulate" | "graph" | "report";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -409,8 +410,6 @@ export interface MenuState {
   simulate: boolean;
   /** The open tab is a testbench (the editor menu's Run This Test, Simulate). */
   testbenchOpen: boolean;
-  /** The project has a build report (Show Build Report…). */
-  buildReport: boolean;
   /** One Tools submenu per dimension of the board's variants. */
   variantMenus: VariantMenu[];
 }

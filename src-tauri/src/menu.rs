@@ -31,8 +31,8 @@ pub const SIMULATE: &str = "simulate";
 pub const SHOW_FOLDER: &str = "show-folder";
 pub const COPY_PATH: &str = "copy-path";
 pub const SHOW_DIAGRAM: &str = "show-diagram";
-/// Project > Show Build Report…: the last build's resources and clocks, from the
-/// engine's report (`BuildReport.svelte`).
+/// Project > Show Build Report…: builds (without lint; instant when up to
+/// date), then shows the report (`BuildReport.svelte`).
 pub const BUILD_REPORT: &str = "build-report";
 pub const DEVICES: &str = "devices";
 /// Tools > Board Explorer…: the FPGA families, FPGAs, boards and examples
@@ -128,10 +128,6 @@ pub struct MenuState {
     /// The open tab is a testbench: the editor's right-click menu adds Run
     /// This Test and Simulate (hidden otherwise, to keep it short).
     pub testbench_open: bool,
-    /// The project has a build report: Verify or Upload built it since it
-    /// was opened (Show Build Report…).
-    #[serde(default)]
-    pub build_report: bool,
     /// One Tools submenu per dimension of the current board's variants,
     /// e.g. Tools > Memory ▸ Flash / RAM. Empty for most boards.
     #[serde(default)]
@@ -177,7 +173,6 @@ pub fn is_enabled(id: &str, state: &MenuState) -> bool {
         GO_TO_DEFINITION => state.definition,
         RUN_TESTS => state.testbenches,
         SIMULATE => state.simulate,
-        BUILD_REPORT => state.build_report,
         _ => true,
     }
 }
@@ -598,7 +593,6 @@ mod tests {
             testbenches: true,
             simulate: true,
             testbench_open: true,
-            build_report: true,
             variant_menus: Vec::new(),
         };
         for id in [

@@ -20,7 +20,8 @@ export type LiveProblems = Map<string, Diagnostic[]>;
  * Upload, testbenches only by Run Tests and Simulate, the rest by all.
  */
 export function taskReads(task: Task, role: FileRole): boolean {
-  if (role === "pins" || role === "otherPins") return task === "build" || task === "upload";
+  if (role === "pins" || role === "otherPins")
+    return task === "build" || task === "upload" || task === "report";
   if (role === "testbench") return task === "test" || task === "simulate";
   return true;
 }
