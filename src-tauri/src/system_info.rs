@@ -100,7 +100,7 @@ mod tests {
             "Logix IDE",
             "0.1.0",
             "macOS 26.5 (macos-arm64)",
-            Some(Path::new("/Users/you/.logix/logs/logix.log")),
+            Some(Path::new("/Users/you/.logix/ide/logs/logix.log")),
             EngineSource::Pinned("2026-11-08"),
         );
         let engine = engine_part(&json!({
@@ -111,7 +111,7 @@ mod tests {
             report(&ide, &engine),
             "Logix IDE 0.1.0
 Operating system: macOS 26.5 (macos-arm64)
-Log file: /Users/you/.logix/logs/logix.log
+Log file: /Users/you/.logix/ide/logs/logix.log
 Logix Engine used: release 2026-11-08
 
 Logix Engine 2026-11-08

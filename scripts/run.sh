@@ -7,7 +7,7 @@
 #
 # --engine-repo-dir builds the engine in that local logix-engine clone
 # (cargo build, debug) and runs Logix IDE with it, through LOGIX_DEV_ENGINE_BINARY.
-# Its packages go to ~/.logix/engine-dev, apart from the released engine's.
+# Its packages go to ~/.logix/ide/dev/engine, apart from the released engine's.
 # Restart the script after changing the engine.
 
 set -e

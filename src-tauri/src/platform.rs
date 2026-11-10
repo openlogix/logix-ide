@@ -285,13 +285,14 @@ fn from_os_arch(os: &str, arch: &str) -> Option<Platform> {
 }
 
 /// The environment variable that sets the IDE's data folder instead of
-/// `~/.logix`: for testing (generated settings and projects, a clean first
+/// `~/.logix/ide`: for testing (generated settings and projects, a clean first
 /// start) without touching the real one.
 pub const HOME_VARIABLE: &str = "LOGIX_IDE_HOME";
 
 /// The IDE's data folder: `value` (`LOGIX_IDE_HOME`) when set, which must
 /// be an absolute path (an error otherwise, never a silent fallback), else
-/// `.logix` in the user's home.
+/// `~/.logix/ide`: every Open Logix program has its folder in `~/.logix`
+/// (the IDE's `CLAUDE.md`, Files Logix IDE writes).
 pub fn data_dir_from(
     value: Option<std::ffi::OsString>,
     home: impl FnOnce() -> Option<PathBuf>,
@@ -304,8 +305,43 @@ pub fn data_dir_from(
         ),
         None => Ok(home()
             .context("can't find the user's home directory")?
-            .join(".logix")),
+            .join(".logix")
+            .join("ide")),
     }
+}
+
+/// What `~/.logix/README.txt` says: what the folder is, and that each
+/// program's folder may be deleted.
+pub const LOGIX_README: &str = "\
+This folder holds the data of Open Logix programs (www.openlogix.org),
+one folder per program:
+
+  ide/           Logix IDE: settings, logs, scratch files, and its copy of
+                 Logix Engine with its FPGA tools (about 3 GB)
+  claude-code/   Logix Engine for Claude Code (the Logix Engine tutorial)
+  engine-dev/    Logix Engine developers' scripts
+
+Deleting a program's folder is safe: the program downloads what it needs
+again. Your projects aren't here (Logix IDE keeps them in
+~/Documents/OpenLogix/IDE by default).
+";
+
+/// Writes `README.txt` next to the IDE's data folder, in `~/.logix`, when
+/// it's missing there. Not with `LOGIX_IDE_HOME`, whose folder is the
+/// tester's.
+pub fn write_logix_readme(data_dir: &Path, home_variable_set: bool) -> Result<()> {
+    if home_variable_set {
+        return Ok(());
+    }
+    let Some(root) = data_dir.parent() else {
+        return Ok(());
+    };
+    let readme = root.join("README.txt");
+    if !readme.exists() {
+        std::fs::create_dir_all(root)?;
+        std::fs::write(&readme, LOGIX_README)?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -333,11 +369,11 @@ mod tests {
         let home = || Some(PathBuf::from("/Users/you"));
         assert_eq!(
             data_dir_from(None, home).unwrap(),
-            Path::new("/Users/you/.logix")
+            Path::new("/Users/you/.logix/ide")
         );
         assert_eq!(
             data_dir_from(Some("".into()), home).unwrap(),
-            Path::new("/Users/you/.logix")
+            Path::new("/Users/you/.logix/ide")
         );
         assert_eq!(
             data_dir_from(Some("/tmp/test-home".into()), home).unwrap(),
@@ -385,5 +421,22 @@ mod tests {
         assert!(!Platform::LinuxX86_64.is_implemented());
         assert!(!Platform::WindowsX86_64.is_implemented());
         assert!(Platform::LinuxX86_64.data_dir().is_err());
+    }
+
+    #[test]
+    fn the_logix_readme_is_written_once_next_to_the_data_folder() {
+        let tmp = tempfile::tempdir().unwrap();
+        let data = tmp.path().join(".logix").join("ide");
+        write_logix_readme(&data, true).unwrap();
+        assert!(
+            !tmp.path().join(".logix/README.txt").exists(),
+            "not for testers"
+        );
+        write_logix_readme(&data, false).unwrap();
+        let readme = tmp.path().join(".logix/README.txt");
+        assert!(std::fs::read_to_string(&readme).unwrap().contains("ide/"));
+        std::fs::write(&readme, "edited").unwrap();
+        write_logix_readme(&data, false).unwrap();
+        assert_eq!(std::fs::read_to_string(&readme).unwrap(), "edited");
     }
 }

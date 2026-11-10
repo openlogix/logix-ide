@@ -85,6 +85,14 @@ pub fn run() {
                 );
             }
             install_panic_logging();
+            // ~/.logix/README.txt: what each program's folder is.
+            if let Ok(dir) = platform::current_implemented().and_then(|p| p.data_dir()) {
+                let tester =
+                    std::env::var_os(platform::HOME_VARIABLE).is_some_and(|v| !v.is_empty());
+                if let Err(e) = platform::write_logix_readme(&dir, tester) {
+                    log!("Couldn't write ~/.logix/README.txt: {e:#}");
+                }
+            }
             if let Some(window) = app.get_webview_window("main") {
                 commands::apply_stored_window_preferences(&window);
             }

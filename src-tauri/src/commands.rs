@@ -347,7 +347,10 @@ async fn example_doc(
     // Written out to a scratch folder, replaced by the next example: the
     // project's files are loaded from there, and its other files (e.g. a
     // GTKWave layout) are copied from there on the first save.
-    let dst = platform::current_implemented()?.data_dir()?.join("example");
+    let dst = platform::current_implemented()?
+        .data_dir()?
+        .join("_scratch")
+        .join("example");
     let (board_id, name) = (board.clone(), example.to_string());
     let loaded = blocking(move || {
         let dir = examples::write(&board_id, &name, &dst).context("Couldn't open the example.")?;
@@ -431,7 +434,10 @@ pub async fn run_task(
             let _ = channel.send(outcome::TaskEvent::line(line));
         }
     };
-    let root = platform::current_implemented()?.data_dir()?.join("build");
+    let root = platform::current_implemented()?
+        .data_dir()?
+        .join("_scratch")
+        .join("build");
     let names: Vec<String> = files.iter().map(|f| f.name.clone()).collect();
     // `testbench` is the testbench for Test/Simulate, or the module to draw
     // for Graph. Only accept project testbenches and plain Verilog module
@@ -734,7 +740,10 @@ pub async fn save_gtkwave_layouts(
     key: String,
     project_dir: String,
 ) -> Result<Vec<String>, UserError> {
-    let root = platform::current_implemented()?.data_dir()?.join("build");
+    let root = platform::current_implemented()?
+        .data_dir()?
+        .join("_scratch")
+        .join("build");
     let names = blocking(move || save_back_gtkw(&root, &key, Path::new(&project_dir))).await?;
     Ok(names.iter().map(|n| gtkw_saved_message(n)).collect())
 }
@@ -800,7 +809,10 @@ pub async fn format_file(
     }
     let _formatting = state.format.lock().await;
     let engine = ready_engine(&state).await?;
-    let root = platform::current_implemented()?.data_dir()?.join("format");
+    let root = platform::current_implemented()?
+        .data_dir()?
+        .join("_scratch")
+        .join("format");
     let file = ProjectFile {
         name: name.clone(),
         text,

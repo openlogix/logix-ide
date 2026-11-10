@@ -72,7 +72,7 @@ Logix IDE supports so far.
 
 That's all. The JavaScript packages are installed by the scripts when
 needed, and Logix IDE downloads Logix Engine and the FPGA tools on its first
-run, as it does for users (into `~/.logix`, about 3 GB).
+run, as it does for users (into `~/.logix/ide`, about 3 GB).
 
 Optional, only for previewing the documentation site: Python 3.
 
@@ -96,7 +96,7 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
 | Run Logix IDE (with live reload) | `scripts/run.sh` |
 | Run Logix IDE with a locally built engine | `scripts/run.sh --engine-repo-dir <your logix-engine clone>` |
 | Run all checks and tests | `scripts/test.sh` |
-| Delete all build output and Logix IDE's data (`~/.logix`) | `scripts/clean.sh` |
+| Delete all build output and Logix IDE's data (`~/.logix/ide`) | `scripts/clean.sh` |
 | Type-check the UI | `npm run check` |
 | UI unit tests | `npm test` |
 | UI end-to-end tests | `npm run test:e2e` |
@@ -111,7 +111,7 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
 - **`scripts/run.sh --engine-repo-dir <folder>`** first builds Logix Engine
   in your local `logix-engine` clone, then runs Logix IDE with it instead of the
   released engine, for working on both together. Its tools go to
-  `~/.logix/engine-dev`, apart from the released engine's (the first run
+  `~/.logix/ide/dev/engine`, apart from the released engine's (the first run
   downloads them). Restart the script after changing the engine.
 - **Any engine binary, by hand**: `scripts/run.sh --engine-repo-dir` just sets
   `LOGIX_DEV_ENGINE_BINARY`, the path to a `logix-engine` executable. You can
@@ -142,9 +142,9 @@ are made the same way.
 
 ### The log
 
-Logix IDE writes a log to `~/.logix/logs/logix.log` (and the dev terminal shows
+Logix IDE writes a log to `~/.logix/ide/logs/logix.log` (and the dev terminal shows
 the same `[logix] ...` lines): versions, errors, and what the output pane
-showed. Logix Engine keeps its own log in `~/.logix/engine/logs/`. In the app: **Help > Show Log
+showed. Logix Engine keeps its own log in `~/.logix/ide/engine/logs/`. In the app: **Help > Show Log
 Folder**.
 
 ### Moving to a new Logix Engine release
@@ -160,7 +160,7 @@ Logix IDE uses a fixed engine release, set in `package.json`:
 
 Change the tag and restart `scripts/run.sh`: Logix IDE downloads that engine on
 its next start. A release replaced under the same tag isn't downloaded
-again; delete `~/.logix/engine-bin` to get it.
+again; delete `~/.logix/ide/engine-release` to get it.
 
 ### Examples
 

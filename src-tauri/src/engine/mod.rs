@@ -58,7 +58,7 @@ fn phase_sink(f: impl Fn(&str, Option<u32>, bool) + Send + Sync + 'static) -> Pr
 pub const ENGINE_RELEASE_REPO: &str = env!("LOGIX_IDE_BUILD_ENGINE_REPO");
 pub const ENGINE_RELEASE_TAG: &str = env!("LOGIX_IDE_BUILD_ENGINE_TAG");
 
-/// Where the engine lives in the IDE's data folder (`~/.logix`).
+/// Where the engine lives in the IDE's data folder (`~/.logix/ide`).
 struct Layout {
     data_dir: PathBuf,
 }
@@ -72,11 +72,11 @@ impl Layout {
     /// The unpacked engine package (the executable and its licenses), plus
     /// the download record.
     fn bin_dir(&self) -> PathBuf {
-        self.data_dir.join("engine-bin")
+        self.data_dir.join("engine-release")
     }
     /// Scratch space for downloading and unpacking the engine package.
     fn tmp_dir(&self) -> PathBuf {
-        self.data_dir.join("engine-tmp")
+        self.data_dir.join("_scratch").join("engine-download")
     }
     /// The engine folder (`--engine-folder`), owned by the engine: its
     /// packages (toolchains), logs and scratch files. The engine requires
@@ -87,7 +87,7 @@ impl Layout {
     /// The engine folder of a locally built engine (`LOGIX_DEV_ENGINE_BINARY`),
     /// kept apart so it never touches the released engine's packages.
     fn dev_engine_folder(&self) -> PathBuf {
-        self.data_dir.join("engine-dev")
+        self.data_dir.join("dev").join("engine")
     }
 }
 
@@ -140,9 +140,9 @@ mod tests {
 
     #[test]
     fn engine_folder_name_contains_engine() {
-        let layout = Layout::new(Path::new("/Users/you/.logix"));
+        let layout = Layout::new(Path::new("/Users/you/.logix/ide"));
         let folder = layout.engine_folder();
-        assert_eq!(folder, Path::new("/Users/you/.logix/engine"));
+        assert_eq!(folder, Path::new("/Users/you/.logix/ide/engine"));
         // The engine's path keyword rule.
         assert!(folder
             .file_name()
@@ -151,7 +151,7 @@ mod tests {
             .contains("engine"));
         assert_ne!(layout.bin_dir(), folder);
         let dev = layout.dev_engine_folder();
-        assert_eq!(dev, Path::new("/Users/you/.logix/engine-dev"));
+        assert_eq!(dev, Path::new("/Users/you/.logix/ide/dev/engine"));
         assert!(dev
             .file_name()
             .unwrap()

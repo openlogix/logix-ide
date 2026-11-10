@@ -605,7 +605,7 @@ export const backend: typeof Real.backend = {
     [
       "Logix IDE " + packageJson.version,
       "Operating system: macOS 26.5 (macos-arm64)",
-      "Log file: /Users/you/.logix/logs/logix.log",
+      "Log file: /Users/you/.logix/ide/logs/logix.log",
       "Logix Engine used: release 2026-11-08",
       "",
       "Logix Engine 2026-11-08",

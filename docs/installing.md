@@ -35,11 +35,11 @@ Later starts are quick and also work without internet.
 | What | Where |
 | :--- | :--- |
 | Your projects (by default) | `~/Documents/OpenLogix/IDE` |
-| The FPGA tools and settings | `~/.logix` (about 3 GB) |
+| The FPGA tools and settings | `~/.logix/ide` (about 3 GB) |
 
 You can choose another projects folder in **Settings**.
 
 ## Uninstalling
 
 Drag Logix IDE from **Applications** to the Trash. To also remove the FPGA tools
-and settings, delete the `~/.logix` folder. Your projects stay where they are.
+and settings, delete the `~/.logix/ide` folder. Your projects stay where they are.

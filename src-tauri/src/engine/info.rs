@@ -38,12 +38,12 @@ mod tests {
     fn finds_a_program_in_its_package() {
         let info = json!({"packages": [
             {"name": "oss-cad-suite", "status": "missing"},
-            {"name": "verible", "status": "ready", "bin_folder": "/Users/you/.logix/engine/packages/verible/2026-10-22/bin"}
+            {"name": "verible", "status": "ready", "bin_folder": "/Users/you/.logix/ide/engine/packages/verible/2026-10-22/bin"}
         ]});
         assert_eq!(
             find_program(&info, "verible", "verible-verilog-ls").unwrap(),
             PathBuf::from(format!(
-                "/Users/you/.logix/engine/packages/verible/2026-10-22/bin/verible-verilog-ls{}",
+                "/Users/you/.logix/ide/engine/packages/verible/2026-10-22/bin/verible-verilog-ls{}",
                 std::env::consts::EXE_SUFFIX
             ))
         );

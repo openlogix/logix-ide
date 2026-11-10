@@ -232,7 +232,7 @@ jobs:
              starts are quick.
 
           To uninstall, drag Logix IDE from Applications to the Trash. You can
-          also delete the \`~/.logix\` folder, which holds the FPGA tools
+          also delete the \`~/.logix/ide\` folder, which holds the FPGA tools
           Logix IDE downloaded and its settings. Your projects aren't in it.
 
           $(cat assets-table.md)

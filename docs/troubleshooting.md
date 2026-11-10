@@ -86,7 +86,7 @@ the testbench doesn't reach `$finish`.
 ## Starting over
 
 To download the FPGA tools again and reset the settings, quit Logix IDE and delete the
-`~/.logix` folder. Your projects aren't affected. The next start downloads
+`~/.logix/ide` folder. Your projects aren't affected. The next start downloads
 the tools again.
 
 ## Still stuck?
