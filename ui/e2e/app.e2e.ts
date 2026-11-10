@@ -195,7 +195,7 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await expect(rows.first()).toContainText("ICESTORM_LC");
   await expect(rows.first()).toContainText("Logic cell: a 4-input LUT, a flip-flop and carry logic");
   await expect(dialog).toContainText("sys_clk$SB_IO_IN_$glb_clk");
-  await dialog.getByLabel(/Show unused resources \(3\)/).check();
+  await dialog.getByLabel(/Show also unused resources \(3\)/).check();
   await expect(rows).toHaveCount(6);
   // Unused rows have no count or share, rather than "0" and "0%".
   const ram = rows.filter({ hasText: "ICESTORM_RAM" }).locator("td");
@@ -213,7 +213,7 @@ test("Board Utilization shows the used resources, all on request, and copies the
   // are now; each time, only the used resources at first.
   await menu(page, "build-report");
   await expect(status(page)).toContainText("Build succeeded");
-  await expect(dialog.getByLabel(/Show unused resources/)).not.toBeChecked();
+  await expect(dialog.getByLabel(/Show also unused resources/)).not.toBeChecked();
   await expect(rows).toHaveCount(3);
   await page.keyboard.press("Escape");
   // A failed build: no report, and the last good one is gone.

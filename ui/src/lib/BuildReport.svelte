@@ -22,7 +22,7 @@
   } = $props();
 
   let filter = $state("");
-  /** Show unused resources too: off each time the window opens. */
+  /** Show also unused resources too: off each time the window opens. */
   let showUnused = $state(false);
   let copied = $state(false);
   let error = $state<string | null>(null);
@@ -69,7 +69,7 @@
     <div class="tools">
       <label>
         <input type="checkbox" bind:checked={showUnused} />
-        Show unused resources ({unused})
+        Show also unused resources ({unused})
       </label>
       <span class="spacer"></span>
       <input

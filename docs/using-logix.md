@@ -189,7 +189,7 @@ the name the FPGA tools use, such as `ICESTORM_LC` or `SLICE_LUTX` (the
 name to search for), a short description, how many the design uses and
 how many the FPGA has. The clocks follow, with their maximum speeds.
 
-The report lists the used resources. Check **Show unused resources** to
+The report lists the used resources. Check **Show also unused resources** to
 see them all (an FPGA has many kinds, most unused), or type in the filter
 box, such as `ram`. **n/a** means the tools reported numbers that don't
 fit, so there's no percentage. **Copy** copies the report as text.
