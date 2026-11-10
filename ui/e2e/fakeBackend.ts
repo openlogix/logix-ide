@@ -225,7 +225,7 @@ function bareDoc(board: string): ProjectDoc {
 }
 
 let preferences: Real.Preferences = {
-  projectsDir: "/Users/you/Documents/Logix",
+  projectsDir: "/Users/you/Documents/logix-ide",
   editorFontSize: 13,
   uiScale: null,
   theme: "system",

@@ -97,7 +97,7 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   // Close Project: back to the start screen, with the recent projects.
   await page.evaluate(() => {
     (window as unknown as { __fake: { recents: string[] } }).__fake.recents = [
-      "/Users/you/Documents/Logix/counter",
+      "/Users/you/Documents/logix-ide/counter",
     ];
   });
   await menu(page, "close-project");
@@ -112,7 +112,7 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   await expect(start.getByText("Recent projects")).toHaveCount(0);
   await page.evaluate(() => {
     (window as unknown as { __fake: { recents: string[] } }).__fake.recents = [
-      "/Users/you/Documents/Logix/counter",
+      "/Users/you/Documents/logix-ide/counter",
     ];
   });
   await menu(page, "recents-changed");
@@ -521,7 +521,7 @@ test("changing the board offers project options: the current project first", asy
   // Recent projects aren't offered, whatever their board.
   await page.evaluate(() => {
     (window as unknown as { __fake: { recents: string[] } }).__fake.recents = [
-      "/Users/you/Documents/Logix/counter",
+      "/Users/you/Documents/logix-ide/counter",
     ];
   });
   await pickBoard(page, "iCEBreaker");
@@ -1008,7 +1008,7 @@ test("a project's boards folder, edited outside Logix IDE, adds its own boards",
     taskBoardsFolder: unknown;
     scannedBoardsFolder: unknown;
   };
-  const folder = "/Users/you/Documents/Logix/mine";
+  const folder = "/Users/you/Documents/logix-ide/mine";
   // boards/my-upduino.json, as users write it, so editors check the file.
   const myBoard = {
     $schema: "https://www.openlogix.org/schemas/logix-board-v1.json",
@@ -1312,7 +1312,7 @@ test("settings change the theme and font size", async ({ page }) => {
   await menu("settings");
   const dialog = page.getByRole("dialog", { name: "Settings" });
   await expect(dialog.getByLabel("Projects folder location:")).toHaveValue(
-    "/Users/you/Documents/Logix",
+    "/Users/you/Documents/logix-ide",
   );
 
   // A bad value is reported and the dialog stays open.

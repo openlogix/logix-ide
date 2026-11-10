@@ -8,8 +8,8 @@ const { fileUri, hoverMarkdown, tidyVeribleHover } = await import("./lsp");
 
 describe("fileUri", () => {
   it("uses the real path of a saved project's file", () => {
-    expect(fileUri("/Users/ann/Documents/Logix/my blinky", "main.v")).toBe(
-      "file:///Users/ann/Documents/Logix/my%20blinky/main.v",
+    expect(fileUri("/Users/ann/Documents/logix-ide/my blinky", "main.v")).toBe(
+      "file:///Users/ann/Documents/logix-ide/my%20blinky/main.v",
     );
   });
   it("uses a placeholder for an unsaved project", () => {

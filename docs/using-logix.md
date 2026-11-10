@@ -259,7 +259,7 @@ format is described in Logix Catalog's
 [model](https://github.com/openlogix/logix-catalog/blob/main/docs/model.md).
 If a file has a mistake, the output lists each one with the file's full
 path, line and column (such as
-`/Users/you/Documents/Logix/blinky/boards/my-upduino.json:4:3: error: …`),
+`/Users/you/Documents/logix-ide/blinky/boards/my-upduino.json:4:3: error: …`),
 the board list's **Custom boards** group says the boards folder has
 problems, and its boards aren't offered until it's fixed. Verify and Upload
 stop, and the status line says the boards folder has problems.

@@ -540,13 +540,13 @@ mod tests {
     #[test]
     fn labels_tell_same_named_projects_apart() {
         let dirs = [
-            PathBuf::from("/Users/a/Documents/Logix/blinky"),
+            PathBuf::from("/Users/a/Documents/logix-ide/blinky"),
             PathBuf::from("/Users/a/work/blinky"),
-            PathBuf::from("/Users/a/Documents/Logix/counter"),
+            PathBuf::from("/Users/a/Documents/logix-ide/counter"),
         ];
         assert_eq!(
             recent_labels(&dirs),
-            ["blinky — Logix", "blinky — work", "counter"]
+            ["blinky — logix-ide", "blinky — work", "counter"]
         );
     }
 

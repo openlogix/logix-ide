@@ -316,12 +316,12 @@ mod tests {
     fn shell_paths_are_quoted_only_when_needed() {
         let p = Platform::MacosArm64;
         assert_eq!(
-            p.shell_path("/Users/you/Documents/Logix/blinky"),
-            "/Users/you/Documents/Logix/blinky"
+            p.shell_path("/Users/you/Documents/logix-ide/blinky"),
+            "/Users/you/Documents/logix-ide/blinky"
         );
         assert_eq!(
-            p.shell_path("/Users/you/Documents/Logix/blinky 3"),
-            "'/Users/you/Documents/Logix/blinky 3'"
+            p.shell_path("/Users/you/Documents/logix-ide/blinky 3"),
+            "'/Users/you/Documents/logix-ide/blinky 3'"
         );
         assert_eq!(p.shell_path("/a/it's"), r"'/a/it'\''s'");
         assert_eq!(p.shell_path("/a/$HOME*(x)"), "'/a/$HOME*(x)'");

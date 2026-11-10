@@ -50,7 +50,7 @@ async function shot(page: Page, name: string) {
 }
 
 test("the start screen", async ({ page }) => {
-  await page.goto("/?recents=/Users/you/Documents/Logix/counter,/Users/you/Documents/Logix/uart");
+  await page.goto("/?recents=/Users/you/Documents/logix-ide/counter,/Users/you/Documents/logix-ide/uart");
   await expect(page.locator(".console")).toContainText("Ready.");
   await expect(page.getByLabel("Start")).toContainText("counter");
   await shot(page, "start");

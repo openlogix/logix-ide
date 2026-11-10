@@ -419,9 +419,22 @@ pub fn enclosing_project(path: &Path) -> Option<PathBuf> {
 }
 
 /// The built-in projects folder, like Arduino's sketchbook:
-/// `~/Documents/Logix`.
+/// `~/Documents/logix-ide` (no spaces, lowercase, named for the projects'
+/// format: the website repo's `CLAUDE.md`, Folder names).
 pub fn builtin_projects_root() -> Option<PathBuf> {
-    dirs::document_dir().map(|d| d.join("Logix"))
+    dirs::document_dir().map(|d| builtin_projects_in(&d))
+}
+
+/// The built-in projects folder in `documents`: `logix-ide`, or `Logix`,
+/// the folder's name before 2026-11-10, when it exists, so projects saved
+/// there stay where Logix IDE looks for them.
+fn builtin_projects_in(documents: &Path) -> PathBuf {
+    let old = documents.join("Logix");
+    if old.is_dir() {
+        old
+    } else {
+        documents.join("logix-ide")
+    }
 }
 
 /// Where new projects go: the folder chosen in Settings, or else the
@@ -1186,5 +1199,16 @@ mod tests {
             std::fs::read_to_string(to.join("boards").join("mine.json")).unwrap(),
             "{}"
         );
+    }
+
+    #[test]
+    fn the_builtin_projects_folder_is_logix_ide_or_an_existing_logix() {
+        let tmp = tempfile::tempdir().unwrap();
+        assert_eq!(
+            builtin_projects_in(tmp.path()),
+            tmp.path().join("logix-ide")
+        );
+        std::fs::create_dir(tmp.path().join("Logix")).unwrap();
+        assert_eq!(builtin_projects_in(tmp.path()), tmp.path().join("Logix"));
     }
 }

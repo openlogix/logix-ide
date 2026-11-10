@@ -34,7 +34,7 @@ Later starts are quick and also work without internet.
 
 | What | Where |
 | :--- | :--- |
-| Your projects (by default) | `~/Documents/Logix` |
+| Your projects (by default) | `~/Documents/logix-ide` |
 | The FPGA tools and settings | `~/.logix` (about 3 GB) |
 
 You can choose another projects folder in **Settings**.

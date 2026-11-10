@@ -44,7 +44,7 @@ If Logix IDE can't find the board, see
 ## 4. Save
 
 Choose **File > Save Project** and give the project a name. Logix IDE creates a folder for it,
-in `~/Documents/Logix` by default.
+in `~/Documents/logix-ide` by default.
 
 ## 5. Explore
 
