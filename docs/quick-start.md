@@ -4,7 +4,7 @@ From a new project to a blinking LED in a few steps.
 
 ## 1. Choose your board
 
-Start Logix and wait until the output area at the bottom shows **Ready.**
+Start Logix IDE and wait until the output area at the bottom shows **Ready.**
 The window shows the start screen. Choose your board in the list in the
 toolbar (the **iCESugar v1.5** is selected at first), then click
 **Examples…**, pick **blinky** for your board and click **New Project**. (On a few
@@ -18,7 +18,7 @@ testbench, `main_tb.v`.
 
 ## 2. Verify
 
-Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }. Logix checks the design for
+Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }. Logix IDE checks the design for
 common mistakes, builds it, and shows how much of the FPGA it uses:
 
 ```
@@ -33,17 +33,17 @@ missing at the end of line 7, so the tools stop at the next line:
 
 ## 3. Upload
 
-Connect your board with a USB cable. Next to the board list, Logix shows
+Connect your board with a USB cable. Next to the board list, Logix IDE shows
 **Connected** when a connected device fits the board. Click the **Upload** button
-![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix builds the design and programs the board. The LED should
+![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix IDE builds the design and programs the board. The LED should
 start blinking.
 
-If Logix can't find the board, see
+If Logix IDE can't find the board, see
 [Troubleshooting](troubleshooting.md#upload-cant-find-the-board).
 
 ## 4. Save
 
-Choose **File > Save Project** and give the project a name. Logix creates a folder for it,
+Choose **File > Save Project** and give the project a name. Logix IDE creates a folder for it,
 in `~/Documents/Logix` by default.
 
 ## 5. Explore

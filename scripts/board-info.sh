@@ -3,7 +3,7 @@
 # Prints what Logix Engine's catalog says about boards, as JSON: for each
 # board ID, its get_catalog entry (resources, requires and ai_hints
 # included), its FPGA and its FPGA family. It's the board input of the AI
-# generator of the standard examples (spec/examples/README.md). Logix's
+# generator of the standard examples (spec/examples/README.md). Open Logix's
 # tools read the catalog only through the engine, never from Logix
 # Catalog's files.
 #

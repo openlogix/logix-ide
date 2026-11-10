@@ -24,7 +24,7 @@ For each board, the AI reads only:
 1. This folder: `COMMON.md` and the example's file.
 2. The board's entry in Logix Engine's catalog, with its FPGA and FPGA
    family: `scripts/board-info.sh <board id>` prints them (the engine's
-   `get_catalog`; Logix's tools read the catalog only through the engine).
+   `get_catalog`; Open Logix's tools read the catalog only through the engine).
    This includes the board's and its resources' `ai_hints`.
 3. General knowledge of FPGAs, Verilog and the toolchains, as an engineer
    with the FPGA's datasheet would have.

@@ -1210,7 +1210,7 @@ mod tests {
         let files: Vec<String> = ["main.v", "main_tb.v", "pinout.pcf"]
             .map(String::from)
             .into();
-        // Scratch paths as they are in Logix.
+        // Scratch paths as they are in Logix IDE.
         let home = std::env::var("HOME").unwrap();
         let tidy = |line: &str| {
             line.replace(&dir.to_string_lossy().into_owned(), "~/.logix/build")

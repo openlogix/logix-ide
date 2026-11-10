@@ -1,13 +1,13 @@
-# Developing Logix
+# Developing Logix IDE
 
-This page is for people who want to change Logix itself. To *use* Logix, see
+This page is for people who want to change Logix IDE itself. To *use* Logix IDE, see
 the [README](README.md).
 
-## How Logix is developed
+## How Logix IDE is developed
 
-Logix is developed **entirely by prompting**
+Logix IDE is developed **entirely by prompting**
 [Claude Code](https://claude.com/claude-code), an AI coding assistant. The
-developer describes what Logix should do, in plain language, and Claude
+developer describes what Logix IDE should do, in plain language, and Claude
 writes and changes the code, tests and documentation, runs the tests, and
 reports back. No code in this repository was written by hand.
 
@@ -15,17 +15,17 @@ So the code isn't meant to be read or edited by people, much like the
 machine code a compiler makes from a high-level language. The "source" that
 matters is:
 
-- **What Logix should do and why:** the **AI spec**, [`CLAUDE.md`](CLAUDE.md). It holds the
+- **What Logix IDE should do and why:** the **AI spec**, [`CLAUDE.md`](CLAUDE.md). It holds the
   goals, requirements, architecture, design decisions and open items, and
   Claude reads it at the start of every session. When the design changes,
   the AI spec is updated with it. It's meant to be complete enough that an
   AI agent could regenerate the whole repo from it (code, tests, workflows,
   scripts and docs), and it never holds personal information.
-- **What Logix must keep doing:** the tests (`scripts/test.sh`). They are how a
+- **What Logix IDE must keep doing:** the tests (`scripts/test.sh`). They are how a
   change is checked, rather than by reading the code.
 - **What users see:** the user documentation in [`docs/`](docs/).
 
-To change Logix, describe the change to Claude Code in this repository: what
+To change Logix IDE, describe the change to Claude Code in this repository: what
 you want, not how to code it. Then try it with `scripts/run.sh` and check that
 `scripts/test.sh` passes. Editing the code by hand works too, but the next prompt
 may change it again without knowing why it was edited; it's better to put
@@ -34,7 +34,7 @@ the reason in the AI spec or in the prompt.
 ## Setting up a development machine
 
 Development happens on a **Mac with Apple Silicon**, the only platform
-Logix supports so far.
+Logix IDE supports so far.
 
 1. **Xcode Command Line Tools** (compilers, git):
 
@@ -71,7 +71,7 @@ Logix supports so far.
    in VS Code with the Claude Code extension).
 
 That's all. The JavaScript packages are installed by the scripts when
-needed, and Logix downloads Logix Engine and the FPGA tools on its first
+needed, and Logix IDE downloads Logix Engine and the FPGA tools on its first
 run, as it does for users (into `~/.logix`, about 3 GB).
 
 Optional, only for previewing the documentation site: Python 3.
@@ -82,7 +82,7 @@ Optional, only for previewing the documentation site: Python 3.
 | :--- | :--- |
 | `ui/` | The window's user interface (TypeScript, Svelte), and its tests |
 | `src-tauri/` | The backend (Rust): runs Logix Engine, files, menus |
-| `examples/` | The examples Logix offers, one folder per board and example |
+| `examples/` | The examples Logix IDE offers, one folder per board and example |
 | `scripts/` | `run.sh`, `test.sh`, `clean.sh` |
 | `docs/` | The user documentation site |
 | `.github/` | The GitHub workflows (tests, releases, docs) |
@@ -93,10 +93,10 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
 
 | Task | Command |
 | :--- | :--- |
-| Run Logix (with live reload) | `scripts/run.sh` |
-| Run Logix with a locally built engine | `scripts/run.sh --engine-repo-dir <your logix-engine clone>` |
+| Run Logix IDE (with live reload) | `scripts/run.sh` |
+| Run Logix IDE with a locally built engine | `scripts/run.sh --engine-repo-dir <your logix-engine clone>` |
 | Run all checks and tests | `scripts/test.sh` |
-| Delete all build output and Logix's data (`~/.logix`) | `scripts/clean.sh` |
+| Delete all build output and Logix IDE's data (`~/.logix`) | `scripts/clean.sh` |
 | Type-check the UI | `npm run check` |
 | UI unit tests | `npm test` |
 | UI end-to-end tests | `npm run test:e2e` |
@@ -104,12 +104,12 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
 | Backend (Rust) tests | `cd src-tauri && cargo test` |
 | Refresh the documentation screenshots | `npm run docs:screenshots` |
 
-- **`scripts/run.sh`** starts Logix in development mode. Changes to the UI show up
+- **`scripts/run.sh`** starts Logix IDE in development mode. Changes to the UI show up
   in the window right away; changes to the Rust backend rebuild and restart
   it by themselves. It also reinstalls the JavaScript packages when they
   changed.
 - **`scripts/run.sh --engine-repo-dir <folder>`** first builds Logix Engine
-  in your local `logix-engine` clone, then runs Logix with it instead of the
+  in your local `logix-engine` clone, then runs Logix IDE with it instead of the
   released engine, for working on both together. Its tools go to
   `~/.logix/engine-dev`, apart from the released engine's (the first run
   downloads them). Restart the script after changing the engine.
@@ -118,18 +118,18 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
   set it yourself instead, such as for an engine built elsewhere:
   `LOGIX_DEV_ENGINE_BINARY=/path/to/logix-engine scripts/run.sh`. The
   real-engine Rust tests (`cargo test -- --ignored`) use the same variable.
-- **A local engine with an installed Logix** (for diagnosing a downloaded
-  Logix IDE, or guiding a user through it): quit Logix, then start it with
+- **A local engine with an installed Logix IDE** (for diagnosing a downloaded
+  Logix IDE, or guiding a user through it): quit Logix IDE, then start it with
   the variable set:
   `open -a "Logix IDE" --env LOGIX_DEV_ENGINE_BINARY=/path/to/logix-engine`.
-  A banner shows the local engine for the whole session; start Logix
+  A banner shows the local engine for the whole session; start Logix IDE
   normally to go back to the regular engine. This is a diagnostic feature,
-  for Logix developers and testing, not for normal use. It's the Open Logix
+  for Open Logix developers and testing, not for normal use. It's the Open Logix
   convention for every frontend.
 - **`scripts/test.sh`** runs everything CI runs: the UI type check, unit tests, a
   production build and the end-to-end tests, then the Rust format check,
   lint and tests. It stops at the first failure. Run it before committing.
-- **`scripts/clean.sh`** starts from zero, including Logix's downloaded tools and
+- **`scripts/clean.sh`** starts from zero, including Logix IDE's downloaded tools and
   settings. Use it to try the first-run experience; it isn't needed
   otherwise.
 
@@ -142,14 +142,14 @@ are made the same way.
 
 ### The log
 
-Logix writes a log to `~/.logix/logs/logix.log` (and the dev terminal shows
+Logix IDE writes a log to `~/.logix/logs/logix.log` (and the dev terminal shows
 the same `[logix] ...` lines): versions, errors, and what the output pane
 showed. Logix Engine keeps its own log in `~/.logix/engine/logs/`. In the app: **Help > Show Log
 Folder**.
 
 ### Moving to a new Logix Engine release
 
-Logix uses a fixed engine release, set in `package.json`:
+Logix IDE uses a fixed engine release, set in `package.json`:
 
 ```json
 "appConstants": {
@@ -158,14 +158,14 @@ Logix uses a fixed engine release, set in `package.json`:
 }
 ```
 
-Change the tag and restart `scripts/run.sh`: Logix downloads that engine on
+Change the tag and restart `scripts/run.sh`: Logix IDE downloads that engine on
 its next start. A release replaced under the same tag isn't downloaded
 again; delete `~/.logix/engine-bin` to get it.
 
 ### Examples
 
-The examples are in `examples/<board>/<name>/`, each a Logix project with
-a `logix-ide.toml` holding its board and description. They're Logix's own,
+The examples are in `examples/<board>/<name>/`, each a Logix IDE project with
+a `logix-ide.toml` holding its board and description. They're Logix IDE's own,
 maintained here: edit them in place.
 
 ### Previewing the documentation site
@@ -209,9 +209,9 @@ These are the house rules for changes, whether you prompt Claude or not:
   the AI spec to explain it, and its description gives the prompts used.
 - **Commits are made by the developer**, after reviewing the change and
   running `scripts/test.sh`. Claude doesn't commit unless asked.
-- **Keep Logix simple**, like the Arduino IDE: ease of use for beginners
+- **Keep Logix IDE simple**, like the Arduino IDE: ease of use for beginners
   comes before power-user features. Its motto is **The Arduino experience, for FPGAs.**
-- **Logix Engine does the FPGA work**; Logix is a front end. When Logix
+- **Logix Engine does the FPGA work**; Logix IDE is a front end. When Logix IDE
   needs something from the engine, prefer changing the engine over working
   around it.
 - **Don't program a connected board** or stop other running programs
@@ -219,4 +219,4 @@ These are the house rules for changes, whether you prompt Claude or not:
 
 ## License
 
-Logix is licensed under [MIT](LICENSE-MIT) or the [Apache License 2.0](LICENSE-APACHE), at your option.
+Logix IDE is licensed under [MIT](LICENSE-MIT) or the [Apache License 2.0](LICENSE-APACHE), at your option.

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Runs Logix in development mode (live reload).
+# Runs Logix IDE in development mode (live reload).
 #
 #   scripts/run.sh                                  # with the pinned engine release
 #   scripts/run.sh --engine-repo-dir <engine clone> # with a locally built engine
 #
 # --engine-repo-dir builds the engine in that local logix-engine clone
-# (cargo build, debug) and runs Logix with it, through LOGIX_DEV_ENGINE_BINARY.
+# (cargo build, debug) and runs Logix IDE with it, through LOGIX_DEV_ENGINE_BINARY.
 # Its packages go to ~/.logix/engine-dev, apart from the released engine's.
 # Restart the script after changing the engine.
 

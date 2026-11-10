@@ -28,13 +28,13 @@ opens zoomed in around the first failure, so you can see what led up to it.
 ![A testbench's signals in GTKWave: the clock, a counter and the LEDs over time](images/gtkwave.png)
 
 To keep how GTKWave shows the signals, save it from GTKWave with
-**File > Write Save File**. Logix copies the saved layout (a `.gtkw` file)
+**File > Write Save File**. Logix IDE copies the saved layout (a `.gtkw` file)
 into the project, and the next simulation uses it.
 
 ## Writing a testbench
 
 Create a file whose name ends with `_tb.v` (the **+** at the end of the tabs).
-Logix fills it with a starting point:
+Logix IDE fills it with a starting point:
 
 ```verilog
 `timescale 1ns / 1ps
@@ -61,6 +61,6 @@ if (actual !== expected)
   $error("expected %h, got %h", expected, actual);
 ```
 
-Logix finds the line and the time of each error. Don't call `$dumpfile`:
-Logix decides where the waveform goes. Use `$fatal` only when going on makes
+Logix IDE finds the line and the time of each error. Don't call `$dumpfile`:
+Logix IDE decides where the waveform goes. Use `$fatal` only when going on makes
 no sense, such as a missing data file.

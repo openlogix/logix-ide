@@ -1,6 +1,6 @@
 # Installing Logix IDE
 
-Logix needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
+Logix IDE needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
 
 ## Download and install
 
@@ -8,7 +8,7 @@ Logix needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
    [releases page](https://github.com/openlogix/logix-ide/releases) to your
    **Downloads** folder.
 2. Open **Terminal** and run this command, with the file name you downloaded.
-   Logix isn't signed with an Apple Developer ID yet, and this tells macOS to
+   Logix IDE isn't signed with an Apple Developer ID yet, and this tells macOS to
    allow it:
 
     ```
@@ -21,7 +21,7 @@ Logix needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
 
 ## The first start
 
-On its first start, Logix downloads the FPGA tools it needs (Logix Engine
+On its first start, Logix IDE downloads the FPGA tools it needs (Logix Engine
 and its packages). This may take a few minutes and needs an internet connection; the
 status bar at the bottom of the window shows the progress, and the editor area says it's getting
 the FPGA tools ready. When the output area shows **Ready.**, you can start:
@@ -30,7 +30,7 @@ projects.
 
 Later starts are quick and also work without internet.
 
-## Where Logix keeps its files
+## Where Logix IDE keeps its files
 
 | What | Where |
 | :--- | :--- |

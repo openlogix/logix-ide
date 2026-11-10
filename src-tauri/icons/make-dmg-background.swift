@@ -1,11 +1,11 @@
-// Draws the background of the macOS .dmg window: an arrow from Logix to
+// Draws the background of the macOS .dmg window: an arrow from Logix IDE to
 // Applications and a line telling the user to drag. Writes a TIFF with a 1x
 // and a 2x (Retina) image.
 //
 //   swift src-tauri/icons/make-dmg-background.swift src-tauri/icons/dmg-background.tiff
 //
 // The size and icon positions must match bundle.macOS.dmg in tauri.conf.json
-// (windowSize 600x360, Logix at x=160, Applications at x=440, both at y=170;
+// (windowSize 600x360, Logix IDE at x=160, Applications at x=440, both at y=170;
 // Finder positions are icon centers measured from the top left).
 import AppKit
 

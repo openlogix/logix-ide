@@ -392,7 +392,7 @@ export type ShowOutput = "onCommand" | "onError" | "never";
 
 export interface ExampleList {
   examples: Example[];
-  /** Examples left out because Logix doesn't support them yet. */
+  /** Examples left out because Logix IDE doesn't support them yet. */
   hidden: number;
 }
 
@@ -493,7 +493,7 @@ export const backend = {
   getFpgaFamilies: (): Promise<FpgaFamily[]> => invoke<FpgaFamily[]>("get_fpga_families"),
 
   /**
-   * The examples Logix supports, sorted by board and name, and the number
+   * The examples Logix IDE supports, sorted by board and name, and the number
    * hidden. Needs the FPGA tools ready.
    */
   getExamples: (): Promise<ExampleList> =>
@@ -719,7 +719,7 @@ export const backend = {
   /**
    * The project's own boards, as Logix Engine reads them from the
    * boards folder in `folder` (the file on disk, edited outside
-   * Logix; none without it), or the problems it found in it, the file
+   * Logix IDE; none without it), or the problems it found in it, the file
    * named as the user knows it: its full path when the project is `saved`,
    * `boards folder` when it isn't.
    */
@@ -737,7 +737,7 @@ export const backend = {
   /**
    * A value that changes whenever the boards folder in `folder` is
    * added, changed or removed on disk (null without it), polled to notice
-   * edits made outside Logix.
+   * edits made outside Logix IDE.
    */
   customBoardsStamp: (folder: string | null): Promise<string | null> =>
     invoke<string | null>("custom_boards_stamp", { folder }),
@@ -776,7 +776,7 @@ export const backend = {
   /** Closes the window (after unsaved changes were handled). */
   closeWindow: (): Promise<void> => invoke<void>("close_window"),
 
-  /** Appends lines the output pane showed to the Logix log file. */
+  /** Appends lines the output pane showed to the Logix IDE log file. */
   logOutput: (lines: string[]): Promise<void> =>
     invoke<void>("log_output", { lines }),
 

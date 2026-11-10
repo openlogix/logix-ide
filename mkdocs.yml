@@ -1,10 +1,10 @@
-# The Logix user documentation, published to GitHub Pages by
+# The Logix IDE user documentation, published to GitHub Pages by
 # .github/workflows/publish-docs.yaml. Pages are in docs/.
 # "Docs" in the name: this is the docs, not the product's main page.
 site_name: Logix IDE Docs
 site_description: 'The Arduino experience, for FPGAs. A simple IDE for FPGAs, powered by Logix Engine.'
 # Shown at the bottom of every page.
-copyright: Logix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.
+copyright: Logix IDE is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.
 site_url: https://openlogix.github.io/logix-ide/
 repo_url: https://github.com/openlogix/logix-ide
 repo_name: openlogix/logix-ide
@@ -50,7 +50,7 @@ extra:
       name: Logix IDE website
     - icon: fontawesome/brands/github
       link: https://github.com/openlogix/logix-ide
-      name: Logix on GitHub
+      name: Logix IDE on GitHub
 
 extra_css:
   - stylesheets/extra.css
@@ -73,6 +73,6 @@ nav:
   - Installing: installing.md
   - Tour: tour.md
   - Quick start: quick-start.md
-  - Using Logix: using-logix.md
+  - Using Logix IDE: using-logix.md
   - Testbenches and simulation: testbenches.md
   - Troubleshooting: troubleshooting.md

@@ -169,7 +169,7 @@ pub async fn catalog(engine: &Engine) -> Result<Catalog> {
 /// The project's custom boards folder as Logix Engine gets it: the folder
 /// on disk (`custom_boards_folder`), and how the engine's messages name it
 /// and its files (`display_paths`). The user's rules (2026-11-07): files are
-/// named relative to the project, except those Logix doesn't show, named by
+/// named relative to the project, except those Logix IDE doesn't show, named by
 /// their full path. Board files aren't shown, so a saved project's read as
 /// their full path; a project never saved has no folder, and its boards are
 /// the example's, so they read `boards/<id>.json`.
@@ -531,7 +531,7 @@ mod tests {
     #[test]
     fn a_boards_folder_reads_as_the_user_knows_it() {
         let path = std::path::PathBuf::from("/Users/you/blinky 3/boards");
-        // Saved: its full path (Logix doesn't show its files).
+        // Saved: its full path (Logix IDE doesn't show its files).
         let saved = BoardsFolder::new(path.clone(), true);
         assert_eq!(
             saved.display_paths(),

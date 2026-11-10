@@ -1,4 +1,4 @@
-//! The Logix log: developer messages, also kept in a file for problem
+//! The Logix IDE log: developer messages, also kept in a file for problem
 //! reports, since an app opened from Finder has nowhere to print them.
 //!
 //! `log!(...)` prints `[logix] <message>` to stderr (the `./run.sh` terminal)

@@ -11,7 +11,7 @@ const menu = (page: Page, id: string) =>
     id,
   );
 
-/** Starts Logix with the Alhambra II blinky, as after "choose your board". */
+/** Starts Logix IDE with the Alhambra II blinky, as after "choose your board". */
 async function startWithBoard(page: Page) {
   await page.goto("/");
   await expect(page.locator(".console")).toContainText("Ready.");

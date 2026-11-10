@@ -75,7 +75,7 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
 
 /**
  * The status line after a successful simulation whose GTKWave window
- * didn't appear in time (a slow start): it may still open, behind Logix.
+ * didn't appear in time (a slow start): it may still open, behind Logix IDE.
  */
 export function gtkwaveSlowText(outcome: TaskOutcome): string {
   return `${VERB.simulate.done} in ${outcome.seconds.toFixed(1)} s. GTKWave is taking a while to start; it may open behind this window.`;

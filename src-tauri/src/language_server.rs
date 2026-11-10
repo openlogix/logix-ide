@@ -1,6 +1,6 @@
 //! Verible's Verilog language server (from Logix Engine's `verible`
 //! package; see `engine::program_path`), for live
-//! errors and other editor help while typing. Logix relays the language
+//! errors and other editor help while typing. Logix IDE relays the language
 //! server protocol (LSP) between the server and the editor's LSP client:
 //! this module only frames messages; the UI speaks the protocol.
 

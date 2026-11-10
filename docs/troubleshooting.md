@@ -1,8 +1,8 @@
 # Troubleshooting
 
-## macOS says Logix can't be opened
+## macOS says Logix IDE can't be opened
 
-Logix isn't signed with an Apple Developer ID yet. Before opening the
+Logix IDE isn't signed with an Apple Developer ID yet. Before opening the
 downloaded `.dmg`, run in Terminal (with your file's name):
 
 ```
@@ -14,7 +14,7 @@ Then open it and drag Logix IDE to **Applications** again. See
 
 ## The FPGA tools don't download
 
-On its first start, Logix needs an internet connection to download the FPGA
+On its first start, Logix IDE needs an internet connection to download the FPGA
 tools. If it fails, a red bar shows the problem; check your connection and
 click **Retry**.
 
@@ -61,7 +61,7 @@ code while typing** is on in **Settings**.
 
 ## My board isn't in the list
 
-Logix's build engine, Logix Engine, supports 81 boards so far, with
+Logix IDE's build engine, Logix Engine, supports 81 boards so far, with
 iCE40, ECP5, Gowin and Xilinx 7-series FPGAs, programmed with
 openFPGALoader, iceprog, dfu-util or icesprog. More boards are added as their programmers are
 supported. A project for a board that isn't supported yet opens, but
@@ -74,8 +74,8 @@ board (see
 
 ## An example isn't in the list
 
-Logix comes with examples for the boards it supports; boards it doesn't
-support yet have none (see above). Some examples aren't in Logix
+Logix IDE comes with examples for the boards it supports; boards it doesn't
+support yet have none (see above). Some examples aren't in Logix IDE
 yet, such as ones with files in subfolders or several build setups.
 
 ## A build or simulation doesn't finish
@@ -85,7 +85,7 @@ the testbench doesn't reach `$finish`.
 
 ## Starting over
 
-To download the FPGA tools again and reset the settings, quit Logix and delete the
+To download the FPGA tools again and reset the settings, quit Logix IDE and delete the
 `~/.logix` folder. Your projects aren't affected. The next start downloads
 the tools again.
 
@@ -93,9 +93,9 @@ the tools again.
 
 Please report a problem with **Help > Report a Problem**, or
 [on GitHub](https://github.com/openlogix/logix-ide/issues/new). Include what you did
-and what Logix showed (the output area has the details), and attach the
-Logix log: **Help > Show Log Folder** opens the folder in Finder; drag
-`logix.log` into the report. Logix keeps the logs of its last 5 runs
+and what Logix IDE showed (the output area has the details), and attach the
+Logix IDE log: **Help > Show Log Folder** opens the folder in Finder; drag
+`logix.log` into the report. Logix IDE keeps the logs of its last 5 runs
 (`logix.log` is the current or last one, `logix.1.log` the one before). The
-log has what the output area showed and what Logix did, including the paths
+log has what the output area showed and what Logix IDE did, including the paths
 of your projects; it stays on your computer unless you attach it.

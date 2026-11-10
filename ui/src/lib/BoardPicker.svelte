@@ -5,7 +5,7 @@
   boards by FPGA family (collapsed groups, their state shared with the
   Examples window). No groups from connected devices: the user's decision,
   since which boards a device may be is a guess. Unlike a native list, picking the current
-  board is reported too (Logix then offers its examples). The project's own
+  board is reported too (Logix IDE then offers its examples). The project's own
   boards (boards folder) come first, in "Custom boards" (expanded
   until collapsed), and in their family's group too; they carry a
   small board icon, here and on the button, with a tooltip saying where

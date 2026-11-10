@@ -114,7 +114,7 @@ export function isHdlSource(name: string): boolean {
   return /\.s?vh?$/i.test(name);
 }
 
-/** Whether a file is a testbench (`*_tb.v` or `*_tb.sv`), as Logix names them. */
+/** Whether a file is a testbench (`*_tb.v` or `*_tb.sv`), as Logix IDE names them. */
 export function isTestbench(name: string): boolean {
   return /_tb\.s?v$/i.test(name);
 }
@@ -131,7 +131,7 @@ export type FileRole =
 /**
  * The project's own boards: a folder in the project, a board file each in
  * Logix Catalog's format, named by board ID (`boards/my-board.json`),
- * edited outside Logix (not tabs). Logix Engine reads it as
+ * edited outside Logix IDE (not tabs). Logix Engine reads it as
  * `custom_boards_folder`.
  */
 export const CUSTOM_BOARDS_FOLDER = "boards";

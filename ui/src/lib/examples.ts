@@ -98,6 +98,6 @@ export function groupExamples(
 export function examplesSummary(shown: number, hidden: number): string {
   const base = `${shown} example${shown === 1 ? "" : "s"} available`;
   return hidden > 0
-    ? `${base} (${hidden} hidden: not supported by Logix yet).`
+    ? `${base} (${hidden} hidden: not supported by Logix IDE yet).`
     : `${base}.`;
 }

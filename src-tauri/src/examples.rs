@@ -1,5 +1,5 @@
-//! Logix's examples, built into the app from the repo's `examples/` folder:
-//! `examples/<board>/<name>/`, each a Logix project (its files and a
+//! Logix IDE's examples, built into the app from the repo's `examples/` folder:
+//! `examples/<board>/<name>/`, each a Logix IDE project (its files and a
 //! `logix-ide.toml` with the board, a one-line `summary` and optional `notes`). Plain Rust, no Tauri.
 
 use std::path::{Path, PathBuf};
@@ -37,7 +37,7 @@ module main;
 endmodule
 ";
 
-/// The examples Logix offers, and how many others were hidden.
+/// The examples Logix IDE offers, and how many others were hidden.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExampleList {
@@ -194,7 +194,7 @@ mod tests {
         assert!(all().iter().all(|e| e.name != "template"));
     }
 
-    /// Every Bare Minimum opens as a Logix project with its board.
+    /// Every Bare Minimum opens as a Logix IDE project with its board.
     #[test]
     fn every_bare_minimum_is_a_project() {
         let tmp = tempfile::tempdir().unwrap();
@@ -206,7 +206,7 @@ mod tests {
         }
     }
 
-    /// Every example opens as a Logix project with its board.
+    /// Every example opens as a Logix IDE project with its board.
     #[test]
     fn every_example_is_a_project() {
         let tmp = tempfile::tempdir().unwrap();

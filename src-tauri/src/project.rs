@@ -7,11 +7,11 @@
 //!   which the IDE shows as tabs;
 //! - optionally anything else (subfolders, docs, images), kept as is;
 //! - `logix-ide.toml`: the project's settings, such as its board and the
-//!   board's variant (TOML, so it can hold comments; Logix keeps them when
+//!   board's variant (TOML, so it can hold comments; Logix IDE keeps them when
 //!   it updates a value);
 //! - optionally `boards/`: the project's own boards, a file per board named
 //!   by its ID (`boards/my-board.json`), in Logix Catalog's format, edited
-//!   outside Logix (no tabs); Logix passes the folder's path to the engine,
+//!   outside Logix IDE (no tabs); Logix IDE passes the folder's path to the engine,
 //!   which reads it and reports its problems at file, line and column.
 //!
 //! The UI holds the files in memory. Creating, renaming and deleting files
@@ -30,11 +30,11 @@ pub const MAIN_FILES: &[&str] = &["main.v", "main.sv"];
 pub const SETTINGS_FILE: &str = "logix-ide.toml";
 /// The project's own boards: a folder of board files in Logix Catalog's
 /// format, one board each, named by board ID (`boards/my-board.json`),
-/// edited outside Logix. Logix Engine reads it as `custom_boards_folder`.
+/// edited outside Logix IDE. Logix Engine reads it as `custom_boards_folder`.
 pub const CUSTOM_BOARDS_FOLDER: &str = "boards";
 
 /// The custom boards folder of the project in `folder` (or of the example a
-/// new project starts from), when there is one: the path Logix passes to
+/// new project starts from), when there is one: the path Logix IDE passes to
 /// the engine as `custom_boards_folder`.
 pub fn custom_boards_folder(folder: &Path) -> Option<PathBuf> {
     let dir = folder.join(CUSTOM_BOARDS_FOLDER);
@@ -44,7 +44,7 @@ pub fn custom_boards_folder(folder: &Path) -> Option<PathBuf> {
 /// A value that changes whenever a board file in the custom boards folder
 /// of `folder` is added, changed or removed on disk (each `.json` file's
 /// name, size and modification time), polled by the UI to notice edits made
-/// outside Logix. None without the folder.
+/// outside Logix IDE. None without the folder.
 pub fn custom_boards_stamp(folder: &Path) -> Option<String> {
     let dir = custom_boards_folder(folder)?;
     let mut parts: Vec<String> = std::fs::read_dir(&dir)
@@ -80,7 +80,7 @@ pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "_build"];
 /// The first lines of a new project file.
 const SETTINGS_HEADER: &str = "# Logix IDE project settings.\n";
 
-/// Whether `dir` is a Logix project folder (it has a project file).
+/// Whether `dir` is a Logix IDE project folder (it has a project file).
 pub fn is_project_dir(dir: &Path) -> bool {
     dir.join(SETTINGS_FILE).is_file()
 }
@@ -131,7 +131,7 @@ pub fn project_name(dir: &Path) -> String {
 }
 
 /// Whether a file with this name is shown as an editor tab: sources and
-/// pin files (not custom-boards.json, which is edited outside Logix).
+/// pin files (not custom-boards.json, which is edited outside Logix IDE).
 pub fn is_editable(name: &str) -> bool {
     Path::new(name)
         .extension()
@@ -205,7 +205,7 @@ pub fn check_new_file_name(name: &str, existing: &[String]) -> Result<(), String
 pub fn load(dir: &Path) -> Result<Project> {
     let Some(main) = MAIN_FILES.iter().find(|m| dir.join(m).is_file()) else {
         bail!(
-            "The folder \"{}\" isn't a Logix project: it has no main.v or main.sv.",
+            "The folder \"{}\" isn't a Logix IDE project: it has no main.v or main.sv.",
             project_name(dir)
         );
     };
@@ -278,7 +278,7 @@ pub fn save(
     for f in files {
         write_atomic(&dir.join(&f.name), f.text.as_bytes())?;
     }
-    // Only the values Logix owns change; the user's comments, layout and
+    // Only the values Logix IDE owns change; the user's comments, layout and
     // other settings stay.
     let path = dir.join(SETTINGS_FILE);
     let is_new = !path.exists();
@@ -330,7 +330,7 @@ pub fn create(
         .or_else(|| enclosing_project(target));
     if let Some(outer) = inside {
         bail!(
-            "That location is inside the Logix project \"{}\". Save the project outside \
+            "That location is inside the Logix IDE project \"{}\". Save the project outside \
              that project's folder, e.g. next to it.",
             project_name(&outer)
         );
@@ -379,7 +379,7 @@ pub fn save_as(
 
 /// Checks that Save As may replace the existing `target`, which the user
 /// agreed to in the save dialog (the caller moves it to the Trash first).
-/// Only a Logix project or an empty folder is replaced, so a mistyped name
+/// Only a Logix IDE project or an empty folder is replaced, so a mistyped name
 /// can't throw away other files, and never the project being saved
 /// (`source`) or a folder containing it.
 pub fn check_replace(target: &Path, source: Option<&Path>) -> Result<()> {
@@ -402,14 +402,14 @@ pub fn check_replace(target: &Path, source: Option<&Path>) -> Result<()> {
         .all(|e| e.file_name().to_string_lossy().starts_with('.'));
     if !empty && !is_project_dir(target) {
         bail!(
-            "The folder \"{name}\" isn't a Logix project, so Logix won't replace it. \
+            "The folder \"{name}\" isn't a Logix IDE project, so Logix IDE won't replace it. \
              Choose another name."
         );
     }
     Ok(())
 }
 
-/// The Logix project folder (one with a project file) that contains
+/// The Logix IDE project folder (one with a project file) that contains
 /// `path`, if any.
 pub fn enclosing_project(path: &Path) -> Option<PathBuf> {
     path.ancestors()
@@ -437,7 +437,7 @@ pub fn default_projects_root() -> Option<PathBuf> {
 /// Where the Save As dialog starts: next to the project's own folder
 /// (`project`, the folder holding it), else the projects folder (`root`),
 /// such as for a project never saved, even one copied from an example
-/// (never next to the example); never inside a Logix project, since a
+/// (never next to the example); never inside a Logix IDE project, since a
 /// project can't be saved there.
 pub fn save_as_start(project: Option<&Path>, root: &Path) -> PathBuf {
     let start = project
@@ -490,7 +490,7 @@ fn check_plain_name(name: &str) -> Result<(), String> {
         return Err("A file name can't start with a dot.".into());
     }
     if RESERVED_NAMES.iter().any(|r| r.eq_ignore_ascii_case(name)) {
-        return Err(format!("\"{name}\" is reserved for Logix."));
+        return Err(format!("\"{name}\" is reserved for Logix IDE."));
     }
     Ok(())
 }
@@ -547,7 +547,7 @@ pub(crate) enum CopyMode {
     /// For a build: everything but a project nested in a subfolder (a
     /// folder with its own project file), which would be copied into every
     /// build (and, for Save As inside the source, into itself). The engine
-    /// builds only the files Logix lists, so other files can go along.
+    /// builds only the files Logix IDE lists, so other files can go along.
     Build,
 }
 
@@ -597,7 +597,7 @@ mod tests {
     #[test]
     fn pin_files_are_the_engines_formats() {
         // Every board in the engine's catalog (the UI tests' recorded copy)
-        // has a pin file kind Logix offers, and Logix offers no other kind.
+        // has a pin file kind Logix IDE offers, and Logix IDE offers no other kind.
         let fixture: serde_json::Value =
             serde_json::from_str(include_str!("../../ui/e2e/fixtures/catalog.json")).unwrap();
         let mut used: Vec<&str> = fixture["boards"]
@@ -705,7 +705,7 @@ mod tests {
     fn load_rejects_folder_without_main() {
         let tmp = tempfile::tempdir().unwrap();
         let err = load(tmp.path()).unwrap_err();
-        assert!(err.to_string().contains("isn't a Logix project"));
+        assert!(err.to_string().contains("isn't a Logix IDE project"));
     }
 
     #[test]
@@ -1006,7 +1006,7 @@ mod tests {
         .unwrap_err();
         assert!(
             err.to_string()
-                .contains("inside the Logix project \"blinky\""),
+                .contains("inside the Logix IDE project \"blinky\""),
             "{err}"
         );
         let deep = outer.join("sub").join("copy");

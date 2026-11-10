@@ -123,7 +123,7 @@ export interface NotePoint {
 }
 
 /**
- * What moving a project from one board to another means for a Logix
+ * What moving a project from one board to another means for a Logix IDE
  * project, which keeps its sources as they are: 2 to 4 points (the user's
  * design), the first naming the change at its highest level
  * (FPGA family, FPGA or board), the rest the risks of keeping the

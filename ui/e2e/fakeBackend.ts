@@ -1,9 +1,9 @@
 // A fake of src/lib/backend.ts for the end-to-end UI tests (Playwright). In
 // "e2e" mode, Vite replaces the real backend with this (see
 // vite.config.ts), so the real UI runs in a plain browser without Tauri or
-// Logix Engine. It behaves like a small, predictable Logix backend:
+// Logix Engine. It behaves like a small, predictable Logix IDE backend:
 // - the FPGA tools are ready right away, with Logix Engine's real boards,
-//   Logix's examples, and outputs replayed from real engine runs
+//   Logix IDE's examples, and outputs replayed from real engine runs
 //   (e2e/fixtures);
 // - a build fails if main.v contains "oops" (with an error on that line);
 // - Auto Format removes trailing spaces.
@@ -281,7 +281,7 @@ const fake = {
   recentBoards: [] as string[],
   /**
    * The boards folders on the fake disk, by project folder: board ID to
-   * the text of its file, which the user edits outside Logix (change it to
+   * the text of its file, which the user edits outside Logix IDE (change it to
    * simulate an edit).
    */
   customBoardsOnDisk: {} as Record<string, Record<string, string>>,

@@ -1,7 +1,7 @@
 <!--
   Tools > Board Explorer… (and the ⓘ next to the board): the FPGA families,
   FPGAs and boards Logix Engine knows (the project's own boards included)
-  and Logix's examples, and how they relate (the user's design, 2026-11-08:
+  and Logix IDE's examples, and how they relate (the user's design, 2026-11-08:
   one regular model, every item linking to the others). The left side lists
   one kind at a time (tabs), grouped by family like the board picker; the
   right side shows the selected item's facts and links, Back returning to

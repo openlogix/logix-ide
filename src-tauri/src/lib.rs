@@ -152,5 +152,5 @@ pub fn run() {
             commands::close_window,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running the Logix application");
+        .expect("error while running the Logix IDE application");
 }

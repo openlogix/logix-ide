@@ -1,4 +1,4 @@
-# Builds the Logix macOS (Apple Silicon) installer: a .dmg with Logix IDE.app.
+# Builds the Logix IDE macOS (Apple Silicon) installer: a .dmg with Logix IDE.app.
 # Called by build-pre-release.yaml, which passes BUILD-INFO.json as the
 # 'build-info' artifact.
 

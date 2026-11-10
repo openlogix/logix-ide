@@ -36,7 +36,7 @@ pub const SHOW_DIAGRAM: &str = "show-diagram";
 pub const BUILD_REPORT: &str = "build-report";
 pub const DEVICES: &str = "devices";
 /// Tools > Board Explorer…: the FPGA families, FPGAs, boards and examples
-/// Logix knows, and how they relate, opened at the toolbar's board.
+/// Logix IDE knows, and how they relate, opened at the toolbar's board.
 pub const BOARD_EXPLORER: &str = "board-explorer";
 pub const SETTINGS: &str = "settings";
 pub const GO_TO_DEFINITION: &str = "go-to-definition";
@@ -179,7 +179,7 @@ pub fn is_enabled(id: &str, state: &MenuState) -> bool {
 /// Open Recent items are "recent:<index into the recent projects>".
 const RECENT_PREFIX: &str = "recent:";
 const CLEAR_RECENT: &str = "clear-recent";
-/// Help > Show Log Folder: the Logix log files (see `logging.rs`).
+/// Help > Show Log Folder: the Logix IDE log files (see `logging.rs`).
 const SHOW_LOGS: &str = "show-logs";
 /// Help > System Info…: the UI asks for the report (`system_info`).
 const SYSTEM_INFO: &str = "system-info";
@@ -203,7 +203,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         name: Some("Logix IDE".into()),
         version: Some(app.package_info().version.to_string()),
         comments: Some(format!(
-            "The Arduino experience, for FPGAs.\nPowered by Logix Engine (release {}).\n\nLogix is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
+            "The Arduino experience, for FPGAs.\nPowered by Logix Engine (release {}).\n\nLogix IDE is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
             crate::engine::ENGINE_RELEASE_TAG
         )),
         copyright: Some("Licensed under MIT or the Apache License 2.0.".into()),

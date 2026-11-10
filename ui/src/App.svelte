@@ -279,7 +279,7 @@
    * Lines from a background check, not from a command the user ran (such
    * as boards folder changing on disk). The user waits for "Ready."
    * before going on, so when nothing runs it comes again after them: it's
-   * always the last line while Logix is idle.
+   * always the last line while Logix IDE is idle.
    */
   function notice(...lines: string[]) {
     log(...lines);
@@ -626,7 +626,7 @@
     }
   }
 
-  /** Whether Logix is doing something (the status bar shows a spinner). */
+  /** Whether Logix IDE is doing something (the status bar shows a spinner). */
   /**
    * After a successful Simulate, while GTKWave starts (a cold start can
    * take seconds): the "Opening GTKWave…" status and the texts that replace
@@ -1177,7 +1177,7 @@
   /**
    * The folder whose boards folder holds the project's own boards:
    * the project's (or, for a new project, the example it starts from).
-   * The file is edited outside Logix; its path goes with every engine call
+   * The file is edited outside Logix IDE; its path goes with every engine call
    * that deals with boards, and Logix Engine reads it from disk.
    */
   const boardsFolder = $derived(project ? copySource(project) : null);
@@ -1203,7 +1203,7 @@
     boardsSeen = { folder, stamp };
   }
 
-  // Edited outside Logix: check the file every second while the window
+  // Edited outside Logix IDE: check the file every second while the window
   // has the focus, and when it gets it back (as for connected devices).
   $effect(() => {
     void boardsFolder; // At once for another project.
@@ -1329,7 +1329,7 @@
    * Shows `doc` as the open project. The output is cleared, since the last
    * project's lines and file links don't belong to this one (as each
    * Arduino sketch has its own window; the IDE log keeps them), except at
-   * startup (`keepOutput`), where it holds Logix's own first lines.
+   * startup (`keepOutput`), where it holds Logix IDE's own first lines.
    */
   function loadDoc(doc: ProjectDoc, keepOutput = false) {
     if (!keepOutput) clearConsole();
@@ -1573,7 +1573,7 @@
     await backend.cancelTask();
   }
 
-  // GTKWave layouts are saved from GTKWave while Logix is in the
+  // GTKWave layouts are saved from GTKWave while Logix IDE is in the
   // background; copy them into the project when the user comes back.
   $effect(() => {
     const onFocus = async () => {
@@ -2115,7 +2115,7 @@
   {#if devEngine}
     <div class="banner dev-engine" role="status">
       <span
-        >Using a local Logix Engine, for diagnosis: {devEngine}. Start Logix
+        >Using a local Logix Engine, for diagnosis: {devEngine}. Start Logix IDE
         normally to use the regular engine.</span
       >
     </div>
@@ -2145,7 +2145,7 @@
           <p class="motto">The Arduino experience, for FPGAs</p>
           {#if setupError}
             <p>
-              Logix needs its FPGA tools to work. See the message above, and
+              Logix IDE needs its FPGA tools to work. See the message above, and
               try again.
             </p>
           {:else if !ready}

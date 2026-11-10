@@ -1,4 +1,4 @@
-# Using Logix
+# Using Logix IDE
 
 ## The window
 
@@ -23,7 +23,7 @@
   **Comment/Uncomment** also works in pin files, with their
   own comment mark (`#`, or `//` in `.cst` files); Auto Format is for
   Verilog files only.
-- **Status bar** (at the bottom of the window): while Logix is busy (checking the tools, verifying,
+- **Status bar** (at the bottom of the window): while Logix IDE is busy (checking the tools, verifying,
   uploading, opening an example…), a spinning circle and what it's doing.
   When it's done, the result, e.g. "Build succeeded…", or **Ready.**
 - **Output**: what the FPGA tools print. References like `main.v:12` are
@@ -48,13 +48,13 @@ files in the folder show up as tabs:
 - the board's pin file (`.pcf`, `.lpf`, `.cst` or `.xdc`),
 - testbenches (`*_tb.v`, see [Testbenches and simulation](testbenches.md)).
 
-Logix also keeps a small `logix-ide.toml` with the project's settings, such
+Logix IDE also keeps a small `logix-ide.toml` with the project's settings, such
 as its board. You don't need to edit it, but you can add comments (lines
-starting with `#`); Logix keeps them.
+starting with `#`); Logix IDE keeps them.
 
 Other files and subfolders in the project folder are kept as they are, and
 data files (such as memory contents) go along to the build. Verilog and pin
-files inside subfolders aren't part of the design: Logix only builds the
+files inside subfolders aren't part of the design: Logix IDE only builds the
 ones at the top of the folder. Keep each project in its own folder, not
 inside another project.
 
@@ -67,7 +67,7 @@ inside another project.
   the project.
 - **Open, close and save**: **File > Open Project…**, **Open Recent**,
   **Close Project**, **Save Project**, **Save Project As…**.
-  Logix reopens the last project when it starts, unless you closed it.
+  Logix IDE reopens the last project when it starts, unless you closed it.
   With no project open, the start screen offers a new project, opening a
   project or an example, and your recent projects;
   the board in the toolbar is the one new projects use.
@@ -108,8 +108,8 @@ devices and the boards each may be.
 ### Board Explorer
 
 **Tools > Board Explorer…** (or the **ⓘ** next to the board, which opens
-it at the selected board) shows everything Logix knows about FPGAs and
-boards: the FPGA families, the FPGAs Logix supports (also those no board
+it at the selected board) shows everything Logix IDE knows about FPGAs and
+boards: the FPGA families, the FPGAs Logix IDE supports (also those no board
 has yet), the boards (your project's own included) and the examples. Pick
 **Families**, **FPGAs**, **Boards** or **Examples** to list them, grouped
 by family like the board list, and search them. Select one to see its
@@ -127,7 +127,7 @@ the board list's search, such as `up5k` or `xc7a35t`.
 
 ### Board options
 
-Next to the board, Logix shows how it's programmed: the connection (such
+Next to the board, Logix IDE shows how it's programmed: the connection (such
 as **USB**, the board's own USB port) and where the design goes (**Flash**
 or **RAM**). Click it to see what each means. Many boards can be
 programmed in more than one way: through different USB adapters (such as
@@ -159,7 +159,7 @@ board's pins (from its basic example) and a design that does nothing yet.
 Its outputs are set to 0 so that it builds; replace that with your design.
 
 An example opens as a new, unsaved project; saving it asks where to put it.
-A few of the examples that come with the FPGA tools use features Logix
+A few of the examples that come with the FPGA tools use features Logix IDE
 doesn't support yet, so they're not listed.
 
 ## Verify and Upload
@@ -220,14 +220,14 @@ or a device to skip it). Click a board's name to select it.
 
 ## Your own boards
 
-A board that isn't in Logix's board list can be added to a project. Add a
+A board that isn't in Logix IDE's board list can be added to a project. Add a
 folder named **boards** to the project folder, and in it a file per board,
 named after the board's ID, such as **boards/my-upduino.json**, written
-with any text editor (Logix doesn't edit them).
+with any text editor (Logix IDE doesn't edit them).
 **Project > Show Project Folder** opens the folder in Finder. Since they're
 part of the project, anyone who opens the project gets the same boards.
 Each file describes one board in the format of
-[Logix Catalog](https://www.openlogix.org/catalog/), Logix's own board
+[Logix Catalog](https://www.openlogix.org/catalog/), Open Logix's own board
 list, so a board can be copied from the catalog as a file, and a board you
 describe can be contributed to it as is:
 
@@ -253,8 +253,8 @@ file and complete its fields as you type. The boards are listed first in
 the board list, under **Custom boards**, and in their FPGA family's group
 too, marked with a small circuit board, and Verify, Upload and the other
 commands use them like any other board; the output says when a command
-uses one. Logix notices when you save a file in your editor. A board with
-the same ID as a board in Logix's list replaces it in this project. The
+uses one. Logix IDE notices when you save a file in your editor. A board with
+the same ID as a board in Logix IDE's list replaces it in this project. The
 format is described in Logix Catalog's
 [model](https://github.com/openlogix/logix-catalog/blob/main/docs/model.md).
 If a file has a mistake, the output lists each one with the file's full
@@ -269,7 +269,7 @@ stop, and the status line says the boards folder has problems.
 The **Help** menu links to these pages, the keyboard shortcuts and
 troubleshooting.
 **Report a Problem** opens a new report on GitHub, and **Show Log Folder**
-opens the folder with Logix's log, to attach to a report (see
+opens the folder with Logix IDE's log, to attach to a report (see
 [Troubleshooting](troubleshooting.md#still-stuck)).
 
 ## Settings

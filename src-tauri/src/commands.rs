@@ -191,7 +191,7 @@ async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>
 }
 
 /// The board and example lists (fetched on first use): the engine's
-/// boards, and Logix's examples for those boards.
+/// boards, and Logix IDE's examples for those boards.
 async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
     let mut slot = state.catalog.lock().await;
     if let Some(c) = slot.as_ref() {
@@ -246,7 +246,7 @@ pub struct ProjectBoards {
 
 /// The custom boards file of the project in `folder` (its folder, or the
 /// example a new project starts from): the file on disk, which the user
-/// edits outside Logix; Logix Engine reads it and reports its problems at
+/// edits outside Logix IDE; Logix Engine reads it and reports its problems at
 /// line and column, named as the user knows it (`engine::BoardsFolder`: its
 /// full path when the project is `saved`, `custom-boards.json` when it
 /// isn't). None without a folder or without the file.
@@ -256,7 +256,7 @@ fn boards_file(folder: Option<&str>, saved: bool) -> Option<engine::BoardsFolder
 
 /// A value that changes whenever the project's custom-boards.json is
 /// added, changed or removed (null without it), polled by the UI to reload
-/// the board list after edits made outside Logix.
+/// the board list after edits made outside Logix IDE.
 #[tauri::command]
 pub fn custom_boards_stamp(folder: Option<String>) -> Option<String> {
     project::custom_boards_stamp(Path::new(&folder?))
@@ -307,7 +307,7 @@ pub async fn compare_boards(
         .context("Couldn't compare the boards.")?)
 }
 
-/// The examples Logix supports, and how many unsupported ones were hidden.
+/// The examples Logix IDE supports, and how many unsupported ones were hidden.
 #[tauri::command]
 pub async fn get_examples(state: State<'_, AppState>) -> Result<examples::ExampleList, UserError> {
     Ok(catalog(&state).await?.examples)
@@ -397,7 +397,7 @@ pub async fn run_task(
     };
     let Some(info) = known.iter().find(|b| b.id == board) else {
         return Err(anyhow!(
-            "Logix doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
+            "Logix IDE doesn't support the board \"{board}\" yet. Choose another board in the toolbar."
         )
         .into());
     };
@@ -510,7 +510,7 @@ static GTKWAVE_WAIT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64
 const GTKWAVE_WAIT_SECONDS: u64 = 30;
 
 /// After a simulation, GTKWave starts in the background and its
-/// window would stay behind Logix. Waits for the new GTKWave (up to
+/// window would stay behind Logix IDE. Waits for the new GTKWave (up to
 /// `GTKWAVE_WAIT_SECONDS`) and brings it to the front, then tells the UI
 /// with the `gtkwave-opened` event (true when found), which ends its
 /// "Opening GTKWave…" status.

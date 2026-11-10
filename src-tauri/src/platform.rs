@@ -235,7 +235,7 @@ mod macos {
         let Some(target) = apps.iter().find(|a| a.processIdentifier() == pid) else {
             return false;
         };
-        // Cooperative activation (macOS 14+): the active app (Logix) yields
+        // Cooperative activation (macOS 14+): the active app (Logix IDE) yields
         // to the target, which is then activated.
         NSApplication::sharedApplication(mtm).yieldActivationToApplication(&target);
         let target: &NSRunningApplication = &target;

@@ -128,7 +128,7 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
 });
 
 test("starts up with the tools ready and the boards listed", async ({ page }) => {
-  // The start screen's output: Logix's own first lines (opening a project
+  // The start screen's output: Logix IDE's own first lines (opening a project
   // clears them).
   await page.goto("/");
   await expect(output(page)).toContainText("117 examples available.");
@@ -1002,7 +1002,7 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog).toBeVisible();
 });
 
-test("a project's boards folder, edited outside Logix, adds its own boards", async ({ page }) => {
+test("a project's boards folder, edited outside Logix IDE, adds its own boards", async ({ page }) => {
   type Fake = {
     customBoardsOnDisk: Record<string, Record<string, string>>;
     taskBoardsFolder: unknown;
@@ -1039,7 +1039,7 @@ test("a project's boards folder, edited outside Logix, adds its own boards", asy
   await writeFile(JSON.stringify(myBoard, null, 2));
   await expect(output(page)).toContainText("Ready.");
   await page.getByRole("button", { name: /mine/ }).click();
-  // Not a tab: it's edited outside Logix.
+  // Not a tab: it's edited outside Logix IDE.
   await expect(tab(page, "main.v")).toBeVisible();
   await expect(tab(page, "my-upduino.json")).toHaveCount(0);
 
@@ -1101,7 +1101,7 @@ test("a project's boards folder, edited outside Logix, adds its own boards", asy
   // column, the board list says so in one line and leaves its boards out,
   // and there's no banner.
   await writeFile("oops");
-  // At the file's full path: it's edited outside Logix. Noticed in the
+  // At the file's full path: it's edited outside Logix IDE. Noticed in the
   // background, so "Ready." comes again after it: it's always last when idle.
   await expect(output(page)).toContainText(`${folder}/boards/my-upduino.json:1:1: error: Expected value.`);
   await expect(output(page)).toContainText(/Expected value\.\s*Ready\.\s*$/);
@@ -1155,7 +1155,7 @@ test("Simulate says Opening GTKWave… until its window appears", async ({ page 
   await fake(true);
   await expect(status(page)).toHaveText(/^Simulation done in [\d.]+ s\. GTKWave shows the signals\.$/);
   await expect(page.locator(".status-bar .spinner")).toHaveCount(0);
-  // Not found within 30 s: it may open behind Logix.
+  // Not found within 30 s: it may open behind Logix IDE.
   await menu(page, "simulate");
   await expect(status(page)).toHaveText("Opening GTKWave…");
   await fake(false);
@@ -1270,13 +1270,13 @@ test("a failed command's banner says why, with one red line", async ({ page }) =
     (window as unknown as { __fake: { saveAsError: unknown } }).__fake.saveAsError = {
       message: "Couldn't save the project.",
       details:
-        "Couldn't save the project.: /Users/you/fpga/blinky is inside a Logix project. Choose another location.",
+        "Couldn't save the project.: /Users/you/fpga/blinky is inside a Logix IDE project. Choose another location.",
     };
   });
   await menu(page, "save-as");
   // The reason is in the banner, so the closed output doesn't hide it.
   await expect(page.getByRole("alert")).toContainText(
-    "Couldn't save the project. /Users/you/fpga/blinky is inside a Logix project. Choose another location.",
+    "Couldn't save the project. /Users/you/fpga/blinky is inside a Logix IDE project. Choose another location.",
   );
   // The status line repeats the message without a second red line.
   await expect(status(page)).toHaveText("Couldn't save the project.");

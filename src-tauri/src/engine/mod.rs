@@ -98,7 +98,7 @@ pub const DEV_ENGINE_VARIABLE: &str = "LOGIX_DEV_ENGINE_BINARY";
 
 /// The locally built engine to use instead of the pinned release: the
 /// value of `LOGIX_DEV_ENGINE_BINARY`, in every build (development and
-/// released), for Logix developers and users guided by them, such as to
+/// released), for Logix IDE developers and users guided by them, such as to
 /// diagnose a GitHub-built IDE. Not for normal use. Unset or empty means
 /// none; a value that isn't a file is an error.
 pub(crate) fn dev_engine_binary(

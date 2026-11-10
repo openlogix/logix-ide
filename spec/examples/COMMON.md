@@ -12,7 +12,7 @@ on the board as it comes, with no jumpers or add-ons.
 
 ## Files
 
-A standard example is a Logix project (the IDE's project model, CLAUDE.md:
+A standard example is a Logix IDE project (the IDE's project model, CLAUDE.md:
 Project on disk, `logix-ide.toml`):
 
 | File | What it holds |

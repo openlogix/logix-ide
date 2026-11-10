@@ -1,6 +1,6 @@
 // The Board Explorer's model (Tools > Board Explorer…): the FPGA families,
 // FPGAs and boards Logix Engine knows (the project's own boards included)
-// and Logix's examples, as one set of items of four kinds that link to each
+// and Logix IDE's examples, as one set of items of four kinds that link to each
 // other. Every kind works the same way: a list grouped by family (families
 // themselves are one flat list), and details made of facts, link sections
 // and text sections. The words are the IDE's; the facts come from the

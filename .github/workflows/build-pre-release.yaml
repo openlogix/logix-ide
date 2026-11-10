@@ -1,4 +1,4 @@
-# Builds the Logix installers and publishes them as a GitHub pre-release
+# Builds the Logix IDE installers and publishes them as a GitHub pre-release
 # tagged with the date (yyyy-mm-dd). A pre-release with the same tag is
 # replaced, so the day's pre-release is from its latest commit; a stable
 # release with that tag is never touched (the run fails instead). Only the
@@ -77,7 +77,7 @@ jobs:
           branch-var: REPO_BRANCH
           commit-var: REPO_COMMIT
 
-      - name: Get Logix version
+      - name: Get Logix IDE version
         run: |
           version="$(jq -r .version src-tauri/tauri.conf.json)"
           echo "LOGIX_IDE_BUILD_VERSION=$version"
@@ -176,7 +176,7 @@ jobs:
 
           cat << EOF > "assets-table.md"
 
-          ### Logix installers
+          ### Logix IDE installers
 
           | System | Architecture | Installer type | Package |
           | :--- | :--- | :--- | :--- |
@@ -195,9 +195,9 @@ jobs:
           $(cat build-info.txt)
           \`\`\`
 
-          - [Logix cutoff commit](https://github.com/${REPO}/commit/${REPO_COMMIT})
+          - [Logix IDE cutoff commit](https://github.com/${REPO}/commit/${REPO_COMMIT})
 
-          - [Generated Logix pre-release](https://github.com/${REPO}/releases/tag/${RELEASE_TAG})
+          - [Generated Logix IDE pre-release](https://github.com/${REPO}/releases/tag/${RELEASE_TAG})
           EOF
 
           cat -n RUN-SUMMARY.txt
@@ -220,20 +220,20 @@ jobs:
 
           1. Download \`logix-darwin-arm64-${PACKAGE_TAG}.dmg\` (below) to your
              **Downloads** folder.
-          2. Open **Terminal** and run this command. Logix isn't signed with an
+          2. Open **Terminal** and run this command. Logix IDE isn't signed with an
              Apple Developer ID yet, and this tells macOS to allow it:
              \`\`\`
              xattr -c ~/Downloads/logix-darwin-arm64-${PACKAGE_TAG}.dmg
              \`\`\`
           3. Double-click the \`.dmg\` file and drag **Logix IDE** into the
              **Applications** folder.
-          4. Open Logix IDE from Applications. On its first start, Logix downloads
+          4. Open Logix IDE from Applications. On its first start, Logix IDE downloads
              the FPGA tools it needs. This may take a few minutes; later
              starts are quick.
 
           To uninstall, drag Logix IDE from Applications to the Trash. You can
           also delete the \`~/.logix\` folder, which holds the FPGA tools
-          Logix downloaded and its settings. Your projects aren't in it.
+          Logix IDE downloaded and its settings. Your projects aren't in it.
 
           $(cat assets-table.md)
 

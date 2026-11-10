@@ -71,7 +71,7 @@ describe("groupExamples", () => {
 describe("examplesSummary", () => {
   it("mentions hidden examples only when there are some", () => {
     expect(examplesSummary(146, 18)).toBe(
-      "146 examples available (18 hidden: not supported by Logix yet).",
+      "146 examples available (18 hidden: not supported by Logix IDE yet).",
     );
     expect(examplesSummary(1, 0)).toBe("1 example available.");
   });

@@ -1,27 +1,27 @@
-# A tour of Logix
+# A tour of Logix IDE
 
-A short walk through Logix for new users: what it is, what's on the screen,
+A short walk through Logix IDE for new users: what it is, what's on the screen,
 and the path from an idea to a programmed board. Each part links to the page
 with the details.
 
-## What Logix is
+## What Logix IDE is
 
 **The Arduino experience, for FPGAs.** If you've used the Arduino IDE,
-Logix will feel familiar: you write code, click **Verify** to check it, and
+Logix IDE will feel familiar: you write code, click **Verify** to check it, and
 click **Upload** to put it on your board. The difference is the language:
 you write **Verilog**, which describes hardware, instead of C++.
 
-![The Logix window after Verify: the design in the editor, and the build's usage report below](images/main.png)
+![The Logix IDE window after Verify: the design in the editor, and the build's usage report below](images/main.png)
 
 ## Why it's easy to start
 
 - **One installer.** No Python, package managers or toolchain setup.
-- **The FPGA tools come by themselves.** On its first start, Logix downloads
+- **The FPGA tools come by themselves.** On its first start, Logix IDE downloads
   the open source FPGA tools it needs. You never have to learn or install
   them yourself.
 - **Learn by example.** More than 110 examples for over 80 boards.
 
-To get it, see [Installing Logix](installing.md).
+To get it, see [Installing Logix IDE](installing.md).
 
 ## The toolbar
 
@@ -36,7 +36,7 @@ To get it, see [Installing Logix](installing.md).
 | | ⓘ | Shows the board in the Board Explorer: its FPGA, pins and examples |
 
 Below the toolbar are a tab for each file, the editor and the output, and at
-the bottom of the window a status line that says what Logix is doing. Mistakes in the grammar, like a
+the bottom of the window a status line that says what Logix IDE is doing. Mistakes in the grammar, like a
 missing `;`, are underlined as you type.
 
 ## A project is a folder
@@ -59,7 +59,7 @@ module main (
 endmodule
 ```
 
-More in [Using Logix](using-logix.md#projects).
+More in [Using Logix IDE](using-logix.md#projects).
 
 ## Start from an example
 
@@ -82,8 +82,8 @@ is marked on its line; hover over the mark to read it, or click the
 
 ## Upload: put it on the board
 
-Plug the board in by USB. Next to the board list, Logix says **Connected**.
-Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix builds the design, shows how much of the FPGA it
+Plug the board in by USB. Next to the board list, Logix IDE says **Connected**.
+Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }: Logix IDE builds the design, shows how much of the FPGA it
 uses, and programs the board. If it can't find the board,
 **Tools > Connected Devices…** shows what's plugged in, and
 [Troubleshooting](troubleshooting.md#upload-cant-find-the-board) has tips.

@@ -113,7 +113,7 @@
                 {#if open}
                   <div class="groups">
                     {#if !fits}
-                      <p class="muted">Not a board Logix knows.</p>
+                      <p class="muted">Not a board Logix IDE knows.</p>
                     {/if}
                     {#each [{ key: "matches", label: "Matches", list: g.matches, byDefault: true }, { key: "others", label: "Other possible matches", list: g.others, byDefault: false }] as group (group.key)}
                       {#if group.list.length > 0}

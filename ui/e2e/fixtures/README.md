@@ -1,8 +1,8 @@
 Real tool output used by the fake backend (`../fakeBackend.ts`), so the
-end-to-end tests and the documentation screenshots show what Logix really
+end-to-end tests and the documentation screenshots show what Logix IDE really
 shows. Captured for the fake backend's blinky design (`BLINKY_MAIN`,
 `BLINKY_TB`, pins for the Alhambra II), with scratch paths replaced by
-Logix's usual locations.
+Logix IDE's usual locations.
 
 - `verify.txt`: Verify with Logix Engine `2026-11-03` (`lint`, then `build`), as the console shows its live output: command lines dimmed with `$`, errors red, warnings yellow.
 - `verify-error.txt`: the same with the `;` missing at the end of `assign led = counter[23];`.
