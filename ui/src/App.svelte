@@ -341,6 +341,10 @@
       case "devEngine":
         devEngine = event.path;
         break;
+      case "catalogReady":
+        // The start screen's Examples work while the FPGA tools download.
+        loadCatalog();
+        break;
     }
   }
 
@@ -352,8 +356,9 @@
       // The "ready" event comes through another channel and may arrive
       // after this returns; don't wait for it.
       stage = "ready";
-      // Boards and examples first, so "Ready." comes last.
-      await loadCatalog();
+      // Boards and examples first (unless loaded while the FPGA tools
+      // downloaded), so "Ready." comes last.
+      if (!catalogLoaded) await loadCatalog();
       startLsp();
       log("Ready.");
       startedUp = true;
@@ -390,7 +395,12 @@
   let examples = $state<Example[]>([]);
   let examplesOpen = $state(false);
 
+  /** The board and example lists are loaded (`loadCatalog`). */
+  let catalogLoaded = false;
+
   async function loadCatalog() {
+    if (catalogLoaded) return;
+    catalogLoaded = true;
     try {
       const [boardList, exampleList] = await Promise.all([
         backend.getBoards(),
@@ -401,6 +411,7 @@
       examples = exampleList.examples;
       log(examplesSummary(exampleList.examples.length, exampleList.hidden));
     } catch (e) {
+      catalogLoaded = false;
       showFileError(e);
     }
   }

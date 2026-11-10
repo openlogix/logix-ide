@@ -24,6 +24,9 @@ pub enum SetupEvent {
     Stage {
         stage: SetupStage,
     },
+    /// The engine is running and the board and example lists are ready
+    /// (`get_boards`, `get_examples`), before the FPGA tools are downloaded.
+    CatalogReady,
     /// Bytes of the engine package being downloaded.
     Download {
         received: u64,

@@ -27,7 +27,7 @@ pub use devices::{
 };
 pub use format::format_file;
 pub use info::program_path;
-pub use setup::run_setup;
+pub use setup::{download_missing, start as start_engine};
 pub use task::{boards_problem_outcome, run as run_task, TaskInput};
 
 use client::{Progress, ProgressSink};

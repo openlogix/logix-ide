@@ -65,7 +65,9 @@ export type SetupEvent =
   | { kind: "progress"; message: string; percent: number | null }
   | { kind: "log"; line: string }
   /** A local engine (LOGIX_DEV_ENGINE_BINARY) is used, for diagnosis. */
-  | { kind: "devEngine"; path: string };
+  | { kind: "devEngine"; path: string }
+  /** The board and example lists are ready, before the FPGA tools are. */
+  | { kind: "catalogReady" };
 
 export interface ProjectFile {
   name: string;

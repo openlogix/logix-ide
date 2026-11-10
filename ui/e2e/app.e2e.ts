@@ -71,6 +71,12 @@ test("shows the engine's package download progress", async ({ page }) => {
   await expect(bar).toContainText("Downloading oss-cad-suite 42%");
   await expect(bar.locator("progress")).toHaveJSProperty("value", 0.42);
   await expect(output(page)).toContainText("Downloading oss-cad-suite...");
+  // The examples work while the FPGA tools download.
+  const examples = page.getByRole("button", { name: "Examples…" });
+  await expect(examples).toBeEnabled();
+  await examples.click();
+  await expect(page.getByRole("dialog", { name: "Examples" })).toBeVisible();
+  await page.keyboard.press("Escape");
   await page.evaluate(() =>
     (
       window as unknown as { __fake: { finishSetup: () => void } }

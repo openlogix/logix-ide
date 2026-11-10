@@ -24,9 +24,10 @@ const MSG_START: &str = "Couldn't start Logix Engine.";
 const MSG_PACKAGES: &str =
     "Couldn't download the FPGA tools. Check your internet connection, then click Retry.";
 
-/// Makes the engine ready to use and returns it running. `emit` receives
-/// progress events. The caller sends `Ready` afterwards.
-pub async fn run_setup<F>(emit: F) -> Result<Engine>
+/// Downloads the pinned engine release if needed and starts it, returning it
+/// with its `get_engine_info`. It can already answer what needs no FPGA
+/// tools, such as `get_catalog`; its packages may still be missing.
+pub async fn start<F>(emit: F) -> Result<(Engine, Value)>
 where
     F: Fn(SetupEvent) + Send + Sync + Clone + 'static,
 {
@@ -74,7 +75,20 @@ where
         info["boards_schema"].as_str().unwrap_or("(not reported)")
     );
 
-    let missing = missing_packages(&info);
+    Ok((engine, info))
+}
+
+/// Lets the started engine download its missing packages (the FPGA tools),
+/// with progress, when `info` (its `get_engine_info`) says some are missing.
+pub async fn download_missing<F>(engine: &Engine, info: &Value, emit: F) -> Result<()>
+where
+    F: Fn(SetupEvent) + Send + Sync + Clone + 'static,
+{
+    let log = {
+        let emit = emit.clone();
+        move |line: String| emit(SetupEvent::Log { line })
+    };
+    let missing = missing_packages(info);
     if !missing.is_empty() {
         emit(SetupEvent::Stage {
             stage: SetupStage::DownloadingEnginePackages,
@@ -95,7 +109,7 @@ where
             .context(MSG_PACKAGES)?;
         log("FPGA tools for Logix Engine downloaded.".into());
     }
-    Ok(engine)
+    Ok(())
 }
 
 /// Downloads the pinned engine release if it isn't yet (download and

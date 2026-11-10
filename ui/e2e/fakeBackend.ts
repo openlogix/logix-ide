@@ -432,6 +432,8 @@ export const backend: typeof Real.backend = {
     // With `/?engineSetup`, setup stops in the engine's package download
     // until a test calls `__fake.finishSetup()`.
     if (new URLSearchParams(location.search).has("engineSetup")) {
+      // As the real setup: the boards and examples before the FPGA tools.
+      onEvent({ kind: "catalogReady" });
       onEvent({ kind: "stage", stage: "downloadingEnginePackages" });
       onEvent({ kind: "log", line: "Downloading oss-cad-suite..." });
       onEvent({

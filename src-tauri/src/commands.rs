@@ -112,9 +112,23 @@ pub async fn setup(
     let mut engine_slot = state.engine.lock().await;
     if engine_slot.is_none() {
         let channel = on_event.clone();
-        let result = engine::run_setup(move |event| {
+        let emit = move |event| {
             let _ = channel.send(event);
-        })
+        };
+        let result = async {
+            let (started, info) = engine::start_engine(emit.clone()).await?;
+            // The boards and examples need no FPGA tools: list them before
+            // downloading those, so the start screen's Examples work meanwhile.
+            match build_catalog(&started).await {
+                Ok(c) => {
+                    *state.catalog.lock().await = Some(c);
+                    emit(SetupEvent::CatalogReady);
+                }
+                Err(e) => crate::log!("Board list before the download failed: {e:#}"),
+            }
+            engine::download_missing(&started, &info, emit).await?;
+            anyhow::Ok(started)
+        }
         .await;
         match result {
             Ok(ready) => {
@@ -198,7 +212,14 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
         return Ok(c.clone());
     }
     let engine = ready_engine(state).await?;
-    let engine::Catalog { boards, families } = engine::catalog(&engine)
+    let c = build_catalog(&engine).await?;
+    *slot = Some(c.clone());
+    Ok(c)
+}
+
+/// The engine's boards and families, and the examples for those boards.
+async fn build_catalog(engine: &engine::Engine) -> anyhow::Result<Catalog> {
+    let engine::Catalog { boards, families } = engine::catalog(engine)
         .await
         .context("Couldn't get the list of boards.")?;
     // Examples for boards the engine doesn't support can't be built.
@@ -212,13 +233,11 @@ async fn catalog(state: &AppState) -> Result<Catalog, UserError> {
         hidden: total - list.len(),
         examples: list,
     };
-    let c = Catalog {
+    Ok(Catalog {
         boards,
         families,
         examples,
-    };
-    *slot = Some(c.clone());
-    Ok(c)
+    })
 }
 
 #[tauri::command]
