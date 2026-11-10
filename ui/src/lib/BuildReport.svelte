@@ -1,5 +1,5 @@
 <!--
-  Project > Show Build Report… (also the status bar's Build Report link after
+  Project > Board Utilization… (also the status bar's Board Utilization link after
   Verify or Upload): the last build's resources and clocks, as Logix
   Engine's `build` gives them (its recipe "Show problems in the editor",
   docs/tool-api.md). Each resource by the toolchain's own name, which
@@ -33,7 +33,7 @@
 
   async function copy() {
     try {
-      await backend.copyText(reportText(`Build Report: ${title}`, rows, report));
+      await backend.copyText(reportText(`Board Utilization: ${title}`, rows, report));
       copied = true;
     } catch (e) {
       error = (e as { message?: string }).message ?? String(e);
@@ -57,12 +57,12 @@
     class="dialog"
     role="dialog"
     aria-modal="true"
-    aria-label="Build Report"
+    aria-label="Board Utilization"
     tabindex="-1"
     onclick={(e) => e.stopPropagation()}
   >
     <header>
-      <h2>Build Report</h2>
+      <h2>Board Utilization</h2>
       <span class="muted title">{title}</span>
       <span class="spacer"></span>
       <button class="close" title="Close" onclick={onClose}>✕</button>

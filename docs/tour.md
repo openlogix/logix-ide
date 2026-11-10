@@ -74,7 +74,7 @@ changes your files.
 
 The **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon } checks the design for common mistakes, builds it for your board,
 and reports how much of the FPGA it uses and how fast it can run
-(**Show Build Report…** in the status bar has every resource). A mistake
+(**Board Utilization…** in the status bar has every resource). A mistake
 is marked on its line; hover over the mark to read it, or click the
 `file:line` link in the output to jump there.
 

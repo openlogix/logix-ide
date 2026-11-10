@@ -178,12 +178,12 @@ example two of the same board), Upload asks which one to use.
 Both use the files as they are in the editor, saved or not. The **Stop**
 button ![Stop button](images/icon-stop.png){ .toolbar-icon } stops a build or upload that takes too long.
 
-### Build Report
+### Board Utilization
 
-For every resource the design uses, choose **Project > Show Build
-Report…**. It builds the design first, as it is in the editor, so the
+For every resource the design uses, choose **Project > Board
+Utilization…**. It builds the design first, as it is in the editor, so the
 report is always up to date (when nothing changed, that's instant). Right
-after **Verify** or **Upload**, the **Show Build Report…** link in the
+after **Verify** or **Upload**, the **Board Utilization…** link in the
 status bar shows the report of that build. Each resource has
 the name the FPGA tools use, such as `ICESTORM_LC` or `SLICE_LUTX` (the
 name to search for), a short description, how many the design uses and
@@ -194,7 +194,7 @@ see them all (an FPGA has many kinds, most unused), or type in the filter
 box, such as `ram`. **n/a** means the tools reported numbers that don't
 fit, so there's no percentage. **Copy** copies the report as text.
 
-![The Build Report window: the used resources with their descriptions, then the clock](images/build-report.png)
+![The Board Utilization window: the used resources with their descriptions, then the clock](images/board-utilization.png)
 
 ## Auto Format
 

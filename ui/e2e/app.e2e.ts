@@ -177,7 +177,7 @@ test("a new project for a board builds right away", async ({ page }) => {
   await expect(output(page)).toContainText(/Build succeeded in .*\s*Ready\.\s*$/);
 });
 
-test("Build Report shows the used resources, all on request, and copies them", async ({ page }) => {
+test("Board Utilization shows the used resources, all on request, and copies them", async ({ page }) => {
   type Fake = { copiedText: string | null };
   const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
   await start(page);
@@ -187,8 +187,8 @@ test("Build Report shows the used resources, all on request, and copies them", a
   // The output has the engine's report, as it words it.
   await expect(output(page)).toContainText("The design uses 2 of 107 I/O pins (2%).");
   // Right after a build, the status bar's link shows its report.
-  await page.getByRole("button", { name: "Show Build Report…" }).click();
-  const dialog = page.getByRole("dialog", { name: "Build Report" });
+  await page.getByRole("button", { name: "Board Utilization…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Board Utilization" });
   const rows = dialog.getByRole("table", { name: "Resources" }).locator("tbody tr");
   // The toolchain's names, with the engine's descriptions; used ones only.
   await expect(rows).toHaveCount(3);
@@ -205,7 +205,7 @@ test("Build Report shows the used resources, all on request, and copies them", a
   await expect(rows).toHaveCount(1);
   await dialog.getByRole("button", { name: "Copy" }).click();
   await expect(dialog).toContainText("Copied.");
-  expect((await fake()).copiedText).toMatch(/^Build Report: .* · Alhambra II · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +32\n/s);
+  expect((await fake()).copiedText).toMatch(/^Board Utilization: .* · Alhambra II · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +32\n/s);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 
@@ -220,7 +220,7 @@ test("Build Report shows the used resources, all on request, and copies them", a
   await menu(page, "build-report");
   await expect(status(page)).toHaveText("Build failed.");
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Show Build Report…" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Board Utilization…" })).toHaveCount(0);
 });
 
 test("Show Project Folder on a project never saved offers Save As…, then shows the folder", async ({

@@ -72,9 +72,9 @@ test("main window after Verify", async ({ page }) => {
 test("the build report", async ({ page }) => {
   await startWithBoard(page);
   await verify(page, /^Build succeeded/);
-  await page.getByRole("button", { name: "Show Build Report…" }).click();
-  await expect(page.getByRole("dialog", { name: "Build Report" })).toBeVisible();
-  await shot(page, "build-report");
+  await page.getByRole("button", { name: "Board Utilization…" }).click();
+  await expect(page.getByRole("dialog", { name: "Board Utilization" })).toBeVisible();
+  await shot(page, "board-utilization");
 });
 
 test("an error marked in the editor", async ({ page }) => {

@@ -17,7 +17,7 @@ pub enum Task {
     Simulate,
     /// Draw a module of the design as an SVG.
     Graph,
-    /// Show Build Report: build without lint, for the report of the files
+    /// Board Utilization: build without lint, for the report of the files
     /// as they are now (the engine skips a build that's up to date).
     Report,
 }
@@ -107,7 +107,7 @@ pub struct BuildReport {
     pub family: String,
     /// Every resource, from the engine's `resources`: the toolchain's name,
     /// its description, used, available and the share (None when not
-    /// valid), sorted by name. The Build Report window shows them.
+    /// valid), sorted by name. The Board Utilization window shows them.
     pub resources: Vec<Resource>,
     /// The design's clocks, from the engine's `clocks_summary`.
     pub clocks: Vec<Clock>,

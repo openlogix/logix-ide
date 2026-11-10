@@ -601,10 +601,10 @@
   let taskStep = $state<{ message: string; percent: number | null } | null>(
     null,
   );
-  /** The open project's last build's report (Verify, Upload or Show Build Report…). */
+  /** The open project's last build's report (Verify, Upload or Board Utilization…). */
   let buildReport = $state<{ report: BuildReport; title: string } | null>(null);
   let buildReportOpen = $state(false);
-  /** The Build Report window's "Show unused resources", kept between builds. */
+  /** The Board Utilization window's "Show unused resources", kept between builds. */
   let reportShowUnused = $state(false);
   /** The status bar's text; `report` when it's a build's result with a report. */
   let status = $state<{ text: string; kind: "info" | "ok" | "error"; report?: boolean } | null>(
@@ -2344,7 +2344,7 @@
         {/if}
         <span class="status-text" role="status">{statusText}</span>
         {#if status?.report && buildReport && !isBusy && !activity}
-          <button class="status-link" onclick={() => (buildReportOpen = true)}>Show Build Report…</button>
+          <button class="status-link" onclick={() => (buildReportOpen = true)}>Board Utilization…</button>
         {/if}
         {#if running && taskStep && !activity}
           <span class="setup-detail"

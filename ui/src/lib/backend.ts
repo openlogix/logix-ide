@@ -211,7 +211,7 @@ export interface Example {
   notes: string[];
 }
 
-/** "report" is Show Build Report: a build without lint, then the report. */
+/** "report" is Board Utilization: a build without lint, then the report. */
 export type Task = "build" | "upload" | "test" | "simulate" | "graph" | "report";
 
 export interface Diagnostic {

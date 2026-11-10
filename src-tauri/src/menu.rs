@@ -31,7 +31,7 @@ pub const SIMULATE: &str = "simulate";
 pub const SHOW_FOLDER: &str = "show-folder";
 pub const COPY_PATH: &str = "copy-path";
 pub const SHOW_DIAGRAM: &str = "show-diagram";
-/// Project > Show Build Report…: builds (without lint; instant when up to
+/// Project > Board Utilization…: builds (without lint; instant when up to
 /// date), then shows the report (`BuildReport.svelte`).
 pub const BUILD_REPORT: &str = "build-report";
 pub const DEVICES: &str = "devices";
@@ -292,7 +292,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .separator()
         .item(&item(SHOW_DIAGRAM, "Show Diagram", "CmdOrCtrl+Shift+D")?)
         .item(
-            &MenuItemBuilder::with_id(BUILD_REPORT, "Show Build Report…")
+            &MenuItemBuilder::with_id(BUILD_REPORT, "Board Utilization…")
                 .enabled(is_enabled(BUILD_REPORT, &state))
                 .build(app)?,
         )

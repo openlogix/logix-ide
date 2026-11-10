@@ -45,9 +45,9 @@ describe("build report window", () => {
 
   it("copies as text columns", () => {
     const rows = reportRows(ice40, false, "");
-    expect(reportText("Build Report: blinky", rows, ice40)).toBe(
+    expect(reportText("Board Utilization: blinky", rows, ice40)).toBe(
       [
-        "Build Report: blinky",
+        "Board Utilization: blinky",
         "",
         "Resource     Description                                             Used  Available     %",
         "ICESTORM_LC  Logic cell: a 4-input LUT, a flip-flop and carry logic    27       7680  0.4%",

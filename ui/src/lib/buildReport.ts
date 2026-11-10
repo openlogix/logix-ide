@@ -1,4 +1,4 @@
-// The Build Report window's table (`BuildReport.svelte`): the build's
+// The Board Utilization window's table (`BuildReport.svelte`): the build's
 // resources as Logix Engine gives them (the toolchain's names, with a short
 // description and a checked share), the used ones by default. The status
 // bar and output lines are the engine's own text (`summaryLine`, `text`),
