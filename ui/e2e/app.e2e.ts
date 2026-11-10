@@ -210,10 +210,11 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await expect(dialog).toHaveCount(0);
 
   // From the menu it builds first, so the report is of the files as they
-  // are now; the window keeps "Show unused resources".
+  // are now; each time, only the used resources at first.
   await menu(page, "build-report");
   await expect(status(page)).toContainText("Build succeeded");
-  await expect(dialog.getByLabel(/Show unused resources/)).toBeChecked();
+  await expect(dialog.getByLabel(/Show unused resources/)).not.toBeChecked();
+  await expect(rows).toHaveCount(3);
   await page.keyboard.press("Escape");
   // A failed build: no report, and the last good one is gone.
   await typeAtStart(page, "oops\n");

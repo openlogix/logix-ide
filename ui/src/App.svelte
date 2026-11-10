@@ -604,8 +604,6 @@
   /** The open project's last build's report (Verify, Upload or Board Utilization…). */
   let buildReport = $state<{ report: BuildReport; title: string } | null>(null);
   let buildReportOpen = $state(false);
-  /** The Board Utilization window's "Show unused resources", kept between builds. */
-  let reportShowUnused = $state(false);
   /** The status bar's text; `report` when it's a build's result with a report. */
   let status = $state<{ text: string; kind: "info" | "ok" | "error"; report?: boolean } | null>(
     null,
@@ -1965,7 +1963,6 @@
   <BuildReportDialog
     report={buildReport.report}
     title={buildReport.title}
-    bind:showUnused={reportShowUnused}
     onClose={() => (buildReportOpen = false)}
   />
 {/if}

@@ -13,18 +13,17 @@
   let {
     report,
     title,
-    showUnused = $bindable(false),
     onClose,
   }: {
     report: BuildReport;
     /** What was built, e.g. "blinky · iCESugar v1.5 · 10:42". */
     title: string;
-    /** Show unused resources too; kept by the app between builds. */
-    showUnused?: boolean;
     onClose: () => void;
   } = $props();
 
   let filter = $state("");
+  /** Show unused resources too: off each time the window opens. */
+  let showUnused = $state(false);
   let copied = $state(false);
   let error = $state<string | null>(null);
 
@@ -228,11 +227,12 @@
     user-select: text;
   }
   .clocks {
-    width: auto;
     margin-top: 16px;
   }
-  .clocks td,
-  .clocks th {
+  /* Clock and Max speed as wide as their contents; Net takes the rest. */
+  .clocks td:not(:last-child),
+  .clocks th:not(:last-child) {
+    width: 1%;
     padding-right: 24px;
   }
   th,
