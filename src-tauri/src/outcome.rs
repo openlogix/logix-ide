@@ -126,6 +126,8 @@ pub struct Resource {
     pub used: u64,
     pub available: u64,
     pub percent: Option<f64>,
+    /// The engine's share for people, such as "1%" (`display_percent`).
+    pub display_percent: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

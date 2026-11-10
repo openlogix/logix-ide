@@ -22,7 +22,7 @@ Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-i
 common mistakes, builds it, and shows how much of the FPGA it uses:
 
 ```
-Build succeeded in 2.4 s. Uses 0.4% of logic cells, max clock 194.4 MHz.
+Build succeeded in 2.4 s. Uses 1% of logic cells, max clock 194.4 MHz.
 ```
 
 If there's a mistake, the line is marked in the editor and the status bar

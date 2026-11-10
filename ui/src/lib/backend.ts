@@ -245,6 +245,8 @@ export interface BuildReport {
     used: number;
     available: number;
     percent: number | null;
+    /** The engine's share for people, e.g. "1%" (null when percent is). */
+    displayPercent: string | null;
   }[];
   /** Each clock, from the engine's `clocks_summary`: plain name, net, speed. */
   clocks: { name: string; net: string; fmaxMhz: number }[];

@@ -172,7 +172,7 @@ test("a new project for a board builds right away", async ({ page }) => {
   await expect(tab(page, "main_tb.v")).toBeVisible();
   await page.getByTitle(/^Verify/).click();
   await expect(status(page)).toContainText("Build succeeded");
-  await expect(status(page)).toContainText("0.4% of logic cells");
+  await expect(status(page)).toContainText("1% of logic cells");
   // The output ends with the result, then Ready.
   await expect(output(page)).toContainText(/Build succeeded in .*\s*Ready\.\s*$/);
 });
@@ -183,7 +183,7 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await start(page);
   await chooseBoard(page);
   await page.getByTitle(/^Verify/).click();
-  await expect(status(page)).toContainText("Uses 0.4% of logic cells, max clock 194.4 MHz.");
+  await expect(status(page)).toContainText("Uses 1% of logic cells, max clock 194.4 MHz.");
   // The output has the engine's report, as it words it.
   await expect(output(page)).toContainText("The design uses 2 of 107 I/O pins (2%).");
   // Right after a build, the status bar's link shows its report.

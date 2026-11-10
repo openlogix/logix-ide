@@ -637,6 +637,7 @@ fn report(family: &str, build: &Value) -> BuildReport {
                         used: r["used"].as_u64().unwrap_or(0),
                         available: r["available"].as_u64().unwrap_or(0),
                         percent: r["percent"].as_f64(),
+                        display_percent: r["display_percent"].as_str().map(String::from),
                     })
                 })
                 .collect()
@@ -768,7 +769,7 @@ mod tests {
     fn reads_the_build_report() {
         let build = json!({
             "resources": [
-                {"name": "ICESTORM_LC", "description": "Logic cell", "used": 27, "available": 7680, "percent": 0.4},
+                {"name": "ICESTORM_LC", "description": "Logic cell", "used": 27, "available": 7680, "percent": 0.4, "display_percent": "1%"},
                 {"name": "odd", "used": 5, "available": 0, "percent": null}
             ],
             "clocks_summary": [
@@ -787,14 +788,16 @@ mod tests {
                     description: Some("Logic cell".into()),
                     used: 27,
                     available: 7680,
-                    percent: Some(0.4)
+                    percent: Some(0.4),
+                    display_percent: Some("1%".into())
                 },
                 Resource {
                     name: "odd".into(),
                     description: None,
                     used: 5,
                     available: 0,
-                    percent: None
+                    percent: None,
+                    display_percent: None
                 }
             ]
         );

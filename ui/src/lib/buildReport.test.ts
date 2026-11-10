@@ -6,10 +6,10 @@ import { percentText, reportRows, reportText, unusedCount } from "./buildReport"
 const ice40: BuildReport = {
   family: "ice40",
   resources: [
-    { name: "ICESTORM_LC", description: "Logic cell: a 4-input LUT, a flip-flop and carry logic", used: 27, available: 7680, percent: 0.4 },
-    { name: "ICESTORM_RAM", description: "Block RAM, 4 Kbit", used: 0, available: 32, percent: 0 },
-    { name: "NEW_THING", description: null, used: 3, available: 0, percent: null },
-    { name: "SB_IO", description: "I/O pin", used: 9, available: 107, percent: 8.4 },
+    { name: "ICESTORM_LC", description: "Logic cell: a 4-input LUT, a flip-flop and carry logic", used: 27, available: 7680, percent: 0.4, displayPercent: "1%" },
+    { name: "ICESTORM_RAM", description: "Block RAM, 4 Kbit", used: 0, available: 32, percent: 0, displayPercent: "0%" },
+    { name: "NEW_THING", description: null, used: 3, available: 0, percent: null, displayPercent: null },
+    { name: "SB_IO", description: "I/O pin", used: 9, available: 107, percent: 8.4, displayPercent: "9%" },
   ],
   clocks: [{ name: "sys_clk", net: "sys_clk$SB_IO_IN_$glb_clk", fmaxMhz: 194.3634 }],
   text: "The design uses 27 of 7680 logic cells (0.4%).",
@@ -31,15 +31,12 @@ describe("build report window", () => {
     expect(reportRows(ice40, false, "ram")).toEqual([]);
   });
 
-  it("formats shares, n/a for numbers the engine found invalid", () => {
-    const r = (used: number, percent: number | null) => ({
-      name: "X", description: null, used, available: 100, percent,
+  it("shows the engine's shares, empty when unused, n/a when invalid", () => {
+    const r = (used: number, displayPercent: string | null) => ({
+      name: "X", description: null, used, available: 100, percent: null, displayPercent,
     });
-    expect(percentText(r(0, 0))).toBe("");
-    expect(percentText(r(0, null))).toBe("");
-    expect(percentText(r(1, 0))).toBe("<0.1%");
-    expect(percentText(r(1, 0.4))).toBe("0.4%");
-    expect(percentText(r(1, 33.3))).toBe("33%");
+    expect(percentText(r(0, "0%"))).toBe("");
+    expect(percentText(r(1, "1%"))).toBe("1%");
     expect(percentText(r(5, null))).toBe("n/a");
   });
 
@@ -49,10 +46,10 @@ describe("build report window", () => {
       [
         "Board Utilization: blinky",
         "",
-        "Resource     Description                                             Used  Available     %",
-        "ICESTORM_LC  Logic cell: a 4-input LUT, a flip-flop and carry logic    27       7680  0.4%",
-        "NEW_THING                                                               3          0   n/a",
-        "SB_IO        I/O pin                                                    9        107    8%",
+        "Resource     Description                                             Used  Available    %",
+        "ICESTORM_LC  Logic cell: a 4-input LUT, a flip-flop and carry logic    27       7680   1%",
+        "NEW_THING                                                               3          0  n/a",
+        "SB_IO        I/O pin                                                    9        107   9%",
         "",
         "Clock    Max speed  Net",
         "sys_clk  194.4 MHz  sys_clk$SB_IO_IN_$glb_clk",
