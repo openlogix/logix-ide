@@ -236,7 +236,7 @@ export interface BuildReport {
   resources: { name: string; used: number; available: number }[];
   /**
    * Logix Engine's plain-language summary, main capacity measure first:
-   * `name` is its label, e.g. "logic cells". Empty from an older engine.
+   * `name` is its label, e.g. "logic cells".
    */
   summary: { name: string; used: number; available: number }[];
   /** Each clock with its plain name from the engine, e.g. "sys_clk". */

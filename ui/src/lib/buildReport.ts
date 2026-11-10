@@ -11,15 +11,12 @@ export interface Usage {
 }
 
 /**
- * The resources worth showing: the engine's main one always, others if
- * used. From an older engine without a summary, the toolchain's own names
- * of what's used.
+ * The resources worth showing, from the engine's summary: its main one
+ * always, others if used.
  */
 export function usages(report: BuildReport): Usage[] {
-  const list = report.summary.length > 0 ? report.summary : report.resources;
-  const fromSummary = report.summary.length > 0;
-  return list
-    .filter((r, i) => (fromSummary && i === 0) || r.used > 0)
+  return report.summary
+    .filter((r, i) => i === 0 || r.used > 0)
     .map((r) => ({ label: r.name, used: r.used, available: r.available }));
 }
 

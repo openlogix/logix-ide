@@ -360,13 +360,7 @@ pub(super) fn parse_families(catalog: &Value) -> Vec<FpgaFamily> {
         .map(|(id, mut fpgas)| {
             fpgas.sort_by(|a, b| a.part_number.cmp(&b.part_number));
             let i = &info[id.as_str()];
-            let label = i["label"].as_str().map(String::from).unwrap_or_else(|| {
-                if id.is_empty() {
-                    "Other".into()
-                } else {
-                    id.to_uppercase()
-                }
-            });
+            let label = i["label"].as_str().unwrap_or(&id).to_string();
             let pin_extension = i["constraint_extension"].as_str().map(String::from);
             (
                 i["order"].as_u64().unwrap_or(u64::MAX),
@@ -388,8 +382,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
         .as_object()
         .context("unexpected board list from the engine")?;
     let fpgas = &catalog["fpgas"];
-    // The engine's facts about each FPGA family; an engine without them
-    // (older) leaves the label as the ID and the order last.
+    // The engine's facts about each FPGA family (`get_catalog` families).
     let families = &catalog["families"];
     let mut list: Vec<Board> = boards
         .iter()
@@ -421,13 +414,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
             Board {
                 id: id.clone(),
                 description: b["name"].as_str().unwrap_or(id).to_string(),
-                family_label: info["label"].as_str().map(String::from).unwrap_or_else(|| {
-                    if family.is_empty() {
-                        "Other".into()
-                    } else {
-                        family.to_uppercase()
-                    }
-                }),
+                family_label: info["label"].as_str().unwrap_or(&family).to_string(),
                 family_order: info["order"].as_u64().map_or(u32::MAX, |o| o as u32),
                 pin_extension: info["constraint_extension"].as_str().map(String::from),
                 family,
@@ -630,7 +617,7 @@ mod tests {
             [
                 "Lattice iCE40 (ice40): ICE40HX1K",
                 "Gowin GW2A (gw2a): GW2A-A, GW2A-B",
-                "NEWFAMILY (newfamily): X1",
+                "newfamily (newfamily): X1",
             ]
         );
         assert_eq!(families[1].fpgas[0].id, "a");
@@ -672,7 +659,7 @@ mod tests {
                 odd.family_order,
                 odd.pin_extension.as_deref()
             ),
-            ("NEWFAMILY", u32::MAX, None)
+            ("newfamily", u32::MAX, None)
         );
     }
 }

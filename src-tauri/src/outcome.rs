@@ -106,7 +106,7 @@ pub struct BuildReport {
     pub resources: Vec<Resource>,
     /// The main resources in plain words, from the engine's
     /// `resources_summary` (main capacity measure first), so the IDE needs
-    /// no family names of its own. Empty from an engine without it.
+    /// no family names of its own.
     pub summary: Vec<Resource>,
     pub clocks: Vec<Clock>,
 }

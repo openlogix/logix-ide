@@ -29,20 +29,6 @@ describe("build report", () => {
     expect(usages(empty)).toEqual([{ label: "logic cells", used: 0, available: 7680 }]);
   });
 
-  it("uses the toolchain's names from an engine without a summary", () => {
-    const other: BuildReport = {
-      family: "newfpga",
-      resources: [
-        { name: "CELL", used: 5, available: 100 },
-        { name: "RAM", used: 0, available: 4 },
-      ],
-      summary: [],
-      clocks: [],
-    };
-    expect(usages(other)).toEqual([{ label: "CELL", used: 5, available: 100 }]);
-    expect(reportSummary(other)).toBe("5% of CELL");
-  });
-
   it("summarizes for the status bar", () => {
     const twoClocks = {
       ...ice40,

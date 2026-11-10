@@ -44,18 +44,12 @@ pub fn ide_lines(
     ]
 }
 
-/// The engine's part: its `report`, or for an engine before 2026-11-08,
-/// which has none, its version.
+/// The engine's part: its `report`, as `get_engine_info` gives it.
 pub fn engine_part(info: &Value) -> String {
-    match info["report"].as_str() {
-        Some(report) => report.to_string(),
-        None => format!(
-            "Logix Engine {}",
-            info["engine_version"]
-                .as_str()
-                .unwrap_or("(unknown version)")
-        ),
-    }
+    info["report"]
+        .as_str()
+        .unwrap_or("Logix Engine: get_engine_info gave no report")
+        .to_string()
 }
 
 /// The whole report: the IDE's lines, a blank line, the engine's part.
@@ -126,7 +120,7 @@ Platform: darwin-arm64"
     }
 
     #[test]
-    fn names_a_local_engine_and_copes_with_older_engines() {
+    fn names_a_local_engine() {
         let ide = ide_lines(
             "Logix IDE",
             "0.1.0",
@@ -138,11 +132,6 @@ Platform: darwin-arm64"
         assert_eq!(
             ide[3],
             "Logix Engine used: local binary /w/logix-engine (LOGIX_DEV_ENGINE_BINARY)"
-        );
-        // An engine before `report`: its version.
-        assert_eq!(
-            engine_part(&json!({"engine_version": "2026-11-07"})),
-            "Logix Engine 2026-11-07"
         );
     }
 }
