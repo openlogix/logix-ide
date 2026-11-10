@@ -605,7 +605,7 @@ export const backend: typeof Real.backend = {
       "",
       "Logix Engine 2026-11-08",
       "Platform: darwin-arm64",
-      "Boards schema: https://www.openlogix.org/schemas/logix-boards-v1.json",
+      "Boards schema: https://www.openlogix.org/schemas/logix-board-v1.json",
     ].join("\n"),
   copyText: async (text) => {
     fake.copiedText = text;

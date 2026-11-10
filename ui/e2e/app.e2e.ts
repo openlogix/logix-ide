@@ -238,7 +238,7 @@ test("Help > System Info shows the report and copies it", async ({ page }) => {
   const dialog = page.getByRole("dialog", { name: "System Info" });
   // The IDE's lines, a blank line, then the engine's report.
   await expect(dialog.locator(".report")).toContainText("Logix Engine used: release 2026-11-08");
-  await expect(dialog.locator(".report")).toContainText("Boards schema: https://www.openlogix.org/schemas/logix-boards-v1.json");
+  await expect(dialog.locator(".report")).toContainText("Boards schema: https://www.openlogix.org/schemas/logix-board-v1.json");
   await dialog.getByRole("button", { name: "Copy" }).click();
   await expect(dialog).toContainText("Copied.");
   expect((await fake()).copiedText).toMatch(/^Logix IDE .*\n\nLogix Engine 2026-11-08\n/s);
