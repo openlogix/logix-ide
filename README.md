@@ -6,7 +6,7 @@
 
 **The Arduino experience, for FPGAs.**
 
-[Website](https://www.openlogix.org/ide/) · [Documentation](https://openlogix.github.io/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases)
+**[Main page](https://www.openlogix.org/ide/)** · [Docs](https://www.openlogix.org/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases) · GitHub (here)
 
 Logix is a simple, friendly app for programming FPGA boards. If you've used the
 Arduino IDE, you already know how it works: write your design, click
@@ -116,26 +116,26 @@ security setting on your Mac.
 5. Now make it your own: change the blinking speed, save it with
    **File > Save Project**, and upload again.
 
-The [Quick start](https://openlogix.github.io/logix-ide/quick-start/) guide walks
+The [Quick start](https://www.openlogix.org/logix-ide/quick-start/) guide walks
 through these steps with pictures.
 
 ## Learn more
 
-The [Logix IDE documentation](https://openlogix.github.io/logix-ide/) covers everything,
+The [Logix IDE documentation](https://www.openlogix.org/logix-ide/) covers everything,
 in short, beginner-friendly pages:
 
-- [Installing](https://openlogix.github.io/logix-ide/installing/)
-- [Tour](https://openlogix.github.io/logix-ide/tour/)
-- [Quick start](https://openlogix.github.io/logix-ide/quick-start/)
-- [Using Logix](https://openlogix.github.io/logix-ide/using-logix/)
-- [Testbenches and simulation](https://openlogix.github.io/logix-ide/testbenches/)
-- [Troubleshooting](https://openlogix.github.io/logix-ide/troubleshooting/)
+- [Installing](https://www.openlogix.org/logix-ide/installing/)
+- [Tour](https://www.openlogix.org/logix-ide/tour/)
+- [Quick start](https://www.openlogix.org/logix-ide/quick-start/)
+- [Using Logix](https://www.openlogix.org/logix-ide/using-logix/)
+- [Testbenches and simulation](https://www.openlogix.org/logix-ide/testbenches/)
+- [Troubleshooting](https://www.openlogix.org/logix-ide/troubleshooting/)
 
 You can also open these pages from Logix's **Help** menu.
 
 ## Need help or found a problem?
 
-Check [Troubleshooting](https://openlogix.github.io/logix-ide/troubleshooting/)
+Check [Troubleshooting](https://www.openlogix.org/logix-ide/troubleshooting/)
 first. If you're still stuck, choose **Help > Report a Problem** in Logix, or
 [open an issue on GitHub](https://github.com/openlogix/logix-ide/issues/new). It
 helps a lot to attach Logix's log: **Help > Show Log Folder**, then drag

@@ -1,4 +1,8 @@
-# Logix IDE
+# Logix IDE Docs
+
+These are Logix IDE's docs. Its **main page**, what it is and how to get
+it, is [www.openlogix.org/ide](https://www.openlogix.org/ide/); the code is
+on [GitHub](https://github.com/openlogix/logix-ide).
 
 **The Arduino experience, for FPGAs.**
 
@@ -9,7 +13,7 @@ board.
 ![The Logix window after Verify: the design in the editor, and the build's usage report below](images/main.png)
 
 Behind the scenes, Logix uses open source FPGA tools, through
-[Logix Engine](https://github.com/openlogix/logix-engine). You don't
+[Logix Engine](https://www.openlogix.org/engine/). You don't
 need to know them or install anything else: Logix downloads what it needs on
 its first start.
 
