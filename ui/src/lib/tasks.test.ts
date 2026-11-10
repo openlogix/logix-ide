@@ -144,9 +144,11 @@ describe("build report in the status", () => {
         cancelled: false, graphSvg: null,
         report: {
           family: "ice40",
-          resources: [{ name: "ICESTORM_LC", used: 27, available: 7680 }],
-          summary: [{ name: "logic cells", used: 27, available: 7680 }],
-          clocks: [{ name: "sys_clk", fmaxMhz: 194.36 }],
+          resources: [],
+          clocks: [],
+          text: "",
+          // The engine's one-line report, shown as it words it.
+          summaryLine: "Uses 0.4% of logic cells, max clock 194.4 MHz.",
         },
         seconds: 2.4,
         action: null,

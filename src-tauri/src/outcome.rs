@@ -102,27 +102,34 @@ pub struct Diagnostic {
 pub struct BuildReport {
     /// FPGA family, e.g. "ice40", "ecp5", "gw1n", "artix7".
     pub family: String,
-    /// The FPGA's resources, with the toolchain's (family-specific) names.
+    /// Every resource, from the engine's `resources`: the toolchain's name,
+    /// its description, used, available and the share (None when not
+    /// valid), sorted by name. The Build Report window shows them.
     pub resources: Vec<Resource>,
-    /// The main resources in plain words, from the engine's
-    /// `resources_summary` (main capacity measure first), so the IDE needs
-    /// no family names of its own.
-    pub summary: Vec<Resource>,
+    /// The design's clocks, from the engine's `clocks_summary`.
     pub clocks: Vec<Clock>,
+    /// The engine's report for people (`report`), a line each, for the
+    /// output pane.
+    pub text: String,
+    /// The engine's one-line report (`report_summary`), for the status bar.
+    pub summary_line: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Resource {
     pub name: String,
+    pub description: Option<String>,
     pub used: u64,
     pub available: u64,
+    pub percent: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Clock {
     pub name: String,
+    pub net: String,
     pub fmax_mhz: f64,
 }
 

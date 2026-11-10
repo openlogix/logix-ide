@@ -177,6 +177,41 @@ test("a new project for a board builds right away", async ({ page }) => {
   await expect(output(page)).toContainText(/Build succeeded in .*\s*Ready\.\s*$/);
 });
 
+test("Build Report shows the used resources, all on request, and copies them", async ({ page }) => {
+  type Fake = { copiedText: string | null; menuState: { buildReport: boolean } | null };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await start(page);
+  await chooseBoard(page);
+  // No build yet: Build Report… is greyed out.
+  await expect.poll(async () => (await fake()).menuState?.buildReport).toBe(false);
+  await page.getByTitle(/^Verify/).click();
+  await expect(status(page)).toContainText("Uses 0.4% of logic cells, max clock 194.4 MHz.");
+  // The output has the engine's report, as it words it.
+  await expect(output(page)).toContainText("The design uses 2 of 107 I/O pins (2%).");
+  await expect.poll(async () => (await fake()).menuState?.buildReport).toBe(true);
+  await page.getByRole("button", { name: "Build Report…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Build Report" });
+  const rows = dialog.getByRole("table", { name: "Resources" }).locator("tbody tr");
+  // The toolchain's names, with the engine's descriptions; used ones only.
+  await expect(rows).toHaveCount(3);
+  await expect(rows.first()).toContainText("ICESTORM_LC");
+  await expect(rows.first()).toContainText("Logic cell: a 4-input LUT, a flip-flop and carry logic");
+  await expect(dialog).toContainText("sys_clk$SB_IO_IN_$glb_clk");
+  await dialog.getByLabel(/Show unused resources \(3\)/).check();
+  await expect(rows).toHaveCount(6);
+  await dialog.getByLabel("Filter resources").fill("ram");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("ICESTORM_RAM");
+  await dialog.getByRole("button", { name: "Copy" }).click();
+  await expect(dialog).toContainText("Copied.");
+  expect((await fake()).copiedText).toMatch(/^Build Report: .* · Alhambra II · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +0 +32 +0%\n/s);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  // Kept until the project changes; also from the menu, with unused shown.
+  await menu(page, "build-report");
+  await expect(dialog.getByLabel(/Show unused resources/)).toBeChecked();
+});
+
 test("Show Project Folder on a project never saved offers Save As…, then shows the folder", async ({
   page,
 }) => {

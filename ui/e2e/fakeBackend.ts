@@ -391,18 +391,20 @@ function buildOutcome(files: ProjectFile[], board: string): {
       ok: true,
       diagnostics: [],
       testbenches: [],
+      // Real Logix Engine output for this blinky on the Alhambra II.
       report: {
         family: "ice40",
         resources: [
-          { name: "ICESTORM_LC", used: 27, available: 7680 },
-          { name: "SB_GB", used: 1, available: 8 },
-          { name: "SB_IO", used: 2, available: 107 },
+          { name: "ICESTORM_LC", description: "Logic cell: a 4-input LUT, a flip-flop and carry logic", used: 27, available: 7680, percent: 0.4 },
+          { name: "ICESTORM_PLL", description: "PLL (clock generator)", used: 0, available: 2, percent: 0.0 },
+          { name: "ICESTORM_RAM", description: "Block RAM, 4 Kbit", used: 0, available: 32, percent: 0.0 },
+          { name: "SB_GB", description: "Global buffer, for clocks and other high-fanout signals", used: 1, available: 8, percent: 12.5 },
+          { name: "SB_IO", description: "I/O pin", used: 2, available: 107, percent: 1.9 },
+          { name: "SB_WARMBOOT", description: "Warm boot: loads another bitstream from flash", used: 0, available: 1, percent: 0.0 },
         ],
-        summary: [
-          { name: "logic cells", used: 27, available: 7680 },
-          { name: "I/O pins", used: 2, available: 107 },
-        ],
-        clocks: [{ name: "sys_clk", fmaxMhz: 194.36 }],
+        clocks: [{ name: "sys_clk", net: "sys_clk$SB_IO_IN_$glb_clk", fmaxMhz: 194.36 }],
+        text: "The design uses 27 of 7680 logic cells (0.4%).\nThe design uses 2 of 107 I/O pins (2%).\nMaximum clock speed: 194.4 MHz (sys_clk).",
+        summaryLine: "Uses 0.4% of logic cells, max clock 194.4 MHz.",
       },
       cancelled: false,
         graphSvg: null,

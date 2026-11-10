@@ -1,59 +1,94 @@
-// Turns the build report into a short status bar summary, e.g. "0.4% of
-// logic cells, max clock 194.4 MHz", and console lines, as Arduino's
-// "Sketch uses ...". Logix Engine names the resources in plain words
-// (`resources_summary`), so the IDE keeps no FPGA family names of its own.
+// The Build Report window's table (`BuildReport.svelte`): the build's
+// resources as Logix Engine gives them (the toolchain's names, with a short
+// description and a checked share), the used ones by default. The status
+// bar and output lines are the engine's own text (`summaryLine`, `text`),
+// so the IDE keeps no FPGA knowledge or wording of its own for them.
 import type { BuildReport } from "./backend";
 
-export interface Usage {
-  label: string;
-  used: number;
-  available: number;
-}
+export type ReportResource = BuildReport["resources"][number];
 
 /**
- * The resources worth showing, from the engine's summary: its main one
- * always, others if used.
+ * The rows to show: the used resources, or all with `showUnused`, those
+ * matching `filter` (in the name or the description, ignoring case), in the
+ * engine's order (by name).
  */
-export function usages(report: BuildReport): Usage[] {
-  return report.summary
-    .filter((r, i) => i === 0 || r.used > 0)
-    .map((r) => ({ label: r.name, used: r.used, available: r.available }));
-}
-
-export function percent(used: number, available: number): string {
-  if (available <= 0) return "?%";
-  const p = (100 * used) / available;
-  if (p > 0 && p < 1) return `${p.toFixed(1)}%`;
-  return `${Math.round(p)}%`;
-}
-
-function mhz(value: number): string {
-  return `${value.toFixed(1)} MHz`;
-}
-
-/** A short summary for the status bar, e.g. "0.4% of logic cells, max clock 194.4 MHz". */
-export function reportSummary(report: BuildReport): string {
-  const parts: string[] = [];
-  const main = usages(report)[0];
-  if (main) parts.push(`${percent(main.used, main.available)} of ${main.label}`);
-  if (report.clocks.length > 0) {
-    const slowest = Math.min(...report.clocks.map((c) => c.fmaxMhz));
-    parts.push(`max clock ${mhz(slowest)}`);
-  }
-  return parts.join(", ");
-}
-
-/**
- * Console lines after a build, e.g. "The design uses 27 of 7680 logic
- * cells (0.4%)." and "Maximum clock speed: 194.4 MHz (sys_clk).".
- */
-export function reportLines(report: BuildReport): string[] {
-  const lines = usages(report).map(
-    (u) =>
-      `The design uses ${u.used} of ${u.available} ${u.label} (${percent(u.used, u.available)}).`,
+export function reportRows(
+  report: BuildReport,
+  showUnused: boolean,
+  filter: string,
+): ReportResource[] {
+  const f = filter.trim().toLowerCase();
+  return report.resources.filter(
+    (r) =>
+      (showUnused || r.used > 0) &&
+      (f === "" ||
+        r.name.toLowerCase().includes(f) ||
+        (r.description ?? "").toLowerCase().includes(f)),
   );
-  for (const c of report.clocks) {
-    lines.push(`Maximum clock speed: ${mhz(c.fmaxMhz)} (${c.name}).`);
-  }
-  return lines;
+}
+
+/** How many resources the design doesn't use (hidden by default). */
+export function unusedCount(report: BuildReport): number {
+  return report.resources.filter((r) => r.used === 0).length;
+}
+
+/**
+ * A share for the table: "n/a" when the engine found nextpnr's numbers
+ * invalid, "<0.1%" for something used but less than that, one decimal under
+ * 1%, whole numbers otherwise.
+ */
+export function percentText(r: ReportResource): string {
+  if (r.percent === null) return "n/a";
+  if (r.used > 0 && r.percent < 0.1) return "<0.1%";
+  if (r.percent > 0 && r.percent < 1) return `${r.percent.toFixed(1)}%`;
+  return `${Math.round(r.percent)}%`;
+}
+
+export function mhzText(mhz: number): string {
+  return `${mhz.toFixed(1)} MHz`;
+}
+
+/** Text columns, padded; the columns in `right` aligned right (numbers). */
+function columns(rows: string[][], right: number[]): string {
+  const widths = rows[0].map((_, i) => Math.max(...rows.map((r) => r[i].length)));
+  return rows
+    .map((r) =>
+      r
+        .map((cell, i) => (right.includes(i) ? cell.padStart(widths[i]) : cell.padEnd(widths[i])))
+        .join("  ")
+        .trimEnd(),
+    )
+    .join("\n");
+}
+
+/**
+ * The report as plain text for Copy: a title line, the rows shown, then the
+ * clocks, in columns.
+ */
+export function reportText(title: string, rows: ReportResource[], report: BuildReport): string {
+  const resources = columns(
+    [
+      ["Resource", "Description", "Used", "Available", "%"],
+      ...rows.map((r) => [
+        r.name,
+        r.description ?? "",
+        String(r.used),
+        String(r.available),
+        percentText(r),
+      ]),
+    ],
+    [2, 3, 4],
+  );
+  const clocks =
+    report.clocks.length === 0
+      ? ""
+      : "\n\n" +
+        columns(
+          [
+            ["Clock", "Max speed", "Net"],
+            ...report.clocks.map((c) => [c.name, mhzText(c.fmaxMhz), c.net]),
+          ],
+          [1],
+        );
+  return `${title}\n\n${resources}${clocks}\n`;
 }

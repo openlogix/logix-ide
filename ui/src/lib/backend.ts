@@ -232,15 +232,25 @@ export interface TestbenchResult {
 export interface BuildReport {
   /** FPGA family, e.g. "ice40", "ecp5", "gw1n", "artix7". */
   family: string;
-  /** With the toolchain's family-specific names, e.g. "ICESTORM_LC". */
-  resources: { name: string; used: number; available: number }[];
   /**
-   * Logix Engine's plain-language summary, main capacity measure first:
-   * `name` is its label, e.g. "logic cells".
+   * Every resource, from Logix Engine's `resources`, sorted by name: the
+   * toolchain's name (e.g. "ICESTORM_LC"), a short description (null when
+   * the engine has none), used, available and the share in percent (null
+   * when nextpnr's numbers aren't valid).
    */
-  summary: { name: string; used: number; available: number }[];
-  /** Each clock with its plain name from the engine, e.g. "sys_clk". */
-  clocks: { name: string; fmaxMhz: number }[];
+  resources: {
+    name: string;
+    description: string | null;
+    used: number;
+    available: number;
+    percent: number | null;
+  }[];
+  /** Each clock, from the engine's `clocks_summary`: plain name, net, speed. */
+  clocks: { name: string; net: string; fmaxMhz: number }[];
+  /** The engine's report for people (`report`), a line each. */
+  text: string;
+  /** The engine's one-line report (`report_summary`), for the status bar. */
+  summaryLine: string;
 }
 
 export interface TaskOutcome {
@@ -399,6 +409,8 @@ export interface MenuState {
   simulate: boolean;
   /** The open tab is a testbench (the editor menu's Run This Test, Simulate). */
   testbenchOpen: boolean;
+  /** The project has a build report (Build Report…). */
+  buildReport: boolean;
   /** One Tools submenu per dimension of the board's variants. */
   variantMenus: VariantMenu[];
 }
@@ -429,6 +441,7 @@ export type MenuId =
   | "copy-path"
   | "stop"
   | "show-diagram"
+  | "build-report"
   | "devices"
   | "board-explorer"
   | "settings"

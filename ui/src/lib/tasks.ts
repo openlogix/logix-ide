@@ -1,5 +1,4 @@
 import type { Diagnostic, Task, TaskOutcome } from "./backend";
-import { reportSummary } from "./buildReport";
 import { BOARDS_FOLDER_NAME, isBoardFile } from "./workingProject";
 
 const VERB: Record<Task, { running: string; done: string; noun: string }> = {
@@ -44,8 +43,9 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
       return `${VERB.simulate.done} in ${time}. GTKWave shows the signals.`;
     }
     if (task === "graph") return `${VERB.graph.done} in ${time}.`;
-    const summary = outcome.report ? reportSummary(outcome.report) : "";
-    return `${VERB[task].done} in ${time}${w}.${summary ? ` Uses ${summary}.` : ""}`;
+    // The engine's one-line report, as it words it ("Uses 0.4% of …").
+    const summary = outcome.report?.summaryLine ?? "";
+    return `${VERB[task].done} in ${time}${w}.${summary ? ` ${summary}` : ""}`;
   }
   const first = errors[0];
   if (!first) return `${VERB[task].noun} failed. See the output below.`;

@@ -20,6 +20,7 @@
     type SetupEvent,
     type SetupStage,
     type Variant,
+    type BuildReport,
   } from "./lib/backend";
   import Editor from "./lib/Editor.svelte";
   import { setHoverEnabled, startLanguageServer } from "./lib/lsp";
@@ -50,6 +51,7 @@
   import BoardExplorer from "./lib/BoardExplorer.svelte";
   import type { Ref as ExplorerRef } from "./lib/explorer";
   import SystemInfoDialog from "./lib/SystemInfoDialog.svelte";
+  import BuildReportDialog from "./lib/BuildReport.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
   import { deviceSummaryLines, isBoardNotFound, needsDeviceChoice } from "./lib/devices";
@@ -92,7 +94,6 @@
     runningText,
     testbenchLines,
   } from "./lib/tasks";
-  import { reportLines } from "./lib/buildReport";
   import {
     clampConsoleHeight,
     DEFAULT_CONSOLE_HEIGHT,
@@ -600,7 +601,13 @@
   let taskStep = $state<{ message: string; percent: number | null } | null>(
     null,
   );
-  let status = $state<{ text: string; kind: "info" | "ok" | "error" } | null>(
+  /** The open project's last build report (Verify or Upload), for Build Report…. */
+  let buildReport = $state<{ report: BuildReport; title: string } | null>(null);
+  let buildReportOpen = $state(false);
+  /** The Build Report window's "Show unused resources", kept between builds. */
+  let reportShowUnused = $state(false);
+  /** The status bar's text; `report` when it's a build's result with a report. */
+  let status = $state<{ text: string; kind: "info" | "ok" | "error"; report?: boolean } | null>(
     null,
   );
   /**
@@ -1087,7 +1094,12 @@
       taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
       if (task === "test") log("", ...testbenchLines(outcome));
-      if (outcome.ok && outcome.report) log("", ...reportLines(outcome.report));
+      if (outcome.ok && outcome.report) {
+        if (outcome.report.text) log("", ...outcome.report.text.split("\n"));
+        const when = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const boardName = boards.find((b) => b.id === board)?.description ?? board;
+        buildReport = { report: outcome.report, title: `${p.name} · ${boardName} · ${when}` };
+      }
       if (
         task === "upload" &&
         !outcome.ok &&
@@ -1112,6 +1124,7 @@
       status = {
         text: outcomeText(task, outcome),
         kind: outcome.ok ? "ok" : outcome.cancelled ? "info" : "error",
+        report: outcome.ok && outcome.report !== null,
       };
       // GTKWave starts after the engine returns: "Opening GTKWave…" until
       // its window appears (after the result goes to the output).
@@ -1274,6 +1287,7 @@
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && simulationTestbench(project) !== null,
     testbenchOpen: project !== null && isTestbench(activeFile),
+    buildReport: project !== null && buildReport !== null,
     variantMenus: variantMenus(currentBoardInfo, currentVariant),
   });
 
@@ -1314,6 +1328,8 @@
   function loadDoc(doc: ProjectDoc, keepOutput = false) {
     if (!keepOutput) clearConsole();
     project = fromDoc(doc);
+    buildReport = null;
+    buildReportOpen = false;
     const main = mainFile(project);
     activeFile = main;
     clearProblems();
@@ -1492,6 +1508,8 @@
       homeVariant = project.variant;
     }
     project = null;
+    buildReport = null;
+    buildReportOpen = false;
     clearConsole();
     clearProblems();
     fileError = null;
@@ -1699,6 +1717,10 @@
       systemInfoOpen = true;
       return;
     }
+    if (id === "build-report") {
+      if (buildReport) buildReportOpen = true;
+      return;
+    }
     if (id === "settings") {
       if (prefs) settingsOpen = true;
       return;
@@ -1746,6 +1768,7 @@
         | "stop"
         | "show-folder"
         | "copy-path"
+        | "build-report"
         | "show-diagram"
         | "devices"
         | "board-explorer"
@@ -1931,6 +1954,14 @@
 
 {#if systemInfoOpen}
   <SystemInfoDialog onClose={() => (systemInfoOpen = false)} />
+{/if}
+{#if buildReportOpen && buildReport}
+  <BuildReportDialog
+    report={buildReport.report}
+    title={buildReport.title}
+    bind:showUnused={reportShowUnused}
+    onClose={() => (buildReportOpen = false)}
+  />
 {/if}
 
 {#if devicePicker}
@@ -2306,6 +2337,9 @@
           <span class="spinner" aria-label="Busy"></span>
         {/if}
         <span class="status-text" role="status">{statusText}</span>
+        {#if status?.report && buildReport && !isBusy && !activity}
+          <button class="status-link" onclick={() => (buildReportOpen = true)}>Build Report…</button>
+        {/if}
         {#if running && taskStep && !activity}
           <span class="setup-detail"
             >{taskStep.message}{taskStep.percent != null
@@ -2759,6 +2793,16 @@
     to {
       transform: rotate(360deg);
     }
+  }
+  .status-link {
+    padding: 0 4px;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+    white-space: nowrap;
   }
   .status-text {
     flex: 1;

@@ -621,35 +621,25 @@ pub(super) fn diagnostics(list: &Value) -> Vec<Diagnostic> {
         .collect()
 }
 
-/// The build's resource use and clock speeds.
+/// The build's report, as the engine gives it: every resource, the clocks,
+/// and the text for people. The IDE adds no FPGA knowledge of its own.
 fn report(family: &str, build: &Value) -> BuildReport {
-    let resources = build["resources_usage"]
-        .as_object()
-        .map(|map| {
-            map.iter()
-                .map(|(name, r)| Resource {
-                    name: name.clone(),
-                    used: r["used"].as_u64().unwrap_or(0),
-                    available: r["available"].as_u64().unwrap_or(0),
-                })
-                .collect()
-        })
-        .unwrap_or_default();
-    // The engine's plain-language summary: `name` is its label.
-    let summary = build["resources_summary"]
+    let resources = build["resources"]
         .as_array()
         .map(|list| {
             list.iter()
-                .map(|r| Resource {
-                    name: r["label"].as_str().unwrap_or_default().to_string(),
-                    used: r["used"].as_u64().unwrap_or(0),
-                    available: r["available"].as_u64().unwrap_or(0),
+                .filter_map(|r| {
+                    Some(Resource {
+                        name: r["name"].as_str()?.to_string(),
+                        description: r["description"].as_str().map(String::from),
+                        used: r["used"].as_u64().unwrap_or(0),
+                        available: r["available"].as_u64().unwrap_or(0),
+                        percent: r["percent"].as_f64(),
+                    })
                 })
                 .collect()
         })
         .unwrap_or_default();
-    // The engine's clocks with plain names (`clocks_summary`), such as
-    // "sys_clk" for the net sys_clk$SB_IO_IN_$glb_clk.
     let clocks = build["clocks_summary"]
         .as_array()
         .map(|list| {
@@ -657,17 +647,20 @@ fn report(family: &str, build: &Value) -> BuildReport {
                 .filter_map(|c| {
                     Some(Clock {
                         name: c["name"].as_str()?.to_string(),
+                        net: c["net"].as_str().unwrap_or_default().to_string(),
                         fmax_mhz: c["max_mhz"].as_f64()?,
                     })
                 })
                 .collect()
         })
         .unwrap_or_default();
+    let text = |key: &str| build[key].as_str().unwrap_or_default().to_string();
     BuildReport {
         family: family.to_string(),
         resources,
-        summary,
         clocks,
+        text: text("report"),
+        summary_line: text("report_summary"),
     }
 }
 
@@ -772,39 +765,49 @@ mod tests {
     #[test]
     fn reads_the_build_report() {
         let build = json!({
-            "resources_usage": {"ICESTORM_LC": {"available": 7680, "used": 27}},
-            "resources_summary": [
-                {"kind": "logic_cells", "label": "logic cells", "used": 27, "available": 7680}
+            "resources": [
+                {"name": "ICESTORM_LC", "description": "Logic cell", "used": 27, "available": 7680, "percent": 0.4},
+                {"name": "odd", "used": 5, "available": 0, "percent": null}
             ],
-            "timing": {"sys_clk$SB_IO_IN_$glb_clk": 194.36},
             "clocks_summary": [
                 {"name": "sys_clk", "net": "sys_clk$SB_IO_IN_$glb_clk", "max_mhz": 194.36}
-            ]
+            ],
+            "report": "The design uses 27 of 7680 logic cells (0.4%).",
+            "report_summary": "Uses 0.4% of logic cells, max clock 194.4 MHz."
         });
         let r = report("ice40", &build);
-        assert_eq!(
-            r.summary,
-            [Resource {
-                name: "logic cells".into(),
-                used: 27,
-                available: 7680
-            }]
-        );
         assert_eq!(r.family, "ice40");
         assert_eq!(
             r.resources,
-            [Resource {
-                name: "ICESTORM_LC".into(),
-                used: 27,
-                available: 7680
-            }]
+            [
+                Resource {
+                    name: "ICESTORM_LC".into(),
+                    description: Some("Logic cell".into()),
+                    used: 27,
+                    available: 7680,
+                    percent: Some(0.4)
+                },
+                Resource {
+                    name: "odd".into(),
+                    description: None,
+                    used: 5,
+                    available: 0,
+                    percent: None
+                }
+            ]
         );
         assert_eq!(
             r.clocks,
             [Clock {
                 name: "sys_clk".into(),
+                net: "sys_clk$SB_IO_IN_$glb_clk".into(),
                 fmax_mhz: 194.36
             }]
+        );
+        assert_eq!(r.text, "The design uses 27 of 7680 logic cells (0.4%).");
+        assert_eq!(
+            r.summary_line,
+            "Uses 0.4% of logic cells, max clock 194.4 MHz."
         );
     }
 

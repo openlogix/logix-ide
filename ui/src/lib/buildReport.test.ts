@@ -1,61 +1,62 @@
 import { describe, expect, it } from "vitest";
 import type { BuildReport } from "./backend";
-import { percent, reportLines, reportSummary, usages } from "./buildReport";
+import { percentText, reportRows, reportText, unusedCount } from "./buildReport";
 
+// As Logix Engine's build gives them (resources sorted by name).
 const ice40: BuildReport = {
   family: "ice40",
   resources: [
-    { name: "ICESTORM_LC", used: 27, available: 7680 },
-    { name: "ICESTORM_RAM", used: 0, available: 32 },
-    { name: "SB_GB", used: 1, available: 8 },
-    { name: "SB_IO", used: 9, available: 107 },
+    { name: "ICESTORM_LC", description: "Logic cell: a 4-input LUT, a flip-flop and carry logic", used: 27, available: 7680, percent: 0.4 },
+    { name: "ICESTORM_RAM", description: "Block RAM, 4 Kbit", used: 0, available: 32, percent: 0 },
+    { name: "NEW_THING", description: null, used: 3, available: 0, percent: null },
+    { name: "SB_IO", description: "I/O pin", used: 9, available: 107, percent: 8.4 },
   ],
-  // As the engine's resources_summary names them.
-  summary: [
-    { name: "logic cells", used: 27, available: 7680 },
-    { name: "RAM blocks", used: 0, available: 32 },
-    { name: "I/O pins", used: 9, available: 107 },
-  ],
-  clocks: [{ name: "sys_clk", fmaxMhz: 194.3634 }],
+  clocks: [{ name: "sys_clk", net: "sys_clk$SB_IO_IN_$glb_clk", fmaxMhz: 194.3634 }],
+  text: "The design uses 27 of 7680 logic cells (0.4%).",
+  summaryLine: "Uses 0.4% of logic cells, max clock 194.4 MHz.",
 };
 
-describe("build report", () => {
-  it("lists the main resource and the used ones in plain words", () => {
-    expect(usages(ice40).map((u) => u.label)).toEqual(["logic cells", "I/O pins"]);
+describe("build report window", () => {
+  it("shows the used resources by default, all on request", () => {
+    expect(reportRows(ice40, false, "").map((r) => r.name)).toEqual(["ICESTORM_LC", "NEW_THING", "SB_IO"]);
+    expect(reportRows(ice40, true, "")).toHaveLength(4);
+    expect(unusedCount(ice40)).toBe(1);
   });
 
-  it("always includes the main resource, even when unused", () => {
-    const empty = { ...ice40, summary: [{ name: "logic cells", used: 0, available: 7680 }] };
-    expect(usages(empty)).toEqual([{ label: "logic cells", used: 0, available: 7680 }]);
+  it("filters by name or description, ignoring case", () => {
+    expect(reportRows(ice40, true, "ram").map((r) => r.name)).toEqual(["ICESTORM_RAM"]);
+    expect(reportRows(ice40, true, "icestorm_lc").map((r) => r.name)).toEqual(["ICESTORM_LC"]);
+    expect(reportRows(ice40, true, "pin").map((r) => r.name)).toEqual(["SB_IO"]);
+    // Unused rows stay hidden while filtering, unless shown.
+    expect(reportRows(ice40, false, "ram")).toEqual([]);
   });
 
-  it("summarizes for the status bar", () => {
-    const twoClocks = {
-      ...ice40,
-      clocks: [
-        { name: "a", fmaxMhz: 200 },
-        { name: "b", fmaxMhz: 90.04 },
-      ],
-    };
-    expect(reportSummary(twoClocks)).toBe("0.4% of logic cells, max clock 90.0 MHz");
+  it("formats shares, n/a for numbers the engine found invalid", () => {
+    const r = (used: number, percent: number | null) => ({
+      name: "X", description: null, used, available: 100, percent,
+    });
+    expect(percentText(r(0, 0))).toBe("0%");
+    expect(percentText(r(1, 0))).toBe("<0.1%");
+    expect(percentText(r(1, 0.4))).toBe("0.4%");
+    expect(percentText(r(1, 33.3))).toBe("33%");
+    expect(percentText(r(5, null))).toBe("n/a");
   });
 
-  it("formats percentages", () => {
-    expect(percent(0, 10)).toBe("0%");
-    expect(percent(1, 300)).toBe("0.3%");
-    expect(percent(1, 3)).toBe("33%");
-    expect(percent(1, 0)).toBe("?%");
-  });
-
-  it("gives console lines, as Arduino's \"Sketch uses ...\"", () => {
-    const report = {
-      ...ice40,
-      clocks: [{ name: "sys_clk", fmaxMhz: 194.36 }],
-    };
-    expect(reportLines(report)).toEqual([
-      "The design uses 27 of 7680 logic cells (0.4%).",
-      "The design uses 9 of 107 I/O pins (8%).",
-      "Maximum clock speed: 194.4 MHz (sys_clk).",
-    ]);
+  it("copies as text columns", () => {
+    const rows = reportRows(ice40, false, "");
+    expect(reportText("Build Report: blinky", rows, ice40)).toBe(
+      [
+        "Build Report: blinky",
+        "",
+        "Resource     Description                                             Used  Available     %",
+        "ICESTORM_LC  Logic cell: a 4-input LUT, a flip-flop and carry logic    27       7680  0.4%",
+        "NEW_THING                                                               3          0   n/a",
+        "SB_IO        I/O pin                                                    9        107    8%",
+        "",
+        "Clock    Max speed  Net",
+        "sys_clk  194.4 MHz  sys_clk$SB_IO_IN_$glb_clk",
+        "",
+      ].join("\n"),
+    );
   });
 });

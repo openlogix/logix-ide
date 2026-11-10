@@ -69,6 +69,14 @@ test("main window after Verify", async ({ page }) => {
   await shot(page, "main");
 });
 
+test("the build report", async ({ page }) => {
+  await startWithBoard(page);
+  await verify(page, /^Build succeeded/);
+  await page.getByRole("button", { name: "Build Report…" }).click();
+  await expect(page.getByRole("dialog", { name: "Build Report" })).toBeVisible();
+  await shot(page, "build-report");
+});
+
 test("an error marked in the editor", async ({ page }) => {
   await startWithBoard(page);
   // Remove the ";" at the end of "assign led = counter[23];".

@@ -31,6 +31,9 @@ pub const SIMULATE: &str = "simulate";
 pub const SHOW_FOLDER: &str = "show-folder";
 pub const COPY_PATH: &str = "copy-path";
 pub const SHOW_DIAGRAM: &str = "show-diagram";
+/// Project > Build Report…: the last build's resources and clocks, from the
+/// engine's report (`BuildReport.svelte`).
+pub const BUILD_REPORT: &str = "build-report";
 pub const DEVICES: &str = "devices";
 /// Tools > Board Explorer…: the FPGA families, FPGAs, boards and examples
 /// Logix knows, and how they relate, opened at the toolbar's board.
@@ -93,6 +96,7 @@ pub const NEEDS_PROJECT: &[&str] = &[
     RUN_TESTS,
     SIMULATE,
     SHOW_DIAGRAM,
+    BUILD_REPORT,
     STOP,
     SHOW_FOLDER,
     COPY_PATH,
@@ -124,6 +128,10 @@ pub struct MenuState {
     /// The open tab is a testbench: the editor's right-click menu adds Run
     /// This Test and Simulate (hidden otherwise, to keep it short).
     pub testbench_open: bool,
+    /// The project has a build report: Verify or Upload built it since it
+    /// was opened (Build Report…).
+    #[serde(default)]
+    pub build_report: bool,
     /// One Tools submenu per dimension of the current board's variants,
     /// e.g. Tools > Memory ▸ Flash / RAM. Empty for most boards.
     #[serde(default)]
@@ -169,6 +177,7 @@ pub fn is_enabled(id: &str, state: &MenuState) -> bool {
         GO_TO_DEFINITION => state.definition,
         RUN_TESTS => state.testbenches,
         SIMULATE => state.simulate,
+        BUILD_REPORT => state.build_report,
         _ => true,
     }
 }
@@ -287,6 +296,11 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(SIMULATE, "Simulate", "CmdOrCtrl+Alt+T")?)
         .separator()
         .item(&item(SHOW_DIAGRAM, "Show Diagram", "CmdOrCtrl+Shift+D")?)
+        .item(
+            &MenuItemBuilder::with_id(BUILD_REPORT, "Build Report…")
+                .enabled(is_enabled(BUILD_REPORT, &state))
+                .build(app)?,
+        )
         .separator()
         .item(&item(STOP, "Stop", "CmdOrCtrl+.")?)
         .separator()
@@ -387,7 +401,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
         | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST
-        | BOARD_EXPLORER | SYSTEM_INFO => {
+        | BOARD_EXPLORER | SYSTEM_INFO | BUILD_REPORT => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {
@@ -584,6 +598,7 @@ mod tests {
             testbenches: true,
             simulate: true,
             testbench_open: true,
+            build_report: true,
             variant_menus: Vec::new(),
         };
         for id in [
@@ -592,6 +607,7 @@ mod tests {
             GO_TO_DEFINITION,
             RUN_TESTS,
             SIMULATE,
+            BUILD_REPORT,
         ] {
             assert!(is_enabled(id, &all), "{id}");
         }
