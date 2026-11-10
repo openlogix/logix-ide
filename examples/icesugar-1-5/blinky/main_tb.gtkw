@@ -4,5 +4,5 @@ main_tb.sys_clk
 -Counter
 main_tb.dut.counter[3:0]
 -LED
-main_tb.dut.led_on
-main_tb.led
+main_tb.dut.green_on
+main_tb.rgb_led[2:0]

@@ -6,7 +6,7 @@ From a new project to a blinking LED in a few steps.
 
 Start Logix and wait until the output area at the bottom shows **Ready.**
 The window shows the start screen. Choose your board in the list in the
-toolbar (the **Alhambra II** is selected at first), then click **From
+toolbar (the **iCESugar v1.5** is selected at first), then click **From
 Example…**, pick **blinky** for your board and click **Open**. (On a few
 boards the basic example is called **ledon**.)
 

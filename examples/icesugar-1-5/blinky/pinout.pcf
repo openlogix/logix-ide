@@ -3,5 +3,7 @@
 # sys_clk: 12 MHz clock.
 set_io sys_clk 35
 
-# led: LED (active low), on the FPGA's RGB LED driver pad RGB1.
-set_io led 40
+# rgb_led: RGB LED (active low), on the FPGA's RGB LED driver pads.
+set_io rgb_led[0] 40
+set_io rgb_led[1] 41
+set_io rgb_led[2] 39

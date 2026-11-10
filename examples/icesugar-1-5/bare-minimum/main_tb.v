@@ -1,5 +1,6 @@
-// Testbench for the iCESugar v1.5's bare minimum: checks that the LED is
-// off. Run Tests checks it; Simulate shows the signals.
+// Testbench for the iCESugar v1.5's bare minimum: checks that the RGB LED
+// is off and the UART is idle. Run Tests checks it; Simulate shows the
+// signals.
 
 `timescale 1ns / 1ps
 
@@ -9,9 +10,19 @@
 module main_tb;
 
   reg sys_clk = 1'b0;
-  wire led;
+  reg [3:0] switches = 4'b1111;
+  reg uart_rx = 1'b1;
+  wire [2:0] rgb_led;
+  wire uart_tx;
 
-  main dut (.sys_clk(sys_clk), .led(led));
+  // The design.
+  main dut (
+    .sys_clk(sys_clk),
+    .rgb_led(rgb_led),
+    .switches(switches),
+    .uart_rx(uart_rx),
+    .uart_tx(uart_tx)
+  );
 
   // The board's 12 MHz clock.
   always #41.667 sys_clk = ~sys_clk;
@@ -20,8 +31,8 @@ module main_tb;
     $dumpvars(0, main_tb);
 
     repeat (32) @(posedge sys_clk);
-    #1;
-    `EXPECT_EQ(led, 1'b1)  // Off (lit when 0).
+    #1 `EXPECT_EQ(rgb_led, 3'b111)  // Every color off (lit when 0).
+    `EXPECT_EQ(uart_tx, 1'b1)       // The UART idle.
 
     // Add your own checks here.
 

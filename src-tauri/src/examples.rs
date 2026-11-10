@@ -10,9 +10,9 @@ use serde::Serialize;
 
 static EXAMPLES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../examples");
 
-/// The board of new projects until the user chooses one: the Alhambra II,
-/// FPGAwars' own board.
-pub const DEFAULT_BOARD: &str = "alhambra-ii";
+/// The board of new projects until the user chooses one: the iCESugar v1.5
+/// (a tie-break; the website repo's CLAUDE.md, Canonical board).
+pub const DEFAULT_BOARD: &str = "icesugar-1-5";
 
 /// Each catalog board's Bare Minimum, generated (`generate.rs`) like its
 /// blinky: `examples/<board>/bare-minimum/`, the board's pins and a design
@@ -165,7 +165,10 @@ mod tests {
             .iter()
             .find(|e| e.board == DEFAULT_BOARD && e.name == "blinky")
             .unwrap();
-        assert_eq!(blinky.summary, "Blinks LED 0 about once a second.");
+        assert_eq!(
+            blinky.summary,
+            "Blinks the RGB LED in green about once a second."
+        );
         assert!(blinky.notes.is_empty());
         // Every example has a one-line summary; qualifiers are notes.
         assert!(list

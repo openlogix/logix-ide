@@ -1,6 +1,6 @@
-// Testbench for the iCESugar v1.5's blinky. With a 4-bit counter, the LED
-// is off at first, lit after 8 clock cycles and off again after 16. Run
-// Tests checks it; Simulate shows the signals.
+// Testbench for the iCESugar v1.5's blinky. With a 4-bit counter, green is
+// off at first, lit after 8 clock cycles and off again after 16, while red
+// and blue stay off. Run Tests checks it; Simulate shows the signals.
 
 `timescale 1ns / 1ps
 
@@ -10,10 +10,10 @@
 module main_tb;
 
   reg sys_clk = 1'b0;
-  wire led;
+  wire [2:0] rgb_led;
 
   // The design, with a 4-bit counter so the LED changes every 8 cycles.
-  main #(.N(4)) dut (.sys_clk(sys_clk), .led(led));
+  main #(.N(4)) dut (.sys_clk(sys_clk), .rgb_led(rgb_led));
 
   // The board's 12 MHz clock.
   always #41.667 sys_clk = ~sys_clk;
@@ -26,11 +26,12 @@ module main_tb;
   initial begin
     $dumpvars(0, main_tb);
 
-    #1 `EXPECT_EQ(led, 1'b1)  // Off (lit when 0).
+    #1 `EXPECT_EQ(rgb_led[1], 1'b1)     // Green off (lit when 0).
+    `EXPECT_EQ({rgb_led[2], rgb_led[0]}, 2'b11)  // Red and blue off.
     cycles(8);
-    #1 `EXPECT_EQ(led, 1'b0)  // Lit.
+    #1 `EXPECT_EQ(rgb_led[1], 1'b0)     // Green lit.
     cycles(8);
-    #1 `EXPECT_EQ(led, 1'b1)  // Off again.
+    #1 `EXPECT_EQ(rgb_led[1], 1'b1)     // Green off again.
     cycles(16);
 
     // Add your own checks here.

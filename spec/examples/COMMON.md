@@ -40,7 +40,9 @@ Inputs):
   vector, bit 0 first. An `rgb_led` is a 3-bit vector in its fields'
   order: `[0]` red, `[1]` green, `[2]` blue. An `led_matrix` is two
   ports: `<name>` with a bit per LED (its `leds`), and `<name>_colors`,
-  `[0]` red, `[1]` green, `[2]` blue. Never pick a resource by its
+  `[0]` red, `[1]` green, `[2]` blue. A `uart` is a port per signal,
+  `<name>_<field>`: `uart_tx` and `uart_rx` (and `uart_rts`,
+  `uart_cts`). Never pick a resource by its
   position in the list: each example's file gives explicit rules.
 - **Only what works as shipped:** a resource with a `setup` requirement
   (such as a jumper) is never used.

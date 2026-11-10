@@ -1,5 +1,6 @@
 [*] GTKWave layout for main_tb.v, opened by Simulate.
 -Clock
 main_tb.sys_clk
--LED
-main_tb.led
+-Outputs
+main_tb.rgb_led[2:0]
+main_tb.uart_tx

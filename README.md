@@ -105,7 +105,7 @@ security setting on your Mac.
 ## Your first blinking LED
 
 1. Start Logix and wait for **Ready.** at the bottom of the window. Choose
-   your board in the list at the top (the **Alhambra II** at first), then
+   your board in the list at the top (the **iCESugar v1.5** at first), then
    click **From Example…** on the start screen and open **blinky**.
 2. Click the **Verify** button <img src="docs/images/icon-verify.png" alt="Verify button" height="20">.
    Logix builds the design and shows how much of the FPGA it uses.

@@ -3,5 +3,17 @@
 # sys_clk: 12 MHz clock.
 set_io sys_clk 35
 
-# led: LED (active low), on the FPGA's RGB LED driver pad RGB1.
-set_io led 40
+# rgb_led: RGB LED (active low), on the FPGA's RGB LED driver pads.
+set_io rgb_led[0] 40
+set_io rgb_led[1] 41
+set_io rgb_led[2] 39
+
+# switches: DIP switches (active low).
+set_io switches[0] 18
+set_io switches[1] 19
+set_io switches[2] 20
+set_io switches[3] 21
+
+# uart: UART to the iCELink's USB serial port.
+set_io uart_rx 4
+set_io uart_tx 6
