@@ -403,6 +403,12 @@
 
   /** The example count line, printed once setup is done. */
   let examplesLine = "";
+  /** Whether the example list has loaded (it may be empty). Until then the
+   * start screen's Examples… stays enabled: it greys out only when loading
+   * found none, so it doesn't flicker grey at every start. */
+  let examplesLoaded = $state(false);
+  /** Examples… was chosen before the list loaded: open it when it does. */
+  let openExamplesWhenLoaded = false;
 
   function loadCatalog(): Promise<void> {
     catalogLoading ??= (async () => {
@@ -417,6 +423,12 @@
         // Printed when setup is done (runSetup), not here: the list may
         // load while the FPGA tools still download.
         examplesLine = examplesSummary(exampleList.examples.length, exampleList.hidden);
+        examplesLoaded = true;
+        if (openExamplesWhenLoaded) {
+          openExamplesWhenLoaded = false;
+          if (status?.text === LOADING_EXAMPLES) status = null;
+          showExamples();
+        }
       } catch (e) {
         catalogLoading = null;
         showFileError(e);
@@ -583,7 +595,16 @@
     return boards.find((b) => b.id === id)?.description ?? id ?? "none";
   }
 
+  const LOADING_EXAMPLES = "Loading the examples…";
+
   function showExamples() {
+    if (!examplesLoaded) {
+      // The list is still loading (it comes with the board catalog, right
+      // after Logix Engine starts): open it as soon as it's there.
+      openExamplesWhenLoaded = true;
+      status = { text: LOADING_EXAMPLES, kind: "info" };
+      return;
+    }
     if (examples.length === 0) {
       fileError = "The examples are available once the FPGA tools are ready.";
       return;
@@ -2185,7 +2206,7 @@
               <span class="start-title">Open Project…</span>
               <span class="start-hint">A project folder on this computer</span>
             </button>
-            <button disabled={examples.length === 0} onclick={showExamples}>
+            <button disabled={examplesLoaded && examples.length === 0} onclick={showExamples}>
               <span class="start-icon"><Icon name="example" size={26} /></span>
               <span class="start-title">Examples…</span>
               <span class="start-hint">Blinky and more, ready to build</span>
