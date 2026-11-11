@@ -7,7 +7,7 @@
 //! drill-down, pan, zoom and hover. Logix IDE keeps it in memory and serves
 //! it on the `logix-diagram` scheme (the build folder is cleared before
 //! each task, so the file doesn't last). The page gets no Tauri access:
-//! clicking a block calls `window.logixDiagramOpenSource(file, line)`,
+//! double-clicking a block calls `window.logixDiagramOpenSource(file, line)`,
 //! which this window defines as a navigation to `logix-open-source:`; the
 //! navigation is cancelled here and becomes a `diagram-open-source` event
 //! to the main window, only for a file of the project.

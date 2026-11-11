@@ -208,7 +208,7 @@ in a window of its own that you can move and resize while you keep working.
 Every module of the design is in it:
 
 - **Click a module** to open it; the bar at the top goes back.
-- **Click any other block** to show its line in the editor.
+- **Double-click any other block** to show its line in the editor.
 - **Hover** a block, a port, a wire or a pin for its details, such as a
   signal's name and width.
 - **Drag** to move the drawing, and **scroll** to zoom. **Fit** shows all of
