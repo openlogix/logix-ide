@@ -7,12 +7,12 @@ Logix IDE needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer
 1. Download the latest `logix-darwin-arm64-<date>.dmg` from the
    [releases page](https://github.com/openlogix/logix-ide/releases) to your
    **Downloads** folder.
-2. Open **Terminal** and run this command, with the file name you downloaded.
+2. Open **Terminal** and run this command.
    Logix IDE isn't signed with an Apple Developer ID yet, and this tells macOS to
    allow it:
 
     ```
-    xattr -c ~/Downloads/logix-darwin-arm64-<date>.dmg
+    xattr -c ~/Downloads/logix-darwin-arm64-*.dmg
     ```
 
 3. Double-click the `.dmg` file and drag **Logix IDE** into the **Applications**
@@ -35,7 +35,7 @@ Later starts are quick and also work without internet.
 | What | Where |
 | :--- | :--- |
 | Your projects (by default) | `~/Documents/OpenLogix/IDE` |
-| The FPGA tools and settings | `~/.logix/ide` (about 3 GB) |
+| The FPGA tools and settings | `~/.logix/ide` |
 
 You can choose another projects folder in **Settings**.
 

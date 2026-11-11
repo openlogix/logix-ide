@@ -19,23 +19,8 @@ There's nothing else to install: Logix IDE downloads the FPGA tools it needs.
 
 ## 1. Install Logix IDE
 
-1. Download the newest `logix-darwin-arm64-<date>.dmg` from the
-   [releases page](https://github.com/openlogix/logix-ide/releases) to your
-   **Downloads** folder.
-2. Open **Terminal** and run this command. Logix IDE isn't signed with an
-   Apple Developer ID yet, and this tells macOS to allow it:
-
-    ```
-    xattr -c ~/Downloads/logix-darwin-arm64-*.dmg
-    ```
-
-3. In the **Finder**, double-click the `.dmg` file and drag **Logix IDE** into
-   the **Applications** folder.
-
-To uninstall it later, drag **Logix IDE** from **Applications** to the Trash
-and delete the `~/.logix/ide` folder, which holds its FPGA tools and settings.
-Your projects, in `~/Documents/OpenLogix/IDE` by default, stay where they are.
-[Installing](installing.md) has more details.
+Install Logix IDE as [Installing](installing.md) describes: download it,
+allow it to open, and drag it into the **Applications** folder.
 
 ## 2. Start Logix IDE
 
@@ -59,12 +44,12 @@ project and the examples:
 
 ![The start screen: New Project, Open Project, Examples and recent projects](images/start.png)
 
-## 3. Connect your board and choose it
+## 3. Connect your board and select it
 
-Connect the board to your Mac with its USB cable. Then choose it in the board
+Connect the board to your Mac with its USB cable. Then select it in the board
 list in the toolbar: type part of its name to find it. The list starts with
 the boards you've used recently, followed by every board grouped by FPGA
-family. The iCESugar v1.5 is chosen at first.
+family. The iCESugar v1.5 is selected at first.
 
 Next to the board list, **Not connected** changes to **Connected** when Logix
 IDE finds your board on USB.
@@ -88,14 +73,14 @@ Blinky opens as a new project. Its files are in tabs above the editor:
 
 Click **Verify** ![Verify button](images/icon-verify.png){ .toolbar-icon },
 the first button in the toolbar. Logix IDE checks the design for common
-mistakes and builds it. The status bar then says how much of the FPGA the
+errors and builds it. The status bar then says how much of the FPGA the
 design uses and how fast its clock can run:
 
 ```
 Build succeeded in 2.4 s. Uses 1% of logic cells, max clock 194.4 MHz.
 ```
 
-If there's a mistake, Logix IDE marks its line in the editor and the status
+If there's an error, Logix IDE marks its line in the editor and the status
 bar says what's wrong; hover over the mark to read the message. Syntax errors
 are marked as you type, before you click Verify:
 
@@ -144,7 +129,7 @@ blinks green.
 The design is stored in the board's flash memory, so it runs again whenever
 the board gets power, even without your Mac.
 
-## 11. Change the design
+## 11. Modify the design
 
 Now make it yours. In `main.v`, the counter's width `N` sets how fast the LED
 blinks: each step down doubles the speed. Find this line:
@@ -166,10 +151,10 @@ a folder for it, in `~/Documents/OpenLogix/IDE` by default, and lists it under
 
 Open the board list in the toolbar to see every board Logix IDE supports, 81
 so far. The **ⓘ** button next to the list opens the **Board Explorer**, with
-the chosen board's facts: its FPGA, what its pins connect to (the clock, LEDs,
+the selected board's facts: its FPGA, what its pins connect to (the clock, LEDs,
 buttons), how it's programmed, and its examples.
 
-## 14. Adjust the settings
+## 14. Explore the settings
 
 Choose **Logix IDE > Settings…** to change how Logix IDE works:
 
@@ -185,7 +170,7 @@ Choose **Logix IDE > Settings…** to change how Logix IDE works:
 
 | Problem | What to do |
 | :--- | :--- |
-| macOS says Logix IDE can't be opened | Run the `xattr -c` command from step 1 again, on the `.dmg` you downloaded, and install it again. |
+| macOS says Logix IDE can't be opened | Run the `xattr -c` command from [Installing](installing.md) again, then install it again. |
 | The FPGA tools don't download | A red bar shows the problem. Check your internet connection and click **Retry**. |
 | Upload can't find the board | Check that **Connected** shows next to the board list, and try another USB cable: some cables only charge. |
 | Your board isn't in the list | It isn't supported yet. To ask for it, choose **Help > Report a Problem**. |
