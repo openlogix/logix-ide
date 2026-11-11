@@ -207,13 +207,17 @@ jobs:
           cat RUN-SUMMARY.txt >> $GITHUB_STEP_SUMMARY
 
       # Notes for the release page.
+      - name: Checksums
+        run: |
+          cd _artifacts && sha256sum logix-*.dmg | tee ../SHA256SUMS
+
       - name: Prepare release text
         run: |
           cat > RELEASE-BODY.txt <<EOF
 
           **Logix IDE: The Arduino experience, for FPGAs.**
 
-          [Website](https://www.openlogix.org/ide/) · [Documentation](https://openlogix.github.io/logix-ide/)
+          [Main page](https://www.openlogix.org/ide/) · [Docs](https://www.openlogix.org/logix-ide/) · [Install guide](https://www.openlogix.org/logix-ide/installing/)
 
           ### Installing Logix IDE on macOS (Apple Silicon)
 
@@ -239,6 +243,12 @@ jobs:
 
           - Releases are created daily with a \`pre-release\` status, and only the newest ones (about 5) are kept, unless set to be \`stable\`.
           - To make a pre-release stable, edit it manually and change its status from \`Pre-release\` to \`None\`.
+
+          ### Checksums
+
+          \`\`\`
+          $(cat SHA256SUMS)
+          \`\`\`
           EOF
 
           cat -n RELEASE-BODY.txt
@@ -262,3 +272,4 @@ jobs:
           files: |
             _artifacts/logix-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
             BUILD-INFO.json
+            SHA256SUMS
