@@ -63,14 +63,14 @@
     <!-- A lit LED, what most first examples (Blinky) light up. Not a book,
          which reads as documentation. As wide as the other start screen
          icons, so it looks the same size. -->
-    <path d="M7 15V9a5 5 0 0 1 10 0v6" />
-    <line x1="5" y1="15" x2="19" y2="15" />
-    <line x1="10" y1="15" x2="10" y2="22" />
-    <line x1="14" y1="15" x2="14" y2="20" />
-    <line x1="2" y1="9" x2="3.5" y2="9" />
-    <line x1="20.5" y1="9" x2="22" y2="9" />
-    <line x1="3.3" y1="3.3" x2="4.4" y2="4.4" />
-    <line x1="20.7" y1="3.3" x2="19.6" y2="4.4" />
+    <path d="M6 15V9a6 6 0 0 1 12 0v6" />
+    <line x1="4" y1="15" x2="20" y2="15" />
+    <line x1="9.5" y1="15" x2="9.5" y2="22.5" />
+    <line x1="14.5" y1="15" x2="14.5" y2="20.5" />
+    <line x1="1" y1="9" x2="2.5" y2="9" />
+    <line x1="21.5" y1="9" x2="23" y2="9" />
+    <line x1="2.3" y1="2.3" x2="3.4" y2="3.4" />
+    <line x1="21.7" y1="2.3" x2="20.6" y2="3.4" />
   {:else if name === "chip"}
     <!-- A chip with pins on both sides: a pin file (not a push pin, which
          reads as "pin this tab") -->
