@@ -196,12 +196,22 @@ fn console_log(app: &AppHandle) -> impl Fn(String) + Send + Sync + Clone + 'stat
 
 /// The running engine, or a user-facing error if setup hasn't finished.
 async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>, UserError> {
-    state
-        .engine
-        .lock()
-        .await
-        .clone()
-        .ok_or_else(|| anyhow!("The FPGA tools aren't ready yet.").into())
+    let mut slot = state.engine.lock().await;
+    match slot.as_ref() {
+        Some(engine) if !engine.has_stopped() => Ok(engine.clone()),
+        // It stopped, such as after a crash: start it again. Its packages
+        // are downloaded already.
+        Some(_) => {
+            crate::log!("Logix Engine stopped; starting it again");
+            let (started, _) = engine::start_engine(|_| {})
+                .await
+                .context("Logix Engine stopped, and couldn't start again.")?;
+            let started = std::sync::Arc::new(started);
+            *slot = Some(started.clone());
+            Ok(started)
+        }
+        None => Err(anyhow!("The FPGA tools aren't ready yet.").into()),
+    }
 }
 
 /// The board and example lists (fetched on first use): the engine's
@@ -506,6 +516,13 @@ pub async fn run_task(
         target: testbench.as_deref(),
         device: device.as_deref(),
         redraw_diagram: task == outcome::Task::Build && diagram_window::is_open(&app, &key_kept),
+        // Show Diagram starts at the chosen module; Verify redraws the
+        // module the window shows.
+        diagram_module: if task == outcome::Task::Diagram {
+            testbench.clone()
+        } else {
+            diagram_window::module(&key_kept)
+        },
     };
     let channel = on_event.clone();
     let send = move |event| {
@@ -526,14 +543,21 @@ pub async fn run_task(
                 n.to_string_lossy().into_owned()
             });
         let opening = task == outcome::Task::Diagram;
-        let module = testbench.clone().filter(|_| opening);
+        let module = if opening {
+            testbench.clone()
+        } else {
+            diagram_window::module(&key_kept)
+        };
         let shown = on_main_thread(&app, {
             let (app, key, names) = (app.clone(), key_kept.clone(), names.clone());
             move || {
                 diagram_window::show(
                     &app,
                     &key,
-                    &format!("Diagram · {name}"),
+                    &match module.as_deref() {
+                        Some(m) if m != "main" => format!("Diagram · {name} · {m}"),
+                        _ => format!("Diagram · {name}"),
+                    },
                     page,
                     names,
                     module.as_deref(),
@@ -1331,9 +1355,12 @@ pub fn show_output_menu(window: tauri::WebviewWindow) -> Result<(), UserError> {
 pub fn show_editor_menu(
     window: tauri::WebviewWindow,
     state: State<'_, AppState>,
+    module: Option<String>,
 ) -> Result<(), UserError> {
     let menu_state = state.menu_state.lock().unwrap().clone();
-    crate::menu::show_editor_menu(&window, &menu_state).context("Can't show the editor menu")?;
+    let module = module.filter(|m| project::is_verilog_identifier(m));
+    crate::menu::show_editor_menu(&window, &menu_state, module.as_deref())
+        .context("Can't show the editor menu")?;
     Ok(())
 }
 

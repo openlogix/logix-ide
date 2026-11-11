@@ -102,6 +102,9 @@ pub struct TaskInput<'a> {
     /// For Verify: draw the diagram again after a successful build, for
     /// the project's open Diagram window.
     pub redraw_diagram: bool,
+    /// The module the diagram starts at (`main` if `None`), for Show
+    /// Diagram and the redraw.
+    pub diagram_module: Option<String>,
 }
 
 /// The engine's build folder inside the prepared folder: `_build` (the
@@ -501,7 +504,7 @@ where
                     "board_variant": input.board_variant,
                     "custom_boards_folder": self.custom_boards_folder,
                     "display_paths": self.display_paths,
-                    "top_module": TOP_MODULE,
+                    "top_module": input.diagram_module.as_deref().unwrap_or(TOP_MODULE),
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -986,6 +989,7 @@ mod tests {
             target: None,
             device: None,
             redraw_diagram: false,
+            diagram_module: None,
         };
         let cancel = CancellationToken::new();
         let good = run(&engine, Task::Build, &input, sink.clone(), &cancel)
@@ -1172,6 +1176,7 @@ mod tests {
                     target: None,
                     device: None,
                     redraw_diagram: false,
+                    diagram_module: None,
                 };
                 let mut problems = Vec::new();
                 let build = run(engine, Task::Build, &input, |_| {}, cancel)
@@ -1277,6 +1282,7 @@ mod tests {
                 target,
                 device: None,
                 redraw_diagram: false,
+                diagram_module: None,
             };
             let engine = &engine;
             let path = out.join(name);

@@ -39,6 +39,8 @@ struct Page {
     key: String,
     /// The project's file names: the only files a click may open.
     files: Vec<String>,
+    /// The module the diagram starts at, when it isn't the top module.
+    module: Option<String>,
 }
 
 static PAGES: Mutex<Option<HashMap<String, Page>>> = Mutex::new(None);
@@ -55,17 +57,23 @@ pub fn is_open(app: &AppHandle, key: &str) -> bool {
     app.get_webview_window(&label(key)).is_some()
 }
 
-/// The page's address: `#module` opens that module first.
-fn page_url(label: &str, module: Option<&str>) -> String {
-    let base = if cfg!(windows) {
+/// The page's address.
+fn page_url(label: &str) -> String {
+    if cfg!(windows) {
         format!("http://{SCHEME}.localhost/{label}")
     } else {
         format!("{SCHEME}://localhost/{label}")
-    };
-    match module {
-        Some(m) => format!("{base}#{m}"),
-        None => base,
     }
+}
+
+/// The module the project's diagram starts at, when it isn't the top
+/// module: Verify draws the same one again.
+pub fn module(key: &str) -> Option<String> {
+    module_of(&label(key))
+}
+
+fn module_of(label: &str) -> Option<String> {
+    PAGES.lock().unwrap().as_ref()?.get(label)?.module.clone()
 }
 
 /// What the main window gets when the user clicks a block.
@@ -94,9 +102,10 @@ fn open_source_request(url: &tauri::Url, files: &[String]) -> Option<(String, u3
         .then_some((file, line.unwrap_or(1).max(1)))
 }
 
-/// Shows the project's diagram: opens its window, or updates the open one
-/// in place (it stays on the module it shows). `module` is the module to
-/// open a new window on; `focus` brings the window to the front.
+/// Shows the project's diagram: opens its window, or updates the open one.
+/// `module` is the module the diagram starts at (None: the top module); a
+/// diagram from the same module reloads in place, staying on the module it
+/// shows. `focus` brings the window to the front.
 pub fn show(
     app: &AppHandle,
     key: &str,
@@ -107,7 +116,8 @@ pub fn show(
     focus: bool,
 ) -> tauri::Result<()> {
     let label = label(key);
-    PAGES
+    let module = module.filter(|m| *m != "main").map(str::to_string);
+    let before = PAGES
         .lock()
         .unwrap()
         .get_or_insert_with(HashMap::new)
@@ -117,13 +127,15 @@ pub fn show(
                 html,
                 key: key.to_string(),
                 files,
+                module: module.clone(),
             },
         );
     if let Some(window) = app.get_webview_window(&label) {
         window.set_title(title)?;
-        match module {
-            Some(_) => window.navigate(page_url(&label, module).parse().expect("a valid URL"))?,
-            None => window.eval("location.reload()")?,
+        if before.is_some_and(|b| b.module == module) {
+            window.eval("location.reload()")?;
+        } else {
+            window.navigate(page_url(&label).parse().expect("a valid URL"))?;
         }
         if focus {
             window.unminimize()?;
@@ -133,7 +145,7 @@ pub fn show(
     }
     let handle = app.clone();
     let for_navigation = label.clone();
-    let url = page_url(&label, module).parse().expect("a valid URL");
+    let url = page_url(&label).parse().expect("a valid URL");
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(url))
         .title(title)
         .inner_size(1000.0, 700.0)
@@ -266,17 +278,16 @@ mod tests {
                     html: "<html>ok</html>".into(),
                     key: "k".into(),
                     files: vec![],
+                    module: Some("alu".into()),
                 },
             );
+        assert_eq!(module_of("diagram-test"), Some("alu".into()));
         let r = serve("/diagram-test");
         assert_eq!(r.status(), 200);
         assert_eq!(r.body(), b"<html>ok</html>");
         assert_eq!(serve("/diagram-none").status(), 404);
         forget("diagram-test");
         assert_eq!(serve("/diagram-test").status(), 404);
-        assert_eq!(
-            page_url("diagram-1", Some("uart")),
-            "logix-diagram://localhost/diagram-1#uart"
-        );
+        assert_eq!(page_url("diagram-1"), "logix-diagram://localhost/diagram-1");
     }
 }

@@ -928,6 +928,25 @@ test("shows the design diagram and goes to a block's source", async ({ page }) =
   await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.diagramClick("other", "main.v", 1));
 });
 
+test("the editor's right-click menu shows the diagram of the module at the cursor", async ({ page }) => {
+  await start(page);
+  await chooseBoard(page);
+  type Fake = {
+    menu: (id: string) => void;
+    editorMenuModule: string | null;
+    diagramShown: { key: string; module: string | null } | null;
+  };
+  await page.locator(".cm-content").click({ button: "right" });
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.editorMenuModule))
+    .toBe("main");
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.menu("show-module-diagram"));
+  await expect(status(page)).toContainText("Diagram ready");
+  // main is the top module: the diagram starts there.
+  const shown = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.diagramShown);
+  expect(shown?.module).toBeNull();
+});
+
 test("a local engine is shown for the whole session", async ({ page }) => {
   await page.goto("/?devEngine");
   const banner = page.getByRole("status").filter({ hasText: "local Logix Engine" });

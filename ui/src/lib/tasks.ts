@@ -12,7 +12,7 @@ const VERB: Record<Task, { running: string; done: string; noun: string }> = {
     noun: "Simulation",
   },
   diagram: {
-    running: "Drawing the diagram…",
+    running: "Preparing the diagram…",
     done: "Diagram ready",
     noun: "Diagram",
   },

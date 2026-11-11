@@ -218,6 +218,11 @@ Clocks and resets that go to many blocks are drawn as labels with their
 name, instead of long wires, and fixed values as labels with the value.
 After each **Verify**, the open diagram is drawn again.
 
+To see one module, right-click in its code and choose **Show Diagram of
+<module>**: the diagram starts at that module, with the modules it uses. A
+diagram shows three levels of modules below where it starts; open a deeper
+one by its own Show Diagram.
+
 ![The diagram of the blinky design](images/diagram.png)
 
 ## Connected devices

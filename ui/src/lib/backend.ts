@@ -452,6 +452,7 @@ export type MenuId =
   | "output-select-all"
   | "clear-output"
   | "run-this-test"
+  | "show-module-diagram"
   | "simulate-this-test"
   | "system-info"
   // Not a menu item: the recent projects list changed (Clear Menu).
@@ -798,7 +799,12 @@ export const backend = {
   showOutputMenu: (): Promise<void> => invoke<void>("show_output_menu"),
 
   /** Shows the editor's right-click menu, its items as in `setMenuState`. */
-  showEditorMenu: (): Promise<void> => invoke<void>("show_editor_menu"),
+  /**
+   * Shows the editor's right-click menu; with a module, it offers Show
+   * Diagram of that module.
+   */
+  showEditorMenu: (module: string | null): Promise<void> =>
+    invoke<void>("show_editor_menu", { module }),
 
   /**
    * What the menu items can act on now; the others are greyed out, in the

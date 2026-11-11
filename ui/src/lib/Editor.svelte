@@ -258,6 +258,11 @@
     view?.focus();
   }
 
+  /** The cursor's offset in the shown file, or null with none shown. */
+  export function cursorOffset(): number | null {
+    return view ? view.state.selection.main.head : null;
+  }
+
   /** Jumps to where the name at the cursor is defined (live checking). */
   export function goToDefinition() {
     if (!view) return;

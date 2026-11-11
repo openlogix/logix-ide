@@ -90,6 +90,20 @@ export function projectModules(p: WorkingProject): string[] {
   return names.has("main") ? ["main", ...rest] : rest;
 }
 
+/**
+ * The module the cursor at `offset` is in: the last module declared before
+ * it, else the file's first one; null with none.
+ */
+export function moduleAt(text: string, offset: number): string | null {
+  let found: string | null = null;
+  for (const m of text.matchAll(/^\s*module\s+([A-Za-z_][\w$]*)/gm)) {
+    if (m.index! > offset && found !== null) break;
+    found = m[1];
+    if (m.index! > offset) break;
+  }
+  return found;
+}
+
 /** Identifies the project for its build folder (see build_dir.rs). */
 export function buildKey(p: WorkingProject): string {
   return p.dir ?? p.templateDir ?? "untitled";

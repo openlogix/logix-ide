@@ -245,6 +245,8 @@ const handlers: {
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
 const fake = {
   menu: (id: MenuId) => handlers.menu?.(id),
+  /** The module the last editor right-click menu offered the diagram of. */
+  editorMenuModule: null as string | null,
   /** The project and module the last Show Diagram opened its window on. */
   diagramShown: null as { key: string; module: string | null } | null,
   /** A click on a block in the Diagram window. */
@@ -698,8 +700,9 @@ export const backend: typeof Real.backend = {
   showOutputMenu: async () => {
     fake.outputMenu += 1;
   },
-  showEditorMenu: async () => {
+  showEditorMenu: async (module) => {
     fake.editorMenu = fake.menuState && { ...fake.menuState };
+    fake.editorMenuModule = module;
   },
   setMenuState: async (menu) => {
     fake.menuState = menu;

@@ -237,7 +237,7 @@ pub struct CallOptions {
 pub struct Engine {
     service: RunningService<RoleClient, ()>,
     listeners: Arc<Mutex<Listeners>>,
-    _child: tokio::process::Child,
+    child: std::sync::Mutex<tokio::process::Child>,
 }
 
 impl Engine {
@@ -266,8 +266,23 @@ impl Engine {
         Ok(Engine {
             service,
             listeners,
-            _child: child,
+            child: std::sync::Mutex::new(child),
         })
+    }
+
+    /// Whether the engine's process has exited, such as after a crash: the
+    /// IDE then starts it again (`commands::ready_engine`).
+    pub fn has_stopped(&self) -> bool {
+        self.child
+            .lock()
+            .map(|mut c| c.try_wait().ok().flatten().is_some())
+            .unwrap_or(true)
+    }
+
+    /// Stops the engine's process, as a crash would.
+    #[cfg(test)]
+    pub fn kill_for_test(&self) {
+        let _ = self.child.lock().unwrap().start_kill();
     }
 
     /// Calls a tool with `args` (a JSON object). With `on_progress`, passes
@@ -337,7 +352,7 @@ impl Engine {
             return Ok(Err(json!({"category": "cancelled", "message": "Stopped."})));
         };
         let response = response
-            .map_err(|_| anyhow!("the engine stopped while running {name}"))?
+            .map_err(|_| anyhow!("Logix Engine stopped while running {name}; it starts again with the next command"))?
             .map_err(|e| anyhow!("the engine didn't answer {name}: {e}"))?;
         let result = match response {
             ServerResult::CallToolResult(result) => result,

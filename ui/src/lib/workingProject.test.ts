@@ -11,6 +11,7 @@ import {
   isDirty,
   isHdlSource,
   projectModules,
+  moduleAt,
   isFileDirty,
   mainFile,
   markSaved,
@@ -205,5 +206,18 @@ describe("file roles", () => {
   it("explains the roles in the tooltips", () => {
     expect(roleTooltip("main")).toBe("Main file: the design's top module, named main.");
     expect(roleTooltip("testbench")).toMatch(/^Testbench: .* Double-click to rename/);
+  });
+});
+
+describe("moduleAt", () => {
+  const text = "// top\nmodule main(input a);\nendmodule\n\nmodule alu #(parameter W = 8) (input b);\nendmodule\n";
+  it("is the module the cursor is in", () => {
+    expect(moduleAt(text, text.indexOf("input a"))).toBe("main");
+    expect(moduleAt(text, text.indexOf("input b"))).toBe("alu");
+    expect(moduleAt(text, text.length)).toBe("alu");
+  });
+  it("is the first module before any, and none without", () => {
+    expect(moduleAt(text, 0)).toBe("main");
+    expect(moduleAt("// nothing", 3)).toBeNull();
   });
 });

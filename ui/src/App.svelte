@@ -65,6 +65,7 @@
     roleTooltip,
     filesForSave,
     findFile,
+    moduleAt,
     fromDoc,
     isHdlSource,
     isTestbench,
@@ -890,7 +891,7 @@
     upload: "Uploading",
     test: "Testing",
     simulate: "Simulating",
-    diagram: "Drawing the diagram of",
+    diagram: "Preparing the diagram of",
     report: "Building the report of",
   };
 
@@ -1052,6 +1053,20 @@
    */
   function showDiagram(module: string | null) {
     runTask("diagram", module === "main" ? null : module);
+  }
+
+  /** The module the editor's right-click menu offers the diagram of. */
+  let menuModule: string | null = null;
+
+  /** The editor's right-click menu, with Show Diagram of the module at the cursor. */
+  function openEditorMenu() {
+    const file = project ? findFile(project, activeFile) : null;
+    const offset = editor?.cursorOffset() ?? null;
+    menuModule =
+      file && offset !== null && isHdlSource(file.name) && !isTestbench(file.name)
+        ? moduleAt(file.text, offset)
+        : null;
+    backend.showEditorMenu(menuModule);
   }
 
   /** A block clicked in the Diagram window: its source in the editor. */
@@ -1791,6 +1806,11 @@
       clearOutput();
       return;
     }
+    // The editor's right-click menu: the diagram of the module at the cursor.
+    if (id === "show-module-diagram") {
+      if (project && menuModule) showDiagram(menuModule);
+      return;
+    }
     // The editor's right-click menu, in a testbench (as on its tab).
     if (id === "run-this-test" || id === "simulate-this-test") {
       if (project && isTestbench(activeFile)) {
@@ -1828,6 +1848,7 @@
         | "recents-changed"
         | "run-this-test"
         | "simulate-this-test"
+        | "show-module-diagram"
       >,
       () => Promise<unknown>
     > = {
@@ -2302,7 +2323,7 @@
         <Editor
           bind:this={editor}
           onChange={onEdit}
-          onContextMenu={() => backend.showEditorMenu()}
+          onContextMenu={openEditorMenu}
           {dark}
           {lsp}
           projectDir={project?.dir ?? null}

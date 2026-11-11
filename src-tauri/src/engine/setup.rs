@@ -274,6 +274,21 @@ mod tests {
             .unwrap()
             .unwrap_err();
         assert_eq!(err["category"], "request");
+        // A stopped engine (as after a crash) is noticed, so the IDE can
+        // start it again.
+        assert!(!engine.has_stopped());
+        engine.kill_for_test();
+        for _ in 0..50 {
+            if engine.has_stopped() {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+        assert!(engine.has_stopped());
+        assert!(engine
+            .call("get_engine_info", json!({}), None)
+            .await
+            .is_err());
     }
 
     /// Downloads the real `logix-catalog` package (30 KB) through the setup's

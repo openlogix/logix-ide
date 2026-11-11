@@ -49,6 +49,8 @@ pub const OUTPUT_SELECT_ALL: &str = "output-select-all";
 pub const CLEAR_OUTPUT: &str = "clear-output";
 /// Editor right-click menu, in a testbench: run or simulate that testbench.
 pub const RUN_THIS_TEST: &str = "run-this-test";
+/// The editor's right-click menu: the diagram of the module at the cursor.
+pub const SHOW_MODULE_DIAGRAM: &str = "show-module-diagram";
 pub const SIMULATE_THIS_TEST: &str = "simulate-this-test";
 /// Sent to the UI (as a `menu` event) when File > Open Recent > Clear Menu
 /// emptied the list, so the start screen reloads its recent projects.
@@ -396,7 +398,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
         | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST
-        | BOARD_EXPLORER | SYSTEM_INFO | BUILD_REPORT => {
+        | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER | SYSTEM_INFO | BUILD_REPORT => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {
@@ -448,6 +450,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
 pub fn show_editor_menu<R: Runtime>(
     window: &WebviewWindow<R>,
     state: &MenuState,
+    module: Option<&str>,
 ) -> tauri::Result<()> {
     let item = |id: &str, text: &str, accel: &str| {
         MenuItemBuilder::with_id(id, text)
@@ -472,6 +475,14 @@ pub fn show_editor_menu<R: Runtime>(
             .item(&MenuItemBuilder::with_id(SIMULATE_THIS_TEST, "Simulate").build(window)?)
     } else {
         menu
+    };
+    // In a design file: the diagram of the module at the cursor.
+    let menu = match module.filter(|_| state.project && !state.testbench_open) {
+        Some(m) => menu.separator().item(
+            &MenuItemBuilder::with_id(SHOW_MODULE_DIAGRAM, format!("Show Diagram of {m}"))
+                .build(window)?,
+        ),
+        None => menu,
     };
     let menu = menu.build()?;
     menu.popup(window.as_ref().window())
