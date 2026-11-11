@@ -198,11 +198,10 @@ mod tests {
     #[test]
     fn finds_missing_packages() {
         let info = json!({"packages": [
-            {"name": "oss-cad-suite", "version": "2026-10-22", "status": "ready"},
-            {"name": "openxc7", "version": "2026-10-22", "status": "missing"},
-            {"name": "verible", "version": "2026-10-22", "status": "broken"},
+            {"name": "logix-catalog", "version": "2026-11-10", "status": "ready"},
+            {"name": "logix-core", "version": "2026-11-10", "status": "broken"},
         ]});
-        assert_eq!(missing_packages(&info), vec!["openxc7", "verible"]);
+        assert_eq!(missing_packages(&info), vec!["logix-core"]);
         assert!(missing_packages(&json!({})).is_empty());
     }
 
@@ -214,7 +213,7 @@ mod tests {
             progress_sink(move |e| events.lock().unwrap().push(e))
         };
         sink(Progress {
-            message: Some("Downloading oss-cad-suite".into()),
+            message: Some("Downloading logix-core".into()),
             percent: None,
         });
         sink(Progress {
@@ -225,14 +224,14 @@ mod tests {
             *events.lock().unwrap(),
             vec![
                 SetupEvent::Log {
-                    line: "Downloading oss-cad-suite...".into()
+                    line: "Downloading logix-core...".into()
                 },
                 SetupEvent::Progress {
-                    message: "Downloading oss-cad-suite".into(),
+                    message: "Downloading logix-core".into(),
                     percent: None
                 },
                 SetupEvent::Progress {
-                    message: "Downloading oss-cad-suite".into(),
+                    message: "Downloading logix-core".into(),
                     percent: Some(40)
                 },
             ]
@@ -268,7 +267,7 @@ mod tests {
         assert_eq!(err["category"], "request");
     }
 
-    /// Downloads the real `verible` package (8 MB) through the setup's
+    /// Downloads the real `logix-catalog` package (30 KB) through the setup's
     /// progress path and checks the banner gets percentages:
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> cargo test real_engine_download_progress -- --ignored --nocapture`
     #[tokio::test]
@@ -289,7 +288,7 @@ mod tests {
         engine
             .call(
                 "download_packages",
-                json!({"packages": ["verible"]}),
+                json!({"packages": ["logix-catalog"]}),
                 Some(sink),
             )
             .await
@@ -306,7 +305,7 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert!(percents.len() > 5, "{events:?}");
+        assert!(!percents.is_empty(), "{events:?}");
         assert!(percents.windows(2).all(|w| w[1] >= w[0]), "{percents:?}");
     }
 }

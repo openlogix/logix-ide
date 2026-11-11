@@ -8,7 +8,7 @@ fn main() {
     tauri_build::build()
 }
 
-/// The Logix Engine release Logix uses is pinned in package.json
+/// The Logix Engine release Logix IDE uses is pinned in package.json
 /// (`appConstants`). Passes it to the code as LOGIX_IDE_BUILD_ENGINE_REPO /
 /// LOGIX_IDE_BUILD_ENGINE_TAG (see engine/mod.rs).
 fn pinned_releases() {

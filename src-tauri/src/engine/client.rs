@@ -30,7 +30,7 @@ use tokio_util::sync::CancellationToken;
 /// Progress of one engine operation, as the engine reports it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Progress {
-    /// The current phase's message, such as "Downloading oss-cad-suite".
+    /// The current phase's message, such as "Downloading logix-core".
     /// Only sent when a phase starts.
     pub message: Option<String>,
     /// The current phase's percentage, when the phase has one.

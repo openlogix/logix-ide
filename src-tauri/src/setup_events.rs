@@ -33,7 +33,7 @@ pub enum SetupEvent {
         total: Option<u64>,
     },
     /// The engine's download progress: the current phase's message (such as
-    /// "Downloading oss-cad-suite") and its percentage, when known.
+    /// "Downloading logix-core") and its percentage, when known.
     Progress {
         message: String,
         percent: Option<u32>,
