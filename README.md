@@ -1,11 +1,17 @@
-# Logix IDE
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://www.openlogix.org/brand/readme/ide-dark.svg">
+  <img alt="Logix IDE" src="https://www.openlogix.org/brand/readme/ide-light.svg" height="96">
+</picture>
 
-**[Main page](https://www.openlogix.org/ide/)** · [Docs](https://www.openlogix.org/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases) · GitHub (here)
+[![License: MIT or Apache 2.0](https://img.shields.io/badge/License-MIT%20or%20Apache%202.0-blue)](#license)
+
+<img src="https://www.openlogix.org/brand/readme/macos.svg" height="40" alt="macOS (Apple Silicon)" title="macOS (Apple Silicon)">
 
 [![test](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/test.yaml?branch=main&event=schedule&label=test)](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml)
 [![build](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/build-pre-release.yaml?branch=main&event=schedule&label=build)](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml)
 [![docs](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/publish-docs.yaml?branch=main&event=schedule&label=docs)](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml)
-![macOS Apple Silicon](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white)
+
+**[Main page](https://www.openlogix.org/ide/)** · [Docs](https://www.openlogix.org/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases) · GitHub (here)
 
 **The Arduino experience, for FPGAs.**
 
