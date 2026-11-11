@@ -409,7 +409,12 @@
       catalogBoards = boardList;
       recentBoards = await backend.recentBoards();
       examples = exampleList.examples;
-      log(examplesSummary(exampleList.examples.length, exampleList.hidden));
+      // Loaded while the FPGA tools may still be downloading: say so, so
+      // the line doesn't read as the end of setup.
+      log(
+        examplesSummary(exampleList.examples.length, exampleList.hidden) +
+          (stage === "ready" ? "" : " The FPGA tools are still downloading."),
+      );
     } catch (e) {
       catalogLoaded = false;
       showFileError(e);

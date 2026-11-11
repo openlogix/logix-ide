@@ -116,7 +116,7 @@ pub async fn setup(
             let _ = channel.send(event);
         };
         let result = async {
-            let (started, info) = engine::start_engine(emit.clone()).await?;
+            let (started, _info) = engine::start_engine(emit.clone()).await?;
             // The boards and examples need no FPGA tools: list them before
             // downloading those, so the start screen's Examples work meanwhile.
             match build_catalog(&started).await {
@@ -126,7 +126,7 @@ pub async fn setup(
                 }
                 Err(e) => crate::log!("Board list before the download failed: {e:#}"),
             }
-            engine::download_missing(&started, &info, emit).await?;
+            engine::download_missing(&started, emit).await?;
             anyhow::Ok(started)
         }
         .await;

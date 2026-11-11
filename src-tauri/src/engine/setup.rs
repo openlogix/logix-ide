@@ -79,11 +79,20 @@ where
 }
 
 /// Lets the started engine download its missing packages (the FPGA tools),
-/// with progress, when `info` (its `get_engine_info`) says some are missing.
-pub async fn download_missing<F>(engine: &Engine, info: &Value, emit: F) -> Result<()>
+/// with progress. Asks the engine which are missing now: the board list,
+/// loaded first, has the engine download the small logix-catalog package
+/// itself, so the status read at startup is out of date.
+pub async fn download_missing<F>(engine: &Engine, emit: F) -> Result<()>
 where
     F: Fn(SetupEvent) + Send + Sync + Clone + 'static,
 {
+    let info = engine
+        .call("get_engine_info", json!({}), None)
+        .await
+        .context(MSG_PACKAGES)?
+        .map_err(|e| tool_error("get_engine_info", &e))
+        .context(MSG_PACKAGES)?;
+    let info = &info;
     let log = {
         let emit = emit.clone();
         move |line: String| emit(SetupEvent::Log { line })
