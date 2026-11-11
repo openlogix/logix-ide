@@ -1,12 +1,13 @@
 # Logix IDE
 
-[![Build](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml)
-[![Tests](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml)
-[![Docs](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml/badge.svg?branch=main)](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml)
+**[Main page](https://www.openlogix.org/ide/)** · [Docs](https://www.openlogix.org/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases) · GitHub (here)
+
+[![test](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/test.yaml?branch=main&label=test)](https://github.com/openlogix/logix-ide/actions/workflows/test.yaml)
+[![build](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/build-pre-release.yaml?branch=main&label=build)](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml)
+[![docs](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/publish-docs.yaml?branch=main&label=docs)](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml)
+![macOS Apple Silicon](https://img.shields.io/badge/macOS-Apple%20Silicon-000000?logo=apple&logoColor=white)
 
 **The Arduino experience, for FPGAs.**
-
-**[Main page](https://www.openlogix.org/ide/)** · [Docs](https://www.openlogix.org/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases) · GitHub (here)
 
 Logix IDE is a simple, friendly app for programming FPGA boards. If you've used the
 Arduino IDE, you already know how it works: write your design, click
