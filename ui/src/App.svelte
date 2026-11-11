@@ -358,7 +358,8 @@
       stage = "ready";
       // Boards and examples first (unless loaded while the FPGA tools
       // downloaded), so "Ready." comes last.
-      if (!catalogLoaded) await loadCatalog();
+      await loadCatalog();
+      if (examplesLine) log(examplesLine);
       startLsp();
       log("Ready.");
       startedUp = true;
@@ -396,29 +397,32 @@
   let examplesOpen = $state(false);
 
   /** The board and example lists are loaded (`loadCatalog`). */
-  let catalogLoaded = false;
+  /** The boards and examples load, started once (on catalogReady, or when
+   * setup is done); awaited by setup so its lines come in order. */
+  let catalogLoading: Promise<void> | null = null;
 
-  async function loadCatalog() {
-    if (catalogLoaded) return;
-    catalogLoaded = true;
-    try {
-      const [boardList, exampleList] = await Promise.all([
-        backend.getBoards(),
-        backend.getExamples(),
-      ]);
-      catalogBoards = boardList;
-      recentBoards = await backend.recentBoards();
-      examples = exampleList.examples;
-      // Loaded while the FPGA tools may still be downloading: say so, so
-      // the line doesn't read as the end of setup.
-      log(
-        examplesSummary(exampleList.examples.length, exampleList.hidden) +
-          (stage === "ready" ? "" : " The FPGA tools are still downloading."),
-      );
-    } catch (e) {
-      catalogLoaded = false;
-      showFileError(e);
-    }
+  /** The example count line, printed once setup is done. */
+  let examplesLine = "";
+
+  function loadCatalog(): Promise<void> {
+    catalogLoading ??= (async () => {
+      try {
+        const [boardList, exampleList] = await Promise.all([
+          backend.getBoards(),
+          backend.getExamples(),
+        ]);
+        catalogBoards = boardList;
+        recentBoards = await backend.recentBoards();
+        examples = exampleList.examples;
+        // Printed when setup is done (runSetup), not here: the list may
+        // load while the FPGA tools still download.
+        examplesLine = examplesSummary(exampleList.examples.length, exampleList.hidden);
+      } catch (e) {
+        catalogLoading = null;
+        showFileError(e);
+      }
+    })();
+    return catalogLoading;
   }
 
   // ---- Connected devices (the board list's device groups) ----
