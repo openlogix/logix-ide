@@ -1,15 +1,17 @@
 # Builds the Logix IDE installers and publishes them as a GitHub pre-release
 # tagged with the date (yyyy-mm-dd). A pre-release with the same tag is
 # replaced, so the day's pre-release is from its latest commit; a stable
-# release with that tag is never touched (the run fails instead). Only the
-# newest pre-releases are kept (about 5).
+# release with that tag is never touched (the run fails instead). Old
+# pre-releases are deleted by the shared policy.
 #
-# Runs on every push to main, daily, and manually. A newer run cancels a running one: only the latest commit's
-# build matters.
+# Runs on every push to main, daily, and manually. A newer run cancels a
+# running one: only the latest commit's build matters.
 #
-# The steps use the shared Open Logix actions in openlogix/.github
-# (actions/, tested there). Only macOS (Apple Silicon) for now; Linux and Windows
-# will be added as separate build-<platform>.yaml workflows.
+# The shared parts are Open Logix actions in openlogix/.github (tested
+# there): start-pre-release, read-build-info and publish-pre-release, which
+# also writes the standard release text and applies the pre-release policy.
+# Only macOS (Apple Silicon) for now; Linux and Windows will be added as
+# separate build-<platform>.yaml workflows.
 
 name: build-pre-release
 
@@ -37,15 +39,6 @@ concurrency:
   group: build-pre-release
   cancel-in-progress: true
 
-env:
-  # These are set later.
-  RELEASE_TAG: ""
-  PACKAGE_TAG: ""
-  REPO: ""
-  REPO_BRANCH: ""
-  REPO_COMMIT: ""
-  LOGIX_IDE_BUILD_VERSION: ""
-
 jobs:
   # ----- Collect the build parameters.
 
@@ -56,65 +49,16 @@ jobs:
       - name: Checkout this repo
         uses: actions/checkout@v7
 
-      - name: Get release and package tags
-        uses: openlogix/.github/actions/get-release-and-package-tags@v1
-        with:
-          release-tag-var: RELEASE_TAG
-          package-tag-var: PACKAGE_TAG
-
-      - name: Early check for no conflicting release
-        uses: openlogix/.github/actions/ensure-no-conflicting-release@v1
-        with:
-          release-tag: ${{ env.RELEASE_TAG }}
-          just-check: true
-
-      # The repo name is normalized to lowercase, e.g. openlogix/logix-ide.
-      - name: Get repo info
-        uses: openlogix/.github/actions/get-repo-info@v1
-        with:
-          repo-dir: .
-          repo-var: REPO
-          branch-var: REPO_BRANCH
-          commit-var: REPO_COMMIT
-
       - name: Get Logix IDE version
-        run: |
-          version="$(jq -r .version src-tauri/tauri.conf.json)"
-          echo "LOGIX_IDE_BUILD_VERSION=$version"
-          echo "LOGIX_IDE_BUILD_VERSION=$version" >> "$GITHUB_ENV"
+        id: version
+        run: echo "version=$(jq -r .version src-tauri/tauri.conf.json)" >> "$GITHUB_OUTPUT"
 
-      # The build configuration passed to the other jobs.
-      - name: Create build info
-        run: |
-          cat > BUILD-INFO.json <<EOF
-          {
-            "package-name": "logix",
-            "description": "The Arduino experience, for FPGAs",
-            "logix-version": "$LOGIX_IDE_BUILD_VERSION",
-            "repo": "${REPO}",
-            "repo-branch": "${REPO_BRANCH}",
-            "repo-commit": "${REPO_COMMIT}",
-            "release-tag": "$RELEASE_TAG",
-            "package-tag": "$PACKAGE_TAG",
-            "build-time": "$(date +'%Y-%m-%d %H:%M:%S %Z')",
-            "builder-workflow": "${{ github.workflow }}",
-            "workflow-run-id": "${{ github.run_id }}",
-            "workflow-run-number": "${{ github.run_number }}"
-          }
-          EOF
-          cat -n BUILD-INFO.json
-
-      - name: Format build info json file in-place
-        uses: openlogix/.github/actions/format-json-file@v1
+      - name: Start the pre-release
+        uses: openlogix/.github/actions/start-pre-release@main
         with:
-          json-file: BUILD-INFO.json
-
-      - name: Upload the build info artifact
-        uses: actions/upload-artifact@v7
-        with:
-          if-no-files-found: error
-          name: build-info
-          path: BUILD-INFO.json
+          package-name: logix-ide
+          description: The Arduino experience, for FPGAs.
+          extra-fields: '{"logix-ide-version": "${{ steps.version.outputs.version }}"}'
 
   # ----- Per-platform builds, each on its own runner.
 
@@ -133,92 +77,27 @@ jobs:
       contents: write
 
     steps:
-      - name: Download the artifacts
+      - name: Read the build info
+        uses: openlogix/.github/actions/read-build-info@main
+
+      - name: Download the installers
         uses: actions/download-artifact@v8
         with:
+          pattern: logix-*
           merge-multiple: true
           path: _artifacts
 
-      - name: Scan the packages for viruses
-        uses: openlogix/.github/actions/scan-files-for-viruses@v1
+      - name: Scan the installers for viruses
+        uses: openlogix/.github/actions/scan-files-for-viruses@main
         with:
           file-patterns: |
             _artifacts/logix-*.dmg
 
-      - name: Move build info
+      # The release text's own part; publish-pre-release adds the rest.
+      - name: Write the release content
         run: |
-          find _artifacts
-          mv _artifacts/BUILD-INFO.json .
-          cat -n BUILD-INFO.json
-
-      - name: Set env vars from JSON
-        uses: openlogix/.github/actions/set-env-from-json@v1
-        with:
-          json-file: BUILD-INFO.json
-          mappings: >-
-            LOGIX_IDE_BUILD_VERSION logix-version
-            REPO                    repo
-            REPO_COMMIT             repo-commit
-            RELEASE_TAG             release-tag
-            PACKAGE_TAG             package-tag
-
-      - name: Convert json build info to text
-        uses: openlogix/.github/actions/json-to-text@v1
-        with:
-          input-json: BUILD-INFO.json
-          output-text: build-info.txt
-
-      - name: Create assets markdown table
-        run: |
-          # The common prefix of the assets urls.
-          URL_PREFIX="https://github.com/${REPO}/releases/download/$RELEASE_TAG"
-          echo "URL_PREFIX=${URL_PREFIX}"
-
-          cat << EOF > "assets-table.md"
-
-          ### Logix IDE installers
-
-          | System | Architecture | Installer type | Package |
-          | :--- | :--- | :--- | :--- |
-          | macOS | Apple Silicon | Disk image | [logix-darwin-arm64-${PACKAGE_TAG}.dmg](${URL_PREFIX}/logix-darwin-arm64-${PACKAGE_TAG}.dmg) |
-          EOF
-
-          cat -n "assets-table.md"
-
-      # Summary for the workflow run page.
-      - name: Prepare workflow run summary
-        run: |
-          cat > RUN-SUMMARY.txt <<EOF
-
-          Build info:
-          \`\`\`
-          $(cat build-info.txt)
-          \`\`\`
-
-          - [Logix IDE cutoff commit](https://github.com/${REPO}/commit/${REPO_COMMIT})
-
-          - [Generated Logix IDE pre-release](https://github.com/${REPO}/releases/tag/${RELEASE_TAG})
-          EOF
-
-          cat -n RUN-SUMMARY.txt
-
-      - name: Post workflow run summary
-        run: |
-          cat RUN-SUMMARY.txt >> $GITHUB_STEP_SUMMARY
-
-      # Notes for the release page.
-      - name: Checksums
-        run: |
-          cd _artifacts && sha256sum logix-*.dmg | tee ../SHA256SUMS
-
-      - name: Prepare release text
-        run: |
-          cat > RELEASE-BODY.txt <<EOF
-
-          **Logix IDE: The Arduino experience, for FPGAs.**
-
-          [Main page](https://www.openlogix.org/ide/) · [Docs](https://www.openlogix.org/logix-ide/) · [Install guide](https://www.openlogix.org/logix-ide/installing/)
-
+          url="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
+          cat > CONTENT.md <<EOF
           ### Installing Logix IDE on macOS (Apple Silicon)
 
           1. Download \`logix-darwin-arm64-${PACKAGE_TAG}.dmg\` (below) to your **Downloads** folder.
@@ -231,45 +110,19 @@ jobs:
 
           To uninstall, drag Logix IDE from Applications to the Trash. You can also delete the \`~/.logix/ide\` folder, which holds the FPGA tools Logix IDE downloaded and its settings. Your projects aren't in it.
 
-          $(cat assets-table.md)
+          ### Logix IDE installers
 
-          ### Build info
-
-          \`\`\`
-          $(cat build-info.txt)
-          \`\`\`
-
-          ### About these releases
-
-          - Releases are created daily with a \`pre-release\` status, and only the newest ones (about 5) are kept, unless set to be \`stable\`.
-          - To make a pre-release stable, edit it manually and change its status from \`Pre-release\` to \`None\`.
-
-          ### Checksums
-
-          \`\`\`
-          $(cat SHA256SUMS)
-          \`\`\`
+          | System | Architecture | Installer type | Package |
+          | :--- | :--- | :--- | :--- |
+          | macOS | Apple Silicon | Disk image | [logix-darwin-arm64-${PACKAGE_TAG}.dmg](${url}/logix-darwin-arm64-${PACKAGE_TAG}.dmg) |
           EOF
+          cat -n CONTENT.md
 
-          cat -n RELEASE-BODY.txt
-
-      - name: Cleanup old pre-releases
-        uses: openlogix/.github/actions/cleanup-old-prereleases@v1
-
-      # Deletes an existing pre-release with today's tag, so it's replaced.
-      - name: Ensure no conflicting release (again)
-        uses: openlogix/.github/actions/ensure-no-conflicting-release@v1
+      - name: Publish the pre-release
+        uses: openlogix/.github/actions/publish-pre-release@main
         with:
-          release-tag: ${{ env.RELEASE_TAG }}
-
-      - name: Create GitHub pre-release
-        uses: openlogix/.github/actions/create-pre-release@v1
-        with:
-          release_tag: ${{ env.RELEASE_TAG }}
-          body_path: RELEASE-BODY.txt
-          # The expected files are listed explicitly rather than with
-          # patterns, so a missing one fails the run.
+          title: "Logix IDE: The Arduino experience, for FPGAs."
+          links: "[Main page](https://www.openlogix.org/ide/) · [Docs](https://www.openlogix.org/logix-ide/) · [Install guide](https://www.openlogix.org/logix-ide/installing/)"
+          content-file: CONTENT.md
           files: |
             _artifacts/logix-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
-            BUILD-INFO.json
-            SHA256SUMS
