@@ -125,7 +125,7 @@ security setting on your Mac.
 5. Now make it your own: change the blinking speed, save it with
    **File > Save Project**, and upload again.
 
-The [Quick start](https://www.openlogix.org/logix-ide/quick-start/) guide walks
+[Getting started](https://www.openlogix.org/logix-ide/getting-started/) walks
 through these steps with pictures.
 
 ## Learn more
@@ -133,9 +133,9 @@ through these steps with pictures.
 The [Logix IDE documentation](https://www.openlogix.org/logix-ide/) covers everything,
 in short, beginner-friendly pages:
 
+- [Getting started](https://www.openlogix.org/logix-ide/getting-started/)
 - [Installing](https://www.openlogix.org/logix-ide/installing/)
 - [Tour](https://www.openlogix.org/logix-ide/tour/)
-- [Quick start](https://www.openlogix.org/logix-ide/quick-start/)
 - [Using Logix IDE](https://www.openlogix.org/logix-ide/using-logix/)
 - [Testbenches and simulation](https://www.openlogix.org/logix-ide/testbenches/)
 - [Troubleshooting](https://www.openlogix.org/logix-ide/troubleshooting/)

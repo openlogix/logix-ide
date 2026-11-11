@@ -59,7 +59,7 @@ const HELP_PREFIX: &str = "help:";
 /// Help menu: (label, web page). `None` marks a separator.
 const HELP_LINKS: &[Option<(&str, &str)>] = &[
     Some(("Logix IDE Documentation", "https://openlogix.github.io/logix-ide/")),
-    Some(("Quick Start", "https://openlogix.github.io/logix-ide/quick-start/")),
+    Some(("Getting Started", "https://www.openlogix.org/logix-ide/getting-started/")),
     Some((
         "Testbenches and Simulation",
         "https://openlogix.github.io/logix-ide/testbenches/",

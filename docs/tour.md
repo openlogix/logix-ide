@@ -115,4 +115,4 @@ hardware you meant.
 3. Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }.
 4. Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }. The LED blinks.
 
-The [Quick start](quick-start.md) walks through it step by step.
+[Getting started](getting-started.md) walks through it step by step.

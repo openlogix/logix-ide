@@ -22,7 +22,7 @@ async function startWithBoard(page: Page) {
   await examples.getByRole("button", { name: /^blinky/ }).click();
   await examples.getByRole("button", { name: "New Project" }).click();
   await expect(page.locator(".tab", { hasText: "pinout.pcf" })).toBeVisible();
-  // The board is plugged in, as when following the quick start.
+  // The board is plugged in, as when following Getting started.
   await page.evaluate(() => {
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [

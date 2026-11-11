@@ -70,9 +70,9 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Getting started: getting-started.md
   - Installing: installing.md
   - Tour: tour.md
-  - Quick start: quick-start.md
   - Using Logix IDE: using-logix.md
   - Testbenches and simulation: testbenches.md
   - Troubleshooting: troubleshooting.md
