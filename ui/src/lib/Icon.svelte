@@ -60,9 +60,17 @@
     <path d="M3 19V6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2" />
     <path d="M3 19l2.6-7.2A2 2 0 0 1 7.5 10.5H21l-2.8 7.7a2 2 0 0 1-1.9 1.3H3z" />
   {:else if name === "example"}
-    <!-- Open book -->
-    <path d="M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2z" />
-    <path d="M22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z" />
+    <!-- A lit LED, what most first examples (Blinky) light up. Not a book,
+         which reads as documentation. -->
+    <path d="M8.5 14.5V10a3.5 3.5 0 0 1 7 0v4.5" />
+    <line x1="7" y1="14.5" x2="17" y2="14.5" />
+    <line x1="10.5" y1="14.5" x2="10.5" y2="21" />
+    <line x1="13.5" y1="14.5" x2="13.5" y2="19" />
+    <line x1="12" y1="2" x2="12" y2="3.5" />
+    <line x1="5.6" y1="4.6" x2="6.7" y2="5.7" />
+    <line x1="18.4" y1="4.6" x2="17.3" y2="5.7" />
+    <line x1="3" y1="10" x2="4.5" y2="10" />
+    <line x1="19.5" y1="10" x2="21" y2="10" />
   {:else if name === "chip"}
     <!-- A chip with pins on both sides: a pin file (not a push pin, which
          reads as "pin this tab") -->
