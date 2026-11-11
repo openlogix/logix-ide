@@ -1,7 +1,7 @@
 //! Verify, Upload, Run Tests, Simulate and Show Diagram with the engine, in
 //! a prepared build folder (see `build_dir`): Verify is `lint` (unless
 //! turned off) then `build`; Upload is `build` then `program_board`; the
-//! others are `test`, `simulate` and `graph`. The tools' live output goes to
+//! others are `test`, `simulate` and `diagram`. The tools' live output goes to
 //! the console and the engine's phases to the status bar.
 
 use std::path::{Path, PathBuf};
@@ -99,6 +99,9 @@ pub struct TaskInput<'a> {
     /// For Upload: the device the user chose (an engine device ID), when
     /// several fit the board. `None` lets Upload pick the only one.
     pub device: Option<&'a str>,
+    /// For Verify: draw the diagram again after a successful build, for
+    /// the project's open Diagram window.
+    pub redraw_diagram: bool,
 }
 
 /// The engine's build folder inside the prepared folder: `_build` (the
@@ -150,7 +153,22 @@ pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOu
         testbenches: Vec::new(),
         report: None,
         cancelled: false,
-        graph_svg: None,
+        diagram_page: None,
+        seconds: 0.0,
+        action: None,
+        devices: Vec::new(),
+    }
+}
+
+/// An outcome before the task has run: not done yet.
+fn new_outcome() -> TaskOutcome {
+    TaskOutcome {
+        ok: false,
+        diagnostics: Vec::new(),
+        testbenches: Vec::new(),
+        report: None,
+        cancelled: false,
+        diagram_page: None,
         seconds: 0.0,
         action: None,
         devices: Vec::new(),
@@ -180,24 +198,25 @@ where
         folder: input.source_folder.to_string_lossy().into_owned(),
         build_folder: build_folder(input.source_folder),
     };
-    let mut outcome = TaskOutcome {
-        ok: false,
-        diagnostics: Vec::new(),
-        testbenches: Vec::new(),
-        report: None,
-        cancelled: false,
-        graph_svg: None,
-        seconds: 0.0,
-        action: None,
-        devices: Vec::new(),
-    };
+    let mut outcome = new_outcome();
     let finished = match task {
         Task::Build | Task::Upload | Task::Report => {
-            runner.build(task, input, &mut outcome).await?
+            let finished = runner.build(task, input, &mut outcome).await?;
+            if finished && outcome.ok && task == Task::Build && input.redraw_diagram {
+                // The open Diagram window shows the design as just
+                // verified. Its problems are Verify's already.
+                let mut drawn = new_outcome();
+                match runner.diagram(input, &mut drawn).await {
+                    Ok(true) if drawn.ok => outcome.diagram_page = drawn.diagram_page,
+                    Ok(_) => crate::log!("Verify: the diagram wasn't redrawn"),
+                    Err(e) => crate::log!("Verify: can't redraw the diagram: {e:#}"),
+                }
+            }
+            finished
         }
         Task::Test => runner.test(input, &mut outcome).await?,
         Task::Simulate => runner.simulate(input, &mut outcome).await?,
-        Task::Graph => runner.graph(input, &mut outcome).await?,
+        Task::Diagram => runner.diagram(input, &mut outcome).await?,
     };
     if !finished {
         outcome.ok = false;
@@ -471,13 +490,18 @@ where
         Ok(true)
     }
 
-    /// Show Diagram: draws a module as an SVG.
-    async fn graph(&self, input: &TaskInput<'_>, outcome: &mut TaskOutcome) -> Result<bool> {
+    /// Show Diagram: the engine draws every module of the design and
+    /// writes its page (`diagram/diagram.html`), for the Diagram window.
+    pub async fn diagram(&self, input: &TaskInput<'_>, outcome: &mut TaskOutcome) -> Result<bool> {
         let result = self
             .call(
-                "graph",
+                "diagram",
                 json!({
-                    "top_module": input.target.unwrap_or(TOP_MODULE),
+                    "board": input.board,
+                    "board_variant": input.board_variant,
+                    "custom_boards_folder": self.custom_boards_folder,
+                    "display_paths": self.display_paths,
+                    "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
@@ -485,18 +509,18 @@ where
             )
             .await?;
         match result {
-            Ok(graph) => {
+            Ok(diagram) => {
                 outcome
                     .diagnostics
-                    .extend(diagnostics(&graph["diagnostics"]));
-                let file = graph["graph_file"].as_str().unwrap_or("graph.svg");
+                    .extend(diagnostics(&diagram["diagnostics"]));
+                let file = diagram["page_file"]
+                    .as_str()
+                    .unwrap_or("diagram/diagram.html");
                 let path = self.build_folder.join(file);
-                let svg = tokio::fs::read_to_string(&path)
+                let page = tokio::fs::read_to_string(&path)
                     .await
                     .with_context(|| format!("can't read {}", path.display()))?;
-                // The engine labels files as the request gave them:
-                // relative to the source folder (`main.v:5.14-5.25`).
-                outcome.graph_svg = Some(svg);
+                outcome.diagram_page = Some(page);
                 outcome.ok = true;
             }
             Err(e) if is_cancelled(&e) => return Ok(false),
@@ -824,7 +848,7 @@ mod tests {
             testbenches: Vec::new(),
             report: None,
             cancelled: false,
-            graph_svg: None,
+            diagram_page: None,
             seconds: 0.0,
             action: None,
             devices: Vec::new(),
@@ -961,6 +985,7 @@ mod tests {
             lint: true,
             target: None,
             device: None,
+            redraw_diagram: false,
         };
         let cancel = CancellationToken::new();
         let good = run(&engine, Task::Build, &input, sink.clone(), &cancel)
@@ -1036,19 +1061,31 @@ mod tests {
             .any(|d| d.file.as_deref() == Some("main_tb.v") && d.line.is_some()));
         std::fs::write(&tb, tb_text).unwrap();
 
-        // Show Diagram.
+        // Show Diagram: the engine's page, with every module.
         input.target = None;
-        let graph = run(&engine, Task::Graph, &input, sink.clone(), &cancel)
+        let diagram = run(&engine, Task::Diagram, &input, sink.clone(), &cancel)
             .await
             .unwrap();
-        assert!(graph.ok, "{graph:?}");
-        assert!(graph.graph_svg.unwrap().contains("<svg"));
-        input.target = Some("nope");
-        let no_module = run(&engine, Task::Graph, &input, sink, &cancel)
+        assert!(diagram.ok, "{diagram:?}");
+        let page = diagram.diagram_page.unwrap();
+        assert!(
+            page.contains(r#""top":"main""#) && page.contains("<svg"),
+            "{page}"
+        );
+        // Verify with the Diagram window open draws it again.
+        input.redraw_diagram = true;
+        let verified = run(&engine, Task::Build, &input, sink.clone(), &cancel)
             .await
             .unwrap();
-        println!("{no_module:?}");
-        assert!(!no_module.ok);
+        assert!(
+            verified.ok && verified.diagram_page.is_some(),
+            "{verified:?}"
+        );
+        input.redraw_diagram = false;
+        let verified = run(&engine, Task::Build, &input, sink, &cancel)
+            .await
+            .unwrap();
+        assert!(verified.diagram_page.is_none());
 
         // Auto Format: a messy file is formatted, a broken one reports
         // where the problem is.
@@ -1134,6 +1171,7 @@ mod tests {
                     lint: false,
                     target: None,
                     device: None,
+                    redraw_diagram: false,
                 };
                 let mut problems = Vec::new();
                 let build = run(engine, Task::Build, &input, |_| {}, cancel)
@@ -1238,6 +1276,7 @@ mod tests {
                 lint: true,
                 target,
                 device: None,
+                redraw_diagram: false,
             };
             let engine = &engine;
             let path = out.join(name);
@@ -1261,8 +1300,8 @@ mod tests {
                 .ok
         );
         assert!(capture(Task::Test, None, blinky, "test.txt").await.ok);
-        let graph = capture(Task::Graph, None, blinky, "graph.txt").await;
-        std::fs::write(out.join("graph.svg"), graph.graph_svg.unwrap()).unwrap();
+        let diagram = capture(Task::Diagram, None, blinky, "diagram.txt").await;
+        std::fs::write(out.join("diagram.html"), diagram.diagram_page.unwrap()).unwrap();
     }
 
     #[test]

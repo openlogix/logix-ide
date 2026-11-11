@@ -15,7 +15,7 @@ describe("taskReads", () => {
     expect(taskReads("build", "pins")).toBe(true);
     expect(taskReads("upload", "otherPins")).toBe(true);
     expect(taskReads("test", "pins")).toBe(false);
-    expect(taskReads("graph", "pins")).toBe(false);
+    expect(taskReads("diagram", "pins")).toBe(false);
   });
   it("testbenches only by Run Tests and Simulate", () => {
     expect(taskReads("test", "testbench")).toBe(true);
@@ -23,7 +23,7 @@ describe("taskReads", () => {
     expect(taskReads("build", "testbench")).toBe(false);
   });
   it("the rest by every task", () => {
-    for (const task of ["build", "upload", "test", "simulate", "graph"] as const) {
+    for (const task of ["build", "upload", "test", "simulate", "diagram"] as const) {
       expect(taskReads(task, "main")).toBe(true);
       expect(taskReads(task, "design")).toBe(true);
     }

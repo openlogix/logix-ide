@@ -1,0 +1,1 @@
+[2m$ yosys -p 'read_verilog -lib "~/.logix/ide/engine/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40/cells_sim.v"; read_verilog -sv "main.v"; hierarchy -top main; proc; opt -full; clean -purge; select =A:blackbox =A:whitebox %u %n; write_json -compat-int -selected "~/.logix/build/_build/diagram/netlist.json"' -DSYNTHESIZE -q[0m

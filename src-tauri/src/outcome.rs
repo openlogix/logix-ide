@@ -15,8 +15,9 @@ pub enum Task {
     Test,
     /// Simulate one testbench and open GTKWave.
     Simulate,
-    /// Draw a module of the design as an SVG.
-    Graph,
+    /// Show Diagram: draw the design (every module) for the Diagram
+    /// window.
+    Diagram,
     /// Board Utilization: build without lint, for the report of the files
     /// as they are now (the engine skips a build that's up to date).
     Report,
@@ -41,8 +42,11 @@ pub struct TaskOutcome {
     pub report: Option<BuildReport>,
     /// Stopped by the user (the Stop button).
     pub cancelled: bool,
-    /// For a successful `Graph`: the diagram as SVG.
-    pub graph_svg: Option<String>,
+    /// For a successful `Diagram`, and a Verify that redrew an open
+    /// Diagram window: the engine's page. Not sent to the UI: the backend
+    /// shows it in the Diagram window.
+    #[serde(skip)]
+    pub diagram_page: Option<String>,
     pub seconds: f64,
     /// The engine's suggested action when it failed, such as
     /// `connect_board` (see the engine's tool API), or `select_device` when

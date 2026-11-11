@@ -902,24 +902,30 @@ test("dragging the divider to the bottom hides the output", async ({ page }) => 
   expect(dragged!.height).toBeGreaterThan(150);
 });
 
-test("shows the design diagram and switches modules", async ({ page }) => {
+test("shows the design diagram and goes to a block's source", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
-  await page.evaluate(() =>
-    (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu(
-      "show-diagram",
-    ),
-  );
-  const dialog = page.getByRole("dialog", { name: "Diagram" });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("img", { name: "Diagram of module main" })).toBeVisible();
+  type Fake = {
+    menu: (id: string) => void;
+    diagramShown: { key: string; module: string | null } | null;
+    diagramClick: (key: string, file: string, line: number) => void;
+  };
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.menu("show-diagram"));
   await expect(status(page)).toContainText("Diagram ready");
+  // The backend opens the Diagram window, a window of its own, on main.
+  const shown = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.diagramShown);
+  expect(shown?.module).toBeNull();
+  // No dialog in the main window: it stays usable.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 
-  await dialog.getByTitle("Zoom in").click();
-  await expect(dialog).toContainText("150%");
-
-  await page.keyboard.press("Escape");
-  await expect(dialog).toBeHidden();
+  // A click on a block in it shows its source line in the editor.
+  await page.evaluate(
+    (key) => (window as unknown as { __fake: Fake }).__fake.diagramClick(key, "main.v", 3),
+    shown!.key,
+  );
+  await expect(page.locator(".cm-activeLine")).toBeVisible();
+  // Another project's click is ignored.
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.diagramClick("other", "main.v", 1));
 });
 
 test("a local engine is shown for the whole session", async ({ page }) => {

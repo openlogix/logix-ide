@@ -1,5 +1,6 @@
 // Screenshots for the user documentation (docs/images). Not a test: run
 // with `npm run docs:screenshots` after UI changes, and check the images.
+import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 
 // Relative to the repo root, where npm runs the tests.
@@ -105,9 +106,12 @@ test("run tests", async ({ page }) => {
 });
 
 test("diagram", async ({ page }) => {
-  await startWithBoard(page);
-  await menu(page, "show-diagram");
-  await expect(page.getByRole("dialog", { name: "Diagram" })).toBeVisible();
+  // The Diagram window shows Logix Engine's page, captured for the blinky
+  // design (fixtures/diagram.html), at the window's size.
+  await page.setViewportSize({ width: 1000, height: 640 });
+  const html = readFileSync(new URL("./fixtures/diagram.html", import.meta.url), "utf8");
+  await page.setContent(html);
+  await expect(page.locator("svg.logix-diagram")).toBeVisible();
   await shot(page, "diagram");
 });
 

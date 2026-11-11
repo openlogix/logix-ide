@@ -97,8 +97,11 @@ clocks with their maximum speeds.
 
 ## 7. See the design as a diagram
 
-Choose **Project > Show Diagram**. Logix IDE draws the design as a diagram of
-its parts and the signals between them.
+Choose **Project > Show Diagram**. Logix IDE draws the design as a schematic
+in a window of its own: the counter's register, the adder that counts, and the
+pins. Hover over a block for its details, and click it to see its line in
+`main.v`. You can keep the window open while you work: it's drawn again after
+each Verify.
 
 ## 8. Run the tests
 

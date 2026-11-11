@@ -7,7 +7,7 @@ Logix IDE's usual locations.
 - `verify.txt`: Verify with Logix Engine `2026-11-03` (`lint`, then `build`), as the console shows its live output: command lines dimmed with `$`, errors red, warnings yellow.
 - `verify-error.txt`: the same with the `;` missing at the end of `assign led = counter[23];`.
 - `test.txt`: Run Tests (the engine's `test`).
-- `graph.txt`, `graph.svg`: Show Diagram (the engine's `graph`): its output and the diagram.
+- `diagram.txt`, `diagram.html`: Show Diagram (the engine's `diagram`): its output and the page the Diagram window shows (also the docs' diagram screenshot).
 - `fpgas.json`: the FPGAs as `get_fpga_families` gives them (Logix Engine's `get_catalog` `fpgas` and `families`: each family's `id`, `label` and `fpgas`, by part number, in the engine's order). Update it with the engine's catalog, like `catalog.json`.
 - `catalog.json`: the boards as `get_boards` gives them (Logix Engine's `get_catalog`, with each FPGA's family, pin file kind and `fpga` (`id`, `partNumber`, `size`), and each board's variants as `dimensions` and `configurations` (`when`, `label`, `tested`, `userNotes`), sorted by description) and the examples as `get_examples` gives them (from `examples/*/*/logix-ide.toml`, sorted by board and name). `capture_fixtures` doesn't write it: update it by hand (or a short script) when the engine's boards or the examples change.
 

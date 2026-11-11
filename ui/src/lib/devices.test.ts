@@ -27,7 +27,7 @@ const alhambra: UsbDevice = {
 
 const outcome = (action: string | null, devices: UsbDevice[] = []): TaskOutcome => ({
   ok: false, diagnostics: [], testbenches: [], report: null,
-  cancelled: false, graphSvg: null, seconds: 1, action, devices,
+  cancelled: false, seconds: 1, action, devices,
 });
 
 describe("devices", () => {

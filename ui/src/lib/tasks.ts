@@ -11,7 +11,7 @@ const VERB: Record<Task, { running: string; done: string; noun: string }> = {
     done: "Simulation done",
     noun: "Simulation",
   },
-  graph: {
+  diagram: {
     running: "Drawing the diagram…",
     done: "Diagram ready",
     noun: "Diagram",
@@ -43,7 +43,7 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
     if (task === "simulate") {
       return `${VERB.simulate.done} in ${time}. GTKWave shows the signals.`;
     }
-    if (task === "graph") return `${VERB.graph.done} in ${time}.`;
+    if (task === "diagram") return `${VERB.diagram.done} in ${time}.`;
     // The engine's one-line report, as it words it ("Uses 0.4% of …").
     const summary = outcome.report?.summaryLine ?? "";
     return `${VERB[task].done} in ${time}${w}.${summary ? ` ${summary}` : ""}`;

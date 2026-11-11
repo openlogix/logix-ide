@@ -203,8 +203,20 @@ the open Verilog file. **Edit > Undo** restores the previous text.
 
 ## Diagram
 
-**Project > Show Diagram** draws the design's modules and
-signals. Choose another module in the window to draw just that one.
+**Project > Show Diagram** (Shift+Cmd+D) draws the design as a schematic,
+in a window of its own that you can move and resize while you keep working.
+Every module of the design is in it:
+
+- **Click a module** to open it; the bar at the top goes back.
+- **Click any other block** to show its line in the editor.
+- **Hover** a block, a port, a wire or a pin for its details, such as a
+  signal's name and width.
+- **Drag** to move the drawing, and **scroll** to zoom. **Fit** shows all of
+  it.
+
+Clocks and resets that go to many blocks are drawn as labels with their
+name, instead of long wires, and fixed values as labels with the value.
+After each **Verify**, the open diagram is drawn again.
 
 ![The diagram of the blinky design](images/diagram.png)
 

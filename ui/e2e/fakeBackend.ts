@@ -29,8 +29,7 @@ import { boardsProblemLines } from "../src/lib/boards";
 import verifyOutput from "./fixtures/verify.txt?raw";
 import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
 import testOutput from "./fixtures/test.txt?raw";
-import graphOutput from "./fixtures/graph.txt?raw";
-import graphSvg from "./fixtures/graph.svg?raw";
+import diagramOutput from "./fixtures/diagram.txt?raw";
 import packageJson from "../../package.json";
 
 const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }) as unknown as Real.Board);
@@ -240,11 +239,17 @@ const handlers: {
   output?: (line: string) => void;
   finishSetup?: () => void;
   gtkwaveOpened?: (found: boolean) => void;
+  diagramOpenSource?: (at: { key: string; file: string; line: number }) => void;
 } = {};
 
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
 const fake = {
   menu: (id: MenuId) => handlers.menu?.(id),
+  /** The project and module the last Show Diagram opened its window on. */
+  diagramShown: null as { key: string; module: string | null } | null,
+  /** A click on a block in the Diagram window. */
+  diagramClick: (key: string, file: string, line: number) =>
+    handlers.diagramOpenSource?.({ key, file, line }),
   /** The start screen's recent projects (`recentProjects`); `?recents=a,b`
    * sets them from the start. */
   recents: (new URLSearchParams(location.search).get("recents") ?? "")
@@ -350,7 +355,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         testbenches: [],
         report: null,
         cancelled: false,
-        graphSvg: null,
+       
         seconds: 0.5,
         action: null,
         devices: [],
@@ -378,7 +383,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         testbenches: [],
         report: null,
         cancelled: false,
-        graphSvg: null,
+       
         seconds: 0.4,
         action: null,
         devices: [],
@@ -407,7 +412,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         summaryLine: "Uses 1% of logic cells, max clock 194.4 MHz.",
       },
       cancelled: false,
-        graphSvg: null,
+       
       seconds: 1.2,
       action: null,
       devices: [],
@@ -468,7 +473,7 @@ export const backend: typeof Real.backend = {
       for (const line of boardsProblemLines(own.problem)) onEvent({ kind: "line", line });
       return {
         ok: false, diagnostics: own.problem.diagnostics, testbenches: [], report: null,
-        cancelled: false, graphSvg: null, seconds: 0.1, action: null, devices: [],
+        cancelled: false, seconds: 0.1, action: null, devices: [],
       };
     }
     const onLine = (line: string) => onEvent({ kind: "line", line });
@@ -479,12 +484,11 @@ export const backend: typeof Real.backend = {
       outcome.testbenches = [{ name: "main_tb.v", passed: true }];
       outcome.report = null;
     }
-    if (outcome.ok && task === "graph") {
-      // The engine's yosys command names the module drawn.
-      lines = outputLines(graphOutput).map((l) =>
-        l.replace(/ main' /, ` ${target ?? "main"}' `),
-      );
-      outcome.graphSvg = graphSvg;
+    if (outcome.ok && task === "diagram") {
+      // The backend shows the engine's page in the Diagram window, which
+      // the fake has none of: it records the module the window opens on.
+      lines = outputLines(diagramOutput);
+      fake.diagramShown = { key: _key, module: target };
       outcome.report = null;
     }
     // Logix Engine reports each task's phases.
@@ -493,7 +497,7 @@ export const backend: typeof Real.backend = {
       upload: "Synthesizing",
       test: "Running main_tb.v",
       simulate: "Running main_tb.v",
-      graph: "Drawing the graph",
+      diagram: "Drawing the diagram",
       report: "Synthesizing",
     }[task];
     const phases = task === "build" || task === "upload" || task === "report";
@@ -631,6 +635,11 @@ export const backend: typeof Real.backend = {
   onLspClosed: unlisten,
   onGtkwaveOpened: async (handler) => {
     handlers.gtkwaveOpened = handler;
+    return () => {};
+  },
+
+  onDiagramOpenSource: async (handler) => {
+    handlers.diagramOpenSource = handler;
     return () => {};
   },
 

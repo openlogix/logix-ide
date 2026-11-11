@@ -16,11 +16,11 @@ const warn = (file: string, line: number): Diagnostic => ({
 
 describe("outcomeText", () => {
   it("reports success with time and warnings", () => {
-    expect(outcomeText("build", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1.62, action: null, devices: [] })).toBe(
+    expect(outcomeText("build", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 1.62, action: null, devices: [] })).toBe(
       "Build succeeded in 1.6 s.",
     );
     expect(
-      outcomeText("build", { ok: true, diagnostics: [warn("a.pcf", 3)], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 2, action: null, devices: [] }),
+      outcomeText("build", { ok: true, diagnostics: [warn("a.pcf", 3)], report: null, cancelled: false, testbenches: [], seconds: 2, action: null, devices: [] }),
     ).toBe("Build succeeded in 2.0 s, 1 warning.");
   });
 
@@ -29,7 +29,7 @@ describe("outcomeText", () => {
       outcomeText("build", {
         ok: false,
         diagnostics: [warn("pinout.pcf", 6), err("main.v", 25, "syntax error")],
-        report: null, cancelled: false, graphSvg: null, testbenches: [],
+        report: null, cancelled: false, testbenches: [],
         seconds: 0.4,
         action: null,
         devices: [],
@@ -39,7 +39,7 @@ describe("outcomeText", () => {
       outcomeText("upload", {
         ok: false,
         diagnostics: [err(null, null, "No Alhambra II is connected. Connect the Alhambra II by USB, then retry.")],
-        report: null, cancelled: false, graphSvg: null, testbenches: [],
+        report: null, cancelled: false, testbenches: [],
         seconds: 1,
         action: "connect_board",
         devices: [],
@@ -50,7 +50,7 @@ describe("outcomeText", () => {
       outcomeText("build", {
         ok: false,
         diagnostics: [err("boards/mine.json", 4, "Expected `,` or `}`.")],
-        report: null, cancelled: false, graphSvg: null, testbenches: [],
+        report: null, cancelled: false, testbenches: [],
         seconds: 0,
         action: null,
         devices: [],
@@ -61,13 +61,13 @@ describe("outcomeText", () => {
       outcomeText("build", {
         ok: false,
         diagnostics: [err("/Users/you/blinky 3/boards/mine.json", 4, "Expected `,` or `}`.")],
-        report: null, cancelled: false, graphSvg: null, testbenches: [],
+        report: null, cancelled: false, testbenches: [],
         seconds: 0,
         action: null,
         devices: [],
       }),
     ).toBe("Build failed: the project's boards folder has problems.");
-    expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 1, action: null, devices: [] })).toBe(
+    expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 1, action: null, devices: [] })).toBe(
       "Upload failed. See the output below.",
     );
   });
@@ -93,7 +93,7 @@ describe("test results", () => {
   ];
   it("summarizes passing tests", () => {
     expect(
-      outcomeText("test", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [benches[0]], seconds: 4.3, action: null, devices: [] }),
+      outcomeText("test", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [benches[0]], seconds: 4.3, action: null, devices: [] }),
     ).toBe("Tests passed (1 testbench) in 4.3 s.");
   });
   it("names the first failure", () => {
@@ -101,7 +101,7 @@ describe("test results", () => {
       outcomeText("test", {
         ok: false,
         diagnostics: [err("alu_tb.v", 52, "Assertion failed: expected 'h01, actual 'h00")],
-        report: null, cancelled: false, graphSvg: null, testbenches: benches,
+        report: null, cancelled: false, testbenches: benches,
         seconds: 1,
         action: null,
         devices: [],
@@ -110,17 +110,17 @@ describe("test results", () => {
   });
   it("lists each testbench", () => {
     expect(
-      testbenchLines({ ok: false, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: benches, seconds: 1, action: null, devices: [] }),
+      testbenchLines({ ok: false, diagnostics: [], report: null, cancelled: false, testbenches: benches, seconds: 1, action: null, devices: [] }),
     ).toEqual(["✓ main_tb.v passed", "✗ alu_tb.v failed"]);
   });
   it("mentions GTKWave after simulating", () => {
     expect(
-      outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, graphSvg: null, testbenches: [], seconds: 0.3, action: null, devices: [] }),
+      outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 0.3, action: null, devices: [] }),
     ).toBe("Simulation done in 0.3 s. GTKWave shows the signals.");
   });
   it("says GTKWave shows a failing testbench too", () => {
     const failure = { severity: "error" as const, file: "main_tb.v", line: 52, column: null, message: "Assertion failed" };
-    const outcome = { ok: false, diagnostics: [failure], report: null, cancelled: false, graphSvg: null, seconds: 0.3, action: null, devices: [] };
+    const outcome = { ok: false, diagnostics: [failure], report: null, cancelled: false, seconds: 0.3, action: null, devices: [] };
     expect(
       outcomeText("simulate", { ...outcome, testbenches: [{ name: "main_tb.v", passed: false }] }),
     ).toBe("The testbench failed. GTKWave shows the signals.");
@@ -141,7 +141,7 @@ describe("build report in the status", () => {
         ok: true,
         diagnostics: [],
         testbenches: [],
-        cancelled: false, graphSvg: null,
+        cancelled: false,
         report: {
           family: "ice40",
           resources: [],
@@ -166,7 +166,7 @@ describe("stopped tasks", () => {
         diagnostics: [err(null, null, "x")],
         testbenches: [],
         report: null,
-        cancelled: true, graphSvg: null,
+        cancelled: true,
         seconds: 3,
         action: null,
         devices: [],

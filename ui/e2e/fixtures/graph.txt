@@ -1,2 +1,0 @@
-[2m$ yosys -p 'read_verilog -sv "~/.logix/build/main.v"; show -format dot -colors 1 -wireshape plaintext -prefix graph main' -DSYNTHESIZE -q[0m
-[2m$ dot -Tsvg graph.dot -o graph.svg[0m

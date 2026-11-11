@@ -17,7 +17,7 @@ use crate::examples;
 use crate::outcome;
 use crate::project::{self, ProjectFile};
 use crate::setup_events::{SetupEvent, SetupStage};
-use crate::{build_dir, platform, settings, AppState, Catalog};
+use crate::{build_dir, diagram_window, platform, settings, AppState, Catalog};
 
 /// An error for the UI: `message` is short plain language for the user,
 /// `details` is the full technical chain for the console.
@@ -439,11 +439,11 @@ pub async fn run_task(
         .join("_scratch")
         .join("build");
     let names: Vec<String> = files.iter().map(|f| f.name.clone()).collect();
-    // `testbench` is the testbench for Test/Simulate, or the module to draw
-    // for Graph. Only accept project testbenches and plain Verilog module
-    // names.
+    // `testbench` is the testbench for Test/Simulate, or the module the
+    // Diagram window opens on. Only accept project testbenches and plain
+    // Verilog module names.
     if let Some(target) = &testbench {
-        let ok = if task == outcome::Task::Graph {
+        let ok = if task == outcome::Task::Diagram {
             project::is_verilog_identifier(target)
         } else {
             project::is_testbench(target) && names.contains(target)
@@ -455,6 +455,7 @@ pub async fn run_task(
     let constraint =
         build_dir::constraint_file(&files, pin_extension.as_deref()).map(str::to_owned);
     let log = on_line;
+    let (project_dir_kept, key_kept) = (project_dir.clone(), key.clone());
     let dir = blocking(move || {
         // Keep GTKWave layouts saved since the last run; preparing clears
         // the build folder.
@@ -504,6 +505,7 @@ pub async fn run_task(
         lint: lint_on_verify(),
         target: testbench.as_deref(),
         device: device.as_deref(),
+        redraw_diagram: task == outcome::Task::Build && diagram_window::is_open(&app, &key_kept),
     };
     let channel = on_event.clone();
     let send = move |event| {
@@ -513,7 +515,37 @@ pub async fn run_task(
         .await
         .context("Couldn't run Logix Engine.");
     *state.task_cancel.lock().unwrap() = None;
-    let outcome = result?;
+    let mut outcome = result?;
+    // Show Diagram, or Verify with the Diagram window open: the window
+    // shows the engine's page.
+    if let Some(page) = outcome.diagram_page.take() {
+        let name = project_dir_kept
+            .as_deref()
+            .and_then(|d| Path::new(d).file_name())
+            .map_or("New project".to_string(), |n| {
+                n.to_string_lossy().into_owned()
+            });
+        let opening = task == outcome::Task::Diagram;
+        let module = testbench.clone().filter(|_| opening);
+        let shown = on_main_thread(&app, {
+            let (app, key, names) = (app.clone(), key_kept.clone(), names.clone());
+            move || {
+                diagram_window::show(
+                    &app,
+                    &key,
+                    &format!("Diagram · {name}"),
+                    page,
+                    names,
+                    module.as_deref(),
+                    opening,
+                )
+            }
+        })
+        .await;
+        if let Some(Err(e)) = shown {
+            return Err(anyhow!("Couldn't show the diagram: {e}").into());
+        }
+    }
     // The engine opens GTKWave whenever the testbench ran, even failing
     // (its waveform shows where).
     if task == outcome::Task::Simulate && !outcome.testbenches.is_empty() {
@@ -874,6 +906,9 @@ pub fn set_preferences(
     settings::save(&path, &stored).context("Couldn't save the settings.")?;
     let prefs = stored.preferences(&builtin);
     apply_window_preferences(&window, &prefs);
+    for diagram in crate::diagram_window::windows(window.app_handle()) {
+        apply_window_preferences(&diagram, &prefs);
+    }
     Ok(prefs)
 }
 

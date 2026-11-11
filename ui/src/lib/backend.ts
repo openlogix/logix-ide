@@ -214,7 +214,7 @@ export interface Example {
 }
 
 /** "report" is Board Utilization: a build without lint, then the report. */
-export type Task = "build" | "upload" | "test" | "simulate" | "graph" | "report";
+export type Task = "build" | "upload" | "test" | "simulate" | "diagram" | "report";
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -267,8 +267,6 @@ export interface TaskOutcome {
   report: BuildReport | null;
   /** Stopped by the user. */
   cancelled: boolean;
-  /** For a successful "graph": the diagram as SVG. */
-  graphSvg: string | null;
   seconds: number;
   /**
    * Logix Engine's suggested action when it failed, e.g. "connect_board",
@@ -513,9 +511,9 @@ export const backend = {
     invoke<ProjectDoc>("open_example", { board, name }),
 
   /**
-   * Builds, uploads, tests, simulates or draws (graph) the given (possibly
+   * Builds, uploads, tests, simulates or draws (diagram) the given (possibly
    * unsaved) files. `testbench` picks one testbench for "test" (all if
-   * null) and "simulate", or the module to draw for "graph" (main if null). `key` identifies the project; `sourceDir` is the folder
+   * null) and "simulate", or the module the Diagram window opens on for "diagram" (main if null). `key` identifies the project; `sourceDir` is the folder
    * whose other files are copied along; `projectDir` (saved projects only)
    * receives GTKWave layouts saved since the last run. `device` is the
    * device Upload uses (a `UsbDevice` id the user chose), or null to let
@@ -697,6 +695,17 @@ export const backend = {
    */
   onGtkwaveOpened: (handler: (found: boolean) => void): Promise<UnlistenFn> =>
     listen<boolean>("gtkwave-opened", (e) => handler(e.payload)),
+
+  /**
+   * A block clicked in a Diagram window: the project (its build key) and
+   * the file and line to show. The backend sends only the project's files.
+   */
+  onDiagramOpenSource: (
+    handler: (at: { key: string; file: string; line: number }) => void,
+  ): Promise<UnlistenFn> =>
+    listen<{ key: string; file: string; line: number }>("diagram-open-source", (e) =>
+      handler(e.payload),
+    ),
 
   /** The language server stopped. */
   onLspClosed: (handler: () => void): Promise<UnlistenFn> =>

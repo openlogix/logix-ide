@@ -1,5 +1,6 @@
 mod build_dir;
 mod commands;
+mod diagram_window;
 mod download;
 mod engine;
 mod examples;
@@ -68,6 +69,9 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .menu(menu::build)
+        .register_uri_scheme_protocol(diagram_window::SCHEME, |_ctx, request| {
+            diagram_window::serve(request.uri().path())
+        })
         .setup(|app| {
             let info = app.package_info();
             logging::init(&format!(
@@ -100,6 +104,19 @@ pub fn run() {
         })
         .on_menu_event(|app, event| menu::on_event(app, event.id().as_ref()))
         .on_window_event(|window, event| {
+            if let WindowEvent::Destroyed = event {
+                if diagram_window::is_diagram(window.label()) {
+                    diagram_window::forget(window.label());
+                } else if window.label() == "main" {
+                    // Diagram windows close with the main window.
+                    for w in diagram_window::windows(window.app_handle()) {
+                        let _ = w.close();
+                    }
+                }
+            }
+            if window.label() != "main" {
+                return;
+            }
             if let WindowEvent::CloseRequested { api, .. } = event {
                 let state = window.state::<AppState>();
                 if state.dirty.load(Ordering::SeqCst) && !state.force_close.load(Ordering::SeqCst) {

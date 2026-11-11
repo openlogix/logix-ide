@@ -46,7 +46,6 @@
     summary as variantSummary,
     toStore,
   } from "./lib/variants";
-  import DiagramDialog from "./lib/DiagramDialog.svelte";
   import DevicesDialog from "./lib/DevicesDialog.svelte";
   import BoardExplorer from "./lib/BoardExplorer.svelte";
   import type { Ref as ExplorerRef } from "./lib/explorer";
@@ -76,7 +75,6 @@
     BOARDS_FOLDER_NAME,
     markSaved,
     renameFile,
-    projectModules,
     starterText,
     testbenches,
     type WorkingProject,
@@ -892,7 +890,7 @@
     upload: "Uploading",
     test: "Testing",
     simulate: "Simulating",
-    graph: "Drawing the diagram of",
+    diagram: "Drawing the diagram of",
     report: "Building the report of",
   };
 
@@ -1048,12 +1046,18 @@
     runTask("upload", null, id);
   }
 
-  /** The diagram window's content, while it's open. */
-  let diagram = $state<{ svg: string; module: string } | null>(null);
-
-  /** Draws `module` (main if null) and shows it in the diagram window. */
+  /**
+   * Draws the design and shows it in the project's Diagram window (opened
+   * by the backend, a window of its own), on `module` (main if null).
+   */
   function showDiagram(module: string | null) {
-    runTask("graph", module === "main" ? null : module);
+    runTask("diagram", module === "main" ? null : module);
+  }
+
+  /** A block clicked in the Diagram window: its source in the editor. */
+  function onDiagramOpenSource(at: { key: string; file: string; line: number }) {
+    if (!project || buildKey(project) !== at.key) return;
+    jumpTo(at.file, at.line);
   }
 
   /** The testbench to simulate: the open one, or the project's only one. */
@@ -1161,9 +1165,6 @@
         devicePicker = { board, devices: outcome.devices };
         status = { text: "Choose the device to upload to.", kind: "info" };
         return;
-      }
-      if (task === "graph" && outcome.ok && outcome.graphSvg) {
-        diagram = { svg: outcome.graphSvg, module: testbench ?? "main" };
       }
       showCommandProblems(outcome.diagnostics, (file) =>
         taskReads(task, fileRole(file, mainFile(p), pinExtension)),
@@ -1725,7 +1726,7 @@
       upload: "upload",
       "run-tests": "test",
       simulate: "simulate",
-      "show-diagram": "graph",
+      "show-diagram": "diagram",
       // Builds first, so the report is of the files as they are now.
       "build-report": "report",
     };
@@ -1897,6 +1898,7 @@
       backend.onToolOutput((line) => log(line)),
       backend.onLspClosed(onLspClosed),
       backend.onGtkwaveOpened(onGtkwaveOpened),
+      backend.onDiagramOpenSource(onDiagramOpenSource),
       backend.onOpenRecent(openRecent),
       backend.onMenu(onMenu),
       backend.onCloseRequested(onCloseRequested),
@@ -2017,16 +2019,6 @@
   />
 {/if}
 
-{#if diagram}
-  <DiagramDialog
-    svg={diagram.svg}
-    modules={project ? projectModules(project) : ["main"]}
-    module={diagram.module}
-    busy={running === "graph"}
-    onModule={showDiagram}
-    onClose={() => (diagram = null)}
-  />
-{/if}
 
 {#if examplesOpen}
   <ExamplesDialog
