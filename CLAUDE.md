@@ -261,6 +261,8 @@ What the tests check (keep these when regenerating; add to them with new feature
 
 ## CI and release workflows
 
+**Repo type: installable** (topic `openlogix-installable`; the website repo's `CLAUDE.md`, Repo types, owns the policy): people download Logix IDE from the release marked Latest.
+
 Use the current major versions of GitHub's actions (`actions/checkout`, `setup-node` with `lts/*`, `upload-artifact`, `download-artifact`, `setup-python`, `upload-pages-artifact`, `deploy-pages`), `dtolnay/rust-toolchain@stable` with `clippy, rustfmt`.
 
 - **`test.yaml`**: on every push and pull request, manually, and daily at 00:00 UTC; a newer run for the same ref cancels the older one. Job `remote-config` (Ubuntu): the shared `check-remote-config` action with `platforms: darwin-arm64` (the schema, that the named releases and files exist and `SHA256SUMS` lists them, only openlogix repos on `main`). Job `test`: matrix macos-15, macos-26, macos-latest with `fail-fast: false`, 30 min. Steps: checkout, Node (npm cache), Rust, `npm ci`, `npx playwright install webkit`, `scripts/test.sh`.
