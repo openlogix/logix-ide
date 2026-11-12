@@ -37,26 +37,32 @@ func draw() {
     teal.setFill()
     head.fill()
 
-    // Instructions, centered near the top and bottom.
-    func text(_ s: String, size: CGFloat, weight: NSFont.Weight, color: NSColor, top: CGFloat) {
+    // Instructions: the title centered near the top; the two lines at the
+    // bottom start at the same x, the block centered on its longer first line.
+    func attrs(_ size: CGFloat, _ weight: NSFont.Weight, _ color: NSColor, _ alignment: NSTextAlignment)
+        -> [NSAttributedString.Key: Any]
+    {
         let style = NSMutableParagraphStyle()
-        style.alignment = .center
-        let attrs: [NSAttributedString.Key: Any] = [
+        style.alignment = alignment
+        return [
             .font: NSFont.systemFont(ofSize: size, weight: weight),
             .foregroundColor: color,
             .paragraphStyle: style,
         ]
+    }
+    func text(_ s: String, _ a: [NSAttributedString.Key: Any], size: CGFloat, top: CGFloat, x: CGFloat = 0) {
         let h = size * 1.4
         NSString(string: s).draw(
-            in: NSRect(x: 0, y: height - top - h, width: width, height: h),
-            withAttributes: attrs)
+            in: NSRect(x: x, y: height - top - h, width: width - x, height: h), withAttributes: a)
     }
-    text("Install Logix IDE", size: 22, weight: .semibold, color: NSColor(white: 0.15, alpha: 1), top: 32)
-    text("Drag the Logix IDE icon onto the Applications folder.", size: 15, weight: .regular,
-         color: NSColor(white: 0.3, alpha: 1), top: 286)
+    text("Install Logix IDE", attrs(22, .semibold, NSColor(white: 0.15, alpha: 1), .center), size: 22, top: 32)
+    let line1 = "Drag the Logix IDE icon onto the Applications folder."
     // Dragging only copies it, so say how to start it.
-    text("Then open Logix IDE from Applications in Finder.", size: 15, weight: .regular,
-         color: NSColor(white: 0.3, alpha: 1), top: 310)
+    let line2 = "Then open Logix IDE from Applications in Finder."
+    let body = attrs(15, .regular, NSColor(white: 0.3, alpha: 1), .left)
+    let left = ((width - NSString(string: line1).size(withAttributes: body).width) / 2).rounded()
+    text(line1, body, size: 15, top: 286, x: left)
+    text(line2, body, size: 15, top: 310, x: left)
 }
 
 func rep(scale: CGFloat) -> NSBitmapImageRep {
