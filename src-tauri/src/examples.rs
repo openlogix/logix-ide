@@ -1,14 +1,54 @@
-//! Logix IDE's examples, built into the app from the repo's `examples/` folder:
-//! `examples/<board>/<name>/`, each a Logix IDE project (its files and a
-//! `logix-ide.toml` with the board, a one-line `summary` and optional `notes`). Plain Rust, no Tauri.
+//! Logix IDE's examples: the `logix-ide-examples` package its remote config
+//! names, which setup downloads and unpacks in the data folder (`examples/`,
+//! made from this repo's `examples/` folder by `scripts/pack-examples.py`):
+//! `<board>/<name>/`, each a Logix IDE project (its files and a
+//! `logix-ide.toml` with the board, a one-line `summary` and optional
+//! `notes`). The tests read the repo's own folder. Plain Rust, no Tauri.
 
 use std::path::{Path, PathBuf};
+use std::sync::RwLock;
 
 use anyhow::{bail, Context, Result};
-use include_dir::{include_dir, Dir};
 use serde::Serialize;
 
-static EXAMPLES: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../examples");
+/// The unpacked examples, once setup has them.
+static ROOT: RwLock<Option<PathBuf>> = RwLock::new(None);
+
+/// Uses the examples in `dir` (setup, after the package is in place).
+pub fn set_root(dir: &Path) {
+    *ROOT.write().unwrap() = Some(dir.to_path_buf());
+}
+
+/// The examples folder: the downloaded package, or for tests the repo's
+/// own `examples/`.
+fn root() -> Option<PathBuf> {
+    if let Some(dir) = ROOT.read().unwrap().clone() {
+        return Some(dir);
+    }
+    if cfg!(test) {
+        return Some(Path::new(env!("CARGO_MANIFEST_DIR")).join("../examples"));
+    }
+    None
+}
+
+/// The subfolders of `dir`, sorted, hidden ones left out.
+fn subdirs(dir: &Path) -> Vec<PathBuf> {
+    let mut list: Vec<PathBuf> = std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_dir() && !file_name(p).starts_with('.'))
+        .collect();
+    list.sort();
+    list
+}
+
+fn file_name(p: &Path) -> String {
+    p.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
 
 /// The board of new projects until the user chooses one: the iCESugar v1.5
 /// (a tie-break; the website repo's CLAUDE.md, Canonical board).
@@ -58,20 +98,19 @@ pub struct Example {
     pub notes: Vec<String>,
 }
 
-/// Every example, sorted by board then name.
+/// Every example, sorted by board then name (none before setup has them).
 pub fn all() -> Vec<Example> {
+    let Some(root) = root() else {
+        return Vec::new();
+    };
     let mut list = Vec::new();
-    for board in EXAMPLES.dirs() {
-        for example in board.dirs().filter(|d| !d.path().ends_with(BARE_MINIMUM)) {
-            let name = |d: &Dir| {
-                d.path()
-                    .file_name()
-                    .map(|n| n.to_string_lossy().into_owned())
-                    .unwrap_or_default()
-            };
-            let settings = example
-                .get_file(example.path().join(crate::project::SETTINGS_FILE))
-                .and_then(|f| f.contents_utf8())
+    for board in subdirs(&root) {
+        for example in subdirs(&board)
+            .into_iter()
+            .filter(|d| !d.ends_with(BARE_MINIMUM))
+        {
+            let settings = std::fs::read_to_string(example.join(crate::project::SETTINGS_FILE))
+                .ok()
                 .and_then(|t| t.parse::<toml_edit::DocumentMut>().ok());
             let summary = settings
                 .as_ref()
@@ -87,8 +126,8 @@ pub fn all() -> Vec<Example> {
                 })
                 .unwrap_or_default();
             list.push(Example {
-                board: name(board),
-                name: name(example),
+                board: file_name(&board),
+                name: file_name(&example),
                 summary,
                 notes,
             });
@@ -98,56 +137,55 @@ pub fn all() -> Vec<Example> {
     list
 }
 
+/// A plain name (a board ID or an example's name), never a path.
+fn plain(name: &str) -> bool {
+    !name.is_empty() && !name.starts_with('.') && !name.contains(['/', '\\'])
+}
+
 /// Whether `board` has a Bare Minimum.
 pub fn has_bare_minimum(board: &str) -> bool {
-    EXAMPLES
-        .get_dir(Path::new(board).join(BARE_MINIMUM))
-        .is_some()
+    plain(board) && root().is_some_and(|r| r.join(board).join(BARE_MINIMUM).is_dir())
 }
 
 /// The boards with a Bare Minimum, sorted (for tests).
 #[cfg(test)]
 pub fn bare_minimum_boards() -> Vec<String> {
-    let mut list: Vec<String> = EXAMPLES
-        .dirs()
-        .filter(|b| b.get_dir(b.path().join(BARE_MINIMUM)).is_some())
-        .filter_map(|b| Some(b.path().file_name()?.to_string_lossy().into_owned()))
-        .collect();
-    list.sort();
-    list
+    subdirs(&root().unwrap())
+        .into_iter()
+        .filter(|b| b.join(BARE_MINIMUM).is_dir())
+        .map(|b| file_name(&b))
+        .collect()
 }
 
 /// Writes an example's files into `dst` (replaced) and returns it, so it
 /// can be loaded as a project and its other files copied on save.
 pub fn write(board: &str, name: &str, dst: &Path) -> Result<PathBuf> {
-    let Some(example) = EXAMPLES.get_dir(Path::new(board).join(name)) else {
-        bail!("there's no example {board}/{name}");
+    let Some(root) = root() else {
+        bail!("the examples aren't downloaded yet");
     };
+    let example = root.join(board).join(name);
+    if !plain(board) || !plain(name) || !example.is_dir() {
+        bail!("there's no example {board}/{name}");
+    }
     if dst.exists() {
         std::fs::remove_dir_all(dst).with_context(|| format!("can't remove {}", dst.display()))?;
     }
-    std::fs::create_dir_all(dst).with_context(|| format!("can't create {}", dst.display()))?;
-    write_dir(example, example.path(), dst)?;
+    copy_dir(&example, dst)?;
     Ok(dst.to_path_buf())
 }
 
-/// Writes `dir`'s files, and its subfolders' (such as `boards/`), under
-/// `dst`, by their paths relative to `root`.
-fn write_dir(dir: &Dir<'_>, root: &Path, dst: &Path) -> Result<()> {
-    for file in dir.files() {
-        let Ok(rel) = file.path().strip_prefix(root) else {
-            continue;
-        };
-        let path = dst.join(rel);
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .with_context(|| format!("can't create {}", parent.display()))?;
+/// Copies `src`'s files, and its subfolders' (such as `boards/`), into
+/// `dst`.
+fn copy_dir(src: &Path, dst: &Path) -> Result<()> {
+    std::fs::create_dir_all(dst).with_context(|| format!("can't create {}", dst.display()))?;
+    for entry in std::fs::read_dir(src).with_context(|| format!("can't read {}", src.display()))? {
+        let path = entry?.path();
+        let to = dst.join(path.file_name().expect("a named entry"));
+        if path.is_dir() {
+            copy_dir(&path, &to)?;
+        } else {
+            std::fs::copy(&path, &to).with_context(|| format!("can't write {}", to.display()))?;
         }
-        std::fs::write(&path, file.contents())
-            .with_context(|| format!("can't write {}", path.display()))?;
-    }
-    for sub in dir.dirs() {
-        write_dir(sub, root, dst)?;
     }
     Ok(())
 }
@@ -218,6 +256,8 @@ mod tests {
             assert!(project::MAIN_FILES.contains(&loaded.files[0].name.as_str()));
         }
         assert!(write("alhambra-ii", "nope", &tmp.path().join("x")).is_err());
+        assert!(write("..", "examples", &tmp.path().join("x")).is_err());
+        assert!(!has_bare_minimum("../examples/alhambra-ii"));
     }
 
     /// Every example's board is one of Logix Engine's (as in the fake

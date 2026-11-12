@@ -5,7 +5,6 @@
 //! Run Tests, Simulate, Show Diagram, Auto Format, the connected devices
 //! and the language server's executable.
 
-mod bundle;
 mod catalog;
 mod client;
 mod devices;
@@ -81,9 +80,13 @@ impl Layout {
     fn bin_dir(&self) -> PathBuf {
         self.config_dir.join("engine-release")
     }
-    /// Scratch space for downloading and unpacking the engine package.
+    /// Scratch space for downloading and unpacking the packages.
     fn tmp_dir(&self) -> PathBuf {
-        self.config_dir.join("_scratch").join("engine-download")
+        self.config_dir.join("_scratch").join("download")
+    }
+    /// The unpacked examples package, with its receipt.
+    fn examples_dir(&self) -> PathBuf {
+        self.config_dir.join("examples")
     }
     /// The engine folder (`--engine-folder`), owned by the engine: its
     /// packages (toolchains), logs and scratch files. The engine requires
@@ -98,16 +101,25 @@ impl Layout {
     }
 }
 
-/// Which engine this run uses, for System Info and About.
+/// What this run uses, for System Info and About: the engine, the examples
+/// and the remote config that named them.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum InUse {
-    /// The release the remote config names (`yyyy-mm-dd`), and the config.
-    Release { release: String, config: ConfigInfo },
+pub struct InUse {
+    pub engine: EngineInUse,
+    /// The examples' release (`yyyy-mm-dd`).
+    pub examples: String,
+    pub config: ConfigInfo,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EngineInUse {
+    /// The release the remote config names (`yyyy-mm-dd`).
+    Release(String),
     /// A locally built engine (`LOGIX_DEV_ENGINE_BINARY`).
     Local(PathBuf),
 }
 
-/// The remote config the engine release came from.
+/// The remote config in use.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConfigInfo {
     pub source: String,

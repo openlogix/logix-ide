@@ -2,8 +2,6 @@ fn main() {
     // The app icons are built into the binary (tauri::generate_context!),
     // so rebuild when they change.
     println!("cargo:rerun-if-changed=icons");
-    // So are the examples (include_dir! in examples.rs).
-    println!("cargo:rerun-if-changed=../examples");
     app_version();
     tauri_build::build()
 }

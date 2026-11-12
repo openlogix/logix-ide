@@ -8,6 +8,7 @@ mod language_server;
 pub mod logging;
 mod menu;
 mod outcome;
+mod package;
 mod platform;
 mod project;
 mod remote_config;

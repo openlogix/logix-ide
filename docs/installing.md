@@ -29,8 +29,8 @@ the start screen offers a new project, an example, or your recent
 projects.
 
 Later starts are quick and also work without internet. Once a day, when you
-use it, Logix IDE checks for newer releases of Logix Engine and its FPGA tools
-and downloads them by itself (**Help > Check for Updates** checks now).
+use it, Logix IDE checks for newer releases of Logix Engine, its FPGA tools and
+the examples, and downloads them by itself (**Help > Check for Updates** checks now).
 
 ## Where Logix IDE keeps its files
 

@@ -94,20 +94,19 @@ pub async fn check_for_updates(
     if slot.is_none() {
         return Err(anyhow!("The FPGA tools aren't ready yet.").into());
     }
-    let mut changes = Vec::new();
-    if engine::update_if_due(&log, true).await? {
+    let updated = engine::update_if_due(&log, true).await?;
+    if updated.engine {
         *slot = None;
         let (started, _) = engine::start_engine(|_| {})
             .await
             .context("Couldn't start the new Logix Engine.")?;
         *slot = Some(std::sync::Arc::new(started));
-        if let Some(engine::InUse::Release { release, .. }) = engine::in_use() {
-            changes.push(format!(
-                "Updated Logix Engine to {}.",
-                crate::version::shown(&release)
-            ));
-        }
     }
+    if !updated.lines.is_empty() {
+        // New examples: the lists are read again on next use.
+        *state.catalog.lock().await = None;
+    }
+    let mut changes = updated.lines;
     let running = slot.clone().expect("set above");
     drop(slot);
     changes.extend(engine::check_for_updates(&running, log).await?);
@@ -253,10 +252,13 @@ async fn engine_with_check(
         return Err(anyhow!("The FPGA tools aren't ready yet.").into());
     };
     let updated = match log {
-        Some(log) => engine::update_if_due(log, false).await.unwrap_or_else(|e| {
-            crate::log!("Checking for a new Logix Engine failed: {e:#}");
-            false
-        }),
+        Some(log) => match engine::update_if_due(log, false).await {
+            Ok(u) => u.engine,
+            Err(e) => {
+                crate::log!("Checking for updates failed: {e:#}");
+                false
+            }
+        },
         None => false,
     };
     if !updated && !current.has_stopped() {

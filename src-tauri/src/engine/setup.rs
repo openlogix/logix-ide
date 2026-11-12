@@ -6,7 +6,6 @@
 //! Before an operation, `update_if_due` reads the config again when it's
 //! due, so a new engine release is used from the next operation.
 
-use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
@@ -16,8 +15,9 @@ use serde_json::{json, Value};
 use super::client::{tool_error, Engine, ProgressSink};
 use super::phase_sink;
 use super::{
-    bundle, dev_engine_binary, set_in_use, ConfigInfo, InUse, Layout, DEV_ENGINE_VARIABLE,
+    dev_engine_binary, set_in_use, ConfigInfo, EngineInUse, InUse, Layout, DEV_ENGINE_VARIABLE,
 };
+use crate::package;
 use crate::platform::{self, Platform};
 use crate::remote_config::{self, Cached, ConfigSource, Dependency};
 use crate::setup_events::{SetupEvent, SetupStage};
@@ -28,8 +28,9 @@ use crate::version::shown;
 const MSG_CONFIG: &str =
     "Couldn't check which Logix Engine to use. Check your internet connection, then click Retry.";
 const MSG_DOWNLOAD: &str =
-    "Couldn't download Logix Engine. Check your internet connection, then click Retry.";
+    "Couldn't download Logix Engine or the examples. Check your internet connection, then click Retry.";
 const MSG_UNPACK: &str = "Couldn't set up Logix Engine on this computer.";
+const MSG_EXAMPLES: &str = "Couldn't download the examples.";
 const MSG_PREPARE: &str = "Couldn't prepare the folder for Logix Engine.";
 const MSG_START: &str = "Couldn't start Logix Engine.";
 const MSG_PACKAGES: &str =
@@ -81,9 +82,11 @@ async fn read_config(
     }
 }
 
-fn record(dep: &Dependency, cached: &Cached, source: &ConfigSource) {
-    set_in_use(InUse::Release {
-        release: dep.release.clone(),
+/// The dependencies in place, as `read_config` and the downloads left them.
+fn record(engine: EngineInUse, cached: &Cached, source: &ConfigSource) {
+    set_in_use(InUse {
+        engine,
+        examples: cached.examples().release.clone(),
         config: ConfigInfo {
             source: source.location.clone(),
             is_override: source.is_override,
@@ -92,10 +95,36 @@ fn record(dep: &Dependency, cached: &Cached, source: &ConfigSource) {
     });
 }
 
-/// Downloads the engine release the remote config names if needed and
-/// starts it, returning it with its `get_engine_info`. It can already answer
-/// what needs no FPGA tools, such as `get_catalog`; its packages may still
-/// be missing.
+/// Downloads the examples package the config names if it isn't in place
+/// yet, and uses it. Returns the line saying it was updated, if it was.
+async fn ensure_examples(
+    platform: Platform,
+    layout: &Layout,
+    config: &Cached,
+    log: &(dyn Fn(String) + Send + Sync),
+) -> Result<Option<String>> {
+    let dir = layout.examples_dir();
+    let changed = download_dependency(
+        platform,
+        layout,
+        config.examples(),
+        &DependencyKind::EXAMPLES,
+        &dir,
+        log,
+        &no_progress,
+    )
+    .await
+    .context(MSG_EXAMPLES)?;
+    crate::examples::set_root(&dir);
+    Ok(changed)
+}
+
+/// Reads the remote config (cached while fresh), downloads the examples and
+/// the engine release it names if needed, and starts the engine, returning
+/// it with its `get_engine_info`. It can already answer what needs no FPGA
+/// tools, such as `get_catalog`; its packages may still be missing. With a
+/// local engine (`LOGIX_DEV_ENGINE_BINARY`) the config still gives the
+/// examples.
 pub async fn start<F>(emit: F) -> Result<(Engine, Value)>
 where
     F: Fn(SetupEvent) + Send + Sync + Clone + 'static,
@@ -107,9 +136,25 @@ where
     let platform = platform::current_implemented()?;
     let source = ConfigSource::from_env().context(MSG_CONFIG)?;
     let layout = Layout::new(&platform.data_dir()?, &source);
-
     let dev = dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE)).context(MSG_START)?;
-    let (exe, folder) = match dev {
+
+    if source.is_override {
+        emit(SetupEvent::DevRemoteConfig {
+            location: source.location.clone(),
+        });
+        log(format!(
+            "Using the remote config {} ({}), with its own folder {}.",
+            source.location,
+            remote_config::DEV_REMOTE_CONFIG_VARIABLE,
+            layout.config_dir.display()
+        ));
+    }
+    let config = read_config(&layout, &source, platform, source.is_override)
+        .await
+        .context(MSG_CONFIG)?;
+    ensure_examples(platform, &layout, &config, &log).await?;
+
+    let (exe, folder, in_use) = match dev {
         Some(exe) => {
             emit(SetupEvent::DevEngine {
                 path: exe.display().to_string(),
@@ -118,24 +163,13 @@ where
                 "Using the local Logix Engine {} ({DEV_ENGINE_VARIABLE}).",
                 exe.display()
             ));
-            set_in_use(InUse::Local(exe.clone()));
-            (exe, layout.dev_engine_folder())
+            (
+                exe.clone(),
+                layout.dev_engine_folder(),
+                EngineInUse::Local(exe),
+            )
         }
         None => {
-            if source.is_override {
-                emit(SetupEvent::DevRemoteConfig {
-                    location: source.location.clone(),
-                });
-                log(format!(
-                    "Using the remote config {} ({}), with its own folder {}.",
-                    source.location,
-                    remote_config::DEV_REMOTE_CONFIG_VARIABLE,
-                    layout.config_dir.display()
-                ));
-            }
-            let config = read_config(&layout, &source, platform, source.is_override)
-                .await
-                .context(MSG_CONFIG)?;
             let dep = config.engine().clone();
             let progress = {
                 let emit = emit.clone();
@@ -148,11 +182,25 @@ where
                     }
                 }
             };
-            let exe = download_release(platform, &layout, &dep, &log, &progress).await?;
-            record(&dep, &config, &source);
-            (exe, layout.engine_folder())
+            let bin_dir = layout.bin_dir();
+            download_dependency(
+                platform,
+                &layout,
+                &dep,
+                &DependencyKind::engine(platform),
+                &bin_dir,
+                &log,
+                &progress,
+            )
+            .await?;
+            (
+                bin_dir.join(platform.engine_exe_name()),
+                layout.engine_folder(),
+                EngineInUse::Release(dep.release.clone()),
+            )
         }
     };
+    record(in_use, &config, &source);
 
     tokio::fs::create_dir_all(&folder)
         .await
@@ -176,17 +224,24 @@ where
     Ok((engine, info))
 }
 
+/// What `update_if_due` changed.
+#[derive(Debug, Default)]
+pub struct Updated {
+    /// A new engine release is in place: the caller starts it.
+    pub engine: bool,
+    /// What changed, a line each, such as "Updated the examples to 2026.11.13."
+    pub lines: Vec<String>,
+}
+
 /// Before an operation: reads the remote config again when it's due (or
-/// always, with `force`: Check for Updates) and downloads the engine release
-/// it names if that's a new one. Returns true when it did, so the caller
-/// starts the new engine; the operation then runs on it. A local engine
-/// (`LOGIX_DEV_ENGINE_BINARY`) is never replaced. Without `force`, a config
-/// that can't be read (such as offline) isn't an error: the current engine
-/// stays, and the next check waits an hour.
-pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> Result<bool> {
-    if dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE))?.is_some() {
-        return Ok(false);
-    }
+/// always, with `force`: Check for Updates) and downloads the examples and
+/// the engine release it names if they're new ones. The caller then starts
+/// the new engine (`Updated::engine`); the operation runs on it. A local
+/// engine (`LOGIX_DEV_ENGINE_BINARY`) is never replaced. Without `force`, a
+/// config that can't be read (such as offline) isn't an error: what's in
+/// place stays, and the next check waits an hour.
+pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> Result<Updated> {
+    let dev = dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE))?;
     let platform = platform::current_implemented()?;
     let source = ConfigSource::from_env()?;
     let layout = Layout::new(&platform.data_dir()?, &source);
@@ -199,26 +254,44 @@ pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> R
             .unwrap()
             .is_some_and(|t| t.elapsed() < RETRY_AFTER);
         if fresh || waiting {
-            return Ok(false);
+            return Ok(Updated::default());
         }
     }
     let config = match read_config(&layout, &source, platform, true).await {
         Ok(c) => c,
         Err(e) if !force => {
-            crate::log!("Couldn't check for a new Logix Engine: {e:#}");
+            crate::log!("Couldn't check for updates: {e:#}");
             *LAST_FAILED_CHECK.lock().unwrap() = Some(Instant::now());
-            return Ok(false);
+            return Ok(Updated::default());
         }
         Err(e) => return Err(e.context(MSG_CONFIG)),
     };
     *LAST_FAILED_CHECK.lock().unwrap() = None;
-    let dep = config.engine().clone();
-    let new = !bundle::is_unpacked(&layout.bin_dir(), platform, &dep);
-    if new {
-        download_release(platform, &layout, &dep, &log, &no_progress).await?;
-    }
-    record(&dep, &config, &source);
-    Ok(new)
+    let mut updated = Updated::default();
+    updated
+        .lines
+        .extend(ensure_examples(platform, &layout, &config, &log).await?);
+    let in_use = match dev {
+        Some(exe) => EngineInUse::Local(exe),
+        None => {
+            let dep = config.engine().clone();
+            let line = download_dependency(
+                platform,
+                &layout,
+                &dep,
+                &DependencyKind::engine(platform),
+                &layout.bin_dir(),
+                &log,
+                &no_progress,
+            )
+            .await?;
+            updated.engine = line.is_some();
+            updated.lines.extend(line);
+            EngineInUse::Release(dep.release)
+        }
+    };
+    record(in_use, &config, &source);
+    Ok(updated)
 }
 
 /// Help > Check for Updates, after `update_if_due(.., true)`: asks the
@@ -296,50 +369,113 @@ where
     Ok(())
 }
 
-/// Downloads the engine release `dep` if it isn't yet (download, check
-/// and unpack, with progress in the console), replacing the release there
-/// before, and returns its executable.
-async fn download_release(
+/// A kind of dependency package: how it's named for people and laid out.
+struct DependencyKind {
+    /// As in "Downloading Logix Engine 2026.11.12...", "Updated the examples to ...".
+    name: &'static str,
+    /// The package's one top-level folder.
+    top: &'static str,
+    /// A path that must be in it.
+    needed: &'static str,
+    /// The engine's executable needs preparing (made executable, no
+    /// quarantine).
+    executable: bool,
+}
+
+impl DependencyKind {
+    const EXAMPLES: DependencyKind = DependencyKind {
+        name: "the examples",
+        top: "logix-ide-examples",
+        needed: "README.md",
+        executable: false,
+    };
+
+    fn engine(platform: Platform) -> DependencyKind {
+        DependencyKind {
+            name: "Logix Engine",
+            top: "logix-engine",
+            needed: platform.engine_exe_name(),
+            executable: true,
+        }
+    }
+}
+
+/// Makes the first letter a capital ("the examples" to "The examples").
+fn capitalized(s: &str) -> String {
+    let mut c = s.chars();
+    c.next()
+        .map(|f| f.to_uppercase().collect::<String>() + c.as_str())
+        .unwrap_or_default()
+}
+
+/// Downloads the dependency `dep` into `dest` if its receipt there doesn't
+/// match (download, check and unpack, with progress and console lines),
+/// replacing the release there before. Returns a line saying what it
+/// downloaded ("Updated Logix Engine to 2026.11.13." when it replaced
+/// another release), or None when it was in place.
+async fn download_dependency(
     platform: Platform,
     layout: &Layout,
     dep: &Dependency,
+    kind: &DependencyKind,
+    dest: &std::path::Path,
     log: &(dyn Fn(String) + Send + Sync),
     progress: &(dyn Fn(DownloadProgress) + Send + Sync),
-) -> Result<PathBuf> {
-    let bin_dir = layout.bin_dir();
-    if !bundle::is_unpacked(&bin_dir, platform, dep) {
-        let previous = bundle::receipt(&bin_dir).map(|r| r.release);
-        progress(DownloadProgress::Started);
-        log(format!(
-            "Downloading Logix Engine {}...",
-            shown(&dep.release)
-        ));
-        let tmp_dir = layout.tmp_dir();
-        tokio::fs::create_dir_all(&tmp_dir)
-            .await
-            .with_context(|| format!("can't create {}", tmp_dir.display()))
-            .context(MSG_PREPARE)?;
-        let archive = tmp_dir.join(&dep.file);
-        crate::download::download(&dep.url, &archive, |received, total| {
-            progress(DownloadProgress::Bytes { received, total })
-        })
-        .await
-        .context(MSG_DOWNLOAD)?;
-        let (dep2, bin2) = (dep.clone(), bin_dir.clone());
-        tokio::task::spawn_blocking(move || {
-            bundle::unpack(platform, &archive, &dep2, &tmp_dir, &bin2)
-        })
-        .await
-        .context(MSG_UNPACK)?
-        .context(MSG_UNPACK)?;
-        log(match previous {
-            Some(p) if p != dep.release => {
-                format!("Updated Logix Engine to {}.", shown(&dep.release))
-            }
-            _ => format!("Logix Engine {} downloaded.", shown(&dep.release)),
-        });
+) -> Result<Option<String>> {
+    if package::is_unpacked(dest, platform, dep, kind.needed) {
+        return Ok(None);
     }
-    Ok(bin_dir.join(platform.engine_exe_name()))
+    let previous = package::receipt(dest).map(|r| r.release);
+    progress(DownloadProgress::Started);
+    log(format!(
+        "Downloading {} {}...",
+        kind.name,
+        shown(&dep.release)
+    ));
+    let tmp_dir = layout.tmp_dir();
+    tokio::fs::create_dir_all(&tmp_dir)
+        .await
+        .with_context(|| format!("can't create {}", tmp_dir.display()))
+        .context(MSG_PREPARE)?;
+    let archive = tmp_dir.join(&dep.file);
+    crate::download::download(&dep.url, &archive, |received, total| {
+        progress(DownloadProgress::Bytes { received, total })
+    })
+    .await
+    .context(MSG_DOWNLOAD)?;
+    let (dep2, dest2) = (dep.clone(), dest.to_path_buf());
+    let (top, needed, executable) = (kind.top, kind.needed, kind.executable);
+    tokio::task::spawn_blocking(move || {
+        package::unpack(
+            platform,
+            &archive,
+            &dep2,
+            top,
+            needed,
+            &tmp_dir,
+            &dest2,
+            |dir| {
+                if executable {
+                    platform.prepare_unpacked_bundle(dir, &dir.join(needed))
+                } else {
+                    Ok(())
+                }
+            },
+        )
+    })
+    .await
+    .context(MSG_UNPACK)?
+    .context(MSG_UNPACK)?;
+    let line = match previous {
+        Some(p) if p != dep.release => format!("Updated {} to {}.", kind.name, shown(&dep.release)),
+        _ => format!(
+            "{} {} downloaded.",
+            capitalized(kind.name),
+            shown(&dep.release)
+        ),
+    };
+    log(line.clone());
+    Ok(Some(line))
 }
 
 /// How far the engine package's download is, for setup's progress.
@@ -572,7 +708,10 @@ mod tests {
         assert_eq!(info["platform"], "darwin-arm64");
         let dir = tmp.path().join("dev/config-override");
         let cached = remote_config::load_cache(&dir).expect("the cached config");
-        let receipt = bundle::receipt(&dir.join("engine-release")).unwrap();
+        let receipt = package::receipt(&dir.join("engine-release")).unwrap();
+        let examples = package::receipt(&dir.join("examples")).unwrap();
+        assert!(examples.matches(cached.examples(), Platform::MacosArm64));
+        assert!(dir.join("examples/icesugar-1-5/blinky").is_dir());
         assert!(dir.join("engine").is_dir());
         assert!(
             !tmp.path().join("engine").exists(),
@@ -580,9 +719,10 @@ mod tests {
         );
         assert!(receipt.matches(cached.engine(), Platform::MacosArm64));
         assert!(matches!(
-            super::super::in_use(),
-            Some(InUse::Release { .. })
+            super::super::in_use().map(|u| u.engine),
+            Some(EngineInUse::Release(_))
         ));
-        assert!(!update_if_due(|l| println!("{l}"), true).await.unwrap());
+        let again = update_if_due(|l| println!("{l}"), true).await.unwrap();
+        assert!(!again.engine && again.lines.is_empty(), "{again:?}");
     }
 }

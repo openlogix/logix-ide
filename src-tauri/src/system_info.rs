@@ -7,12 +7,13 @@ use std::path::Path;
 
 use serde_json::{json, Value};
 
-use crate::engine::{self, Engine, InUse};
+use crate::engine::{self, Engine, EngineInUse, InUse};
 use crate::platform::Platform;
 use crate::remote_config;
 
 /// The IDE's own lines: name and version, the operating system, the IDE's
-/// log file, which engine it runs and the remote config that named it.
+/// log file, which engine and examples it uses and the remote config that
+/// named them.
 pub fn ide_lines(
     name: &str,
     version: &str,
@@ -29,28 +30,34 @@ pub fn ide_lines(
         ),
     ];
     match engine {
-        Some(InUse::Release { release, config }) => {
+        Some(u) => {
+            lines.push(match &u.engine {
+                EngineInUse::Release(release) => format!(
+                    "Logix Engine used: release {}",
+                    crate::version::shown(release)
+                ),
+                EngineInUse::Local(path) => format!(
+                    "Logix Engine used: local binary {} ({})",
+                    path.display(),
+                    engine::DEV_ENGINE_VARIABLE
+                ),
+            });
             lines.push(format!(
-                "Logix Engine used: release {}",
-                crate::version::shown(release)
+                "Examples: release {}",
+                crate::version::shown(&u.examples)
             ));
             lines.push(format!(
                 "Remote config: config {}, {}{}, read {}",
                 remote_config::CONFIG_VERSION,
-                config.source,
-                if config.is_override {
+                u.config.source,
+                if u.config.is_override {
                     format!(" ({})", remote_config::DEV_REMOTE_CONFIG_VARIABLE)
                 } else {
                     String::new()
                 },
-                remote_config::utc_time(config.read_at)
+                remote_config::utc_time(u.config.read_at)
             ));
         }
-        Some(InUse::Local(path)) => lines.push(format!(
-            "Logix Engine used: local binary {} ({})",
-            path.display(),
-            engine::DEV_ENGINE_VARIABLE
-        )),
         None => lines.push("Logix Engine used: not chosen yet (setup hasn't finished)".into()),
     }
     lines
@@ -113,8 +120,9 @@ mod tests {
             "2026.11.12",
             "macOS 26.5 (macos-arm64)",
             Some(Path::new("/Users/you/.logix/ide/logs/logix.log")),
-            Some(&InUse::Release {
-                release: "2026-11-08".into(),
+            Some(&InUse {
+                engine: EngineInUse::Release("2026-11-08".into()),
+                examples: "2026-11-12".into(),
                 config: engine::ConfigInfo {
                     source: "https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc".into(),
                     is_override: false,
@@ -132,6 +140,7 @@ mod tests {
 Operating system: macOS 26.5 (macos-arm64)
 Log file: /Users/you/.logix/ide/logs/logix.log
 Logix Engine used: release 2026.11.08
+Examples: release 2026.11.12
 Remote config: config 001, https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc, read 2026-11-12 00:00 UTC
 
 Logix Engine 2026.11.08
@@ -146,12 +155,24 @@ Platform: darwin-arm64"
             "2026.11.12",
             "macos-arm64",
             None,
-            Some(&InUse::Local("/w/logix-engine".into())),
+            Some(&InUse {
+                engine: EngineInUse::Local("/w/logix-engine".into()),
+                examples: "2026-11-12".into(),
+                config: engine::ConfigInfo {
+                    source: "/w/config-001.jsonc".into(),
+                    is_override: true,
+                    read_at: 0,
+                },
+            }),
         );
         assert_eq!(ide[2], "Log file: (none)");
         assert_eq!(
             ide[3],
             "Logix Engine used: local binary /w/logix-engine (LOGIX_DEV_ENGINE_BINARY)"
+        );
+        assert_eq!(
+            ide[5],
+            "Remote config: config 001, /w/config-001.jsonc (LOGIX_IDE_DEV_REMOTE_CONFIG), read 1970-01-01 00:00 UTC"
         );
     }
 }

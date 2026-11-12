@@ -208,12 +208,12 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         version: Some(crate::version::APP_VERSION.to_string()),
         comments: Some(format!(
             "The Arduino experience, for FPGAs.\n{}\n\nLogix IDE is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
-            match crate::engine::in_use() {
-                Some(crate::engine::InUse::Release { release, .. }) => format!(
+            match crate::engine::in_use().map(|u| u.engine) {
+                Some(crate::engine::EngineInUse::Release(release)) => format!(
                     "Powered by Logix Engine (release {}).",
                     crate::version::shown(&release)
                 ),
-                Some(crate::engine::InUse::Local(_)) => "Powered by a local Logix Engine.".into(),
+                Some(crate::engine::EngineInUse::Local(_)) => "Powered by a local Logix Engine.".into(),
                 None => "Powered by Logix Engine.".into(),
             }
         )),

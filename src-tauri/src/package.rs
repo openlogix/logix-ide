@@ -1,11 +1,13 @@
-//! Unpacking and checking the engine package, a release file named by
-//! Logix IDE's remote config (`remote_config.rs`): such as
-//! `logix-engine-darwin-arm64-20261112.tgz`, with one top-level
-//! `logix-engine/` folder holding the executable and its licenses. Next to
-//! the unpacked executable, its receipt says what it is.
+//! Logix IDE's dependency packages, the release files its remote config
+//! names (`remote_config.rs`): Logix Engine (`logix-engine-<platform>-<yyyymmdd>.tgz`,
+//! one top-level `logix-engine/` folder with the executable and its
+//! licenses) and the examples (`logix-ide-examples-<yyyymmdd>.tgz`, one
+//! top-level `logix-ide-examples/` folder). Each is checked against its
+//! SHA-256 and unpacked as a folder of its own, with its receipt, which
+//! says what it is. Plain Rust, no Tauri.
 
 use std::io::Read;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -15,11 +17,11 @@ use crate::download::{remove_dir_if_exists, unpack_tgz};
 use crate::platform::Platform;
 use crate::remote_config::Dependency;
 
-/// Written next to the unpacked executable, last, so an interrupted unpack
-/// is never taken for a complete one.
+/// Written in the unpacked folder, last, so an interrupted unpack is never
+/// taken for a complete one.
 const RECEIPT_FILE: &str = "receipt.json";
 
-/// How Logix IDE lays out the unpacked engine. Raise it only when that
+/// How Logix IDE lays out its unpacked packages. Raise it only when that
 /// changes, so older unpacks are downloaded again.
 const LAYOUT: u32 = 1;
 
@@ -50,16 +52,16 @@ impl Receipt {
     }
 }
 
-/// The receipt in `bin_dir`, if there's a readable one.
-pub fn receipt(bin_dir: &Path) -> Option<Receipt> {
-    let bytes = std::fs::read(bin_dir.join(RECEIPT_FILE)).ok()?;
+/// The receipt in `dir`, if there's a readable one.
+pub fn receipt(dir: &Path) -> Option<Receipt> {
+    let bytes = std::fs::read(dir.join(RECEIPT_FILE)).ok()?;
     serde_json::from_slice(&bytes).ok()
 }
 
-/// True if `bin_dir` holds a complete unpack of `dep`.
-pub fn is_unpacked(bin_dir: &Path, platform: Platform, dep: &Dependency) -> bool {
-    bin_dir.join(platform.engine_exe_name()).is_file()
-        && receipt(bin_dir).is_some_and(|r| r.matches(dep, platform))
+/// True if `dir` holds a complete unpack of `dep`, with `needed` (a path
+/// inside it, such as the engine's executable) there.
+pub fn is_unpacked(dir: &Path, platform: Platform, dep: &Dependency, needed: &str) -> bool {
+    dir.join(needed).exists() && receipt(dir).is_some_and(|r| r.matches(dep, platform))
 }
 
 /// The SHA-256 of a file, lowercase hex. Blocking.
@@ -77,43 +79,51 @@ fn sha256_of(file: &Path) -> Result<String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
-/// Checks a downloaded package against its SHA-256 and unpacks it as
-/// `bin_dir`, replacing the release there before. Returns the executable.
-/// Blocking.
+/// Checks a downloaded package against its SHA-256 and unpacks its one
+/// top-level folder `top` as `dest`, replacing the release there before.
+/// `needed` must be in it; `prepare` then readies the folder (such as
+/// making the engine executable). Blocking.
+#[allow(clippy::too_many_arguments)]
 pub fn unpack(
     platform: Platform,
     archive: &Path,
     dep: &Dependency,
+    top: &str,
+    needed: &str,
     tmp_dir: &Path,
-    bin_dir: &Path,
-) -> Result<PathBuf> {
+    dest: &Path,
+    prepare: impl FnOnce(&Path) -> Result<()>,
+) -> Result<()> {
     let sha256 = sha256_of(archive)?;
     if sha256 != dep.sha256 {
         bail!(
-            "the downloaded engine file is damaged: its SHA-256 is {sha256}, not {} as the \
+            "the downloaded file {} is damaged: its SHA-256 is {sha256}, not {} as the \
              release's SHA256SUMS says",
+            dep.file,
             dep.sha256
         );
     }
     let size = std::fs::metadata(archive)?.len();
     let extract_dir = tmp_dir.join("extract");
     remove_dir_if_exists(&extract_dir)?;
-    unpack_tgz(archive, &extract_dir).context("the downloaded engine file is damaged")?;
+    unpack_tgz(archive, &extract_dir)
+        .with_context(|| format!("the downloaded file {} is damaged", dep.file))?;
 
-    let unpacked = extract_dir.join("logix-engine");
-    let exe_name = platform.engine_exe_name();
-    if !unpacked.join(exe_name).is_file() {
-        bail!("the downloaded engine file doesn't contain logix-engine/{exe_name}");
+    let unpacked = extract_dir.join(top);
+    if !unpacked.join(needed).exists() {
+        bail!(
+            "the downloaded file {} doesn't contain {top}/{needed}",
+            dep.file
+        );
     }
 
-    remove_dir_if_exists(bin_dir)?;
-    if let Some(parent) = bin_dir.parent() {
+    remove_dir_if_exists(dest)?;
+    if let Some(parent) = dest.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::rename(&unpacked, bin_dir)
-        .with_context(|| format!("can't move the engine into {}", bin_dir.display()))?;
-    let exe = bin_dir.join(exe_name);
-    platform.prepare_unpacked_bundle(bin_dir, &exe)?;
+    std::fs::rename(&unpacked, dest)
+        .with_context(|| format!("can't move {top} into {}", dest.display()))?;
+    prepare(dest)?;
 
     let receipt = Receipt {
         repo: dep.repo.clone(),
@@ -127,13 +137,13 @@ pub fn unpack(
         layout: LAYOUT,
     };
     std::fs::write(
-        bin_dir.join(RECEIPT_FILE),
+        dest.join(RECEIPT_FILE),
         serde_json::to_vec_pretty(&receipt)?,
     )?;
 
     let _ = std::fs::remove_dir_all(&extract_dir);
     let _ = std::fs::remove_file(archive);
-    Ok(exe)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -143,7 +153,7 @@ mod tests {
 
     /// A package with the real package's layout, and the dependency that
     /// names it.
-    fn package(dir: &Path, entries: &[(&str, &[u8])]) -> (PathBuf, Dependency) {
+    fn package(dir: &Path, entries: &[(&str, &[u8])]) -> (std::path::PathBuf, Dependency) {
         let file = "logix-engine-darwin-arm64-20261112.tgz";
         let archive = dir.join(file);
         make_tgz(&archive, entries);
@@ -173,14 +183,25 @@ mod tests {
         );
         let p = Platform::MacosArm64;
         let bin_dir = tmp.path().join("engine-release");
-        assert!(!is_unpacked(&bin_dir, p, &dep));
+        let exe = "logix-engine";
+        assert!(!is_unpacked(&bin_dir, p, &dep, exe));
 
-        let exe = unpack(p, &archive, &dep, &tmp.path().join("tmp"), &bin_dir).unwrap();
+        unpack(
+            p,
+            &archive,
+            &dep,
+            "logix-engine",
+            exe,
+            &tmp.path().join("tmp"),
+            &bin_dir,
+            |d| p.prepare_unpacked_bundle(d, &d.join(exe)),
+        )
+        .unwrap();
 
-        assert_eq!(exe, bin_dir.join("logix-engine"));
+        let exe_path = bin_dir.join(exe);
         assert!(bin_dir.join("LICENSE-MIT").is_file());
         assert!(!archive.exists());
-        assert!(is_unpacked(&bin_dir, p, &dep));
+        assert!(is_unpacked(&bin_dir, p, &dep, exe));
         let r = receipt(&bin_dir).unwrap();
         assert_eq!(
             (r.release.as_str(), r.platform.as_str()),
@@ -190,12 +211,12 @@ mod tests {
         // Another release, or the same tag rebuilt, is downloaded again.
         let mut other = dep.clone();
         other.url = other.url.replace("2026-11-12", "2026-11-13");
-        assert!(!is_unpacked(&bin_dir, p, &other));
+        assert!(!is_unpacked(&bin_dir, p, &other, exe));
         let mut rebuilt = dep.clone();
         rebuilt.sha256 = "00".repeat(32);
-        assert!(!is_unpacked(&bin_dir, p, &rebuilt));
+        assert!(!is_unpacked(&bin_dir, p, &rebuilt, exe));
         use std::os::unix::fs::PermissionsExt;
-        let mode = std::fs::metadata(&exe).unwrap().permissions().mode();
+        let mode = std::fs::metadata(&exe_path).unwrap().permissions().mode();
         assert_ne!(mode & 0o111, 0, "not executable");
     }
 
@@ -205,7 +226,17 @@ mod tests {
         let (archive, mut dep) = package(tmp.path(), &[("logix-engine/logix-engine", b"x")]);
         dep.sha256 = "00".repeat(32);
         let bin_dir = tmp.path().join("engine-release");
-        let err = unpack(Platform::MacosArm64, &archive, &dep, tmp.path(), &bin_dir).unwrap_err();
+        let err = unpack(
+            Platform::MacosArm64,
+            &archive,
+            &dep,
+            "logix-engine",
+            "logix-engine",
+            tmp.path(),
+            &bin_dir,
+            |_| Ok(()),
+        )
+        .unwrap_err();
         assert!(err.to_string().contains("damaged"), "{err}");
         assert!(!bin_dir.exists());
     }
@@ -218,8 +249,11 @@ mod tests {
             Platform::MacosArm64,
             &archive,
             &dep,
+            "logix-engine",
+            "logix-engine",
             &tmp.path().join("tmp"),
             &tmp.path().join("engine-release"),
+            |_| Ok(()),
         )
         .unwrap_err();
         assert!(err.to_string().contains("doesn't contain"), "{err}");

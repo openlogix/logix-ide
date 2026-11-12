@@ -185,6 +185,12 @@ The examples are in `examples/<board>/<name>/`, each a Logix IDE project with
 a `logix-ide.toml` holding its board and description. They're Logix IDE's own,
 maintained here: edit them in place.
 
+Logix IDE doesn't read this folder: it downloads the `logix-ide-examples`
+package that its remote config names. Each pre-release packs this folder
+into one (`scripts/pack-examples.py`), so an edited example reaches users
+once it's in a pre-release and the remote config names that release. The
+tests (`cargo test`, `real_examples_build`) read this folder directly.
+
 ### Previewing the documentation site
 
 ```

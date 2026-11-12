@@ -39,9 +39,12 @@ pub const MAX_AGE: Duration = Duration::from_secs(24 * 60 * 60);
 const SCHEMA: &str = "https://www.openlogix.org/schemas/logix-remote-config-v1.json";
 /// Logix Engine's package name, its key in the config.
 pub const ENGINE: &str = "logix-engine";
+/// The examples' package name (built and published by this repo's
+/// pre-release workflow, `scripts/pack-examples.py`).
+pub const EXAMPLES: &str = "logix-ide-examples";
 /// The dependencies every config of this config version must name, and no
 /// others.
-const DEPENDENCIES: [&str; 1] = [ENGINE];
+const DEPENDENCIES: [&str; 2] = [ENGINE, EXAMPLES];
 
 /// The config's path in the repo.
 pub fn repo_path() -> String {
@@ -382,6 +385,10 @@ impl Cached {
     pub fn engine(&self) -> &Dependency {
         &self.dependencies[ENGINE]
     }
+
+    pub fn examples(&self) -> &Dependency {
+        &self.dependencies[EXAMPLES]
+    }
 }
 
 /// The cache file in a dependencies folder (see `engine::Layout`).
@@ -435,6 +442,13 @@ mod tests {
     "repo": "openlogix/logix-engine",
     "release": "2026-11-12",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+  },
+
+  // The examples.
+  "logix-ide-examples": {
+    "repo": "openlogix/logix-ide",
+    "release": "2026-11-12",
+    "file": "logix-ide-examples-${YYYYMMDD}.tgz"
   }
 }
 "#;
@@ -464,6 +478,11 @@ mod tests {
     fn bad_configs_are_refused() {
         for (from, to, why) in [
             ("2026-11-12", "latest", "release"),
+            (
+                "\"logix-ide-examples\": {",
+                "\"logix-ide-other\": {",
+                "exactly",
+            ),
             ("openlogix/logix-engine", "logix-engine", "owner/name"),
             ("logix-engine-${PLATFORM}", "../evil", "bad file"),
             ("\"logix-engine\": {", "\"logix-other\": {", "exactly"),
@@ -560,16 +579,20 @@ mod tests {
             source: default_url(),
             config_version: CONFIG_VERSION.into(),
             fetched: now(),
-            dependencies: BTreeMap::from([(
-                ENGINE.to_string(),
-                Dependency {
-                    repo: "openlogix/logix-engine".into(),
-                    release: "2026-11-12".into(),
-                    file: "logix-engine-darwin-arm64-20261112.tgz".into(),
-                    url: "https://example/x.tgz".into(),
-                    sha256: "ab".repeat(32),
-                },
-            )]),
+            dependencies: [ENGINE, EXAMPLES]
+                .map(|name| {
+                    (
+                        name.to_string(),
+                        Dependency {
+                            repo: "openlogix/logix-engine".into(),
+                            release: "2026-11-12".into(),
+                            file: format!("{name}-20261112.tgz"),
+                            url: format!("https://example/{name}.tgz"),
+                            sha256: "ab".repeat(32),
+                        },
+                    )
+                })
+                .into(),
         };
         save_cache(tmp.path(), &cached).unwrap();
         assert_eq!(load_cache(tmp.path()).as_ref(), Some(&cached));
@@ -579,6 +602,9 @@ mod tests {
             is_override: true,
         };
         assert!(!cached.matches(&other));
+        let mut no_examples = cached.clone();
+        no_examples.dependencies.remove(EXAMPLES);
+        assert!(!no_examples.matches(&ConfigSource::regular()));
         cached.fetched -= MAX_AGE.as_secs();
         assert!(cached.is_due());
         cached.fetched = now() + 3600;

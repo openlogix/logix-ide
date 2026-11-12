@@ -1,7 +1,11 @@
 # Examples
 
-The examples Logix IDE offers in File > Examples, built into the app. Each
-folder `<board>/<name>/` is a Logix project: its files and a `logix-ide.toml`
+The examples Logix IDE offers in File > Examples. They reach users as the
+`logix-ide-examples` package: each pre-release packs this folder
+(`scripts/pack-examples.py`), and Logix IDE downloads the release its remote
+config names (`remote-config/logix-ide/`), so a fixed or new example reaches
+installed Logix IDEs without a new Logix IDE release. Each
+folder `<board>/<name>/` is a Logix IDE project: its files and a `logix-ide.toml`
 with the board and a one-line description.
 
 Every board's `blinky` and `bare-minimum` are standard examples, written

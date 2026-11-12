@@ -13,5 +13,13 @@
     "repo": "openlogix/logix-engine",
     "release": "2026-11-12",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+  },
+
+  // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
+  // packed by this repo's pre-release workflow (scripts/pack-examples.py).
+  "logix-ide-examples": {
+    "repo": "openlogix/logix-ide",
+    "release": "2026-11-12",
+    "file": "logix-ide-examples-${YYYYMMDD}.tgz"
   }
 }
