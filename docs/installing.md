@@ -17,8 +17,11 @@ Logix IDE needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer
     ```
 
 3. Double-click the `.dmg` file and drag **Logix IDE** into the **Applications**
-   folder.
-4. Open Logix IDE from **Applications**.
+   folder. Dragging only copies it: nothing opens, and that's expected.
+4. Start Logix IDE: open **Finder**, click **Applications** in the sidebar and
+   double-click **Logix IDE** (or press Command-Space, type `Logix IDE` and
+   press Return). You can then eject the **Logix IDE** disk in Finder's
+   sidebar.
 
 ## The first start
 

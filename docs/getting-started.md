@@ -24,7 +24,10 @@ allow it to open, and drag it into the **Applications** folder.
 
 ## 2. Start Logix IDE
 
-Open **Logix IDE** from the **Applications** folder. The first time, it
+Open **Finder**, click **Applications** in the sidebar and double-click
+**Logix IDE** (or press Command-Space, type `Logix IDE` and press Return).
+Dragging it into Applications only copied it, so this is its first start. The
+first time, it
 downloads its FPGA tools, which takes a few minutes. The status bar at the
 bottom of the window shows the progress, and the output area above it shows
 what's happening:

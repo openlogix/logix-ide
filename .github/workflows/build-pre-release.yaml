@@ -125,8 +125,8 @@ jobs:
              \`\`\`
              xattr -c ~/Downloads/logix-darwin-arm64-${PACKAGE_TAG}.dmg
              \`\`\`
-          3. Double-click the \`.dmg\` file and drag **Logix IDE** into the **Applications** folder.
-          4. Open Logix IDE from Applications. On its first start, Logix IDE downloads the FPGA tools it needs. This may take a few minutes; later starts are quick.
+          3. Double-click the \`.dmg\` file and drag **Logix IDE** into the **Applications** folder. Dragging only copies it: nothing opens, and that's expected.
+          4. Start Logix IDE: open **Finder**, click **Applications** in the sidebar and double-click **Logix IDE** (or press Command-Space, type \`Logix IDE\` and press Return). On its first start, Logix IDE downloads the FPGA tools it needs. This may take a few minutes; later starts are quick.
 
           To uninstall, drag Logix IDE from Applications to the Trash. You can also delete the \`~/.logix/ide\` folder, which holds the FPGA tools Logix IDE downloaded and its settings. Your projects aren't in it.
 

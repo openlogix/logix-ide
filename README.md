@@ -76,8 +76,11 @@ Linux are planned.
    ```
 
 3. Double-click the `.dmg` file and drag **Logix IDE** into your
-   **Applications** folder.
-4. Open Logix IDE. The first time, it downloads the FPGA tools it needs. This
+   **Applications** folder. Dragging only copies it: nothing opens, and that's
+   expected.
+4. Start Logix IDE: open **Finder**, click **Applications** in the sidebar and
+   double-click **Logix IDE** (or press Command-Space, type `Logix IDE` and
+   press Return). The first time, it downloads the FPGA tools it needs. This
    takes a few minutes and needs an internet connection. After that, Logix IDE
    starts quickly and works offline too.
 
