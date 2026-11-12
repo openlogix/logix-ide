@@ -6,7 +6,7 @@ Logix IDE isn't signed with an Apple Developer ID yet. Before opening the
 downloaded `.dmg`, run in Terminal (with your file's name):
 
 ```
-xattr -c ~/Downloads/logix-darwin-arm64-<date>.dmg
+xattr -c ~/Downloads/logix-ide-darwin-arm64-<date>.dmg
 ```
 
 Then open it and drag Logix IDE to **Applications** again. See

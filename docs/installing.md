@@ -6,14 +6,14 @@ Logix IDE needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer
 
 1. On the [releases page](https://github.com/openlogix/logix-ide/releases), find the release marked
    **Latest** (not necessarily the newest one: newer pre-releases are
-   development builds) and download its `logix-darwin-arm64-<date>.dmg` to
+   development builds) and download its `logix-ide-darwin-arm64-<date>.dmg` to
    your **Downloads** folder.
 2. Open **Terminal** and run this command.
    Logix IDE isn't signed with an Apple Developer ID yet, and this tells macOS to
    allow it:
 
     ```
-    xattr -c ~/Downloads/logix-darwin-arm64-*.dmg
+    xattr -c ~/Downloads/logix-ide-darwin-arm64-*.dmg
     ```
 
 3. Double-click the `.dmg` file and drag **Logix IDE** into the **Applications**

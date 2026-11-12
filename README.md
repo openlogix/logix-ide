@@ -65,14 +65,14 @@ Linux are planned.
 
 1. On the [releases page](https://github.com/openlogix/logix-ide/releases), find the release marked
    **Latest** (not necessarily the newest one: newer pre-releases are
-   development builds) and download its `logix-darwin-arm64-<date>.dmg` to
+   development builds) and download its `logix-ide-darwin-arm64-<date>.dmg` to
    your **Downloads** folder.
 2. Open **Terminal** and run this command, using the name of the file you
    downloaded. Logix IDE isn't signed by Apple yet, and this tells your Mac it's
    OK to open it:
 
    ```
-   xattr -c ~/Downloads/logix-darwin-arm64-<date>.dmg
+   xattr -c ~/Downloads/logix-ide-darwin-arm64-<date>.dmg
    ```
 
 3. Double-click the `.dmg` file and drag **Logix IDE** into your

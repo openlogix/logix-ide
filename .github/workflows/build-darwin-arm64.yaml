@@ -75,9 +75,9 @@ jobs:
           IFS=- read -r y m d <<< "$RELEASE_TAG"
           export SEMVER="$((10#$y)).$((10#$m)).$((10#$d))"
           perl -pi -e 's/^  "version": "0\.0\.0",/  "version": "$ENV{SEMVER}",/' package.json src-tauri/tauri.conf.json
-          perl -0pi -e 's/(\n  "name": "logix",\n  "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/; s/(\n    "": \{\n      "name": "logix",\n      "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/' package-lock.json
+          perl -0pi -e 's/(\n  "name": "logix-ide",\n  "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/; s/(\n    "": \{\n      "name": "logix-ide",\n      "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/' package-lock.json
           perl -0pi -e 's/^version = "0\.0\.0"/version = "$ENV{SEMVER}"/m' src-tauri/Cargo.toml
-          perl -0pi -e 's/(name = "logix"\nversion = )"0\.0\.0"/$1"$ENV{SEMVER}"/' src-tauri/Cargo.lock
+          perl -0pi -e 's/(name = "logix-ide"\nversion = )"0\.0\.0"/$1"$ENV{SEMVER}"/' src-tauri/Cargo.lock
           git diff --stat
           test "$(git diff --numstat | wc -l)" -eq 5
 
@@ -96,7 +96,7 @@ jobs:
             echo "Error: expected exactly one .dmg, found: ${dmgs[*]}"
             exit 1
           fi
-          cp "${dmgs[0]}" "logix-darwin-arm64-${PACKAGE_TAG}.dmg"
+          cp "${dmgs[0]}" "logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg"
           ls -al *.dmg
 
       # Checks what users get: the .dmg is sound, it has the app, the
@@ -107,7 +107,7 @@ jobs:
       # checked inside the mounted .dmg.
       - name: Verify the .dmg and the app signature
         run: |
-          dmg="logix-darwin-arm64-${PACKAGE_TAG}.dmg"
+          dmg="logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg"
           hdiutil verify "$dmg"
           mnt="$(mktemp -d)"
           hdiutil attach "$dmg" -nobrowse -readonly -mountpoint "$mnt"
@@ -131,5 +131,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           if-no-files-found: error
-          name: logix-darwin-arm64
-          path: logix-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
+          name: logix-ide-darwin-arm64
+          path: logix-ide-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg

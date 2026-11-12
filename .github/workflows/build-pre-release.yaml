@@ -90,7 +90,7 @@ jobs:
       - name: Download the installers
         uses: actions/download-artifact@v8
         with:
-          pattern: logix-*
+          pattern: logix-ide-*
           merge-multiple: true
           path: _artifacts
 
@@ -111,7 +111,7 @@ jobs:
         uses: openlogix/.github/actions/scan-files-for-viruses@main
         with:
           file-patterns: |
-            _artifacts/logix-*.dmg
+            _artifacts/logix-ide-*.dmg
 
       # The release text's own part; publish-pre-release adds the rest.
       - name: Write the release content
@@ -120,10 +120,10 @@ jobs:
           cat > CONTENT.md <<EOF
           ### Installing Logix IDE on macOS (Apple Silicon)
 
-          1. Download \`logix-darwin-arm64-${PACKAGE_TAG}.dmg\` (below) to your **Downloads** folder.
+          1. Download \`logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg\` (below) to your **Downloads** folder.
           2. Open **Terminal** and run this command. Logix IDE isn't signed with an Apple Developer ID yet, and this tells macOS to allow it:
              \`\`\`
-             xattr -c ~/Downloads/logix-darwin-arm64-${PACKAGE_TAG}.dmg
+             xattr -c ~/Downloads/logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg
              \`\`\`
           3. Double-click the \`.dmg\` file and drag **Logix IDE** into the **Applications** folder. Dragging only copies it: nothing opens, and that's expected.
           4. Start Logix IDE: open **Finder**, click **Applications** in the sidebar and double-click **Logix IDE** (or press Command-Space, type \`Logix IDE\` and press Return). On its first start, Logix IDE downloads the FPGA tools it needs. This may take a few minutes; later starts are quick.
@@ -134,7 +134,7 @@ jobs:
 
           | System | Architecture | Installer type | Package |
           | :--- | :--- | :--- | :--- |
-          | macOS | Apple Silicon | Disk image | [logix-darwin-arm64-${PACKAGE_TAG}.dmg](${url}/logix-darwin-arm64-${PACKAGE_TAG}.dmg) |
+          | macOS | Apple Silicon | Disk image | [logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg](${url}/logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg) |
 
           ### Examples package
 
@@ -149,5 +149,5 @@ jobs:
           links: "[Main page](https://www.openlogix.org/ide/) · [Docs](https://www.openlogix.org/logix-ide/) · [Install guide](https://www.openlogix.org/logix-ide/installing/)"
           content-file: CONTENT.md
           files: |
-            _artifacts/logix-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
+            _artifacts/logix-ide-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
             _artifacts/logix-ide-examples-${{ env.PACKAGE_TAG }}.tgz
