@@ -82,6 +82,19 @@ jobs:
           merge-multiple: true
           path: _artifacts
 
+      # The examples package (logix-ide-examples), from the commit the
+      # installers were built from. Logix IDE downloads it as its remote
+      # config says; the pack is reproducible, so a rebuild of the same
+      # commit keeps its SHA-256.
+      - name: Check out the built commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.REPO_COMMIT }}
+          path: _repo
+
+      - name: Pack the examples
+        run: _repo/scripts/pack-examples.py "_artifacts/logix-ide-examples-${PACKAGE_TAG}.tgz"
+
       - name: Scan the installers for viruses
         uses: openlogix/.github/actions/scan-files-for-viruses@main
         with:
@@ -110,6 +123,10 @@ jobs:
           | System | Architecture | Installer type | Package |
           | :--- | :--- | :--- | :--- |
           | macOS | Apple Silicon | Disk image | [logix-darwin-arm64-${PACKAGE_TAG}.dmg](${url}/logix-darwin-arm64-${PACKAGE_TAG}.dmg) |
+
+          ### Examples package
+
+          [logix-ide-examples-${PACKAGE_TAG}.tgz](${url}/logix-ide-examples-${PACKAGE_TAG}.tgz) holds Logix IDE's examples. Logix IDE downloads it by itself, as its remote config names it: there's no need to download it.
           EOF
           cat -n CONTENT.md
 
@@ -121,3 +138,4 @@ jobs:
           content-file: CONTENT.md
           files: |
             _artifacts/logix-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
+            _artifacts/logix-ide-examples-${{ env.PACKAGE_TAG }}.tgz
