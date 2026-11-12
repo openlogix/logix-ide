@@ -46,9 +46,17 @@ pub fn ide_lines(
                 "Examples: release {}",
                 crate::version::shown(&u.examples)
             ));
+            let c = &u.config.channel;
             lines.push(format!(
-                "Remote config: config {}, {}{}, read {}",
+                "Remote config: config {}, channel {} ({}{}), {}{}, read {}",
                 remote_config::CONFIG_VERSION,
+                c.name,
+                c.how,
+                if c.file != format!("{}.jsonc", c.name) {
+                    format!(", using {}", c.file)
+                } else {
+                    String::new()
+                },
                 u.config.source,
                 if u.config.is_override {
                     format!(" ({})", remote_config::DEV_REMOTE_CONFIG_VARIABLE)
@@ -124,8 +132,13 @@ mod tests {
                 engine: EngineInUse::Release("2026-11-08".into()),
                 examples: "2026-11-12".into(),
                 config: engine::ConfigInfo {
-                    source: "https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc".into(),
+                    source: "https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/".into(),
                     is_override: false,
+                    channel: remote_config::Channel {
+                        name: "dev".into(),
+                        how: "default".into(),
+                        file: "prod.jsonc".into(),
+                    },
                     read_at: 1_794_441_600,
                 },
             }),
@@ -141,7 +154,7 @@ Operating system: macOS 26.5 (macos-arm64)
 Log file: /Users/you/.logix/ide/logs/logix.log
 Logix Engine used: release 2026.11.08
 Examples: release 2026.11.12
-Remote config: config 001, https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc, read 2026-11-12 00:00 UTC
+Remote config: config 001, channel dev (default, using prod.jsonc), https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/, read 2026-11-12 00:00 UTC
 
 Logix Engine 2026.11.08
 Platform: darwin-arm64"
@@ -159,8 +172,13 @@ Platform: darwin-arm64"
                 engine: EngineInUse::Local("/w/logix-engine".into()),
                 examples: "2026-11-12".into(),
                 config: engine::ConfigInfo {
-                    source: "/w/config-001.jsonc".into(),
+                    source: "/w/001".into(),
                     is_override: true,
+                    channel: remote_config::Channel {
+                        name: "beta".into(),
+                        how: "LOGIX_IDE_CHANNEL".into(),
+                        file: "beta.jsonc".into(),
+                    },
                     read_at: 0,
                 },
             }),
@@ -172,7 +190,7 @@ Platform: darwin-arm64"
         );
         assert_eq!(
             ide[5],
-            "Remote config: config 001, /w/config-001.jsonc (LOGIX_IDE_DEV_REMOTE_CONFIG), read 1970-01-01 00:00 UTC"
+            "Remote config: config 001, channel beta (LOGIX_IDE_CHANNEL), /w/001 (LOGIX_IDE_DEV_REMOTE_CONFIG), read 1970-01-01 00:00 UTC"
         );
     }
 }

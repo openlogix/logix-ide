@@ -150,7 +150,14 @@ Folder**.
 ### Moving to a new Logix Engine release
 
 Logix IDE has no built-in engine pin. It uses the engine release its remote
-config names, `remote-config/logix-ide/config-001.jsonc` in this repo:
+config names, in the version folder `remote-config/logix-ide/001/` of this
+repo:
+
+- `channels.jsonc` lists which Logix IDE releases are on which channel. A
+  release listed under `prod` is a prod release; every other release is on
+  `dev`, and so are local builds (such as `scripts/run.sh`).
+- `<channel>.jsonc`, such as `dev.jsonc` or `prod.jsonc`, names what that
+  channel uses. A channel without its own file uses `prod.jsonc`.
 
 ```jsonc
 "logix-engine": {
@@ -160,24 +167,30 @@ config names, `remote-config/logix-ide/config-001.jsonc` in this repo:
 }
 ```
 
-Every Logix IDE reads that file from `main` (cached for 24 hours), so a change
-there reaches installed Logix IDEs without a new release. Change it by pull
-request, with a comment saying why; CI checks that the release and its file
-exist. During development it may name a pre-release, which expires after
-about 5 days: repin it before then.
+Every Logix IDE reads its channel's file from `main` (cached for 24 hours),
+so a change there reaches installed Logix IDEs on that channel without a new
+release. Change it by pull request, with a comment saying why; CI checks
+that the release and its file exist (and that `prod.jsonc` names only stable
+releases), and runs the tests once per config file. A pre-release a config
+names is kept, so dev pins don't expire.
 
-To try a change before it's on `main`, point Logix IDE at the file with
-`LOGIX_IDE_DEV_REMOTE_CONFIG`, a local path or an `https://` URL (such as the
-file on your pull request's branch):
+Two settings change this on your own computer only:
+
+- `LOGIX_IDE_CHANNEL` picks the channel, such as
+  `LOGIX_IDE_CHANNEL=prod scripts/run.sh` to try what users get.
+- `LOGIX_IDE_DEV_REMOTE_CONFIG` reads the version folder from elsewhere: a
+  local folder or an `https://` URL (such as the folder on your pull
+  request's branch):
 
 ```
-LOGIX_IDE_DEV_REMOTE_CONFIG=$PWD/remote-config/logix-ide/config-001.jsonc scripts/run.sh
+LOGIX_IDE_DEV_REMOTE_CONFIG=$PWD/remote-config/logix-ide/001 scripts/run.sh
 ```
 
-Logix IDE then shows a banner for the whole session and keeps everything that
-config decides (the engine and its FPGA tools) in `~/.logix/ide/dev/config-override/`,
-so the regular setup isn't touched. Help > Check for Updates reads the config
-again now.
+Logix IDE then shows a banner for the whole session. With
+`LOGIX_IDE_DEV_REMOTE_CONFIG`, it keeps everything that folder decides (the
+engine and its FPGA tools) in `~/.logix/ide/dev/config-override/`, so the
+regular setup isn't touched. Help > Check for Updates reads the config again
+now.
 
 ### Examples
 

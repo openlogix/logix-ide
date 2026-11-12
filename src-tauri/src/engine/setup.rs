@@ -90,6 +90,7 @@ fn record(engine: EngineInUse, cached: &Cached, source: &ConfigSource) {
         config: ConfigInfo {
             source: source.location.clone(),
             is_override: source.is_override,
+            channel: cached.channel.clone(),
             read_at: cached.fetched,
         },
     });
@@ -138,6 +139,15 @@ where
     let layout = Layout::new(&platform.data_dir()?, &source);
     let dev = dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE)).context(MSG_START)?;
 
+    if let Some(channel) = remote_config::channel_variable().context(MSG_CONFIG)? {
+        emit(SetupEvent::ChannelOverride {
+            channel: channel.clone(),
+        });
+        log(format!(
+            "Using the release channel {channel} ({}).",
+            remote_config::CHANNEL_VARIABLE
+        ));
+    }
     if source.is_override {
         emit(SetupEvent::DevRemoteConfig {
             location: source.location.clone(),

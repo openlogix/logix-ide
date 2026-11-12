@@ -124,6 +124,8 @@ pub enum EngineInUse {
 pub struct ConfigInfo {
     pub source: String,
     pub is_override: bool,
+    /// The channel and the config file read.
+    pub channel: crate::remote_config::Channel,
     /// When it was read (seconds since 1970, UTC).
     pub read_at: u64,
 }

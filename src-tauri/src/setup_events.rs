@@ -53,4 +53,10 @@ pub enum SetupEvent {
     DevRemoteConfig {
         location: String,
     },
+    /// Setup reads the release channel the override names
+    /// (`LOGIX_IDE_CHANNEL`) instead of the one `channels.jsonc` gives: the
+    /// UI shows it for the whole session.
+    ChannelOverride {
+        channel: String,
+    },
 }

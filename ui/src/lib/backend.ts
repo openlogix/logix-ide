@@ -68,6 +68,8 @@ export type SetupEvent =
   | { kind: "devEngine"; path: string }
   /** The remote config comes from the override (LOGIX_IDE_DEV_REMOTE_CONFIG). */
   | { kind: "devRemoteConfig"; location: string }
+  /** The release channel comes from the override (LOGIX_IDE_CHANNEL). */
+  | { kind: "channelOverride"; channel: string }
   /** The board and example lists are ready, before the FPGA tools are. */
   | { kind: "catalogReady" };
 

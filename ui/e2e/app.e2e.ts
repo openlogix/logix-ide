@@ -963,7 +963,15 @@ test("a local engine is shown for the whole session", async ({ page }) => {
 test("a test remote config is shown for the whole session", async ({ page }) => {
   await page.goto("/?devRemoteConfig");
   const banner = page.getByRole("status").filter({ hasText: "test remote config" });
-  await expect(banner).toContainText("Using a test remote config: /Users/you/config-001.jsonc");
+  await expect(banner).toContainText("Using a test remote config: /Users/you/remote-config/logix-ide/001");
+  await expect(output(page)).toContainText("Ready.");
+  await expect(banner).toBeVisible();
+});
+
+test("a channel override is shown for the whole session", async ({ page }) => {
+  await page.goto("/?channelOverride");
+  const banner = page.getByRole("status").filter({ hasText: "release channel" });
+  await expect(banner).toContainText("Using the prod release channel, for testing (LOGIX_IDE_CHANNEL)");
   await expect(output(page)).toContainText("Ready.");
   await expect(banner).toBeVisible();
 });

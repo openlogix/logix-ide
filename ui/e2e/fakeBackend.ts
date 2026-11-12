@@ -503,7 +503,11 @@ export const backend: typeof Real.backend = {
     // With `/?devRemoteConfig`, the remote config comes from the override
     // (LOGIX_IDE_DEV_REMOTE_CONFIG).
     if (new URLSearchParams(location.search).has("devRemoteConfig")) {
-      onEvent({ kind: "devRemoteConfig", location: "/Users/you/config-001.jsonc" });
+      onEvent({ kind: "devRemoteConfig", location: "/Users/you/remote-config/logix-ide/001" });
+    }
+    // With `/?channelOverride`, the channel comes from LOGIX_IDE_CHANNEL.
+    if (new URLSearchParams(location.search).has("channelOverride")) {
+      onEvent({ kind: "channelOverride", channel: "prod" });
     }
     // With `/?engineSetup`, setup stops in the engine's package download
     // until a test calls `__fake.finishSetup()`.
@@ -687,7 +691,7 @@ export const backend: typeof Real.backend = {
       "Operating system: macOS 26.5 (macos-arm64)",
       "Log file: /Users/you/.logix/ide/logs/logix.log",
       "Logix Engine used: release 2026.11.08",
-      "Remote config: config 001, https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc, read 2026-11-12 00:00 UTC",
+      "Remote config: config 001, channel dev (default, using prod.jsonc), https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/, read 2026-11-12 00:00 UTC",
       "",
       "Logix Engine 2026.11.08",
       "Platform: darwin-arm64",

@@ -12,6 +12,10 @@ fn main() {
 /// date. Passed to the code as LOGIX_IDE_BUILD_VERSION (see version.rs).
 fn app_version() {
     println!("cargo:rerun-if-env-changed=LOGIX_IDE_BUILD_VERSION");
+    let release = std::env::var("LOGIX_IDE_BUILD_VERSION").is_ok_and(|v| !v.is_empty());
+    // Whether this is a release build (the release workflow passes the tag):
+    // a local build is always on the dev channel (remote_config.rs).
+    println!("cargo:rustc-env=LOGIX_IDE_BUILD_RELEASE={release}");
     let version = match std::env::var("LOGIX_IDE_BUILD_VERSION") {
         Ok(tag) if !tag.is_empty() => {
             let b = tag.as_bytes();

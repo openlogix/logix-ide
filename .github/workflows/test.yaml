@@ -20,9 +20,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # The remote config (remote-config/logix-ide/config-NNN.jsonc): the shared
-  # check (schema, releases and files exist, SHA256SUMS lists them, only
-  # openlogix repos on main).
+  # The remote config (remote-config/logix-ide/<NNN>/: channels.jsonc and a
+  # config file per channel): the shared check (schemas, channels, releases
+  # and files exist, SHA256SUMS lists them, prod.jsonc names only stable
+  # releases, only openlogix repos on main).
   remote-config:
     runs-on: ubuntu-latest
     steps:
@@ -70,5 +71,17 @@ jobs:
       - name: Install the Playwright WebKit browser
         run: npx playwright install webkit
 
-      - name: Run checks and tests
-        run: scripts/test.sh
+      # Once per config file in the newest version folder (the website
+      # repo's CLAUDE.md, Remote updates, Channels): prod.jsonc alone in
+      # normal maintenance, dev.jsonc too while it exists.
+      - name: Run checks and tests, per config file
+        run: |
+          set -euo pipefail
+          folder="$(ls -d remote-config/logix-ide/[0-9][0-9][0-9] | sort | tail -1)"
+          for f in "$folder"/*.jsonc; do
+            channel="$(basename "$f" .jsonc)"
+            [[ "$channel" == channels ]] && continue
+            echo "::group::Tests with $f"
+            LOGIX_IDE_CHANNEL="$channel" scripts/test.sh
+            echo "::endgroup::"
+          done

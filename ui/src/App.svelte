@@ -322,6 +322,8 @@
   let devEngine = $state<string | null>(null);
   /** The remote config override's URL or file (LOGIX_IDE_DEV_REMOTE_CONFIG). */
   let devRemoteConfig = $state<string | null>(null);
+  /** The release channel the override names (LOGIX_IDE_CHANNEL). */
+  let channelOverride = $state<string | null>(null);
 
   function onSetupEvent(event: SetupEvent) {
     switch (event.kind) {
@@ -344,6 +346,9 @@
         break;
       case "devRemoteConfig":
         devRemoteConfig = event.location;
+        break;
+      case "channelOverride":
+        channelOverride = event.channel;
         break;
       case "catalogReady":
         // The start screen's Examples work while the FPGA tools download.
@@ -2226,6 +2231,14 @@
     {/if}
   </header>
 
+  {#if channelOverride}
+    <div class="banner dev-engine" role="status">
+      <span
+        >Using the {channelOverride} release channel, for testing (LOGIX_IDE_CHANNEL). Start
+        Logix IDE normally to use its regular channel.</span
+      >
+    </div>
+  {/if}
   {#if devRemoteConfig}
     <div class="banner dev-engine" role="status">
       <span
