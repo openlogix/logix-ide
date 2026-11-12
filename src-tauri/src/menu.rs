@@ -80,7 +80,7 @@ const HELP_LINKS: &[Option<(&str, &str)>] = &[
     Some((
         "Report a Problem",
         // A new issue whose text asks for the log (see SHOW_LOGS).
-        "https://github.com/openlogix/logix-ide/issues/new?body=What%20happened%2C%20and%20what%20did%20you%20expect%3F%0A%0A%0ALogix%20log%3A%20in%20Logix%2C%20choose%20Help%20%3E%20Show%20Log%20Folder%20and%20drag%20logix.log%20here.%0A",
+        "https://github.com/openlogix/logix-ide/issues/new?body=What%20happened%2C%20and%20what%20did%20you%20expect%3F%0A%0A%0ALogix%20IDE%20log%3A%20in%20Logix%20IDE%2C%20choose%20Help%20%3E%20Show%20Log%20Folder%20and%20drag%20logix.log%20here.%0A",
     )),
 ];
 pub const STOP: &str = "stop";
