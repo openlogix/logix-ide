@@ -1,0 +1,142 @@
+{
+  "family": "ice40",
+  "resources": [
+    {
+      "name": "ICESTORM_DSP",
+      "description": "DSP block: 16x16 multiplier and accumulator",
+      "used": 0,
+      "available": 8,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "ICESTORM_HFOSC",
+      "description": "Internal oscillator, 48 MHz",
+      "used": 0,
+      "available": 1,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "ICESTORM_LC",
+      "description": "Logic cell: a 4-input LUT, a flip-flop and carry logic",
+      "used": 27,
+      "available": 5280,
+      "percent": 0.5,
+      "displayPercent": "1%"
+    },
+    {
+      "name": "ICESTORM_LFOSC",
+      "description": "Internal oscillator, 10 kHz",
+      "used": 0,
+      "available": 1,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "ICESTORM_PLL",
+      "description": "PLL (clock generator)",
+      "used": 0,
+      "available": 1,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "ICESTORM_RAM",
+      "description": "Block RAM, 4 Kbit",
+      "used": 0,
+      "available": 30,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "ICESTORM_SPRAM",
+      "description": "Single-port RAM, 256 Kbit",
+      "used": 0,
+      "available": 4,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "IO_I3C",
+      "description": "I/O pin with switchable pull-ups, for I3C",
+      "used": 0,
+      "available": 2,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "SB_FILTER_50NS",
+      "description": "Glitch filter, 50 ns, for I2C",
+      "used": 0,
+      "available": 2,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "SB_GB",
+      "description": "Global buffer, for clocks and other high-fanout signals",
+      "used": 1,
+      "available": 8,
+      "percent": 12.5,
+      "displayPercent": "13%"
+    },
+    {
+      "name": "SB_I2C",
+      "description": "I2C controller",
+      "used": 0,
+      "available": 2,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "SB_IO",
+      "description": "I/O pin",
+      "used": 1,
+      "available": 39,
+      "percent": 2.6,
+      "displayPercent": "3%"
+    },
+    {
+      "name": "SB_LEDDA_IP",
+      "description": "LED PWM controller",
+      "used": 0,
+      "available": 1,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "SB_RGBA_DRV",
+      "description": "RGB LED driver",
+      "used": 1,
+      "available": 1,
+      "percent": 100.0,
+      "displayPercent": "100%"
+    },
+    {
+      "name": "SB_SPI",
+      "description": "SPI controller",
+      "used": 0,
+      "available": 2,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    },
+    {
+      "name": "SB_WARMBOOT",
+      "description": "Warm boot: loads another bitstream from flash",
+      "used": 0,
+      "available": 1,
+      "percent": 0.0,
+      "displayPercent": "0%"
+    }
+  ],
+  "clocks": [
+    {
+      "name": "sys_clk",
+      "net": "sys_clk$SB_IO_IN_$glb_clk",
+      "fmaxMhz": 79.74
+    }
+  ],
+  "text": "The design uses 27 of 5280 logic cells (1%).\nThe design uses 1 of 39 I/O pins (3%).\nMaximum clock speed: 79.7 MHz (sys_clk).",
+  "summaryLine": "Uses 1% of logic cells, max clock 79.7 MHz."
+}

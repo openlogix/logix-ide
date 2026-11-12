@@ -1,9 +1,7 @@
-[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DLOGIX_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40 ~/.logix/engine/tmp/models-5a9d469f1f2fdc51.vlt ~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40/cells_sim.v main.v[0m
-[31m%Error: main.v:8:1: syntax error, unexpected endmodule, expecting ',' or ';'[0m
-    8 | endmodule
-      | ^~~~~~~~~
-        ... See the manual at https://verilator.org/verilator_doc.html?v=5.053 for more assistance.
-[31m%Error: Cannot continue[0m
-        ... This fatal error may be caused by the earlier error(s); resolve those first.
-[2m$ yosys -q -l ~/.logix/build/_build/synth.log -p 'synth_ice40 -top main -json "~/.logix/build/_build/hardware.json"' -DSYNTHESIZE main.v[0m
-[31mmain.v:8: ERROR: syntax error, unexpected TOK_ENDMODULE[0m
+[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DLOGIX_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/ide/engine/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40 ~/.logix/ide/engine/tmp/models-582ee2076d3b241e.vlt ~/.logix/ide/engine/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40/cells_sim.v main.v[0m
+[31m%Error: main.v:13:3: syntax error, unexpected always, expecting ',' or ';'[0m
+   13 |   always @(posedge sys_clk) counter <= counter + 1'b1;
+      |   ^~~~~~
+        ... See the manual at https://verilator.org/verilator_doc.html?v=5.055 for more assistance.
+[2m$ yosys -q -l ~/.logix/build/_build/synth.log -p 'hierarchy -top main; setattr -mod -unset blackbox =main; synth_ice40 -top main -json "~/.logix/build/_build/hardware.json"' -DSYNTHESIZE main.v[0m
+[31mmain.v:13: ERROR: syntax error, unexpected TOK_ALWAYS[0m

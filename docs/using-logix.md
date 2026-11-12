@@ -127,7 +127,7 @@ shown, and **Open Example** opens the example shown.
 To find a board like yours, look at its FPGA's boards, or type the FPGA in
 the board list's search, such as `up5k` or `xc7a35t`.
 
-![The Board Explorer showing the Alhambra II](images/board-explorer.png)
+![The Board Explorer showing the iCESugar v1.5](images/board-explorer.png)
 
 ### Board options
 

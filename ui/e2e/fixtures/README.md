@@ -1,11 +1,12 @@
 Real tool output used by the fake backend (`../fakeBackend.ts`), so the
 end-to-end tests and the documentation screenshots show what Logix IDE really
-shows. Captured for the fake backend's blinky design (`BLINKY_MAIN`,
-`BLINKY_TB`, pins for the Alhambra II), with scratch paths replaced by
-Logix IDE's usual locations.
+shows. Captured for the iCESugar v1.5's Blinky, as Logix IDE ships it
+(`examples/icesugar-1-5/blinky`, the fake backend's default board and
+project), with scratch paths replaced by Logix IDE's usual locations.
 
-- `verify.txt`: Verify with Logix Engine `2026-11-03` (`lint`, then `build`), as the console shows its live output: command lines dimmed with `$`, errors red, warnings yellow.
-- `verify-error.txt`: the same with the `;` missing at the end of `assign led = counter[23];`.
+- `verify.txt`: Verify (`lint`, then `build`), as the console shows its live output: command lines dimmed with `$`, errors red, warnings yellow.
+- `verify-report.json`: that build's report, as Board Utilization shows it.
+- `verify-error.txt`: the same with the `;` missing at the end of `reg [N-1:0] counter = 0;`.
 - `test.txt`: Run Tests (the engine's `test`).
 - `diagram.txt`, `diagram.html`: Show Diagram (the engine's `diagram`): its output and the page the Diagram window shows (also the docs' diagram screenshot).
 - `fpgas.json`: the FPGAs as `get_fpga_families` gives them (Logix Engine's `get_catalog` `fpgas` and `families`: each family's `id`, `label` and `fpgas`, by part number, in the engine's order). Update it with the engine's catalog, like `catalog.json`.

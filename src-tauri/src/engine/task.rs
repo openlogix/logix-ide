@@ -1255,8 +1255,13 @@ mod tests {
         assert!(failed.is_empty(), "{} failed", failed.len());
     }
 
+    /// The board the fake backend's fixtures are captured for, and the line
+    /// its build error comes from (with its ";" removed).
+    const FIXTURES_BOARD: &str = "icesugar-1-5";
+    const FIXTURES_BROKEN: &str = "reg [N-1:0] counter = 0;";
+
     /// Recaptures the fake backend's fixtures (`ui/e2e/fixtures/`) from a
-    /// real engine, for the fake's blinky (in `fakeBackend.ts`):
+    /// real engine, for the iCESugar v1.5 Blinky (the fake's, `fakeBackend.ts`):
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_IDE_TEST_ENGINE_FOLDER=<engine folder with packages> LOGIX_IDE_TEST_FIXTURES_OUT=../ui/e2e/fixtures cargo test capture_fixtures -- --ignored`
     #[tokio::test]
     #[ignore]
@@ -1272,13 +1277,13 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let dir = tmp.path().canonicalize().unwrap().join("build");
         std::fs::create_dir_all(&dir).unwrap();
-        let blinky = "module main (\n    input sys_clk,\n    output led\n);\n  reg [23:0] counter = 0;\n  always @(posedge sys_clk) counter <= counter + 1;\n  assign led = counter[23];\nendmodule\n";
-        let tb = "`timescale 1ns / 1ps\nmodule main_tb;\n  initial begin\n    $dumpvars(0, main_tb);\n    #100;\n    $finish;\n  end\nendmodule\n";
-        std::fs::write(dir.join("main_tb.v"), tb).unwrap();
-        std::fs::write(dir.join("pinout.pcf"), "set_io sys_clk 49\nset_io led 45\n").unwrap();
-        let files: Vec<String> = ["main.v", "main_tb.v", "pinout.pcf"]
-            .map(String::from)
-            .into();
+        // The iCESugar v1.5's Blinky, as Logix IDE ships it (the canonical
+        // board, the website repo's CLAUDE.md).
+        let files: Vec<String> = example_files(FIXTURES_BOARD, "blinky", &dir)
+            .into_iter()
+            .filter(|f| f != "logix-ide.toml")
+            .collect();
+        let blinky: &'static str = std::fs::read_to_string(dir.join("main.v")).unwrap().leak();
         // Scratch paths as they are in Logix IDE.
         let home = std::env::var("HOME").unwrap();
         let tidy = |line: &str| {
@@ -1297,7 +1302,7 @@ mod tests {
                 }
             };
             let input = TaskInput {
-                board: "alhambra-ii",
+                board: FIXTURES_BOARD,
                 board_variant: None,
                 custom_boards: None,
                 family: "ice40",
@@ -1322,10 +1327,21 @@ mod tests {
                 outcome
             }
         };
-        let broken = blinky.replace("counter[23];", "counter[23]").leak();
+        // The ";" missing after "reg [N-1:0] counter = 0".
+        assert!(blinky.contains(FIXTURES_BROKEN));
+        let broken = blinky
+            .replace(FIXTURES_BROKEN, FIXTURES_BROKEN.trim_end_matches(';'))
+            .leak();
         // Built from scratch, so each command line is shown.
         let _ = std::fs::remove_dir_all(dir.join("_build"));
-        assert!(capture(Task::Build, None, blinky, "verify.txt").await.ok);
+        let verified = capture(Task::Build, None, blinky, "verify.txt").await;
+        assert!(verified.ok);
+        // Its report, as Board Utilization shows it.
+        std::fs::write(
+            out.join("verify-report.json"),
+            serde_json::to_string_pretty(&verified.report).unwrap() + "\n",
+        )
+        .unwrap();
         assert!(
             !capture(Task::Build, None, broken, "verify-error.txt")
                 .await

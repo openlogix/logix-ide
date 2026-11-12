@@ -22,7 +22,7 @@ Logix IDE is the reference frontend for Logix Engine (the rule is in the website
 
 ## Canonical board
 
-The website repo's `CLAUDE.md` owns the rule (Canonical board, 2026-11-10). For the IDE: `examples::DEFAULT_BOARD` is `icesugar-1-5`, a tie-break for new users, and the docs' text names it (the screenshots are still to do, below); nothing else in the IDE favors it (board list order, search, matching, examples offered). Its standard examples are written like every board's (`spec/examples/`). Still to do: the docs screenshots and the fake backend's blinky (`ui/e2e/fakeBackend.ts`, `ui/e2e/fixtures/`) are still the Alhambra II's; the Connected Devices screenshot stays on the Alhambra II until an iCESugar's real USB names are captured. Tests may use any board.
+The website repo's `CLAUDE.md` owns the rule (Canonical board, 2026-11-10). For the IDE: `examples::DEFAULT_BOARD` is `icesugar-1-5`, a tie-break for new users, and the docs' text and screenshots show it; nothing else in the IDE favors it (board list order, search, matching, examples offered). Its standard examples are written like every board's (`spec/examples/`). The fake backend's default board and project are the iCESugar v1.5 and its real Blinky and Bare Minimum (`ui/e2e/fakeBackend.ts`; `capture_fixtures` captures `ui/e2e/fixtures/` for them, done 2026-11-11). Its default device has only the iCESugar's catalog USB IDs, no product or manufacturer name, since none was captured from a real board yet; the Connected Devices screenshot and the tests of connected devices' names use a real Alhambra II (`__fake.useAlhambra()`) until an iCESugar's names are captured. Tests may use any board.
 
 ## Project goal
 

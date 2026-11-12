@@ -1,4 +1,5 @@
-[2m$ iverilog -g2012 -o ~/.logix/build/_build/main_tb.out -DLOGIX_SIM=0 -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40 ~/.logix/engine/packages/oss-cad-suite/2026-10-22/share/yosys/ice40/cells_sim.v main.v main_tb.v[0m
+[2m$ iverilog -g2012 -o ~/.logix/build/_build/main_tb.out -DLOGIX_SIM=0 -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/ide/engine/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40 ~/.logix/ide/engine/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40/cells_sim.v main.v main_tb.v[0m
 [2m$ vvp -i ~/.logix/build/_build/main_tb.out -dumpfile=~/.logix/build/_build/main_tb.vcd[0m
-VCD info: dumpfile ~/.logix/build/_build/main_tb.vcd opened for output.
-main_tb.v:6: $finish called at 100000 (1ps)
+VCD info: dumpfile _build/main_tb.vcd opened for output.
+End of simulation
+main_tb.v:40: $finish called at 2625021 (1ps)

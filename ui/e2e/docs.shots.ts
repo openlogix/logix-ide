@@ -15,8 +15,8 @@ const menu = (page: Page, id: string) =>
 async function startWithBoard(page: Page) {
   await page.goto("/");
   await expect(page.locator(".console")).toContainText("Ready.");
-  // Open the Alhambra II blinky from the start screen's Examples….
-  await expect(page.locator(".board-button")).toHaveText(/Alhambra II/);
+  // Open the iCESugar v1.5 blinky from the start screen's Examples….
+  await expect(page.locator(".board-button")).toHaveText(/iCESugar v1\.5/);
   await page.getByRole("button", { name: "Examples…" }).click();
   const examples = page.getByRole("dialog", { name: "Examples" });
   await examples.getByRole("button", { name: /^blinky/ }).click();
@@ -27,10 +27,10 @@ async function startWithBoard(page: Page) {
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
       {
-        id: "usb:1-2:0403:6010:FTATANKC",
-        name: "Alhambra II v1.0A",
-        serial: "FTATANKC",
-        boards: [{ board: "alhambra-ii", level: "strong", variants: [{}] }],
+        id: "usb:1-2:1d50:602b:0700000001",
+        name: "USB device",
+        serial: "0700000001",
+        boards: [{ board: "icesugar-1-5", level: "possible", variants: [{}] }],
       },
     ];
     window.dispatchEvent(new Event("focus"));
@@ -79,8 +79,8 @@ test("the build report", async ({ page }) => {
 
 test("an error marked in the editor", async ({ page }) => {
   await startWithBoard(page);
-  // Remove the ";" at the end of "assign led = counter[23];".
-  await page.locator(".cm-line", { hasText: "assign led" }).click();
+  // Remove the ";" at the end of "reg [N-1:0] counter = 0;".
+  await page.locator(".cm-line", { hasText: "reg [N-1:0] counter = 0;" }).click();
   await page.keyboard.press("End");
   await page.keyboard.press("Backspace");
   await verify(page, /^Build failed/);
@@ -120,8 +120,11 @@ test("settings", async ({ page }) => {
   await shot(page, "settings");
 });
 
+// Still the Alhambra II's, the one board whose USB names were captured from
+// real hardware: retake it on an iCESugar v1.5 once its names are captured.
 test("connected devices", async ({ page }) => {
   await startWithBoard(page);
+  await page.evaluate(() => (window as unknown as { __fake: { useAlhambra: () => void } }).__fake.useAlhambra());
   await menu(page, "devices");
   await expect(page.getByRole("dialog", { name: "Connected Devices" })).toContainText(
     "Alhambra II",
@@ -142,7 +145,7 @@ test("board explorer", async ({ page }) => {
   await startWithBoard(page);
   await menu(page, "board-explorer");
   const dialog = page.getByRole("dialog", { name: "Board Explorer" });
-  await expect(dialog.getByLabel("Details")).toContainText("ICE40HX4K-TQ144");
+  await expect(dialog.getByLabel("Details")).toContainText("ICE40UP5K-SG48");
   await shot(page, "board-explorer");
 });
 

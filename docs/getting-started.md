@@ -77,14 +77,14 @@ errors and builds it. The status bar then says how much of the FPGA the
 design uses and how fast its clock can run:
 
 ```
-Build succeeded in 2.4 s. Uses 1% of logic cells, max clock 194.4 MHz.
+Build succeeded in 1.2 s. Uses 1% of logic cells, max clock 79.7 MHz.
 ```
 
 If there's an error, Logix IDE marks its line in the editor and the status
 bar says what's wrong; hover over the mark to read the message. Syntax errors
 are marked as you type, before you click Verify:
 
-![A syntax error marked on line 8, with the message shown on hover](images/error.png)
+![A syntax error marked on line 13, with the message shown on hover](images/error.png)
 
 ## 6. Look at the board utilization
 

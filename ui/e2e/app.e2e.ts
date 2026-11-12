@@ -35,7 +35,7 @@ const menu = (page: Page, id: string) =>
   );
 
 /** Picks a board and opens its blinky from the examples it offers. */
-async function chooseBoard(page: Page, name = "Alhambra II") {
+async function chooseBoard(page: Page, name = "iCESugar v1.5") {
   if ((await boardButton(page).textContent())?.includes(name)) {
     await expect(tab(page, "pinout.pcf")).toBeVisible();
     return;
@@ -92,13 +92,13 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   // No project: the start screen, with the last board in the toolbar.
   const start = page.getByLabel("Start");
   await expect(start).toContainText("Welcome to Logix IDE");
-  await expect(boardButton(page)).toHaveText(/Alhambra II/);
+  await expect(boardButton(page)).toHaveText(/iCESugar v1\.5/);
   await expect(page.getByTitle(/^Verify/)).toBeDisabled();
   // New Project: the board's pins and an empty design, not blinky.
   await start.getByRole("button", { name: "New Project" }).click();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
-  await expect(page.locator(".cm-content")).toContainText("assign led = 0;");
+  await expect(page.locator(".cm-content")).toContainText("assign uart_tx = 1'b1;");
   await expect(output(page)).toContainText(/New project\.\s*Ready\./);
   // Close Project: back to the start screen, with the recent projects.
   await page.evaluate(() => {
@@ -161,14 +161,14 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   await expect(page.getByRole("option")).not.toHaveCount(6);
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toBeHidden();
-  // The Alhambra II by default, and its blinky (from the examples) is
+  // The iCESugar v1.5 by default, and its blinky (from the examples) is
   // ready to build.
-  await expect(boardButton(page)).toHaveText(/Alhambra II/);
+  await expect(boardButton(page)).toHaveText(/iCESugar v1\.5/);
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(page.locator(".welcome")).toHaveCount(0);
   await expect(page.getByTitle(/^Verify/)).toBeEnabled();
   // Idle: no busy indicator, and the status bar shows the last result.
-  await expect(status(page)).toHaveText("Opened example alhambra-ii/blinky.");
+  await expect(status(page)).toHaveText("Opened example icesugar-1-5/blinky.");
   await expect(page.locator(".spinner")).toHaveCount(0);
 });
 
@@ -189,29 +189,29 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await start(page);
   await chooseBoard(page);
   await page.getByTitle(/^Verify/).click();
-  await expect(status(page)).toContainText("Uses 1% of logic cells, max clock 194.4 MHz.");
+  await expect(status(page)).toContainText("Uses 1% of logic cells, max clock 79.7 MHz.");
   // The output has the engine's report, as it words it.
-  await expect(output(page)).toContainText("The design uses 2 of 107 I/O pins (2%).");
+  await expect(output(page)).toContainText("The design uses 1 of 39 I/O pins (3%).");
   // Right after a build, the status bar's link shows its report.
   await page.getByRole("button", { name: "Board Utilization…" }).click();
   const dialog = page.getByRole("dialog", { name: "Board Utilization" });
   const rows = dialog.getByRole("table", { name: "Resources" }).locator("tbody tr");
   // The toolchain's names, with the engine's descriptions; used ones only.
-  await expect(rows).toHaveCount(3);
+  await expect(rows).toHaveCount(4);
   await expect(rows.first()).toContainText("ICESTORM_LC");
   await expect(rows.first()).toContainText("Logic cell: a 4-input LUT, a flip-flop and carry logic");
   await expect(dialog).toContainText("sys_clk$SB_IO_IN_$glb_clk");
-  await dialog.getByLabel(/Show also unused resources \(3\)/).check();
-  await expect(rows).toHaveCount(6);
+  await dialog.getByLabel(/Show also unused resources \(12\)/).check();
+  await expect(rows).toHaveCount(16);
   // Unused rows have no count or share, rather than "0" and "0%".
   const ram = rows.filter({ hasText: "ICESTORM_RAM" }).locator("td");
   await expect(ram.nth(2)).toHaveText("");
   await expect(ram.last()).toHaveText("");
-  await dialog.getByLabel("Filter resources").fill("ram");
+  await dialog.getByLabel("Filter resources").fill("block ram");
   await expect(rows).toHaveCount(1);
   await dialog.getByRole("button", { name: "Copy" }).click();
   await expect(dialog).toContainText("Copied.");
-  expect((await fake()).copiedText).toMatch(/^Board Utilization: .* · Alhambra II · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +32\n/s);
+  expect((await fake()).copiedText).toMatch(/^Board Utilization: .* · iCESugar v1.5 · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +30\n/s);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 
@@ -220,7 +220,7 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await menu(page, "build-report");
   await expect(status(page)).toContainText("Build succeeded");
   await expect(dialog.getByLabel(/Show also unused resources/)).not.toBeChecked();
-  await expect(rows).toHaveCount(3);
+  await expect(rows).toHaveCount(4);
   await page.keyboard.press("Escape");
   // A failed build: no report, and the last good one is gone.
   await typeAtStart(page, "oops\n");
@@ -410,16 +410,16 @@ test("picking the current board offers its examples too", async ({ page }) => {
   await start(page);
   await boardButton(page).click();
   // The list opens at the current board, checked; arrows and Enter pick.
-  await expect(page.getByRole("option", { selected: true }).last()).toHaveText(/Alhambra II/);
+  await expect(page.getByRole("option", { selected: true }).last()).toHaveText(/iCESugar v1\.5/);
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog", { name: "Examples" });
-  await expect(dialog.getByRole("heading")).toHaveText("Project options for board “Alhambra II”");
+  await expect(dialog.getByRole("heading")).toHaveText("Project options for board “iCESugar v1.5”");
   // The same board: keep the project, not "change" it.
   await expect(dialog.getByRole("button", { name: /^Change the board of/ })).toHaveCount(0);
-  await dialog.getByRole("button", { name: /^Keep the current project, with board “Alhambra II”/ }).click();
+  await dialog.getByRole("button", { name: /^Keep the current project, with board “iCESugar v1.5”/ }).click();
   await dialog.getByRole("button", { name: "Keep the Project", exact: true }).click();
   await expect(dialog).toBeHidden();
-  await expect(boardButton(page)).toHaveText(/Alhambra II/);
+  await expect(boardButton(page)).toHaveText(/iCESugar v1\.5/);
 });
 
 test("a board's variant: shown next to it, changed there or in Tools, saved and built with", async ({
@@ -447,10 +447,10 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
   await menu(page, "upload");
   // The engine says it when programming starts, after the build.
   await expect(output(page)).toContainText(
-    /yosys[\s\S]*Programming the flash of the Alhambra II through its USB port\.[\s\S]*Programmed/,
+    /yosys[\s\S]*Programming the flash of the iCESugar v1\.5 through its USB port\.[\s\S]*Programmed/,
   );
   await expect(output(page)).toContainText(
-    "Programmed the flash of the Alhambra II: the design stays when the board is powered off.",
+    "Programmed the flash of the iCESugar v1.5: the design stays when the board is powered off.",
   );
 
   // The iCESugar-Pro can be programmed to flash or to RAM.
@@ -522,7 +522,8 @@ test("a value that doesn't go with the others is greyed out, and choosing it swi
 
 test("changing the board offers project options: the current project first", async ({ page }) => {
   await start(page);
-  await chooseBoard(page);
+  // From another FPGA than the iCEBreaker's, to see what that implies.
+  await chooseBoard(page, "Alhambra II");
   await typeAtStart(page, "// mine\n");
   // Recent projects aren't offered, whatever their board.
   await page.evaluate(() => {
@@ -601,16 +602,16 @@ test("shows if the board is connected, and lists recently used boards first", as
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
       {
-        id: "usb:1-2:0403:6010:FTATANKC",
-        name: "Alhambra II v1.0A",
-        serial: "FTATANKC",
-        boards: [{ board: "alhambra-ii", level: "strong", variants: [{}] }],
+        id: "usb:1-2:1d50:602b:0700000001",
+        name: "USB device",
+        serial: "0700000001",
+        boards: [{ board: "icesugar-1-5", level: "possible", variants: [{}] }],
       },
     ];
     window.dispatchEvent(new Event("focus"));
   });
   await expect(link).toHaveText("Connected");
-  await expect(link).toHaveAttribute("title", /may be the Alhambra II/);
+  await expect(link).toHaveAttribute("title", /may be the iCESugar v1\.5/);
   await boardButton(page).click();
   // No groups from connected devices: only the families.
   await expect(page.locator(".group", { hasText: "Connected" })).toHaveCount(0);
@@ -702,11 +703,11 @@ test("opens a board's bare-minimum from the examples", async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
-  await expect(page.locator(".cm-content")).toContainText("assign led = 0;");
-  await expect(status(page)).toHaveText("Opened bare-minimum for Alhambra II.");
+  await expect(page.locator(".cm-content")).toContainText("assign uart_tx = 1'b1;");
+  await expect(status(page)).toHaveText("Opened bare-minimum for iCESugar v1.5.");
   // Like every command, its output ends with the result, then "Ready.".
   await expect(output(page)).toContainText(
-    /Opened bare-minimum for Alhambra II\.\s*Ready\./,
+    /Opened bare-minimum for iCESugar v1\.5\.\s*Ready\./,
   );
   await expect(page.locator(".spinner")).toHaveCount(0);
 });
@@ -714,7 +715,8 @@ test("opens a board's bare-minimum from the examples", async ({ page }) => {
 test("the editor's right-click menu comments lines", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
-  await page.locator(".cm-line").first().click({ button: "right" });
+  // A line of code (the file starts with comments).
+  await page.locator(".cm-line", { hasText: "module main" }).click({ button: "right" });
   type Fake = { editorMenu: unknown; menu: (id: string) => void };
   const editorMenu = () =>
     page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.editorMenu);
@@ -730,7 +732,7 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
     simulate: true,
     testbenchOpen: false,
   });
-  const first = page.locator(".cm-line").first();
+  const first = page.locator(".cm-line", { hasText: "module main" });
   const before = (await first.textContent()) ?? "";
   await menu("toggle-comment");
   await expect(first).toHaveText(`// ${before}`);
@@ -762,7 +764,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
     comment: true,
     definition: false,
   });
-  const first = page.locator(".cm-line").first();
+  const first = page.locator(".cm-line", { hasText: "set_io sys_clk" });
   const before = (await first.textContent()) ?? "";
   await first.click();
   await menu(page, "toggle-comment");
@@ -960,6 +962,7 @@ test("a local engine is shown for the whole session", async ({ page }) => {
 
 test("Upload asks which device when several fit the board", async ({ page }) => {
   await start(page);
+  await chooseBoard(page, "Alhambra II");
   await page.evaluate(() => {
     const f = (window as unknown as { __fake: { uploadDevices: unknown[] } }).__fake;
     const device = (serial: string, level: string) => ({
@@ -988,6 +991,8 @@ test("Upload asks which device when several fit the board", async ({ page }) => 
 
 test("lists the connected devices", async ({ page }) => {
   await start(page);
+  await chooseBoard(page, "Alhambra II");
+  await page.evaluate(() => (window as unknown as { __fake: { useAlhambra: () => void } }).__fake.useAlhambra());
   await page.evaluate(() =>
     (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu(
       "devices",
@@ -1202,6 +1207,7 @@ test("Simulate says Opening GTKWave… until its window appears", async ({ page 
 
 test("the Board Explorer shows the board's FPGA and the boards with the same FPGA", async ({ page }) => {
   await start(page);
+  await chooseBoard(page, "Alhambra II");
   // The board picker: the FPGA as a hover hint, and search by it.
   await boardButton(page).click();
   await page.getByRole("combobox").fill("hx4k");
@@ -1316,6 +1322,7 @@ test("a failed command's banner says why, with one red line", async ({ page }) =
 
 test("selects a board from the connected devices", async ({ page }) => {
   await start(page);
+  await page.evaluate(() => (window as unknown as { __fake: { useAlhambra: () => void } }).__fake.useAlhambra());
   await pickBoard(page, "Arty A7-35T (Xilinx, Artix7)");
   await changeTheBoard(page);
   await page.evaluate(() =>

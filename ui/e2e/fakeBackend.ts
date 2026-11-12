@@ -30,6 +30,14 @@ import verifyOutput from "./fixtures/verify.txt?raw";
 import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
 import testOutput from "./fixtures/test.txt?raw";
 import diagramOutput from "./fixtures/diagram.txt?raw";
+import verifyReport from "./fixtures/verify-report.json";
+// The iCESugar v1.5's Blinky and Bare Minimum, as Logix IDE ships them
+// (the default board: the fixtures are captured for it).
+import sugarBlinkyMain from "../../examples/icesugar-1-5/blinky/main.v?raw";
+import sugarBlinkyTb from "../../examples/icesugar-1-5/blinky/main_tb.v?raw";
+import sugarBlinkyPins from "../../examples/icesugar-1-5/blinky/pinout.pcf?raw";
+import sugarBareMain from "../../examples/icesugar-1-5/bare-minimum/main.v?raw";
+import sugarBarePins from "../../examples/icesugar-1-5/bare-minimum/pinout.pcf?raw";
 import packageJson from "../../package.json";
 
 const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }) as unknown as Real.Board);
@@ -192,17 +200,28 @@ module main_tb;
 endmodule
 `;
 
-/** The blinky example for `board`, as an unsaved project. */
+/** The default board: the iCESugar v1.5, as in Logix IDE. */
+const DEFAULT_BOARD = "icesugar-1-5";
+
+/** The blinky example for `board`, as an unsaved project: the iCESugar
+ * v1.5's real one, else a small generic one. */
 function blinkyDoc(board: string): ProjectDoc {
+  const sugar = board === DEFAULT_BOARD;
   return {
     dir: null,
     templateDir: `/fake/examples/${board}/blinky`,
     name: "blinky",
-    files: [
-      { name: "main.v", text: BLINKY_MAIN },
-      { name: "main_tb.v", text: BLINKY_TB },
-      { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
-    ],
+    files: sugar
+      ? [
+          { name: "main.v", text: sugarBlinkyMain },
+          { name: "main_tb.v", text: sugarBlinkyTb },
+          { name: "pinout.pcf", text: sugarBlinkyPins },
+        ]
+      : [
+          { name: "main.v", text: BLINKY_MAIN },
+          { name: "main_tb.v", text: BLINKY_TB },
+          { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
+        ],
     board,
     variant: {},
   };
@@ -214,10 +233,16 @@ function bareDoc(board: string): ProjectDoc {
     dir: null,
     templateDir: null,
     name: "untitled",
-    files: [
-      { name: "main.v", text: "module main (\n    input  sys_clk,\n    output led\n);\n\n  assign led = 0;\n\nendmodule\n" },
-      { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
-    ],
+    files:
+      board === DEFAULT_BOARD
+        ? [
+            { name: "main.v", text: sugarBareMain },
+            { name: "pinout.pcf", text: sugarBarePins },
+          ]
+        : [
+            { name: "main.v", text: "module main (\n    input  sys_clk,\n    output led\n);\n\n  assign led = 0;\n\nendmodule\n" },
+            { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
+          ],
     board,
     variant: {},
   };
@@ -245,6 +270,12 @@ const handlers: {
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
 const fake = {
   menu: (id: MenuId) => handlers.menu?.(id),
+  /** Connects a real Alhambra II, with its captured USB names, in place of
+   * the default iCESugar v1.5 (whose names aren't captured yet). */
+  useAlhambra: () => {
+    fake.usb = [alhambraDevice];
+    fake.uploadDevices = [alhambraDevice];
+  },
   /** The module the last editor right-click menu offered the diagram of. */
   editorMenuModule: null as string | null,
   /** The project and module the last Show Diagram opened its window on. */
@@ -312,7 +343,25 @@ function boardsOnDisk(folder: string | null): Record<string, string> | null {
   return folder === null ? null : (fake.customBoardsOnDisk[folder] ?? null);
 }
 
-/** A real Alhambra II, as Logix Engine lists it. */
+/** An iCESugar v1.5, as Logix Engine lists it: its USB IDs from the
+ * catalog. Its product and manufacturer names aren't captured from a real
+ * board yet, so it has none (the canonical board TODO). */
+const icesugarDevice: Real.UsbDevice = {
+  id: "usb:1-1:1d50:602b:0700000001",
+  label: "USB device (1d50:602b)",
+  vid: "1d50",
+  pid: "602b",
+  manufacturer: "",
+  product: "",
+  serialNumber: "0700000001",
+  boards: [{ board: "icesugar-1-5", level: "possible" }],
+  likelyBoards: ["icesugar-1-5"],
+  buildMatch: "possible",
+};
+
+
+/** A real Alhambra II, as Logix Engine lists it (captured from the
+ * board): for the tests of connected devices, `__fake.useAlhambra()`. */
 const alhambraDevice: Real.UsbDevice = {
   id: "usb:1-1:0403:6010:FTATANKC",
   label: "Alhambra II v1.0A (AlhambraBits, 0403:6010)",
@@ -337,6 +386,34 @@ function buildOutcome(files: ProjectFile[], board: string): {
   outcome: TaskOutcome;
 } {
   const main = files.find((f) => f.name === "main.v")?.text ?? "";
+  // The iCESugar blinky with the ";" missing after "reg [N-1:0] counter =
+  // 0": what the engine really reports (lint's message, at the next line's
+  // "always").
+  if (/reg \[N-1:0\] counter = 0\s*$/m.test(main)) {
+    const lines = main.split("\n");
+    const at = lines.findIndex((l) => /^\s*always\b/.test(l));
+    return {
+      lines: outputLines(verifyErrorOutput),
+      outcome: {
+        ok: false,
+        diagnostics: [
+          {
+            severity: "error",
+            file: "main.v",
+            line: at + 1,
+            column: lines[at].indexOf("always") + 1,
+            message: "syntax error, unexpected always, expecting ',' or ';'",
+          },
+        ],
+        testbenches: [],
+        report: null,
+        cancelled: false,
+        seconds: 0.5,
+        action: null,
+        devices: [],
+      },
+    };
+  }
   // The blinky with the ";" missing after "assign led = counter[23]":
   // replay what the engine really reports (lint's message, on the next line).
   if (/assign led = counter\[23\]\s*$/m.test(main)) {
@@ -398,21 +475,8 @@ function buildOutcome(files: ProjectFile[], board: string): {
       ok: true,
       diagnostics: [],
       testbenches: [],
-      // Real Logix Engine output for this blinky on the Alhambra II.
-      report: {
-        family: "ice40",
-        resources: [
-          { name: "ICESTORM_LC", description: "Logic cell: a 4-input LUT, a flip-flop and carry logic", used: 27, available: 7680, percent: 0.4, displayPercent: "1%" },
-          { name: "ICESTORM_PLL", description: "PLL (clock generator)", used: 0, available: 2, percent: 0.0, displayPercent: "0%" },
-          { name: "ICESTORM_RAM", description: "Block RAM, 4 Kbit", used: 0, available: 32, percent: 0.0, displayPercent: "0%" },
-          { name: "SB_GB", description: "Global buffer, for clocks and other high-fanout signals", used: 1, available: 8, percent: 12.5, displayPercent: "13%" },
-          { name: "SB_IO", description: "I/O pin", used: 2, available: 107, percent: 1.9, displayPercent: "2%" },
-          { name: "SB_WARMBOOT", description: "Warm boot: loads another bitstream from flash", used: 0, available: 1, percent: 0.0, displayPercent: "0%" },
-        ],
-        clocks: [{ name: "sys_clk", net: "sys_clk$SB_IO_IN_$glb_clk", fmaxMhz: 194.36 }],
-        text: "The design uses 27 of 7680 logic cells (1%).\nThe design uses 2 of 107 I/O pins (2%).\nMaximum clock speed: 194.4 MHz (sys_clk).",
-        summaryLine: "Uses 1% of logic cells, max clock 194.4 MHz.",
-      },
+      // Real Logix Engine output for the iCESugar v1.5's Blinky.
+      report: verifyReport as Real.BuildReport,
       cancelled: false,
        
       seconds: 1.2,
@@ -508,7 +572,7 @@ export const backend: typeof Real.backend = {
       onLine(line);
       await pause(5);
     }
-    const fits = fake.uploadDevices ?? [alhambraDevice];
+    const fits = fake.uploadDevices ?? [icesugarDevice];
     if (phases && task === "upload" && outcome.ok && !device && fits.length > 1) {
       // The engine's list_devices for the build found several devices.
       const message = `${fits.length} connected devices could be this board. Choose one to upload to.`;
@@ -541,7 +605,6 @@ export const backend: typeof Real.backend = {
       prog("addr 0x000100  50%", true);
       await pause(500);
       prog("done.");
-      onLine("Programmed Alhambra II v1.0A.");
       onLine(
         `Programmed the ${memory} of the ${name}: the design ${
           memory === "RAM" ? "is lost" : "stays"
@@ -564,8 +627,8 @@ export const backend: typeof Real.backend = {
     };
   },
 
-  newProject: async (board) => bareDoc(board ?? "alhambra-ii"),
-  lastBoard: async () => "alhambra-ii",
+  newProject: async (board) => bareDoc(board ?? DEFAULT_BOARD),
+  lastBoard: async () => DEFAULT_BOARD,
   lastVariant: async () => ({}),
   recentProjects: async () => fake.recents,
   // The fake's recent projects are all UPduino v3.1 projects (openProjectAt).
@@ -658,7 +721,7 @@ export const backend: typeof Real.backend = {
   },
   chooseFolderDialog: async () => "/Users/you/fpga",
 
-  scanDevices: async () => ({ usb: fake.usb ?? [alhambraDevice], unreachable: [] }),
+  scanDevices: async () => ({ usb: fake.usb ?? [icesugarDevice], unreachable: [] }),
   onOpenRecent: unlisten,
 
   checkFileName: async (name, existing) => {
