@@ -13,7 +13,7 @@ where
     F: FnMut(u64, Option<u64>),
 {
     let client = reqwest::Client::builder()
-        .user_agent(concat!("logix-ide/", env!("CARGO_PKG_VERSION")))
+        .user_agent(concat!("logix-ide/", env!("LOGIX_IDE_BUILD_VERSION")))
         .connect_timeout(Duration::from_secs(30))
         .read_timeout(Duration::from_secs(60))
         .build()?;

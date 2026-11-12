@@ -13,6 +13,7 @@ mod project;
 mod settings;
 mod setup_events;
 mod system_info;
+mod version;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -73,12 +74,11 @@ pub fn run() {
             diagram_window::serve(request.uri().path())
         })
         .setup(|app| {
-            let info = app.package_info();
             logging::init(&format!(
                 "Logix IDE {} ({}), Logix Engine {}",
-                info.version,
+                version::APP_VERSION,
                 platform::current().map_or("unknown platform".into(), |p| format!("{p:?}")),
-                engine::ENGINE_RELEASE_TAG
+                version::shown(engine::ENGINE_RELEASE_TAG)
             ));
             if let Some(home) = std::env::var_os(platform::HOME_VARIABLE).filter(|v| !v.is_empty())
             {

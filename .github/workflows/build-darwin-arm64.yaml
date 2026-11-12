@@ -65,10 +65,27 @@ jobs:
       # src-tauri/tauri.conf.json). Tauri skips the Finder step that lays out
       # the .dmg window (icon size and positions, hiding .VolumeIcon.icns)
       # when CI is set; TAURI_BUNDLER_DMG_IGNORE_CI turns it back on.
+      # Tauri, Cargo and npm need a semver version: the release date without
+      # leading zeros (2026-05-07 is 2026.5.7), which macOS shows in Finder.
+      # Logix IDE itself shows yyyy.mm.dd (LOGIX_IDE_BUILD_VERSION, below).
+      # The Open Logix versioning rule.
+      - name: Write the semver version
+        working-directory: _repo
+        run: |
+          IFS=- read -r y m d <<< "$RELEASE_TAG"
+          export SEMVER="$((10#$y)).$((10#$m)).$((10#$d))"
+          perl -pi -e 's/^  "version": "0\.0\.0",/  "version": "$ENV{SEMVER}",/' package.json src-tauri/tauri.conf.json
+          perl -0pi -e 's/(\n  "name": "logix",\n  "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/; s/(\n    "": \{\n      "name": "logix",\n      "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/' package-lock.json
+          perl -0pi -e 's/^version = "0\.0\.0"/version = "$ENV{SEMVER}"/m' src-tauri/Cargo.toml
+          perl -0pi -e 's/(name = "logix"\nversion = )"0\.0\.0"/$1"$ENV{SEMVER}"/' src-tauri/Cargo.lock
+          git diff --stat
+          test "$(git diff --numstat | wc -l)" -eq 5
+
       - name: Build Logix IDE.app and the .dmg
         working-directory: _repo
         env:
           TAURI_BUNDLER_DMG_IGNORE_CI: "true"
+          LOGIX_IDE_BUILD_VERSION: ${{ env.RELEASE_TAG }}
         run: npm run tauri -- build --bundles dmg
 
       - name: Collect the .dmg
@@ -99,6 +116,13 @@ jobs:
           test -L "$mnt/Applications"
           test -f "$mnt/.DS_Store"
           app="$mnt/Logix IDE.app"
+          IFS=- read -r y m d <<< "$RELEASE_TAG"
+          semver="$((10#$y)).$((10#$m)).$((10#$d))"
+          shown="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
+          if [[ "$shown" != "$semver" ]]; then
+            echo "Error: expected bundle version $semver, got: $shown"
+            exit 1
+          fi
           codesign --verify --deep --strict --verbose=2 "$app"
           codesign --display --verbose=2 "$app" 2>&1 | tee codesign.txt
           grep -q "Signature=adhoc" codesign.txt

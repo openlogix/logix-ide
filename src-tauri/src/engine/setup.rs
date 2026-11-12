@@ -138,7 +138,10 @@ where
         emit(SetupEvent::Stage {
             stage: SetupStage::DownloadingEngine,
         });
-        log(format!("Downloading Logix Engine {ENGINE_RELEASE_TAG}..."));
+        log(format!(
+            "Downloading Logix Engine {}...",
+            crate::version::shown(ENGINE_RELEASE_TAG)
+        ));
         let tmp_dir = layout.tmp_dir();
         tokio::fs::create_dir_all(&tmp_dir)
             .await

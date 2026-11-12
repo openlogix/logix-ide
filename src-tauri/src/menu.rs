@@ -203,10 +203,10 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let settings_item = item(SETTINGS, "Settings…", "CmdOrCtrl+,")?;
     let about = AboutMetadata {
         name: Some("Logix IDE".into()),
-        version: Some(app.package_info().version.to_string()),
+        version: Some(crate::version::APP_VERSION.to_string()),
         comments: Some(format!(
             "The Arduino experience, for FPGAs.\nPowered by Logix Engine (release {}).\n\nLogix IDE is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
-            crate::engine::ENGINE_RELEASE_TAG
+            crate::version::shown(crate::engine::ENGINE_RELEASE_TAG)
         )),
         copyright: Some("Licensed under MIT or the Apache License 2.0.".into()),
         website: Some("https://www.openlogix.org/ide/".into()),

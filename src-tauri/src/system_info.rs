@@ -34,7 +34,9 @@ pub fn ide_lines(
             log_file.map_or("(none)".to_string(), |p| p.display().to_string())
         ),
         match engine {
-            EngineSource::Pinned(tag) => format!("Logix Engine used: release {tag}"),
+            EngineSource::Pinned(tag) => {
+                format!("Logix Engine used: release {}", crate::version::shown(tag))
+            }
             EngineSource::Local(path) => format!(
                 "Logix Engine used: local binary {} ({})",
                 path.display(),
@@ -98,23 +100,23 @@ mod tests {
     fn the_report_has_the_ide_lines_then_the_engines() {
         let ide = ide_lines(
             "Logix IDE",
-            "0.1.0",
+            "2026.11.12",
             "macOS 26.5 (macos-arm64)",
             Some(Path::new("/Users/you/.logix/ide/logs/logix.log")),
             EngineSource::Pinned("2026-11-08"),
         );
         let engine = engine_part(&json!({
-            "engine_version": "2026-11-08",
-            "report": "Logix Engine 2026-11-08\nPlatform: darwin-arm64"
+            "engine_version": "2026.11.08",
+            "report": "Logix Engine 2026.11.08\nPlatform: darwin-arm64"
         }));
         assert_eq!(
             report(&ide, &engine),
-            "Logix IDE 0.1.0
+            "Logix IDE 2026.11.12
 Operating system: macOS 26.5 (macos-arm64)
 Log file: /Users/you/.logix/ide/logs/logix.log
-Logix Engine used: release 2026-11-08
+Logix Engine used: release 2026.11.08
 
-Logix Engine 2026-11-08
+Logix Engine 2026.11.08
 Platform: darwin-arm64"
         );
     }
@@ -123,7 +125,7 @@ Platform: darwin-arm64"
     fn names_a_local_engine() {
         let ide = ide_lines(
             "Logix IDE",
-            "0.1.0",
+            "2026.11.12",
             "macos-arm64",
             None,
             EngineSource::Local(Path::new("/w/logix-engine")),

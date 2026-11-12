@@ -49,16 +49,11 @@ jobs:
       - name: Checkout this repo
         uses: actions/checkout@v7
 
-      - name: Get Logix IDE version
-        id: version
-        run: echo "version=$(jq -r .version src-tauri/tauri.conf.json)" >> "$GITHUB_OUTPUT"
-
       - name: Start the pre-release
         uses: openlogix/.github/actions/start-pre-release@main
         with:
           package-name: logix-ide
           description: The Arduino experience, for FPGAs.
-          extra-fields: '{"logix-ide-version": "${{ steps.version.outputs.version }}"}'
 
   # ----- Per-platform builds, each on its own runner.
 

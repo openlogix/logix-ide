@@ -53,7 +53,7 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
     let current = platform::current();
     AppInfo {
         name: pkg.name.clone(),
-        version: pkg.version.to_string(),
+        version: crate::version::APP_VERSION.to_string(),
         platform: current.map_or("unknown", |p| p.id()).to_string(),
         platform_supported: current.is_some_and(|p| p.is_implemented()),
     }
@@ -63,12 +63,8 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
 /// `report` (fetched now, so package status is current), as the engine's
 /// recipe "Show system info" describes (`system_info.rs`).
 #[tauri::command]
-pub async fn system_info(
-    app: tauri::AppHandle,
-    state: State<'_, AppState>,
-) -> Result<String, UserError> {
+pub async fn system_info(state: State<'_, AppState>) -> Result<String, UserError> {
     use crate::system_info::{self as info, EngineSource};
-    let pkg = app.package_info();
     let local = engine::dev_engine_binary(std::env::var_os(engine::DEV_ENGINE_VARIABLE))
         .ok()
         .flatten();
@@ -78,7 +74,7 @@ pub async fn system_info(
     };
     let ide = info::ide_lines(
         "Logix IDE",
-        &pkg.version.to_string(),
+        crate::version::APP_VERSION,
         &info::os_description(platform::current()),
         crate::logging::current_file().as_deref(),
         source,
@@ -1330,9 +1326,9 @@ pub fn set_document_state(
 ) {
     state.dirty.store(dirty, Ordering::SeqCst);
     let marker = if dirty { "● " } else { "" };
-    // As in the Arduino IDE: e.g. "blinky | Logix IDE 0.1.0", or
-    // "● blinky | Logix IDE 0.1.0" with unsaved changes.
-    let version = &window.app_handle().package_info().version;
+    // As in the Arduino IDE: e.g. "blinky | Logix IDE 2026.11.12", or
+    // "● blinky | Logix IDE 2026.11.12" with unsaved changes.
+    let version = crate::version::APP_VERSION;
     // No project (the start screen): just the app's name.
     let title = if name.is_empty() {
         "Logix IDE".to_string()
