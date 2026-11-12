@@ -1528,7 +1528,7 @@
     tabMenu = { file, x: e.clientX, y: e.clientY };
   }
 
-  /** A design file's module, for its tab's Show Diagram of This Module:
+  /** A design file's module, for its tab's Module Diagram:
    * the first one it declares. */
   function tabModule(file: string): string | null {
     const f = project ? findFile(project, file) : null;
@@ -2100,20 +2100,20 @@
           role="menuitem"
           disabled={!canRun}
           onclick={() => fromTabMenu((f) => runTask("test", f))}
-          >Run This Test</button
+          >Run Test</button
         >
         <button
           role="menuitem"
           disabled={!canRun}
           onclick={() => fromTabMenu((f) => runTask("simulate", f))}
-          >Simulate This Test</button
+          >Simulate Test</button
         >
       {:else if tabModule(tabMenu.file)}
         <button
           role="menuitem"
           disabled={!canRun}
           onclick={() => fromTabMenu((f) => showDiagram(tabModule(f)))}
-          >Show Diagram of This Module</button
+          >Module Diagram</button
         >
       {/if}
     {/if}

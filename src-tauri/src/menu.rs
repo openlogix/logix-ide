@@ -128,7 +128,7 @@ pub struct MenuState {
     /// has exactly one (Simulate).
     pub simulate: bool,
     /// The open tab is a testbench: the editor's right-click menu adds Run
-    /// This Test and Simulate (hidden otherwise, to keep it short).
+    /// Test and Simulate Test (hidden otherwise, to keep it short).
     pub testbench_open: bool,
     /// One Tools submenu per dimension of the current board's variants,
     /// e.g. Tools > Memory ▸ Flash / RAM. Empty for most boards.
@@ -471,20 +471,16 @@ pub fn show_editor_menu<R: Runtime>(
     // As on the tab's right-click menu: run or simulate this testbench.
     let menu = if state.project && state.testbench_open {
         menu.separator()
-            .item(&MenuItemBuilder::with_id(RUN_THIS_TEST, "Run This Test").build(window)?)
-            .item(
-                &MenuItemBuilder::with_id(SIMULATE_THIS_TEST, "Simulate This Test")
-                    .build(window)?,
-            )
+            .item(&MenuItemBuilder::with_id(RUN_THIS_TEST, "Run Test").build(window)?)
+            .item(&MenuItemBuilder::with_id(SIMULATE_THIS_TEST, "Simulate Test").build(window)?)
     } else {
         menu
     };
     // In a design file: the diagram of the module at the cursor.
     let menu = match module.filter(|_| state.project && !state.testbench_open) {
-        Some(_) => menu.separator().item(
-            &MenuItemBuilder::with_id(SHOW_MODULE_DIAGRAM, "Show Diagram of This Module")
-                .build(window)?,
-        ),
+        Some(_) => menu
+            .separator()
+            .item(&MenuItemBuilder::with_id(SHOW_MODULE_DIAGRAM, "Module Diagram").build(window)?),
         None => menu,
     };
     let menu = menu.build()?;
