@@ -27,10 +27,12 @@ pub use devices::{
 };
 pub use format::format_file;
 pub use info::program_path;
-pub use setup::{download_missing, start as start_engine};
+pub use setup::{check_for_updates, download_missing, start as start_engine, update_if_due};
 pub use task::{boards_problem_outcome, run as run_task, TaskInput};
 
 use client::{Progress, ProgressSink};
+
+use crate::remote_config::ConfigSource;
 
 /// Follows an operation's phases: `f(message, percent, new_phase)` gets
 /// every progress notification with the current phase's message (the
@@ -50,39 +52,44 @@ fn phase_sink(f: impl Fn(&str, Option<u32>, bool) + Send + Sync + 'static) -> Pr
     })
 }
 
-/// The engine release the IDE uses: pinned in package.json (`appConstants`)
-/// and passed in by build.rs. Change it there to move to a new release.
-/// TODO(revisit): during development this is a daily pre-release. Before an
-/// IDE release, pin a stable engine release and check the package's size
-/// and SHA-256 (see CLAUDE.md, Open items).
-pub const ENGINE_RELEASE_REPO: &str = env!("LOGIX_IDE_BUILD_ENGINE_REPO");
-pub const ENGINE_RELEASE_TAG: &str = env!("LOGIX_IDE_BUILD_ENGINE_TAG");
-
-/// Where the engine lives in the IDE's data folder (`~/.logix/ide`).
+/// Where the engine lives in the IDE's data folder (`~/.logix/ide`). With
+/// the remote config override (`LOGIX_IDE_DEV_REMOTE_CONFIG`) everything a
+/// config decides (its cache, the engine release and the engine folder with
+/// its packages) is kept in `dev/config-override/` instead, so testing a
+/// config never changes what the regular Logix IDE uses.
 struct Layout {
     data_dir: PathBuf,
+    /// The folder for what the remote config decides: the data folder, or
+    /// `dev/config-override/` with the override.
+    config_dir: PathBuf,
 }
 
 impl Layout {
-    fn new(data_dir: &Path) -> Self {
+    fn new(data_dir: &Path, source: &ConfigSource) -> Self {
+        let config_dir = if source.is_override {
+            data_dir.join("dev").join("config-override")
+        } else {
+            data_dir.to_path_buf()
+        };
         Layout {
             data_dir: data_dir.to_path_buf(),
+            config_dir,
         }
     }
     /// The unpacked engine package (the executable and its licenses), plus
-    /// the download record.
+    /// its receipt.
     fn bin_dir(&self) -> PathBuf {
-        self.data_dir.join("engine-release")
+        self.config_dir.join("engine-release")
     }
     /// Scratch space for downloading and unpacking the engine package.
     fn tmp_dir(&self) -> PathBuf {
-        self.data_dir.join("_scratch").join("engine-download")
+        self.config_dir.join("_scratch").join("engine-download")
     }
     /// The engine folder (`--engine-folder`), owned by the engine: its
     /// packages (toolchains), logs and scratch files. The engine requires
     /// its last name to contain "engine".
     fn engine_folder(&self) -> PathBuf {
-        self.data_dir.join("engine")
+        self.config_dir.join("engine")
     }
     /// The engine folder of a locally built engine (`LOGIX_DEV_ENGINE_BINARY`),
     /// kept apart so it never touches the released engine's packages.
@@ -91,12 +98,41 @@ impl Layout {
     }
 }
 
+/// Which engine this run uses, for System Info and About.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InUse {
+    /// The release the remote config names (`yyyy-mm-dd`), and the config.
+    Release { release: String, config: ConfigInfo },
+    /// A locally built engine (`LOGIX_DEV_ENGINE_BINARY`).
+    Local(PathBuf),
+}
+
+/// The remote config the engine release came from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ConfigInfo {
+    pub source: String,
+    pub is_override: bool,
+    /// When it was read (seconds since 1970, UTC).
+    pub read_at: u64,
+}
+
+static IN_USE: Mutex<Option<InUse>> = Mutex::new(None);
+
+/// The engine this run uses, once setup has chosen it.
+pub fn in_use() -> Option<InUse> {
+    IN_USE.lock().unwrap().clone()
+}
+
+fn set_in_use(value: InUse) {
+    *IN_USE.lock().unwrap() = Some(value);
+}
+
 /// The environment variable naming a locally built engine binary, for
 /// developing the IDE and the engine together (`scripts/run.sh
 /// --engine-repo-dir` sets it).
 pub const DEV_ENGINE_VARIABLE: &str = "LOGIX_DEV_ENGINE_BINARY";
 
-/// The locally built engine to use instead of the pinned release: the
+/// The locally built engine to use instead of the release the remote config names: the
 /// value of `LOGIX_DEV_ENGINE_BINARY`, in every build (development and
 /// released), for Logix IDE developers and users guided by them, such as to
 /// diagnose a GitHub-built IDE. Not for normal use. Unset or empty means
@@ -124,23 +160,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn engine_release_comes_from_package_json() {
-        let text = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../package.json"))
-            .unwrap();
-        let json: serde_json::Value = serde_json::from_str(&text).unwrap();
-        assert_eq!(
-            json["appConstants"]["engineReleaseRepo"].as_str(),
-            Some(ENGINE_RELEASE_REPO)
-        );
-        assert_eq!(
-            json["appConstants"]["engineReleaseTag"].as_str(),
-            Some(ENGINE_RELEASE_TAG)
-        );
-    }
-
-    #[test]
     fn engine_folder_name_contains_engine() {
-        let layout = Layout::new(Path::new("/Users/you/.logix/ide"));
+        let layout = Layout::new(Path::new("/Users/you/.logix/ide"), &ConfigSource::regular());
         let folder = layout.engine_folder();
         assert_eq!(folder, Path::new("/Users/you/.logix/ide/engine"));
         // The engine's path keyword rule.
@@ -157,6 +178,20 @@ mod tests {
             .unwrap()
             .to_string_lossy()
             .contains("engine"));
+    }
+
+    #[test]
+    fn a_config_override_keeps_to_its_own_folder() {
+        let source = ConfigSource {
+            location: "https://example/config.jsonc".into(),
+            is_override: true,
+        };
+        let layout = Layout::new(Path::new("/Users/you/.logix/ide"), &source);
+        let dir = Path::new("/Users/you/.logix/ide/dev/config-override");
+        assert_eq!(layout.engine_folder(), dir.join("engine"));
+        assert_eq!(layout.bin_dir(), dir.join("engine-release"));
+        assert!(layout.tmp_dir().starts_with(dir));
+        assert_eq!(layout.config_dir, dir);
     }
 
     #[test]

@@ -500,6 +500,11 @@ export const backend: typeof Real.backend = {
     if (new URLSearchParams(location.search).has("devEngine")) {
       onEvent({ kind: "devEngine", path: "/Users/you/logix-engine/target/debug/logix-engine" });
     }
+    // With `/?devRemoteConfig`, the remote config comes from the override
+    // (LOGIX_IDE_DEV_REMOTE_CONFIG).
+    if (new URLSearchParams(location.search).has("devRemoteConfig")) {
+      onEvent({ kind: "devRemoteConfig", location: "/Users/you/config-001.jsonc" });
+    }
     // With `/?engineSetup`, setup stops in the engine's package download
     // until a test calls `__fake.finishSetup()`.
     if (new URLSearchParams(location.search).has("engineSetup")) {
@@ -670,14 +675,21 @@ export const backend: typeof Real.backend = {
   showProjectFolder: async (dir) => {
     fake.shownFolder = dir;
   },
+  checkForUpdates: async () => {
+    // As the real one: the engine's progress in the console, then what
+    // changed.
+    handlers.output?.("Downloading logix-catalog 2026.11.30...");
+    return ["Updated the boards and FPGAs to 2026.11.30."];
+  },
   systemInfo: async () =>
     [
       "Logix IDE " + packageJson.version,
       "Operating system: macOS 26.5 (macos-arm64)",
       "Log file: /Users/you/.logix/ide/logs/logix.log",
-      "Logix Engine used: release 2026-11-08",
+      "Logix Engine used: release 2026.11.08",
+      "Remote config: config 001, https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc, read 2026-11-12 00:00 UTC",
       "",
-      "Logix Engine 2026-11-08",
+      "Logix Engine 2026.11.08",
       "Platform: darwin-arm64",
       "Boards schema: https://www.openlogix.org/schemas/logix-board-v1.json",
     ].join("\n"),

@@ -290,11 +290,11 @@ test("Help > System Info shows the report and copies it", async ({ page }) => {
   await menu(page, "system-info");
   const dialog = page.getByRole("dialog", { name: "System Info" });
   // The IDE's lines, a blank line, then the engine's report.
-  await expect(dialog.locator(".report")).toContainText("Logix Engine used: release 2026-11-08");
+  await expect(dialog.locator(".report")).toContainText("Logix Engine used: release 2026.11.08");
   await expect(dialog.locator(".report")).toContainText("Boards schema: https://www.openlogix.org/schemas/logix-board-v1.json");
   await dialog.getByRole("button", { name: "Copy" }).click();
   await expect(dialog).toContainText("Copied.");
-  expect((await fake()).copiedText).toMatch(/^Logix IDE .*\n\nLogix Engine 2026-11-08\n/s);
+  expect((await fake()).copiedText).toMatch(/^Logix IDE .*\n\nLogix Engine 2026.11.08\n/s);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });
@@ -958,6 +958,23 @@ test("a local engine is shown for the whole session", async ({ page }) => {
   // Still there once setup is done.
   await expect(output(page)).toContainText("Ready.");
   await expect(banner).toBeVisible();
+});
+
+test("a test remote config is shown for the whole session", async ({ page }) => {
+  await page.goto("/?devRemoteConfig");
+  const banner = page.getByRole("status").filter({ hasText: "test remote config" });
+  await expect(banner).toContainText("Using a test remote config: /Users/you/config-001.jsonc");
+  await expect(output(page)).toContainText("Ready.");
+  await expect(banner).toBeVisible();
+});
+
+test("Check for Updates shows the progress and what changed", async ({ page }) => {
+  await start(page);
+  await menu(page, "check-for-updates");
+  await expect(output(page)).toContainText("Checking for updates…");
+  await expect(output(page)).toContainText("Downloading logix-catalog 2026.11.30...");
+  await expect(output(page)).toContainText("Updated the boards and FPGAs to 2026.11.30.");
+  await expect(status(page)).toContainText("Updated the boards and FPGAs to 2026.11.30.");
 });
 
 test("Upload asks which device when several fit the board", async ({ page }) => {

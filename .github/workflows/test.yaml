@@ -20,6 +20,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The remote config (remote-config/logix-ide/config-NNN.jsonc): the shared
+  # check (schema, releases and files exist, SHA256SUMS lists them, only
+  # openlogix repos on main).
+  remote-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Check the remote config
+        uses: openlogix/.github/actions/check-remote-config@main
+        with:
+          platforms: darwin-arm64
+
   test:
     name: test (${{ matrix.os }})
     # macOS on Apple Silicon: the only platform implemented so far, on the

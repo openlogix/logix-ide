@@ -64,25 +64,57 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
 /// recipe "Show system info" describes (`system_info.rs`).
 #[tauri::command]
 pub async fn system_info(state: State<'_, AppState>) -> Result<String, UserError> {
-    use crate::system_info::{self as info, EngineSource};
-    let local = engine::dev_engine_binary(std::env::var_os(engine::DEV_ENGINE_VARIABLE))
-        .ok()
-        .flatten();
-    let source = match &local {
-        Some(path) => EngineSource::Local(path),
-        None => EngineSource::Pinned(engine::ENGINE_RELEASE_TAG),
-    };
+    use crate::system_info as info;
     let ide = info::ide_lines(
         "Logix IDE",
         crate::version::APP_VERSION,
         &info::os_description(platform::current()),
         crate::logging::current_file().as_deref(),
-        source,
+        engine::in_use().as_ref(),
     );
     // Setup holds the lock while it runs: then there's no engine yet.
     let running = state.engine.try_lock().ok().and_then(|slot| slot.clone());
     let engine_part = info::engine_part_from(running.as_deref()).await;
     Ok(info::report(&ide, &engine_part))
+}
+
+/// Help > Check for Updates: reads Logix IDE's remote config now and
+/// switches to a new engine release if it names one, then has the engine
+/// check its own packages (`check_updates`), with the progress in the
+/// console. Returns what changed, one line each, or a line saying
+/// everything is up to date. Waits for a running task to finish.
+#[tauri::command]
+pub async fn check_for_updates(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<Vec<String>, UserError> {
+    let _running = state.task.lock().await;
+    let log = console_log(&app);
+    let mut slot = state.engine.lock().await;
+    if slot.is_none() {
+        return Err(anyhow!("The FPGA tools aren't ready yet.").into());
+    }
+    let mut changes = Vec::new();
+    if engine::update_if_due(&log, true).await? {
+        *slot = None;
+        let (started, _) = engine::start_engine(|_| {})
+            .await
+            .context("Couldn't start the new Logix Engine.")?;
+        *slot = Some(std::sync::Arc::new(started));
+        if let Some(engine::InUse::Release { release, .. }) = engine::in_use() {
+            changes.push(format!(
+                "Updated Logix Engine to {}.",
+                crate::version::shown(&release)
+            ));
+        }
+    }
+    let running = slot.clone().expect("set above");
+    drop(slot);
+    changes.extend(engine::check_for_updates(&running, log).await?);
+    if changes.is_empty() {
+        changes.push("Everything is up to date.".into());
+    }
+    Ok(changes)
 }
 
 /// Puts text on the clipboard (System Info's Copy).
@@ -99,6 +131,7 @@ pub fn copy_text(text: String) -> Result<(), UserError> {
 /// again (e.g. to retry after an error).
 #[tauri::command]
 pub async fn setup(
+    app: AppHandle,
     state: State<'_, AppState>,
     on_event: Channel<SetupEvent>,
 ) -> Result<(), UserError> {
@@ -130,6 +163,8 @@ pub async fn setup(
             Ok(ready) => {
                 crate::log!("Engine setup ready");
                 *engine_slot = Some(std::sync::Arc::new(ready));
+                // About names the engine release, chosen now.
+                crate::menu::refresh(&app);
             }
             Err(e) => {
                 crate::log!("Engine setup failed: {e:#}");
@@ -191,23 +226,56 @@ fn console_log(app: &AppHandle) -> impl Fn(String) + Send + Sync + Clone + 'stat
 }
 
 /// The running engine, or a user-facing error if setup hasn't finished.
+/// Same as `engine_for_task` without the check for a new engine release:
+/// for quick queries (boards, devices, the language server).
 async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>, UserError> {
+    engine_with_check(state, None).await
+}
+
+/// The running engine for an operation (Verify, Upload, Run Tests,
+/// Simulate, Show Diagram, Auto Format): first, when Logix IDE's remote
+/// config is due (24 hours), it's read again, and a new engine release it
+/// names is downloaded and started, with lines in the operation's output
+/// (`log`). Updates apply at the start of an operation, never in the middle.
+async fn engine_for_task(
+    state: &AppState,
+    log: impl Fn(String) + Send + Sync,
+) -> Result<std::sync::Arc<engine::Engine>, UserError> {
+    engine_with_check(state, Some(&log)).await
+}
+
+async fn engine_with_check(
+    state: &AppState,
+    log: Option<&(dyn Fn(String) + Send + Sync)>,
+) -> Result<std::sync::Arc<engine::Engine>, UserError> {
     let mut slot = state.engine.lock().await;
-    match slot.as_ref() {
-        Some(engine) if !engine.has_stopped() => Ok(engine.clone()),
-        // It stopped, such as after a crash: start it again. Its packages
-        // are downloaded already.
-        Some(_) => {
-            crate::log!("Logix Engine stopped; starting it again");
-            let (started, _) = engine::start_engine(|_| {})
-                .await
-                .context("Logix Engine stopped, and couldn't start again.")?;
-            let started = std::sync::Arc::new(started);
-            *slot = Some(started.clone());
-            Ok(started)
-        }
-        None => Err(anyhow!("The FPGA tools aren't ready yet.").into()),
+    let Some(current) = slot.clone() else {
+        return Err(anyhow!("The FPGA tools aren't ready yet.").into());
+    };
+    let updated = match log {
+        Some(log) => engine::update_if_due(log, false).await.unwrap_or_else(|e| {
+            crate::log!("Checking for a new Logix Engine failed: {e:#}");
+            false
+        }),
+        None => false,
+    };
+    if !updated && !current.has_stopped() {
+        return Ok(current);
     }
+    // A new release, or it stopped (such as after a crash): start it
+    // (again). Its packages are downloaded already, or it downloads what
+    // the new release needs itself.
+    if !updated {
+        crate::log!("Logix Engine stopped; starting it again");
+    }
+    drop(current);
+    *slot = None;
+    let (started, _) = engine::start_engine(|_| {})
+        .await
+        .context("Logix Engine stopped, and couldn't start again.")?;
+    let started = std::sync::Arc::new(started);
+    *slot = Some(started.clone());
+    Ok(started)
 }
 
 /// The board and example lists (fetched on first use): the engine's
@@ -402,7 +470,13 @@ pub async fn run_task(
     let Ok(_running) = state.task.try_lock() else {
         return Err(anyhow!("A build or upload is already running.").into());
     };
-    let engine = ready_engine(&state).await?;
+    let engine = {
+        let channel = on_event.clone();
+        engine_for_task(&state, move |line| {
+            let _ = channel.send(outcome::TaskEvent::line(line));
+        })
+        .await?
+    };
     // The boards the project knows: with a custom-boards.json (the file in
     // the project folder, or the example a new project starts from), the
     // engine's list with its boards merged in (one with a catalog board's
@@ -860,7 +934,7 @@ pub async fn format_file(
         .into());
     }
     let _formatting = state.format.lock().await;
-    let engine = ready_engine(&state).await?;
+    let engine = engine_for_task(&state, console_log(&app)).await?;
     let root = platform::current_implemented()?
         .data_dir()?
         .join("_scratch")

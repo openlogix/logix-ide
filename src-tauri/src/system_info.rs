@@ -7,43 +7,53 @@ use std::path::Path;
 
 use serde_json::{json, Value};
 
-use crate::engine::{self, Engine};
+use crate::engine::{self, Engine, InUse};
 use crate::platform::Platform;
-
-/// Which engine the IDE runs: the release it pins, or a local binary
-/// (`LOGIX_DEV_ENGINE_BINARY`).
-pub enum EngineSource<'a> {
-    Pinned(&'a str),
-    Local(&'a Path),
-}
+use crate::remote_config;
 
 /// The IDE's own lines: name and version, the operating system, the IDE's
-/// log file and which engine it runs.
+/// log file, which engine it runs and the remote config that named it.
 pub fn ide_lines(
     name: &str,
     version: &str,
     os: &str,
     log_file: Option<&Path>,
-    engine: EngineSource,
+    engine: Option<&InUse>,
 ) -> Vec<String> {
-    vec![
+    let mut lines = vec![
         format!("{name} {version}"),
         format!("Operating system: {os}"),
         format!(
             "Log file: {}",
             log_file.map_or("(none)".to_string(), |p| p.display().to_string())
         ),
-        match engine {
-            EngineSource::Pinned(tag) => {
-                format!("Logix Engine used: release {}", crate::version::shown(tag))
-            }
-            EngineSource::Local(path) => format!(
-                "Logix Engine used: local binary {} ({})",
-                path.display(),
-                engine::DEV_ENGINE_VARIABLE
-            ),
-        },
-    ]
+    ];
+    match engine {
+        Some(InUse::Release { release, config }) => {
+            lines.push(format!(
+                "Logix Engine used: release {}",
+                crate::version::shown(release)
+            ));
+            lines.push(format!(
+                "Remote config: config {}, {}{}, read {}",
+                remote_config::CONFIG_VERSION,
+                config.source,
+                if config.is_override {
+                    format!(" ({})", remote_config::DEV_REMOTE_CONFIG_VARIABLE)
+                } else {
+                    String::new()
+                },
+                remote_config::utc_time(config.read_at)
+            ));
+        }
+        Some(InUse::Local(path)) => lines.push(format!(
+            "Logix Engine used: local binary {} ({})",
+            path.display(),
+            engine::DEV_ENGINE_VARIABLE
+        )),
+        None => lines.push("Logix Engine used: not chosen yet (setup hasn't finished)".into()),
+    }
+    lines
 }
 
 /// The engine's part: its `report`, as `get_engine_info` gives it.
@@ -103,7 +113,14 @@ mod tests {
             "2026.11.12",
             "macOS 26.5 (macos-arm64)",
             Some(Path::new("/Users/you/.logix/ide/logs/logix.log")),
-            EngineSource::Pinned("2026-11-08"),
+            Some(&InUse::Release {
+                release: "2026-11-08".into(),
+                config: engine::ConfigInfo {
+                    source: "https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc".into(),
+                    is_override: false,
+                    read_at: 1_794_441_600,
+                },
+            }),
         );
         let engine = engine_part(&json!({
             "engine_version": "2026.11.08",
@@ -115,6 +132,7 @@ mod tests {
 Operating system: macOS 26.5 (macos-arm64)
 Log file: /Users/you/.logix/ide/logs/logix.log
 Logix Engine used: release 2026.11.08
+Remote config: config 001, https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/config-001.jsonc, read 2026-11-12 00:00 UTC
 
 Logix Engine 2026.11.08
 Platform: darwin-arm64"
@@ -128,7 +146,7 @@ Platform: darwin-arm64"
             "2026.11.12",
             "macos-arm64",
             None,
-            EngineSource::Local(Path::new("/w/logix-engine")),
+            Some(&InUse::Local("/w/logix-engine".into())),
         );
         assert_eq!(ide[2], "Log file: (none)");
         assert_eq!(

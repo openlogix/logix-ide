@@ -320,6 +320,8 @@
    * forgotten while diagnosing.
    */
   let devEngine = $state<string | null>(null);
+  /** The remote config override's URL or file (LOGIX_IDE_DEV_REMOTE_CONFIG). */
+  let devRemoteConfig = $state<string | null>(null);
 
   function onSetupEvent(event: SetupEvent) {
     switch (event.kind) {
@@ -339,6 +341,9 @@
         break;
       case "devEngine":
         devEngine = event.path;
+        break;
+      case "devRemoteConfig":
+        devRemoteConfig = event.location;
         break;
       case "catalogReady":
         // The start screen's Examples work while the FPGA tools download.
@@ -828,6 +833,28 @@
     status = { text: err.message, kind: "info" };
     log(`\x1b[31mError: ${err.details}\x1b[0m`);
     log("Ready.");
+  }
+
+  /**
+   * Help > Check for Updates: Logix Engine and its packages (the FPGA tools,
+   * the boards and FPGAs), with the progress in the output and what changed
+   * at the end. Logix IDE also checks on its own every 24 hours, before an
+   * operation; this checks now.
+   */
+  async function checkForUpdates() {
+    if (!ready) {
+      fileError = "The FPGA tools aren't ready yet.";
+      return;
+    }
+    showOutput("command");
+    log("Checking for updates…");
+    try {
+      const changes = await during("Checking for updates…", () => backend.checkForUpdates());
+      log(...changes);
+      finish(changes[changes.length - 1] ?? "Everything is up to date.");
+    } catch (e) {
+      commandFailed(e);
+    }
   }
 
   /** Formats a Verilog file: the open one (menu bar, editor), or a tab's. */
@@ -1794,6 +1821,10 @@
       systemInfoOpen = true;
       return;
     }
+    if (id === "check-for-updates") {
+      checkForUpdates();
+      return;
+    }
     if (id === "settings") {
       if (prefs) settingsOpen = true;
       return;
@@ -1851,6 +1882,7 @@
         | "devices"
         | "board-explorer"
         | "system-info"
+        | "check-for-updates"
         | "settings"
         | "go-to-definition"
         | "toggle-comment"
@@ -2194,6 +2226,14 @@
     {/if}
   </header>
 
+  {#if devRemoteConfig}
+    <div class="banner dev-engine" role="status">
+      <span
+        >Using a test remote config: {devRemoteConfig}. Its Logix Engine is kept apart from
+        the regular one. Start Logix IDE normally to use the regular config.</span
+      >
+    </div>
+  {/if}
   {#if devEngine}
     <div class="banner dev-engine" role="status">
       <span

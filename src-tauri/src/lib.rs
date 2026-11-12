@@ -10,6 +10,7 @@ mod menu;
 mod outcome;
 mod platform;
 mod project;
+mod remote_config;
 mod settings;
 mod setup_events;
 mod system_info;
@@ -75,10 +76,10 @@ pub fn run() {
         })
         .setup(|app| {
             logging::init(&format!(
-                "Logix IDE {} ({}), Logix Engine {}",
+                "Logix IDE {} ({}), remote config {}",
                 version::APP_VERSION,
                 platform::current().map_or("unknown platform".into(), |p| format!("{p:?}")),
-                version::shown(engine::ENGINE_RELEASE_TAG)
+                remote_config::CONFIG_VERSION
             ));
             if let Some(home) = std::env::var_os(platform::HOME_VARIABLE).filter(|v| !v.is_empty())
             {
@@ -130,6 +131,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::app_info,
             commands::system_info,
+            commands::check_for_updates,
             commands::copy_text,
             commands::setup,
             commands::run_task,

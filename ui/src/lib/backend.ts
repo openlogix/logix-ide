@@ -66,6 +66,8 @@ export type SetupEvent =
   | { kind: "log"; line: string }
   /** A local engine (LOGIX_DEV_ENGINE_BINARY) is used, for diagnosis. */
   | { kind: "devEngine"; path: string }
+  /** The remote config comes from the override (LOGIX_IDE_DEV_REMOTE_CONFIG). */
+  | { kind: "devRemoteConfig"; location: string }
   /** The board and example lists are ready, before the FPGA tools are. */
   | { kind: "catalogReady" };
 
@@ -455,6 +457,7 @@ export type MenuId =
   | "show-module-diagram"
   | "simulate-this-test"
   | "system-info"
+  | "check-for-updates"
   // Not a menu item: the recent projects list changed (Clear Menu).
   | "recents-changed"
   // Tools > <dimension> > <value>: the board's variant.
@@ -468,6 +471,14 @@ export const backend = {
    * blank line, then the engine's (its `get_engine_info` `report`).
    */
   systemInfo: (): Promise<string> => invoke<string>("system_info"),
+
+  /**
+   * Help > Check for Updates: reads Logix IDE's remote config now, switches
+   * to a new Logix Engine release if it names one, and has the engine check
+   * its own packages. Progress goes to the console (`tool-output`); returns
+   * what changed, a line each, or a line saying everything is up to date.
+   */
+  checkForUpdates: (): Promise<string[]> => invoke<string[]>("check_for_updates"),
 
   /** Puts text on the clipboard. */
   copyText: (text: string): Promise<void> => invoke<void>("copy_text", { text }),

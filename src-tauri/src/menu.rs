@@ -185,6 +185,8 @@ const CLEAR_RECENT: &str = "clear-recent";
 const SHOW_LOGS: &str = "show-logs";
 /// Help > System Info…: the UI asks for the report (`system_info`).
 const SYSTEM_INFO: &str = "system-info";
+/// Help > Check for Updates: the UI runs `check_for_updates`.
+const CHECK_UPDATES: &str = "check-for-updates";
 const CLOSE: &str = "close";
 const QUIT: &str = "quit";
 
@@ -205,8 +207,15 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         name: Some("Logix IDE".into()),
         version: Some(crate::version::APP_VERSION.to_string()),
         comments: Some(format!(
-            "The Arduino experience, for FPGAs.\nPowered by Logix Engine (release {}).\n\nLogix IDE is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
-            crate::version::shown(crate::engine::ENGINE_RELEASE_TAG)
+            "The Arduino experience, for FPGAs.\n{}\n\nLogix IDE is not affiliated with or endorsed by Arduino. Arduino is a trademark of Arduino SA.",
+            match crate::engine::in_use() {
+                Some(crate::engine::InUse::Release { release, .. }) => format!(
+                    "Powered by Logix Engine (release {}).",
+                    crate::version::shown(&release)
+                ),
+                Some(crate::engine::InUse::Local(_)) => "Powered by a local Logix Engine.".into(),
+                None => "Powered by Logix Engine.".into(),
+            }
         )),
         copyright: Some("Licensed under MIT or the Apache License 2.0.".into()),
         website: Some("https://www.openlogix.org/ide/".into()),
@@ -369,6 +378,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     }
     help = help
         .separator()
+        .item(&MenuItemBuilder::with_id(CHECK_UPDATES, "Check for Updates").build(app)?)
         .item(&MenuItemBuilder::with_id(SYSTEM_INFO, "System Info…").build(app)?)
         .item(&MenuItemBuilder::with_id(SHOW_LOGS, "Show Log Folder").build(app)?);
     if !mac {
@@ -398,7 +408,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
         | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
         | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST
-        | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER | SYSTEM_INFO | BUILD_REPORT => {
+        | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER | SYSTEM_INFO | CHECK_UPDATES | BUILD_REPORT => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {

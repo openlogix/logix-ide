@@ -42,8 +42,15 @@ pub enum SetupEvent {
         line: String,
     },
     /// Setup uses a local engine (`LOGIX_DEV_ENGINE_BINARY`) instead of the
-    /// pinned release, for diagnosis: the UI shows it for the whole session.
+    /// release the remote config names, for diagnosis: the UI shows it for
+    /// the whole session.
     DevEngine {
         path: String,
+    },
+    /// Setup reads the remote config from the override
+    /// (`LOGIX_IDE_DEV_REMOTE_CONFIG`), a URL or a local file, for testing a
+    /// config change: the UI shows it for the whole session.
+    DevRemoteConfig {
+        location: String,
     },
 }

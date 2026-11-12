@@ -11,8 +11,6 @@ crate-type = ["rlib"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
-# Reads the pinned Logix Engine release from package.json (build.rs).
-serde_json = "1"
 
 [dependencies]
 tauri = { version = "2", features = [] }
@@ -33,6 +31,9 @@ rmcp = { version = "3.8", features = ["client", "transport-async-rw"] }
 include_dir = "0.7"
 toml_edit = "0.25.17"
 trash = "5.2.9"
+# Checking downloaded release files against their SHA256SUMS.
+sha2 = "0.10"
+hex = "0.4"
 
 # macOS only: bringing GTKWave's window to the front (platform.rs).
 [target.'cfg(target_os = "macos")'.dependencies]

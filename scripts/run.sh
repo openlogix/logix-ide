@@ -2,7 +2,7 @@
 #
 # Runs Logix IDE in development mode (live reload).
 #
-#   scripts/run.sh                                  # with the pinned engine release
+#   scripts/run.sh                                  # with the engine release the remote config names
 #   scripts/run.sh --engine-repo-dir <engine clone> # with a locally built engine
 #
 # --engine-repo-dir builds the engine in that local logix-engine clone

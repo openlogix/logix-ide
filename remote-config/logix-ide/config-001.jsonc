@@ -1,0 +1,17 @@
+// What Logix IDE on config 001 uses (Remote updates, in the website repo's
+// CLAUDE.md). Every Logix IDE on this config reads this file from main, so a
+// change here reaches it without a Logix IDE release. Change it only by pull
+// request, saying why in a comment; the tests run with what it names.
+// During development it may name pre-releases: repin them before they
+// expire (about 5 days).
+{
+  "$schema": "https://www.openlogix.org/schemas/logix-remote-config-v1.json",
+
+  // Logix Engine, which builds, tests and programs the board, and downloads
+  // its own FPGA tools and board catalog (its own remote config).
+  "logix-engine": {
+    "repo": "openlogix/logix-engine",
+    "release": "2026-11-12",
+    "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+  }
+}

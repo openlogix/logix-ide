@@ -149,18 +149,35 @@ Folder**.
 
 ### Moving to a new Logix Engine release
 
-Logix IDE uses a fixed engine release, set in `package.json`:
+Logix IDE has no built-in engine pin. It uses the engine release its remote
+config names, `remote-config/logix-ide/config-001.jsonc` in this repo:
 
-```json
-"appConstants": {
-  "engineReleaseRepo": "openlogix/logix-engine",
-  "engineReleaseTag": "2026-11-03"
+```jsonc
+"logix-engine": {
+  "repo": "openlogix/logix-engine",
+  "release": "2026-11-12",
+  "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
 }
 ```
 
-Change the tag and restart `scripts/run.sh`: Logix IDE downloads that engine on
-its next start. A release replaced under the same tag isn't downloaded
-again; delete `~/.logix/ide/engine-release` to get it.
+Every Logix IDE reads that file from `main` (cached for 24 hours), so a change
+there reaches installed Logix IDEs without a new release. Change it by pull
+request, with a comment saying why; CI checks that the release and its file
+exist. During development it may name a pre-release, which expires after
+about 5 days: repin it before then.
+
+To try a change before it's on `main`, point Logix IDE at the file with
+`LOGIX_IDE_DEV_REMOTE_CONFIG`, a local path or an `https://` URL (such as the
+file on your pull request's branch):
+
+```
+LOGIX_IDE_DEV_REMOTE_CONFIG=$PWD/remote-config/logix-ide/config-001.jsonc scripts/run.sh
+```
+
+Logix IDE then shows a banner for the whole session and keeps everything that
+config decides (the engine and its FPGA tools) in `~/.logix/ide/dev/config-override/`,
+so the regular setup isn't touched. Help > Check for Updates reads the config
+again now.
 
 ### Examples
 

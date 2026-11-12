@@ -30,14 +30,19 @@ bottom of the window shows the progress, and the output area above it shows
 what's happening:
 
 ```
-Downloading FPGA tools for Logix Engine (logix-core). The first run can take a few minutes...
-Downloading logix-core...
+Downloading Logix Engine 2026.11.12...
+Logix Engine 2026.11.12 downloaded.
+Downloading the FPGA tools. The first time can take a few minutes.
+Downloading logix-core 2026.11.11...
+FPGA tools downloaded (logix-core).
 117 examples available.
 Ready.
 ```
 
 When the output says **Ready.**, you can start. Later starts take only a
-few seconds and work without internet.
+few seconds and work without internet. Logix IDE checks for newer releases
+of Logix Engine and its FPGA tools once a day, when you use it, and downloads
+them by itself; **Help > Check for Updates** checks now.
 
 The window shows the start screen, with buttons for a new project, an existing
 project and the examples:
