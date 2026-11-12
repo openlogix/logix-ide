@@ -262,7 +262,7 @@ What the tests check (keep these when regenerating; add to them with new feature
 
 ## CI and release workflows
 
-**Repo type: installable** (topic `openlogix-installable`; the website repo's `CLAUDE.md`, Repo types, owns the policy): people download Logix IDE from the release marked Latest.
+**Repo type: installable** (`.github/logix-repo-metadata.jsonc`; the website repo's `CLAUDE.md`, Repo types, owns the policy): people download Logix IDE from the release marked Latest.
 
 Use the current major versions of GitHub's actions (`actions/checkout`, `setup-node` with `lts/*`, `upload-artifact`, `download-artifact`, `setup-python`, `upload-pages-artifact`, `deploy-pages`), `dtolnay/rust-toolchain@stable` with `clippy, rustfmt`.
 
