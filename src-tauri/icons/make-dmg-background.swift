@@ -1,5 +1,6 @@
 // Draws the background of the macOS .dmg window: an arrow from Logix IDE to
-// Applications and a line telling the user to drag. Writes a TIFF with a 1x
+// Applications, a line telling the user to drag, and one saying how to start
+// it afterwards (dragging only copies it). Writes a TIFF with a 1x
 // and a 2x (Retina) image.
 //
 //   swift src-tauri/icons/make-dmg-background.swift src-tauri/icons/dmg-background.tiff
@@ -52,7 +53,10 @@ func draw() {
     }
     text("Install Logix IDE", size: 22, weight: .semibold, color: NSColor(white: 0.15, alpha: 1), top: 32)
     text("Drag the Logix IDE icon onto the Applications folder.", size: 15, weight: .regular,
-         color: NSColor(white: 0.3, alpha: 1), top: 290)
+         color: NSColor(white: 0.3, alpha: 1), top: 286)
+    // Dragging only copies it, so say how to start it.
+    text("Then open Logix IDE from Applications in Finder.", size: 15, weight: .regular,
+         color: NSColor(white: 0.3, alpha: 1), top: 310)
 }
 
 func rep(scale: CGFloat) -> NSBitmapImageRep {
