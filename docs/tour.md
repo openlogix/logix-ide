@@ -104,7 +104,7 @@ a testbench. More in [Testbenches and simulation](testbenches.md).
 **Project > Show Diagram** draws your design as a schematic in a window of
 its own: registers, adders, comparators and the FPGA's own blocks, with the
 wires between them. It's a good way to check that the hardware you described
-is the hardware you meant. Click a module to open it, and double-click a block to
+is the hardware you meant. Double-click a module to open it, and any other block to
 see its line in the editor.
 
 ![The diagram of the blinky design](images/diagram.png)

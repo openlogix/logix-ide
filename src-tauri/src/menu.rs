@@ -478,9 +478,9 @@ pub fn show_editor_menu<R: Runtime>(
     };
     // In a design file: the diagram of the module at the cursor.
     let menu = match module.filter(|_| state.project && !state.testbench_open) {
-        Some(m) => menu.separator().item(
-            &MenuItemBuilder::with_id(SHOW_MODULE_DIAGRAM, format!("Show Diagram of {m}"))
-                .build(window)?,
+        Some(_) => menu.separator().item(
+            // Named like Auto Format: it acts on the module the cursor is in.
+            &MenuItemBuilder::with_id(SHOW_MODULE_DIAGRAM, "Show Diagram").build(window)?,
         ),
         None => menu,
     };

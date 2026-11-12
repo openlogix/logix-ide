@@ -499,7 +499,7 @@ export const backend: typeof Real.backend = {
       upload: "Synthesizing",
       test: "Running main_tb.v",
       simulate: "Running main_tb.v",
-      diagram: "Drawing the diagram",
+      diagram: "Preparing the diagram",
       report: "Synthesizing",
     }[task];
     const phases = task === "build" || task === "upload" || task === "report";

@@ -719,6 +719,11 @@
     if (activity) return activity;
     if (stage && stage !== "ready" && !setupError && !running)
       return stageText[stage];
+    // A diagram's status is its phase: "(large)" when the engine says so.
+    if (running === "diagram" && status)
+      return taskStep?.message.includes("(large)")
+        ? "Preparing the diagram (large)…"
+        : "Preparing the diagram…";
     if (status) return status.text;
     return ready ? "Ready." : "";
   });
@@ -2397,7 +2402,9 @@
         {#if status?.report && buildReport && !isBusy && !activity}
           <button class="status-link" onclick={() => (buildReportOpen = true)}>Board Utilization…</button>
         {/if}
-        {#if running && taskStep && !activity}
+        <!-- Its phase, beside the status, except for a diagram, whose status
+             says it already. -->
+        {#if running && taskStep && !activity && running !== "diagram"}
           <span class="setup-detail"
             >{taskStep.message}{taskStep.percent != null
               ? ` ${taskStep.percent}%`

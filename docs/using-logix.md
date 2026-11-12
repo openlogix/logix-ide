@@ -207,7 +207,7 @@ the open Verilog file. **Edit > Undo** restores the previous text.
 in a window of its own that you can move and resize while you keep working.
 Every module of the design is in it:
 
-- **Click a module** to open it; the bar at the top goes back.
+- **Double-click a module** to open it; the bar at the top goes back.
 - **Double-click any other block** to show its line in the editor.
 - **Hover** a block, a port, a wire or a pin for its details, such as a
   signal's name and width.
@@ -218,8 +218,7 @@ Clocks and resets that go to many blocks are drawn as labels with their
 name, instead of long wires, and fixed values as labels with the value.
 After each **Verify**, the open diagram is drawn again.
 
-To see one module, right-click in its code and choose **Show Diagram of
-<module>**: the diagram starts at that module, with the modules it uses. A
+To see one module, right-click in its code and choose **Show Diagram**: the diagram starts at that module, with the modules it uses. A
 diagram shows three levels of modules below where it starts; open a deeper
 one by its own Show Diagram.
 
