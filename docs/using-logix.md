@@ -19,7 +19,10 @@
   over a name shows what it is.
 - **Right-click** in the editor for **Go to Definition** (jump to where the
   name you clicked is defined), Cut, Copy, Paste, **Comment/Uncomment** and
-  Auto Format. The same items are in the **Edit** and **Tools** menus.
+  Auto Format, and for the open file: **Show Diagram of This Module** in a
+  design file, **Run This Test** and **Simulate This Test** in a testbench.
+  A command named with "This" acts on that file, or on the module at the
+  cursor; the menu bar's command of the same kind acts on the whole project.
   **Comment/Uncomment** also works in pin files, with their
   own comment mark (`#`, or `//` in `.cst` files); Auto Format is for
   Verilog files only.
@@ -63,7 +66,8 @@ inside another project.
   **File > Examples…** starts from one of the board's examples instead.
 - **New file**: the **+** at the end of the tabs, or **File > New File…**.
   Double-click a tab to rename it; right-click it to
-  rename or delete it. These changes, like edits, are saved when you save
+  rename or delete it, or for the commands that work on that file, such as
+  **Auto Format**. These changes, like edits, are saved when you save
   the project.
 - **Open, close and save**: **File > Open Project…**, **Open Recent**,
   **Close Project**, **Save Project**, **Save Project As…**.
@@ -218,9 +222,10 @@ Clocks and resets that go to many blocks are drawn as labels with their
 name, instead of long wires, and fixed values as labels with the value.
 After each **Verify**, the open diagram is drawn again.
 
-To see one module, right-click in its code and choose **Show Diagram**: the diagram starts at that module, with the modules it uses. A
-diagram shows three levels of modules below where it starts; open a deeper
-one by its own Show Diagram.
+To see one module, right-click in its code, or on its file's tab, and choose
+**Show Diagram of This Module**: the diagram starts at that module, with the modules it uses. A
+diagram shows three levels of modules below where it starts; to see a deeper
+one, use **Show Diagram of This Module** on it.
 
 ![The diagram of the blinky design](images/diagram.png)
 

@@ -830,10 +830,10 @@
     log("Ready.");
   }
 
-  async function autoFormat() {
+  /** Formats a Verilog file: the open one (menu bar, editor), or a tab's. */
+  async function autoFormat(file: string = activeFile) {
     if (!project || formatting) return;
     const p = project;
-    const file = activeFile;
     const f = findFile(p, file);
     if (!f) return;
     if (!isHdlSource(file)) {
@@ -1528,6 +1528,13 @@
     tabMenu = { file, x: e.clientX, y: e.clientY };
   }
 
+  /** A design file's module, for its tab's Show Diagram of This Module:
+   * the first one it declares. */
+  function tabModule(file: string): string | null {
+    const f = project ? findFile(project, file) : null;
+    return f ? moduleAt(f.text, 0) : null;
+  }
+
   function fromTabMenu(action: (file: string) => void) {
     const file = tabMenu?.file;
     tabMenu = null;
@@ -2079,20 +2086,36 @@
       disabled={!project || tabMenu.file === mainFile(project)}
       onclick={() => fromTabMenu(askDeleteFile)}>Delete…</button
     >
-    {#if isTestbench(tabMenu.file)}
+    <!-- The file commands, for this file (see CLAUDE.md, Commands and
+         menus). -->
+    {#if isHdlSource(tabMenu.file)}
       <hr />
       <button
         role="menuitem"
-        disabled={!canRun}
-        onclick={() => fromTabMenu((f) => runTask("test", f))}
-        >Run This Test</button
+        disabled={!ready || formatting}
+        onclick={() => fromTabMenu((f) => autoFormat(f))}>Auto Format</button
       >
-      <button
-        role="menuitem"
-        disabled={!canRun}
-        onclick={() => fromTabMenu((f) => runTask("simulate", f))}
-        >Simulate</button
-      >
+      {#if isTestbench(tabMenu.file)}
+        <button
+          role="menuitem"
+          disabled={!canRun}
+          onclick={() => fromTabMenu((f) => runTask("test", f))}
+          >Run This Test</button
+        >
+        <button
+          role="menuitem"
+          disabled={!canRun}
+          onclick={() => fromTabMenu((f) => runTask("simulate", f))}
+          >Simulate This Test</button
+        >
+      {:else if tabModule(tabMenu.file)}
+        <button
+          role="menuitem"
+          disabled={!canRun}
+          onclick={() => fromTabMenu((f) => showDiagram(tabModule(f)))}
+          >Show Diagram of This Module</button
+        >
+      {/if}
     {/if}
   </div>
 {/if}

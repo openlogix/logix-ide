@@ -1364,3 +1364,18 @@ test("settings change the theme and font size", async ({ page }) => {
   );
   expect(fontSize.trim()).toBe("18px");
 });
+
+test("a tab's right-click menu has the commands for its file", async ({ page }) => {
+  await start(page);
+  await chooseBoard(page);
+  type Fake = { diagramShown: { key: string; module: string | null } | null };
+  await tab(page, "main.v").first().click({ button: "right" });
+  const menu = page.getByRole("menu");
+  await expect(menu.getByRole("menuitem", { name: "Auto Format" })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: "Run This Test" })).toHaveCount(0);
+  await menu.getByRole("menuitem", { name: "Show Diagram of This Module" }).click();
+  await expect(status(page)).toContainText("Diagram ready");
+  // main.v's module is main, the top module: the whole design.
+  const shown = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.diagramShown);
+  expect(shown?.module).toBeNull();
+});

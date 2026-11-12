@@ -472,15 +472,18 @@ pub fn show_editor_menu<R: Runtime>(
     let menu = if state.project && state.testbench_open {
         menu.separator()
             .item(&MenuItemBuilder::with_id(RUN_THIS_TEST, "Run This Test").build(window)?)
-            .item(&MenuItemBuilder::with_id(SIMULATE_THIS_TEST, "Simulate").build(window)?)
+            .item(
+                &MenuItemBuilder::with_id(SIMULATE_THIS_TEST, "Simulate This Test")
+                    .build(window)?,
+            )
     } else {
         menu
     };
     // In a design file: the diagram of the module at the cursor.
     let menu = match module.filter(|_| state.project && !state.testbench_open) {
         Some(_) => menu.separator().item(
-            // Named like Auto Format: it acts on the module the cursor is in.
-            &MenuItemBuilder::with_id(SHOW_MODULE_DIAGRAM, "Show Diagram").build(window)?,
+            &MenuItemBuilder::with_id(SHOW_MODULE_DIAGRAM, "Show Diagram of This Module")
+                .build(window)?,
         ),
         None => menu,
     };
