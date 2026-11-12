@@ -17,7 +17,11 @@ module main #(
   SB_HFOSC #(.CLKHF_DIV("0b00")) osc (  // 0b00: 48 MHz, undivided.
     .CLKHFPU(1'b1),  // Powered up.
     .CLKHFEN(1'b1),  // Output enabled.
-    .CLKHF(clk)
+    .CLKHF(clk),
+    // Trim inputs: unused, left unconnected (they act only with
+    // CLKHF_TRIM_EN).
+    .TRIM0(), .TRIM1(), .TRIM2(), .TRIM3(), .TRIM4(),
+    .TRIM5(), .TRIM6(), .TRIM7(), .TRIM8(), .TRIM9()
   );
 `else
   // Simulation only: a 48 MHz clock, as the oscillator gives.

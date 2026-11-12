@@ -317,12 +317,12 @@ This folder holds the data of Open Logix programs (www.openlogix.org),
 one folder per program:
 
   ide/           Logix IDE: settings, logs, scratch files, and its copy of
-                 Logix Engine with its FPGA tools (about 3 GB)
+                 Logix Engine with its FPGA tools
   claude-code/   Logix Engine for Claude Code (the Logix Engine tutorial)
   engine-dev/    Logix Engine developers' scripts
 
 Deleting a program's folder is safe: the program downloads what it needs
-again. Your projects aren't here (Logix IDE keeps them in
+again, and its settings go back to their defaults. Your projects aren't here (Logix IDE keeps them in
 ~/Documents/OpenLogix/IDE by default).
 ";
 

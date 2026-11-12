@@ -1135,8 +1135,17 @@ mod tests {
             .collect()
     }
 
-    /// Every example builds and passes its tests on a real engine, and so
-    /// does every board's Bare Minimum (slow: all 135 examples):
+    /// Warnings an example can't avoid: (example, part of the warning's
+    /// text, why it's inevitable). Logix IDE still shows them; they just
+    /// don't fail `real_examples_build`. A warning is listed here only when
+    /// no change to the example avoids it without changing what it does:
+    /// avoidable warnings are fixed in the example, and Logix Engine never
+    /// hides one (the user's rule, 2026-11-11).
+    const EXPECTED_WARNINGS: &[(&str, &str, &str)] = &[];
+
+    /// Every example verifies (lint, then build) with no warnings and passes
+    /// its tests on a real engine, and so does every board's Bare Minimum
+    /// (slow: all 135 examples):
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_IDE_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_examples_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
@@ -1172,7 +1181,8 @@ mod tests {
                     source_folder: &dir,
                     files: &files,
                     constraint_file: constraint.as_deref(),
-                    lint: false,
+                    // Verify as Logix IDE runs it: lint, then build.
+                    lint: true,
                     target: None,
                     device: None,
                     redraw_diagram: false,
@@ -1184,6 +1194,22 @@ mod tests {
                     .unwrap();
                 if !build.ok {
                     problems.push(format!("build: {:?}", build.diagnostics));
+                }
+                // Examples verify and build with no warnings (the user's
+                // rule, 2026-11-11), apart from the inevitable ones listed in
+                // EXPECTED_WARNINGS, which Logix IDE still shows.
+                for d in build.diagnostics.iter().filter(|d| {
+                    d.severity != Severity::Error
+                        && !EXPECTED_WARNINGS
+                            .iter()
+                            .any(|(e, text, _)| *e == label && d.message.contains(text))
+                }) {
+                    problems.push(format!(
+                        "warning: {}:{} {}",
+                        d.file.as_deref().unwrap_or("-"),
+                        d.line.unwrap_or(0),
+                        d.message.replace('\n', " | ")
+                    ));
                 }
                 if files.iter().any(|f| project::is_testbench(f)) {
                     input.target = None;

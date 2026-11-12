@@ -73,8 +73,10 @@ module main (
   wire [31:0] bram_wr_n;
   wire [31:0] bram_rd_n;
 
-  // Continuous address counters for all 32 BRAMs to ensure usage
-  reg [7:0] bram_continuous_addr[0:31];
+  // Continuous address counters for all 32 BRAMs to ensure usage.
+  // (* mem2reg *) makes them registers on purpose (they all change at once,
+  // which a RAM block can't do), so yosys doesn't warn that it had to.
+  (* mem2reg *) reg [7:0] bram_continuous_addr[0:31];
 
   // Initialize and increment all BRAM addresses continuously
   integer m;
@@ -208,13 +210,15 @@ module main (
   assign mult_rotating_bits[2] = all_mult_combined[(extended_selector+5'd8)%5'd16];
   assign mult_rotating_bits[3] = all_mult_combined[(extended_selector+5'd12)%5'd16];
 
-  // Register arrays - expanded to 64 registers of 16 bits each
-  reg [15:0] reg_array1[0:63];
-  reg [15:0] reg_array2[0:63];
-  reg [15:0] reg_array3[0:63];
-  reg [15:0] reg_array4[0:63];
-  reg [15:0] reg_array5[0:63];
-  reg [15:0] reg_array6[0:63];
+  // Register arrays - expanded to 64 registers of 16 bits each.
+  // (* mem2reg *) makes them registers on purpose, using the FPGA's
+  // flip-flops rather than its RAM blocks, so yosys doesn't warn about it.
+  (* mem2reg *) reg [15:0] reg_array1[0:63];
+  (* mem2reg *) reg [15:0] reg_array2[0:63];
+  (* mem2reg *) reg [15:0] reg_array3[0:63];
+  (* mem2reg *) reg [15:0] reg_array4[0:63];
+  (* mem2reg *) reg [15:0] reg_array5[0:63];
+  (* mem2reg *) reg [15:0] reg_array6[0:63];
 
 `ifndef SYNTHESIS
   // Simulation only: start the register arrays and BRAM addresses at 0, as

@@ -30,7 +30,9 @@ module pll (
   wire clk_fb, clk_out0_unbuf;
 
   PLLE2_BASE #(
-      .CLKIN1_PERIOD (10.000),
+      // The input clock's period, 10 ns (100 MHz), as a whole number: yosys
+      // passes a decimal such as 10.000 on as text, with a warning.
+      .CLKIN1_PERIOD (10),
       .DIVCLK_DIVIDE (1),
       .CLKFBOUT_MULT (16),
       .CLKOUT0_DIVIDE(8)

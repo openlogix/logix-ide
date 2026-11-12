@@ -31,7 +31,9 @@ module main #(
     .RGB0PWM(1'b0),
     .RGB1PWM(1'b0),
     .RGB2PWM(led_on),
-    .RGB2(led)
+    .RGB2(led),
+    .RGB0(),  // The pads the board doesn't use.
+    .RGB1()
   );
 `else
   // Simulation only: the driver pulls the pad low to light the LED.
