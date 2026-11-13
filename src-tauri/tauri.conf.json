@@ -40,7 +40,9 @@
       "webviewInstallMode": { "type": "downloadBootstrapper" },
       "wix": {
         "upgradeCode": "911DD8BD-9534-48F6-95DF-2C4E3C1E0C20",
-        "version": "0.0.0"
+        "version": "0.0.0",
+        "bannerPath": "icons/wix-banner.bmp",
+        "dialogImagePath": "icons/wix-dialog.bmp"
       }
     },
     "macOS": {
