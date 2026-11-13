@@ -1321,7 +1321,11 @@ pub async fn save_project_as_dialog(
             &variant,
             |old| {
                 platform::move_to_trash(old).context("Couldn't replace the old project.")?;
-                crate::log!("Moved {} to the Trash (replaced by Save As)", old.display());
+                crate::log!(
+                    "Moved {} to the {} (replaced by Save As)",
+                    old.display(),
+                    crate::platform::trash_name()
+                );
                 Ok(())
             },
         )?;

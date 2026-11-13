@@ -243,7 +243,18 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 /// Moves a file or folder to the system's Trash (recoverable), e.g. a
 /// project replaced by Save As.
 pub fn move_to_trash(path: &Path) -> Result<()> {
-    trash::delete(path).with_context(|| format!("can't move {} to the Trash", path.display()))
+    trash::delete(path)
+        .with_context(|| format!("can't move {} to the {}", path.display(), trash_name()))
+}
+
+/// What the system calls its trash: the Trash on macOS, the Recycle Bin on
+/// Windows.
+pub fn trash_name() -> &'static str {
+    if cfg!(windows) {
+        "Recycle Bin"
+    } else {
+        "Trash"
+    }
 }
 
 /// Process ids of the running GUI apps whose name or executable contains
