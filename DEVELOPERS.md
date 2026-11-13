@@ -171,7 +171,7 @@ Every Logix IDE reads its channel's file from `main` (cached for 24 hours),
 so a change there reaches installed Logix IDEs on that channel without a new
 release. Change it by pull request, with a comment saying why; CI checks
 that the release and its file exist (and that `prod.jsonc` names only stable
-releases), and runs the tests once per config file. A pre-release a config
+releases), and runs the tests once per config file (a job per channel). A pre-release a config
 names is kept, so dev pins don't expire.
 
 Two settings change this on your own computer only:
