@@ -300,7 +300,12 @@ mod tests {
 
     #[test]
     fn preferences_have_defaults_and_round_trip() {
-        let default_dir = Path::new("/Users/a/Documents/OpenLogix/IDE");
+        // An absolute path on this platform.
+        let default_dir = Path::new(if cfg!(windows) {
+            r"C:\Users\a\Documents\OpenLogix\IDE"
+        } else {
+            "/Users/a/Documents/OpenLogix/IDE"
+        });
         let mut s = Settings::default();
         let p = s.preferences(default_dir);
         assert_eq!(p.projects_dir, default_dir);
