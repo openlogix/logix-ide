@@ -6,13 +6,18 @@
 //   swift src-tauri/icons/make-dmg-background.swift src-tauri/icons/dmg-background.tiff
 //
 // The size and icon positions must match bundle.macOS.dmg in tauri.conf.json
-// (windowSize 600x360, Logix IDE at x=160, Applications at x=440, both at y=170;
+// (windowSize 600x360, Logix IDE at x=160, Applications at x=440, both at y=150;
 // Finder positions are icon centers measured from the top left).
+//
+// windowSize is the Finder window's frame, title bar included, so the bottom
+// of the image is hidden behind it (about 30 points; more on some macOS
+// versions). Keep everything above y=300 from the top: the last line ends at
+// about 294.
 import AppKit
 
 let width: CGFloat = 600
 let height: CGFloat = 360
-let iconY: CGFloat = 170
+let iconY: CGFloat = 150
 let teal = NSColor(srgbRed: 0, green: 135 / 255, blue: 143 / 255, alpha: 1)
 
 func draw() {
@@ -61,8 +66,8 @@ func draw() {
     let line2 = "Then open Logix IDE from Applications in Finder."
     let body = attrs(15, .regular, NSColor(white: 0.3, alpha: 1), .left)
     let left = ((width - NSString(string: line1).size(withAttributes: body).width) / 2).rounded()
-    text(line1, body, size: 15, top: 286, x: left)
-    text(line2, body, size: 15, top: 310, x: left)
+    text(line1, body, size: 15, top: 250, x: left)
+    text(line2, body, size: 15, top: 273, x: left)
 }
 
 func rep(scale: CGFloat) -> NSBitmapImageRep {
