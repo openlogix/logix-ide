@@ -74,10 +74,20 @@ jobs:
     uses: ./.github/workflows/build-darwin-arm64.yaml
     secrets: inherit
 
+  # Windows while it's being ported (Milestone 3): the pre-release doesn't
+  # wait for it, and includes the .msi when it built.
+  build-windows-x86-64:
+    needs: prepare
+    uses: ./.github/workflows/build-windows-x86-64.yaml
+    secrets: inherit
+
   # ----- Create the pre-release with the generated files.
 
+  # While Windows is being ported (Milestone 3), only macOS must build;
+  # make it a plain needs list once the Windows build is required.
   pre-release:
-    needs: [prepare, build-darwin-arm64]
+    needs: [prepare, build-darwin-arm64, build-windows-x86-64]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' && needs.build-darwin-arm64.result == 'success' }}
 
     runs-on: ubuntu-latest
     permissions:
@@ -110,8 +120,10 @@ jobs:
       - name: Scan the installers for viruses
         uses: openlogix/.github/actions/scan-files-for-viruses@main
         with:
+          # Every installer there (the .msi only when it built) and the
+          # examples package.
           file-patterns: |
-            _artifacts/logix-ide-*.dmg
+            _artifacts/logix-ide-*
 
       # The release text's own part; publish-pre-release adds the rest.
       - name: Write the release content
@@ -140,6 +152,17 @@ jobs:
 
           [logix-ide-examples-${PACKAGE_TAG}.tgz](${url}/logix-ide-examples-${PACKAGE_TAG}.tgz) holds Logix IDE's examples. Logix IDE downloads it by itself, as its remote config names it: there's no need to download it.
           EOF
+          # Windows while it's being ported (Milestone 3): when it built.
+          win="logix-ide-windows-x86-64-${PACKAGE_TAG}.msi"
+          if [[ -f "_artifacts/$win" ]]; then
+            {
+              echo
+              echo "### Logix IDE for Windows (being ported: for testing only)"
+              echo
+              echo "[$win](${url}/$win) is a Windows x64 installer, built for testing while Logix IDE is being ported to Windows. It isn't ready for use yet."
+            } >> CONTENT.md
+            echo "FILES_WINDOWS=_artifacts/$win" >> "$GITHUB_ENV"
+          fi
           cat -n CONTENT.md
 
       - name: Publish the pre-release
@@ -151,3 +174,4 @@ jobs:
           files: |
             _artifacts/logix-ide-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
             _artifacts/logix-ide-examples-${{ env.PACKAGE_TAG }}.tgz
+            ${{ env.FILES_WINDOWS }}

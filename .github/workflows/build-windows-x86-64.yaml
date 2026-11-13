@@ -1,0 +1,134 @@
+# Builds the Logix IDE Windows (x64) installer: an .msi (Milestone 3).
+# Called by build-pre-release.yaml, which passes BUILD-INFO.json as the
+# 'build-info' artifact. While Logix IDE is being ported (Milestone 3), its
+# tests may fail here without stopping the installer, a failure here doesn't
+# fail build-pre-release, and the pre-release doesn't wait for it; all
+# three become strict once the Windows tests pass.
+
+name: build-windows-x86-64
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    continue-on-error: true
+
+    # Git's bash, as on macOS: the scripts are bash. Logix IDE itself needs
+    # none of it: it runs on a plain Windows.
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # Git's bash reports the OS as Msys.
+      - name: Check required platform
+        uses: openlogix/.github/actions/check-platform@main
+        with:
+          os: msys
+          arch: x86_64
+
+      - name: Read the build info
+        uses: openlogix/.github/actions/read-build-info@main
+        with:
+          platform: windows-x86-64
+
+      # Files as in the repo, with LF line endings: Git on Windows converts
+      # them to CRLF by default, which breaks the scripts' edits.
+      - name: Keep LF line endings
+        run: git config --global core.autocrlf false
+
+      # Into a subdirectory, not to step on BUILD-INFO.json.
+      - name: Checkout the commit to build
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.REPO }}
+          ref: ${{ env.REPO_COMMIT }}
+          path: _repo
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install JS dependencies
+        working-directory: _repo
+        run: npm ci
+
+      # For the end-to-end UI tests in scripts/test.sh.
+      - name: Install the Playwright WebKit browser
+        working-directory: _repo
+        run: npx playwright install webkit
+
+      # Not yet required (see the top): remove continue-on-error once the
+      # Windows tests pass.
+      - name: Run checks and tests
+        working-directory: _repo
+        continue-on-error: true
+        run: scripts/test.sh
+
+      # Tauri, Cargo and npm need a semver version: the release date without
+      # leading zeros (2026-05-07 is 2026.5.7). Windows Installer needs its
+      # own, with a major and a minor of at most 255: the date as yy.mm.dd
+      # (2026-05-07 is 26.5.7), which Windows shows in its list of apps.
+      # Logix IDE itself shows yyyy.mm.dd (LOGIX_IDE_BUILD_VERSION, below).
+      # The Open Logix versioning rule.
+      - name: Write the semver and MSI versions
+        working-directory: _repo
+        run: |
+          IFS=- read -r y m d <<< "$RELEASE_TAG"
+          export SEMVER="$((10#$y)).$((10#$m)).$((10#$d))"
+          export MSI_VERSION="$((10#$y - 2000)).$((10#$m)).$((10#$d))"
+          perl -pi -e 's/^  "version": "0\.0\.0",/  "version": "$ENV{SEMVER}",/' package.json src-tauri/tauri.conf.json
+          perl -0pi -e 's/("upgradeCode": "[^"]*",\s*"version": )"0\.0\.0"/$1"$ENV{MSI_VERSION}"/' src-tauri/tauri.conf.json
+          perl -0pi -e 's/(\n  "name": "logix-ide",\n  "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/; s/(\n    "": \{\n      "name": "logix-ide",\n      "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/' package-lock.json
+          perl -0pi -e 's/^version = "0\.0\.0"/version = "$ENV{SEMVER}"/m' src-tauri/Cargo.toml
+          perl -0pi -e 's/(name = "logix-ide"\nversion = )"0\.0\.0"/$1"$ENV{SEMVER}"/' src-tauri/Cargo.lock
+          git diff --stat
+          test "$(git diff --numstat | wc -l)" -eq 5
+          grep -q "\"version\": \"$MSI_VERSION\"" src-tauri/tauri.conf.json
+
+      - name: Build Logix IDE and the .msi
+        working-directory: _repo
+        env:
+          LOGIX_IDE_BUILD_VERSION: ${{ env.RELEASE_TAG }}
+        run: npm run tauri -- build --bundles msi
+
+      - name: Collect the .msi
+        run: |
+          find _repo/src-tauri/target/release/bundle -maxdepth 2
+          msis=(_repo/src-tauri/target/release/bundle/msi/*.msi)
+          if [[ ${#msis[@]} -ne 1 || ! -f "${msis[0]}" ]]; then
+            echo "Error: expected exactly one .msi, found: ${msis[*]}"
+            exit 1
+          fi
+          cp "${msis[0]}" "logix-ide-windows-x86-64-${PACKAGE_TAG}.msi"
+          ls -al *.msi
+
+      # Checks what users get: the .msi unpacks (an administrative install
+      # only extracts its files, nothing is installed) and holds
+      # logix-ide.exe.
+      - name: Verify the .msi
+        shell: pwsh
+        run: |
+          $msi = (Resolve-Path "logix-ide-windows-x86-64-$env:PACKAGE_TAG.msi").Path
+          $out = Join-Path $env:RUNNER_TEMP "msi-check"
+          $p = Start-Process msiexec.exe -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$out`"" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "msiexec /a failed: $($p.ExitCode)" }
+          $exe = Get-ChildItem -Path $out -Recurse -Filter "logix-ide.exe" | Select-Object -First 1
+          if (-not $exe) { Get-ChildItem -Recurse $out | Select-Object FullName; throw "no logix-ide.exe in the .msi" }
+          Write-Output "Found $($exe.FullName) ($($exe.Length) bytes)"
+
+      - name: Export the .msi as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          if-no-files-found: error
+          name: logix-ide-windows-x86-64
+          path: logix-ide-windows-x86-64-${{ env.PACKAGE_TAG }}.msi

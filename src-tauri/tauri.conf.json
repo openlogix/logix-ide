@@ -36,6 +36,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "wix": {
+        "upgradeCode": "911DD8BD-9534-48F6-95DF-2C4E3C1E0C20",
+        "version": "0.0.0"
+      }
+    },
     "macOS": {
       "signingIdentity": "-",
       "minimumSystemVersion": "11.0",
