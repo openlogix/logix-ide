@@ -1,0 +1,30 @@
+// What Logix IDE on config 001 uses on the dev channel (Remote updates, in the
+// website repo's CLAUDE.md): every Logix IDE release that isn't promoted, and
+// local builds, while this file exists; without it they use prod.jsonc. Every
+// such Logix IDE reads this file from main, so a change here reaches them
+// without a Logix IDE release, and never reaches prod. Change it only by pull
+// request, saying why in a comment; the tests run with what it names. It may
+// name pre-releases: a release a config names is kept. Delete it once a
+// promotion has caught prod.jsonc up.
+{
+  "$schema": "https://www.openlogix.org/schemas/logix-remote-config-v1.json",
+
+  // Logix Engine, which builds, tests and programs the board, and downloads
+  // its own FPGA tools and board catalog (its own remote config).
+  // 2026-11-13: for Windows (Milestone 3): the first engine release with a
+  // Windows package, so Logix IDE can be tried on Windows.
+  "logix-engine": {
+    "repo": "openlogix/logix-engine",
+    "release": "2026-11-13",
+    "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+  },
+
+  // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
+  // packed by this repo's pre-release workflow (scripts/pack-examples.py).
+  // Pinned at the first promotion, 2026-11-13.
+  "logix-ide-examples": {
+    "repo": "openlogix/logix-ide",
+    "release": "2026-11-12",
+    "file": "logix-ide-examples-${YYYYMMDD}.tgz"
+  }
+}
