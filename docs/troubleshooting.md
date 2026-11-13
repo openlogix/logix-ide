@@ -94,7 +94,7 @@ the tools again.
 Please report a problem with **Help > Report a Problem**, or
 [on GitHub](https://github.com/openlogix/logix-ide/issues/new). Include what you did
 and what Logix IDE showed (the output area has the details), and attach the
-Logix IDE log: **Help > Show Log Folder** opens the folder in Finder; drag
+Logix IDE log: **Help > Show Log Folder** opens the folder in Finder (File Explorer on Windows); drag
 `logix.log` into the report. Logix IDE keeps the logs of its last 5 runs
 (`logix.log` is the current or last one, `logix.1.log` the one before). The
 log has what the output area showed and what Logix IDE did, including the paths

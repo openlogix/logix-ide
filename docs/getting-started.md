@@ -169,7 +169,7 @@ buttons), how it's programmed, and its examples.
 
 ## 14. Explore the settings
 
-Choose **Logix IDE > Settings…** to change how Logix IDE works:
+Choose **Logix IDE > Settings…** (on Windows, **File > Settings…**) to change how Logix IDE works:
 
 - **Projects folder location**: where new projects are saved.
 - **Editor font size**, **Interface scale** and **Theme** (System, Light or

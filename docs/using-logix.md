@@ -76,9 +76,9 @@ inside another project.
   project or an example, and your recent projects;
   the board in the toolbar is the one new projects use.
   **Save As…** over an existing project replaces it; the old one goes to
-  the Trash.
+  the Trash (the Recycle Bin on Windows).
 - **Show Project Folder**: **Project > Show Project Folder** opens the
-  folder in Finder. A new project gets its folder when it's first saved, so
+  folder in Finder (File Explorer on Windows). A new project gets its folder when it's first saved, so
   for a project not saved yet, it offers **Save As…** first.
   **Project > Copy Project Folder Path** puts the folder's path on the
   clipboard instead, to paste after `cd` in a terminal. A path with a
@@ -206,7 +206,7 @@ the open Verilog file. **Edit > Undo** restores the previous text.
 
 ## Diagram
 
-**Project > Show Diagram** (Shift+Cmd+D) draws the design as a schematic,
+**Project > Show Diagram** draws the design as a schematic,
 in a window of its own that you can move and resize while you keep working.
 Every module of the design is in it:
 
@@ -244,7 +244,7 @@ A board that isn't in Logix IDE's board list can be added to a project. Add a
 folder named **boards** to the project folder, and in it a file per board,
 named after the board's ID, such as **boards/my-upduino.json**, written
 with any text editor (Logix IDE doesn't edit them).
-**Project > Show Project Folder** opens the folder in Finder. Since they're
+**Project > Show Project Folder** opens the folder in Finder (File Explorer on Windows). Since they're
 part of the project, anyone who opens the project gets the same boards.
 Each file describes one board in the format of
 [Logix Catalog](https://www.openlogix.org/catalog/), Open Logix's own board
@@ -294,7 +294,7 @@ opens the folder with Logix IDE's log, to attach to a report (see
 
 ## Settings
 
-**Logix IDE > Settings…**:
+**Logix IDE > Settings…** (on Windows, **File > Settings…**):
 
 ![The Settings window](images/settings.png)
 
@@ -313,25 +313,25 @@ opens the folder with Logix IDE's log, to attach to a report (see
 
 ## Keyboard shortcuts
 
-| Action | Shortcut |
-| :--- | :--- |
-| New project | ++cmd+n++ |
-| Examples | ++shift+cmd+e++ |
-| Open project | ++cmd+o++ |
-| Close project | ++cmd+w++ |
-| New file | ++shift+cmd+n++ |
-| Save / Save As | ++cmd+s++ / ++shift+cmd+s++ |
-| Verify | ++cmd+r++ |
-| Upload | ++cmd+u++ |
-| Run Tests | ++shift+cmd+t++ |
-| Simulate | ++option+cmd+t++ |
-| Stop | ++cmd+period++ |
-| Show Diagram | ++shift+cmd+d++ |
-| Show Project Folder | ++option+cmd+k++ |
-| Auto Format | ++cmd+t++ |
-| Toggle Output | ++cmd+j++ |
-| Comment/Uncomment lines | ++cmd+slash++ |
-| Select All (editor or output) | ++cmd+a++ |
-| Go to Definition | ++f12++ (on a Mac keyboard, ++fn+f12++) |
-| Settings | ++cmd+comma++ |
-| Close Window | ++shift+cmd+w++ |
+| Action | macOS | Windows |
+| :--- | :--- | :--- |
+| New project | ++cmd+n++ | ++ctrl+n++ |
+| Examples | ++shift+cmd+e++ | ++ctrl+shift+e++ |
+| Open project | ++cmd+o++ | ++ctrl+o++ |
+| Close project | ++cmd+w++ | ++ctrl+w++ |
+| New file | ++shift+cmd+n++ | ++ctrl+shift+n++ |
+| Save / Save As | ++cmd+s++ / ++shift+cmd+s++ | ++ctrl+s++ / ++ctrl+shift+s++ |
+| Verify | ++cmd+r++ | ++ctrl+r++ |
+| Upload | ++cmd+u++ | ++ctrl+u++ |
+| Run Tests | ++shift+cmd+t++ | ++ctrl+shift+t++ |
+| Simulate | ++option+cmd+t++ | ++ctrl+alt+t++ |
+| Stop | ++cmd+period++ | ++ctrl+period++ |
+| Show Diagram | ++shift+cmd+d++ | ++ctrl+shift+d++ |
+| Show Project Folder | ++option+cmd+k++ | ++ctrl+alt+k++ |
+| Auto Format | ++cmd+t++ | ++ctrl+t++ |
+| Toggle Output | ++cmd+j++ | ++ctrl+j++ |
+| Comment/Uncomment lines | ++cmd+slash++ | ++ctrl+slash++ |
+| Select All (editor or output) | ++cmd+a++ | ++ctrl+a++ |
+| Go to Definition | ++f12++ (on a Mac keyboard, ++fn+f12++) | ++f12++ |
+| Settings | ++cmd+comma++ | ++ctrl+comma++ |
+| Close Window | ++shift+cmd+w++ | ++ctrl+shift+w++ |
