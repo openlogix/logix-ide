@@ -125,9 +125,9 @@ jobs:
         run: |
           url="https://github.com/${REPO}/releases/download/${RELEASE_TAG}"
           cat > CONTENT.md <<EOF
-          ### Installing Logix IDE on macOS (Apple Silicon)
+          ### macOS (Apple Silicon)
 
-          1. Download \`logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg\` (below) to your **Downloads** folder.
+          1. Download [logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg](${url}/logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg) to your **Downloads** folder.
           2. Open **Terminal** and run this command. Logix IDE isn't signed with an Apple Developer ID yet, and this tells macOS to allow it:
              \`\`\`
              xattr -c ~/Downloads/logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg
@@ -137,15 +137,21 @@ jobs:
 
           To uninstall, drag Logix IDE from Applications to the Trash. You can also delete the \`~/.logix/ide\` folder, which holds the FPGA tools Logix IDE downloaded and its settings. Your projects aren't in it.
 
-          ### Packages
+          ### Windows (x64)
 
-          The installers, one per platform, then the examples package. Logix IDE downloads the examples package by itself, as its remote config names it: there's no need to download it.
+          Logix IDE is being ported to Windows: this installer is for testing only.
 
-          | System | Architecture | Package type | Package |
-          | :--- | :--- | :--- | :--- |
-          | macOS | Apple Silicon | Disk image | [logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg](${url}/logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg) |
-          | Windows | x64 | Windows Installer (being ported: for testing only) | [logix-ide-windows-x86-64-${PACKAGE_TAG}.msi](${url}/logix-ide-windows-x86-64-${PACKAGE_TAG}.msi) |
-          | Any | Any | Examples | [logix-ide-examples-${PACKAGE_TAG}.tgz](${url}/logix-ide-examples-${PACKAGE_TAG}.tgz) |
+          1. Download [logix-ide-windows-x86-64-${PACKAGE_TAG}.msi](${url}/logix-ide-windows-x86-64-${PACKAGE_TAG}.msi).
+          2. Double-click it and follow the installer. If Windows says "Windows protected your PC", click **More info**, then **Run anyway**: Logix IDE isn't signed yet.
+          3. Start Logix IDE from the **Start** menu. On its first start, Logix IDE downloads the FPGA tools it needs. This may take a few minutes; later starts are quick.
+
+          To uninstall, open **Settings**, then **Apps** > **Installed apps**, and uninstall **Logix IDE**. You can also delete the \`.logix\\ide\` folder in your user folder, which holds the FPGA tools Logix IDE downloaded and its settings. Your projects aren't in it.
+
+          ### Linux (x64)
+
+          Not available yet: Linux is planned.
+
+          Logix IDE downloads its examples ([logix-ide-examples-${PACKAGE_TAG}.tgz](${url}/logix-ide-examples-${PACKAGE_TAG}.tgz)) by itself: there's no need to download them.
           EOF
           cat -n CONTENT.md
 
