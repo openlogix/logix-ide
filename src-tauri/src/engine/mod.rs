@@ -75,10 +75,16 @@ impl Layout {
             config_dir,
         }
     }
-    /// The unpacked engine package (the executable and its licenses), plus
-    /// its receipt.
-    fn bin_dir(&self) -> PathBuf {
+    /// The engine releases, one folder each (`releases_dir/<release>/`).
+    fn releases_dir(&self) -> PathBuf {
         self.config_dir.join("engine-release")
+    }
+    /// The unpacked engine package of `release` (the executable and its
+    /// licenses), plus its receipt. A folder per release, so a new release
+    /// never touches the files of the one running: Windows locks a running
+    /// program's files until it exits.
+    fn bin_dir(&self, release: &str) -> PathBuf {
+        self.releases_dir().join(release)
     }
     /// Scratch space for downloading and unpacking the packages.
     fn tmp_dir(&self) -> PathBuf {
@@ -184,7 +190,7 @@ mod tests {
             .unwrap()
             .to_string_lossy()
             .contains("engine"));
-        assert_ne!(layout.bin_dir(), folder);
+        assert!(!layout.bin_dir("2026-11-12").starts_with(&folder));
         let dev = layout.dev_engine_folder();
         assert_eq!(dev, Path::new("/Users/you/.logix/ide/dev/engine"));
         assert!(dev
@@ -203,7 +209,10 @@ mod tests {
         let layout = Layout::new(Path::new("/Users/you/.logix/ide"), &source);
         let dir = Path::new("/Users/you/.logix/ide/dev/config-override");
         assert_eq!(layout.engine_folder(), dir.join("engine"));
-        assert_eq!(layout.bin_dir(), dir.join("engine-release"));
+        assert_eq!(
+            layout.bin_dir("2026-11-12"),
+            dir.join("engine-release").join("2026-11-12")
+        );
         assert!(layout.tmp_dir().starts_with(dir));
         assert_eq!(layout.config_dir, dir);
     }

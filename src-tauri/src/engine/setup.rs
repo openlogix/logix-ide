@@ -192,7 +192,7 @@ where
                     }
                 }
             };
-            let bin_dir = layout.bin_dir();
+            let bin_dir = layout.bin_dir(&dep.release);
             download_dependency(
                 platform,
                 &layout,
@@ -203,6 +203,8 @@ where
                 &progress,
             )
             .await?;
+            // Earlier releases: none runs now, before this one starts.
+            remove_other_releases(&layout, &dep.release);
             (
                 bin_dir.join(platform.engine_exe_name()),
                 layout.engine_folder(),
@@ -232,6 +234,30 @@ where
     );
 
     Ok((engine, info))
+}
+
+/// Deletes everything in the engine releases folder but `release`'s
+/// folder: earlier releases (the org rule: switching deletes the old
+/// release). A folder Windows still locks, as the engine that runs from it
+/// does, stays; the next start deletes it.
+fn remove_other_releases(layout: &Layout, release: &str) {
+    let Ok(entries) = std::fs::read_dir(layout.releases_dir()) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        if entry.file_name() == release {
+            continue;
+        }
+        let path = entry.path();
+        let gone = if path.is_dir() {
+            std::fs::remove_dir_all(&path)
+        } else {
+            std::fs::remove_file(&path)
+        };
+        if let Err(e) = gone {
+            crate::log!("Can't delete {} yet: {e}", path.display());
+        }
+    }
 }
 
 /// What `update_if_due` changed.
@@ -290,11 +316,14 @@ pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> R
                 &layout,
                 &dep,
                 &DependencyKind::engine(platform),
-                &layout.bin_dir(),
+                &layout.bin_dir(&dep.release),
                 &log,
                 &no_progress,
             )
             .await?;
+            // The engine still running is of an earlier release: on Windows
+            // its folder is locked and stays until the next start.
+            remove_other_releases(&layout, &dep.release);
             updated.engine = line.is_some();
             updated.lines.extend(line);
             EngineInUse::Release(dep.release)
