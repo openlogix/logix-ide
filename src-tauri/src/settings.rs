@@ -312,7 +312,12 @@ mod tests {
         assert_eq!(p.show_output, ShowOutput::OnCommand);
 
         let changed = Preferences {
-            projects_dir: PathBuf::from("/Users/a/fpga"),
+            // An absolute path on this platform.
+            projects_dir: PathBuf::from(if cfg!(windows) {
+                r"C:\Users\a\fpga"
+            } else {
+                "/Users/a/fpga"
+            }),
             editor_font_size: 16,
             ui_scale: Some(125),
             theme: Theme::Dark,

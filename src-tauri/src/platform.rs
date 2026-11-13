@@ -375,9 +375,15 @@ mod tests {
             data_dir_from(Some("".into()), home).unwrap(),
             Path::new("/Users/you/.logix/ide")
         );
+        // An absolute path on this platform.
+        let abs = if cfg!(windows) {
+            r"C:\tmp\test-home"
+        } else {
+            "/tmp/test-home"
+        };
         assert_eq!(
-            data_dir_from(Some("/tmp/test-home".into()), home).unwrap(),
-            Path::new("/tmp/test-home")
+            data_dir_from(Some(abs.into()), home).unwrap(),
+            Path::new(abs)
         );
         let e = data_dir_from(Some("relative/dir".into()), home).unwrap_err();
         assert!(e.to_string().contains("LOGIX_IDE_HOME"), "{e}");

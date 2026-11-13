@@ -288,6 +288,12 @@ mod tests {
         assert_eq!(serve("/diagram-none").status(), 404);
         forget("diagram-test");
         assert_eq!(serve("/diagram-test").status(), 404);
-        assert_eq!(page_url("diagram-1"), "logix-diagram://localhost/diagram-1");
+        // WebView2 serves custom schemes as http://<scheme>.localhost/.
+        let expected = if cfg!(windows) {
+            "http://logix-diagram.localhost/diagram-1"
+        } else {
+            "logix-diagram://localhost/diagram-1"
+        };
+        assert_eq!(page_url("diagram-1"), expected);
     }
 }
