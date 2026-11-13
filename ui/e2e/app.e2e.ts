@@ -192,8 +192,9 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await expect(status(page)).toContainText("Uses 1% of logic cells, max clock 79.7 MHz.");
   // The output has the engine's report, as it words it.
   await expect(output(page)).toContainText("The design uses 1 of 39 I/O pins (3%).");
-  // Right after a build, the status bar's link shows its report.
-  await page.getByRole("button", { name: "Board Utilization…" }).click();
+  // Project > Board Utilization… builds (instant: nothing changed), then
+  // shows the report.
+  await menu(page, "build-report");
   const dialog = page.getByRole("dialog", { name: "Board Utilization" });
   const rows = dialog.getByRole("table", { name: "Resources" }).locator("tbody tr");
   // The toolchain's names, with the engine's descriptions; used ones only.
@@ -227,7 +228,6 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await menu(page, "build-report");
   await expect(status(page)).toHaveText("Build failed.");
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Board Utilization…" })).toHaveCount(0);
 });
 
 test("Show Project Folder on a project never saved offers Save As…, then shows the folder", async ({

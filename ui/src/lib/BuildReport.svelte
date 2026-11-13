@@ -1,6 +1,5 @@
 <!--
-  Project > Board Utilization… (also the status bar's Board Utilization link after
-  Verify or Upload): the last build's resources and clocks, as Logix
+  Project > Board Utilization…: the last build's resources and clocks, as Logix
   Engine's `build` gives them (its recipe "Show problems in the editor",
   docs/tool-api.md). Each resource by the toolchain's own name, which
   people search for and quote, with the engine's short description; the

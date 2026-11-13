@@ -72,7 +72,7 @@ test("main window after Verify", async ({ page }) => {
 test("the build report", async ({ page }) => {
   await startWithBoard(page);
   await verify(page, /^Build succeeded/);
-  await page.getByRole("button", { name: "Board Utilization…" }).click();
+  await menu(page, "build-report");
   await expect(page.getByRole("dialog", { name: "Board Utilization" })).toBeVisible();
   await shot(page, "board-utilization");
 });

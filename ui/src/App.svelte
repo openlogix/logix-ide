@@ -655,7 +655,7 @@
   let buildReport = $state<{ report: BuildReport; title: string } | null>(null);
   let buildReportOpen = $state(false);
   /** The status bar's text; `report` when it's a build's result with a report. */
-  let status = $state<{ text: string; kind: "info" | "ok" | "error"; report?: boolean } | null>(
+  let status = $state<{ text: string; kind: "info" | "ok" | "error" } | null>(
     null,
   );
   /**
@@ -1225,7 +1225,6 @@
       status = {
         text: outcomeText(task, outcome),
         kind: outcome.ok ? "ok" : outcome.cancelled ? "info" : "error",
-        report: outcome.ok && outcome.report !== null,
       };
       // GTKWave starts after the engine returns: "Opening GTKWave…" until
       // its window appears (after the result goes to the output).
@@ -2475,9 +2474,6 @@
           <span class="spinner" aria-label="Busy"></span>
         {/if}
         <span class="status-text" role="status">{statusText}</span>
-        {#if status?.report && buildReport && !isBusy && !activity}
-          <button class="status-link" onclick={() => (buildReportOpen = true)}>Board Utilization…</button>
-        {/if}
         <!-- Its phase, beside the status, except for a diagram, whose status
              says it already. -->
         {#if running && taskStep && !activity && running !== "diagram"}
@@ -2933,16 +2929,6 @@
     to {
       transform: rotate(360deg);
     }
-  }
-  .status-link {
-    padding: 0 4px;
-    border: none;
-    background: none;
-    color: inherit;
-    font: inherit;
-    text-decoration: underline;
-    cursor: pointer;
-    white-space: nowrap;
   }
   .status-text {
     flex: 1;
