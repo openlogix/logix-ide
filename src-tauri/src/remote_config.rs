@@ -790,9 +790,11 @@ mod tests {
         // parse fails before any network access.
         let tmp = tempfile::tempdir().unwrap();
         std::fs::write(tmp.path().join(CHANNELS_FILE), r#"{"$schema": "x"}"#).unwrap();
-        // The tests are a local build: dev.jsonc.
+        // prod.jsonc: every channel reads it, its own or as a fallback, so
+        // this holds on whichever channel the tests run (CI sets one per
+        // config file in the repo).
         std::fs::write(
-            tmp.path().join("dev.jsonc"),
+            tmp.path().join("prod.jsonc"),
             CONFIG.replace("2026-11-12", "soon"),
         )
         .unwrap();
