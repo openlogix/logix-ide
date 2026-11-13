@@ -40,6 +40,11 @@ objc2 = "0.6"
 objc2-app-kit = { version = "0.3", features = ["NSApplication", "NSResponder", "NSRunningApplication", "NSWorkspace"] }
 objc2-foundation = { version = "0.3", features = ["NSArray", "NSString", "NSURL"] }
 
+# Windows only (platform.rs): bringing GTKWave's window to the front, and
+# the clipboard.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Memory", "Win32_System_Ole", "Win32_UI_WindowsAndMessaging"] }
+
 [dev-dependencies]
 tempfile = "3"
 

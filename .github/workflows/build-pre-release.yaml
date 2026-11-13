@@ -10,8 +10,8 @@
 # The shared parts are Open Logix actions in openlogix/.github (tested
 # there): start-pre-release, read-build-info and publish-pre-release, which
 # also writes the standard release text and applies the pre-release policy.
-# Only macOS (Apple Silicon) for now; Linux and Windows will be added as
-# separate build-<platform>.yaml workflows.
+# macOS (Apple Silicon) and Windows (x64), each its own
+# build-<platform>.yaml workflow; Linux will be added the same way.
 
 name: build-pre-release
 
@@ -74,8 +74,7 @@ jobs:
     uses: ./.github/workflows/build-darwin-arm64.yaml
     secrets: inherit
 
-  # Windows while it's being ported (Milestone 3): the pre-release doesn't
-  # wait for it, and includes the .msi when it built.
+  # Windows (Milestone 3): required, as macOS.
   build-windows-x86-64:
     needs: prepare
     uses: ./.github/workflows/build-windows-x86-64.yaml
@@ -83,11 +82,8 @@ jobs:
 
   # ----- Create the pre-release with the generated files.
 
-  # While Windows is being ported (Milestone 3), only macOS must build;
-  # make it a plain needs list once the Windows build is required.
   pre-release:
     needs: [prepare, build-darwin-arm64, build-windows-x86-64]
-    if: ${{ !cancelled() && needs.prepare.result == 'success' && needs.build-darwin-arm64.result == 'success' }}
 
     runs-on: ubuntu-latest
     permissions:
@@ -120,8 +116,7 @@ jobs:
       - name: Scan the installers for viruses
         uses: openlogix/.github/actions/scan-files-for-viruses@main
         with:
-          # Every installer there (the .msi only when it built) and the
-          # examples package.
+          # Every installer there and the examples package.
           file-patterns: |
             _artifacts/logix-ide-*
 
@@ -142,27 +137,16 @@ jobs:
 
           To uninstall, drag Logix IDE from Applications to the Trash. You can also delete the \`~/.logix/ide\` folder, which holds the FPGA tools Logix IDE downloaded and its settings. Your projects aren't in it.
 
-          ### Logix IDE installers
+          ### Packages
 
-          | System | Architecture | Installer type | Package |
+          The installers, one per platform, then the examples package. Logix IDE downloads the examples package by itself, as its remote config names it: there's no need to download it.
+
+          | System | Architecture | Package type | Package |
           | :--- | :--- | :--- | :--- |
           | macOS | Apple Silicon | Disk image | [logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg](${url}/logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg) |
-
-          ### Examples package
-
-          [logix-ide-examples-${PACKAGE_TAG}.tgz](${url}/logix-ide-examples-${PACKAGE_TAG}.tgz) holds Logix IDE's examples. Logix IDE downloads it by itself, as its remote config names it: there's no need to download it.
+          | Windows | x64 | Windows Installer (being ported: for testing only) | [logix-ide-windows-x86-64-${PACKAGE_TAG}.msi](${url}/logix-ide-windows-x86-64-${PACKAGE_TAG}.msi) |
+          | Any | Any | Examples | [logix-ide-examples-${PACKAGE_TAG}.tgz](${url}/logix-ide-examples-${PACKAGE_TAG}.tgz) |
           EOF
-          # Windows while it's being ported (Milestone 3): when it built.
-          win="logix-ide-windows-x86-64-${PACKAGE_TAG}.msi"
-          if [[ -f "_artifacts/$win" ]]; then
-            {
-              echo
-              echo "### Logix IDE for Windows (being ported: for testing only)"
-              echo
-              echo "[$win](${url}/$win) is a Windows x64 installer, built for testing while Logix IDE is being ported to Windows. It isn't ready for use yet."
-            } >> CONTENT.md
-            echo "FILES_WINDOWS=_artifacts/$win" >> "$GITHUB_ENV"
-          fi
           cat -n CONTENT.md
 
       - name: Publish the pre-release
@@ -173,5 +157,5 @@ jobs:
           content-file: CONTENT.md
           files: |
             _artifacts/logix-ide-darwin-arm64-${{ env.PACKAGE_TAG }}.dmg
+            _artifacts/logix-ide-windows-x86-64-${{ env.PACKAGE_TAG }}.msi
             _artifacts/logix-ide-examples-${{ env.PACKAGE_TAG }}.tgz
-            ${{ env.FILES_WINDOWS }}

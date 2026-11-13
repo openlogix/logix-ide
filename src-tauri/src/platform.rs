@@ -122,28 +122,14 @@ impl Platform {
     /// item, not a click in the page, started.
     pub fn copy_text(self, text: &str) -> Result<()> {
         match self {
+            // Windows' clipboard API, as Unicode text. Not clip.exe: it kept
+            // the byte order mark that its UTF-16 input needs, an invisible
+            // character that made a pasted path invalid after `cd `.
             Platform::WindowsX86_64 => {
-                // clip.exe reads UTF-16 when the text starts with its byte
-                // order mark, so any character survives.
-                use std::io::Write;
-                let mut cmd = std::process::Command::new("clip.exe");
-                cmd.stdin(std::process::Stdio::piped());
-                hide_console(&mut cmd);
-                let mut child = cmd.spawn().context("can't run 'clip'")?;
-                let utf16: Vec<u8> = std::iter::once(0xFEFF)
-                    .chain(text.encode_utf16())
-                    .flat_map(u16::to_le_bytes)
-                    .collect();
-                child
-                    .stdin
-                    .take()
-                    .context("no input for 'clip'")?
-                    .write_all(&utf16)
-                    .context("can't write to 'clip'")?;
-                if !child.wait().context("'clip' didn't finish")?.success() {
-                    bail!("'clip' failed");
-                }
-                Ok(())
+                #[cfg(windows)]
+                return windows::copy_text(text);
+                #[cfg(not(windows))]
+                bail!("not on Windows");
             }
             Platform::MacosArm64 => {
                 use std::io::Write;
@@ -216,7 +202,7 @@ impl Platform {
     }
 }
 
-/// Windows: runs a console program (the engine, the language server, clip)
+/// Windows: runs a console program (the engine, the language server)
 /// without opening a console window, which a windowed app's console child
 /// otherwise gets. Elsewhere: nothing.
 pub fn hide_console(cmd: &mut std::process::Command) {
@@ -258,7 +244,8 @@ pub fn trash_name() -> &'static str {
 }
 
 /// Process ids of the running GUI apps whose name or executable contains
-/// `name` (any case). Must be called on the main thread (see
+/// `name` (any case); on Windows, of the processes whose executable's file
+/// name does. Must be called on the main thread (see
 /// `AppHandle::run_on_main_thread`); elsewhere, and on other platforms for
 /// now, returns nothing.
 pub fn running_app_pids(name: &str) -> Vec<i32> {
@@ -266,7 +253,11 @@ pub fn running_app_pids(name: &str) -> Vec<i32> {
     {
         macos::running_app_pids(name)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(windows)]
+    {
+        windows::running_app_pids(name)
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
     {
         let _ = name;
         Vec::new()
@@ -276,16 +267,202 @@ pub fn running_app_pids(name: &str) -> Vec<i32> {
 /// Brings the app with process id `pid` to the front, e.g. GTKWave after a
 /// simulation (an app started in the background by another program stays
 /// behind the IDE). Must be called on the main thread while the IDE is the
-/// active app. Returns whether the request was made.
+/// active app. Returns whether the request was made: on Windows, false
+/// until the process has a visible window.
 pub fn bring_app_to_front(pid: i32) -> bool {
     #[cfg(target_os = "macos")]
     {
         macos::bring_app_to_front(pid)
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(windows)]
+    {
+        windows::bring_app_to_front(pid)
+    }
+    #[cfg(not(any(target_os = "macos", windows)))]
     {
         let _ = pid;
         false
+    }
+}
+
+#[cfg(windows)]
+mod windows {
+    use anyhow::{bail, Context, Result};
+    use windows_sys::Win32::Foundation::{
+        CloseHandle, GlobalFree, HWND, INVALID_HANDLE_VALUE, LPARAM,
+    };
+    use windows_sys::Win32::System::DataExchange::{
+        CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
+    };
+    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
+    use windows_sys::Win32::System::Memory::{
+        GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE,
+    };
+    use windows_sys::Win32::System::Ole::CF_UNICODETEXT;
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        EnumWindows, GetWindow, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
+        SetForegroundWindow, ShowWindow, GW_OWNER, SW_RESTORE,
+    };
+
+    pub fn running_app_pids(name: &str) -> Vec<i32> {
+        let name = name.to_lowercase();
+        let mut pids = Vec::new();
+        // SAFETY: a process snapshot, walked with a correctly sized entry
+        // and closed at the end.
+        unsafe {
+            let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+            if snap == INVALID_HANDLE_VALUE {
+                return pids;
+            }
+            let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+            entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+            let mut more = Process32FirstW(snap, &mut entry) != 0;
+            while more {
+                let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(0);
+                let exe = String::from_utf16_lossy(&entry.szExeFile[..len]).to_lowercase();
+                if exe.contains(&name) {
+                    pids.push(entry.th32ProcessID as i32);
+                }
+                more = Process32NextW(snap, &mut entry) != 0;
+            }
+            CloseHandle(snap);
+        }
+        pids
+    }
+
+    /// The process's visible top-level window, restored if minimized, is
+    /// made the foreground window. Logix IDE, the foreground app, may do so.
+    pub fn bring_app_to_front(pid: i32) -> bool {
+        struct Search {
+            pid: u32,
+            found: HWND,
+        }
+        unsafe extern "system" fn each(hwnd: HWND, data: LPARAM) -> i32 {
+            // SAFETY: `data` is the `Search` below, alive during EnumWindows.
+            let search = unsafe { &mut *(data as *mut Search) };
+            let mut owner_pid = 0u32;
+            // SAFETY: plain queries on a window EnumWindows gave.
+            unsafe {
+                GetWindowThreadProcessId(hwnd, &mut owner_pid);
+                if owner_pid == search.pid
+                    && IsWindowVisible(hwnd) != 0
+                    && GetWindow(hwnd, GW_OWNER).is_null()
+                {
+                    search.found = hwnd;
+                    return 0;
+                }
+            }
+            1
+        }
+        let mut search = Search {
+            pid: pid as u32,
+            found: std::ptr::null_mut(),
+        };
+        // SAFETY: the callback only uses `search`, which outlives the call.
+        unsafe {
+            EnumWindows(Some(each), &mut search as *mut Search as LPARAM);
+            if search.found.is_null() {
+                return false;
+            }
+            if IsIconic(search.found) != 0 {
+                ShowWindow(search.found, SW_RESTORE);
+            }
+            SetForegroundWindow(search.found) != 0
+        }
+    }
+
+    /// Puts `text` on the clipboard as Unicode text (UTF-16, ending in a
+    /// zero, with no byte order mark).
+    pub fn copy_text(text: &str) -> Result<()> {
+        let utf16: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
+        // Another program may have the clipboard open for a moment.
+        let mut opened = false;
+        for _ in 0..20 {
+            // SAFETY: no owner window; closed below.
+            if unsafe { OpenClipboard(std::ptr::null_mut()) } != 0 {
+                opened = true;
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+        if !opened {
+            bail!("the clipboard is in use by another program");
+        }
+        // SAFETY: the clipboard is open; the memory is filled while locked
+        // and, once SetClipboardData succeeds, owned by the system.
+        let result = unsafe {
+            (|| {
+                EmptyClipboard();
+                let bytes = utf16.len() * 2;
+                let mem = GlobalAlloc(GMEM_MOVEABLE, bytes);
+                if mem.is_null() {
+                    bail!("no memory for the clipboard");
+                }
+                let dst = GlobalLock(mem) as *mut u16;
+                if dst.is_null() {
+                    GlobalFree(mem);
+                    bail!("can't fill the clipboard");
+                }
+                std::ptr::copy_nonoverlapping(utf16.as_ptr(), dst, utf16.len());
+                GlobalUnlock(mem);
+                if SetClipboardData(CF_UNICODETEXT as u32, mem).is_null() {
+                    GlobalFree(mem);
+                    bail!("can't set the clipboard");
+                }
+                Ok(())
+            })()
+        };
+        // SAFETY: opened above.
+        unsafe { CloseClipboard() };
+        result.context("can't copy to the clipboard")
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use windows_sys::Win32::System::DataExchange::{
+            CloseClipboard, GetClipboardData, OpenClipboard,
+        };
+        use windows_sys::Win32::System::Memory::{GlobalLock, GlobalUnlock};
+        use windows_sys::Win32::System::Ole::CF_UNICODETEXT;
+
+        fn clipboard_text() -> String {
+            // SAFETY: reads the clipboard's Unicode text up to its zero.
+            unsafe {
+                assert!(OpenClipboard(std::ptr::null_mut()) != 0);
+                let mem = GetClipboardData(CF_UNICODETEXT as u32);
+                assert!(!mem.is_null());
+                let src = GlobalLock(mem) as *const u16;
+                let mut len = 0;
+                while *src.add(len) != 0 {
+                    len += 1;
+                }
+                let text = String::from_utf16(std::slice::from_raw_parts(src, len)).unwrap();
+                GlobalUnlock(mem);
+                CloseClipboard();
+                text
+            }
+        }
+
+        // The user's report (2026-11-13): a copied path pasted after `cd `
+        // wasn't valid; clip.exe had kept an invisible byte order mark.
+        #[test]
+        fn copied_text_is_exactly_the_text() {
+            for text in [r"C:\Users\you\Documents\OpenLogix\IDE\blinky", "\"Ä ü\" 💡"] {
+                super::copy_text(text).unwrap();
+                assert_eq!(clipboard_text(), text);
+            }
+        }
+
+        #[test]
+        fn finds_its_own_process() {
+            let me = std::env::current_exe().unwrap();
+            let name = me.file_stem().unwrap().to_string_lossy().to_string();
+            let pids = super::running_app_pids(&name);
+            assert!(pids.contains(&(std::process::id() as i32)), "{pids:?}");
+        }
     }
 }
 

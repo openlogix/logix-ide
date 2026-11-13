@@ -679,16 +679,20 @@ async fn bring_gtkwave_to_front(app: AppHandle, before: Vec<i32>, generation: u6
         let pids = on_main_thread(&app, || platform::running_app_pids(GTKWAVE))
             .await
             .unwrap_or_default();
-        let Some(pid) = pids.into_iter().filter(|p| !before.contains(p)).max() else {
-            continue;
-        };
-        on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
-        // Once more after its window has had time to appear.
-        tokio::time::sleep(Duration::from_millis(500)).await;
-        let moved = on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
-        crate::log!("Brought GTKWave (pid {pid}) to the front: {moved:?}");
-        tell(true);
-        return;
+        // Each new one (Windows' process ids aren't in start order), until
+        // one is brought to the front: on Windows, once it has a window.
+        for pid in pids.into_iter().filter(|p| !before.contains(p)) {
+            let brought = on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
+            if brought != Some(true) && cfg!(windows) {
+                continue;
+            }
+            // Once more after its window has had time to appear.
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            let moved = on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
+            crate::log!("Brought GTKWave (pid {pid}) to the front: {moved:?}");
+            tell(true);
+            return;
+        }
     }
     crate::log!("Didn't find a new GTKWave window to bring to the front");
     tell(false);

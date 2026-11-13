@@ -1,9 +1,8 @@
 # Builds the Logix IDE Windows (x64) installer: an .msi (Milestone 3).
 # Called by build-pre-release.yaml, which passes BUILD-INFO.json as the
-# 'build-info' artifact. While Logix IDE is being ported (Milestone 3), its
-# tests may fail here without stopping the installer, a failure here doesn't
-# fail build-pre-release, and the pre-release doesn't wait for it; all
-# three become strict once the Windows tests pass.
+# 'build-info' artifact. Strict, as the macOS build (Strict CI, in the
+# website repo's CLAUDE.md): its tests must pass, and the pre-release waits
+# for it.
 
 name: build-windows-x86-64
 
@@ -14,7 +13,6 @@ jobs:
   build:
     runs-on: windows-2025
     timeout-minutes: 60
-    continue-on-error: true
 
     # Git's bash, as on macOS: the scripts are bash. Logix IDE itself needs
     # none of it: it runs on a plain Windows.
@@ -67,11 +65,8 @@ jobs:
         working-directory: _repo
         run: npx playwright install webkit
 
-      # Not yet required (see the top): remove continue-on-error once the
-      # Windows tests pass.
       - name: Run checks and tests
         working-directory: _repo
-        continue-on-error: true
         run: scripts/test.sh
 
       # Tauri, Cargo and npm need a semver version: the release date without
