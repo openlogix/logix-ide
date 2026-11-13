@@ -94,6 +94,25 @@ pub fn os_description(platform: Option<Platform>) -> String {
             .ok()
             .filter(|o| o.status.success())
             .map(|o| format!("macOS {}", String::from_utf8_lossy(&o.stdout).trim())),
+        // "Microsoft Windows [Version 10.0.26100.2314]" -> "Windows 10.0.26100.2314".
+        Some(Platform::WindowsX86_64) => {
+            let mut cmd = std::process::Command::new("cmd.exe");
+            cmd.args(["/c", "ver"]);
+            crate::platform::hide_console(&mut cmd);
+            cmd.output()
+                .ok()
+                .filter(|o| o.status.success())
+                .and_then(|o| {
+                    let text = String::from_utf8_lossy(&o.stdout).to_string();
+                    let v = text
+                        .split("Version ")
+                        .nth(1)?
+                        .trim()
+                        .trim_end_matches(']')
+                        .to_string();
+                    Some(format!("Windows {v}"))
+                })
+        }
         _ => None,
     };
     match version {

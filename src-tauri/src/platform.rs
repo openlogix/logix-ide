@@ -23,10 +23,10 @@ impl Platform {
         }
     }
 
-    /// Whether the IDE is implemented for this platform yet.
-    /// Only macOS ARM for now; Linux and Windows come later.
+    /// Whether the IDE is implemented for this platform yet: macOS ARM,
+    /// and Windows x64 (Milestone 3, being ported); Linux comes later.
     pub fn is_implemented(self) -> bool {
-        matches!(self, Platform::MacosArm64)
+        matches!(self, Platform::MacosArm64 | Platform::WindowsX86_64)
     }
 
     /// Fails with a clear message if this platform isn't implemented yet.
@@ -69,9 +69,18 @@ impl Platform {
         data_dir_from(std::env::var_os(HOME_VARIABLE), dirs::home_dir)
     }
 
-    /// Opens `dir` in the system's file manager (Finder on macOS).
+    /// Opens `dir` in the system's file manager (Finder on macOS, File
+    /// Explorer on Windows).
     pub fn reveal_folder(self, dir: &Path) -> Result<()> {
         match self {
+            Platform::WindowsX86_64 => {
+                // explorer.exe exits with 1 even when it opened the folder.
+                let mut cmd = std::process::Command::new("explorer.exe");
+                cmd.arg(dir);
+                hide_console(&mut cmd);
+                cmd.spawn().context("can't run 'explorer'")?;
+                Ok(())
+            }
             Platform::MacosArm64 => {
                 let status = std::process::Command::new("/usr/bin/open")
                     .arg(dir)
@@ -88,8 +97,18 @@ impl Platform {
 
     /// `path` as typed in this platform's shells, so it can be pasted after
     /// `cd`: as is when that's safe, otherwise in single quotes (zsh, bash
-    /// and fish on macOS and Linux), with each `'` written as `'\''`.
+    /// and fish on macOS and Linux), with each `'` written as `'\''`; on
+    /// Windows in double quotes (cmd and PowerShell; a Windows path can't
+    /// hold one).
     pub fn shell_path(self, path: &str) -> String {
+        if self == Platform::WindowsX86_64 {
+            let plain = |c: char| c.is_ascii_alphanumeric() || "\\/._-+,:@".contains(c);
+            return if !path.is_empty() && path.chars().all(plain) {
+                path.to_string()
+            } else {
+                format!("\"{path}\"")
+            };
+        }
         let plain = |c: char| c.is_ascii_alphanumeric() || "/._-+,:@%".contains(c);
         if !path.is_empty() && path.chars().all(plain) {
             path.to_string()
@@ -103,6 +122,29 @@ impl Platform {
     /// item, not a click in the page, started.
     pub fn copy_text(self, text: &str) -> Result<()> {
         match self {
+            Platform::WindowsX86_64 => {
+                // clip.exe reads UTF-16 when the text starts with its byte
+                // order mark, so any character survives.
+                use std::io::Write;
+                let mut cmd = std::process::Command::new("clip.exe");
+                cmd.stdin(std::process::Stdio::piped());
+                hide_console(&mut cmd);
+                let mut child = cmd.spawn().context("can't run 'clip'")?;
+                let utf16: Vec<u8> = std::iter::once(0xFEFF)
+                    .chain(text.encode_utf16())
+                    .flat_map(u16::to_le_bytes)
+                    .collect();
+                child
+                    .stdin
+                    .take()
+                    .context("no input for 'clip'")?
+                    .write_all(&utf16)
+                    .context("can't write to 'clip'")?;
+                if !child.wait().context("'clip' didn't finish")?.success() {
+                    bail!("'clip' failed");
+                }
+                Ok(())
+            }
             Platform::MacosArm64 => {
                 use std::io::Write;
                 let mut child = std::process::Command::new("/usr/bin/pbcopy")
@@ -137,6 +179,15 @@ impl Platform {
                     .context("can't run 'open'")?;
                 Ok(())
             }
+            // The default browser, through Windows' URL handler: no cmd, so
+            // characters such as & in the link stay as they are.
+            Platform::WindowsX86_64 => {
+                let mut cmd = std::process::Command::new("rundll32.exe");
+                cmd.args(["url.dll,FileProtocolHandler", url]);
+                hide_console(&mut cmd);
+                cmd.spawn().context("can't open the link")?;
+                Ok(())
+            }
             other => other.ensure_implemented(),
         }
     }
@@ -154,10 +205,40 @@ impl Platform {
                     .status();
                 Ok(())
             }
+            // Nothing to do: Windows has no execute bit, and files Logix IDE
+            // writes itself carry no downloaded-from-the-internet mark.
+            Platform::WindowsX86_64 => {
+                let _ = (bundle_dir, exe);
+                Ok(())
+            }
             other => other.ensure_implemented(),
         }
     }
 }
+
+/// Windows: runs a console program (the engine, the language server, clip)
+/// without opening a console window, which a windowed app's console child
+/// otherwise gets. Elsewhere: nothing.
+pub fn hide_console(cmd: &mut std::process::Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    #[cfg(not(windows))]
+    let _ = cmd;
+}
+
+/// hide_console for tokio's Command.
+pub fn hide_console_async(cmd: &mut tokio::process::Command) {
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
+    #[cfg(not(windows))]
+    let _ = cmd;
+}
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 /// Moves a file or folder to the system's Trash (recoverable), e.g. a
 /// project replaced by Save As.
@@ -422,10 +503,20 @@ mod tests {
     }
 
     #[test]
-    fn only_macos_is_implemented_for_now() {
+    fn windows_shell_paths_use_double_quotes() {
+        let w = Platform::WindowsX86_64;
+        assert_eq!(w.shell_path(r"C:\Users\me\fpga"), r"C:\Users\me\fpga");
+        assert_eq!(
+            w.shell_path(r"C:\Users\me\my fpga"),
+            r#""C:\Users\me\my fpga""#
+        );
+    }
+
+    #[test]
+    fn macos_and_windows_are_implemented_linux_not_yet() {
         assert!(Platform::MacosArm64.is_implemented());
+        assert!(Platform::WindowsX86_64.is_implemented());
         assert!(!Platform::LinuxX86_64.is_implemented());
-        assert!(!Platform::WindowsX86_64.is_implemented());
         assert!(Platform::LinuxX86_64.data_dir().is_err());
     }
 

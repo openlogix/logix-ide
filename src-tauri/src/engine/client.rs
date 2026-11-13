@@ -245,13 +245,15 @@ impl Engine {
     /// session. The engine's stderr (its log lines) goes to the IDE's
     /// stderr; the engine also writes them to its own log file.
     pub async fn start(exe: &Path, engine_folder: &Path) -> Result<Engine> {
-        let mut child = tokio::process::Command::new(exe)
-            .arg("--engine-folder")
+        let mut cmd = tokio::process::Command::new(exe);
+        cmd.arg("--engine-folder")
             .arg(engine_folder)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
-            .kill_on_drop(true)
+            .kill_on_drop(true);
+        crate::platform::hide_console_async(&mut cmd);
+        let mut child = cmd
             .spawn()
             .with_context(|| format!("can't run {}", exe.display()))?;
         let stdin = child.stdin.take().context("no stdin pipe")?;

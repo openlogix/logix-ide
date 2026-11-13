@@ -30,12 +30,14 @@ impl LanguageServer {
         M: Fn(String) + Send + 'static,
         E: FnOnce() + Send + 'static,
     {
-        let mut child = Command::new(exe)
-            .args(SERVER_ARGS)
+        let mut cmd = Command::new(exe);
+        cmd.args(SERVER_ARGS)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
-            .kill_on_drop(true)
+            .kill_on_drop(true);
+        crate::platform::hide_console_async(&mut cmd);
+        let mut child = cmd
             .spawn()
             .with_context(|| format!("can't start {}", exe.display()))?;
         let stdin = child.stdin.take().context("no stdin pipe")?;
