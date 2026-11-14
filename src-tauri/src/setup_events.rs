@@ -27,13 +27,10 @@ pub enum SetupEvent {
     /// The engine is running and the board and example lists are ready
     /// (`get_boards`, `get_examples`), before the FPGA tools are downloaded.
     CatalogReady,
-    /// Bytes of the engine package being downloaded.
-    Download {
-        received: u64,
-        total: Option<u64>,
-    },
-    /// The engine's download progress: the current phase's message (such as
-    /// "Downloading logix-core") and its percentage, when known.
+    /// A download's progress: the current phase's message (such as
+    /// "Downloading Logix Engine", or the engine's "Downloading logix-core")
+    /// and its percentage, when known: 0 to 60 downloading, 60 to 100
+    /// unpacking (the org's rule).
     Progress {
         message: String,
         percent: Option<u32>,

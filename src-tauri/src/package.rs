@@ -82,7 +82,8 @@ fn sha256_of(file: &Path) -> Result<String> {
 /// Checks a downloaded package against its SHA-256 and unpacks its one
 /// top-level folder `top` as `dest`, replacing the release there before.
 /// `needed` must be in it; `prepare` then readies the folder (such as
-/// making the engine executable). Blocking.
+/// making the engine executable). Adds the bytes of the archive unpacked so
+/// far to `read`, for unpacking's progress. Blocking.
 #[allow(clippy::too_many_arguments)]
 pub fn unpack(
     platform: Platform,
@@ -92,6 +93,7 @@ pub fn unpack(
     needed: &str,
     tmp_dir: &Path,
     dest: &Path,
+    read: &std::sync::atomic::AtomicU64,
     prepare: impl FnOnce(&Path) -> Result<()>,
 ) -> Result<()> {
     let sha256 = sha256_of(archive)?;
@@ -106,7 +108,7 @@ pub fn unpack(
     let size = std::fs::metadata(archive)?.len();
     let extract_dir = tmp_dir.join("extract");
     remove_dir_if_exists(&extract_dir)?;
-    unpack_tgz(archive, &extract_dir)
+    unpack_tgz(archive, &extract_dir, read)
         .with_context(|| format!("the downloaded file {} is damaged", dep.file))?;
 
     let unpacked = extract_dir.join(top);
@@ -194,6 +196,7 @@ mod tests {
             exe,
             &tmp.path().join("tmp"),
             &bin_dir,
+            &std::sync::atomic::AtomicU64::new(0),
             |d| p.prepare_unpacked_bundle(d, &d.join(exe)),
         )
         .unwrap();
@@ -234,6 +237,7 @@ mod tests {
             "logix-engine",
             tmp.path(),
             &bin_dir,
+            &std::sync::atomic::AtomicU64::new(0),
             |_| Ok(()),
         )
         .unwrap_err();
@@ -253,6 +257,7 @@ mod tests {
             "logix-engine",
             &tmp.path().join("tmp"),
             &tmp.path().join("engine-release"),
+            &std::sync::atomic::AtomicU64::new(0),
             |_| Ok(()),
         )
         .unwrap_err();

@@ -187,9 +187,13 @@ where
                     DownloadProgress::Started => emit(SetupEvent::Stage {
                         stage: SetupStage::DownloadingEngine,
                     }),
-                    DownloadProgress::Bytes { received, total } => {
-                        emit(SetupEvent::Download { received, total })
-                    }
+                    // One percentage for the download and the unpacking
+                    // (60% and 40%, the org's rule), as the engine reports
+                    // its own packages.
+                    DownloadProgress::Percent(percent) => emit(SetupEvent::Progress {
+                        message: "Downloading Logix Engine".into(),
+                        percent,
+                    }),
                 }
             };
             let bin_dir = layout.bin_dir(&dep.release);
@@ -478,13 +482,22 @@ async fn download_dependency(
         .context(MSG_PREPARE)?;
     let archive = tmp_dir.join(&dep.file);
     crate::download::download(&dep.url, &archive, |received, total| {
-        progress(DownloadProgress::Bytes { received, total })
+        progress(DownloadProgress::Percent(
+            crate::download::download_percent(received, total),
+        ))
     })
     .await
     .context(MSG_DOWNLOAD)?;
-    let (dep2, dest2) = (dep.clone(), dest.to_path_buf());
+    // Unpacking: the rest of the percentage, by how much of the archive has
+    // been read, reported every 200 ms while it runs (as the engine does).
+    let size = tokio::fs::metadata(&archive)
+        .await
+        .map(|m| m.len())
+        .unwrap_or(0);
+    let read = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let (dep2, dest2, read2) = (dep.clone(), dest.to_path_buf(), read.clone());
     let (top, needed, executable) = (kind.top, kind.needed, kind.executable);
-    tokio::task::spawn_blocking(move || {
+    let mut unpacking = tokio::task::spawn_blocking(move || {
         package::unpack(
             platform,
             &archive,
@@ -493,6 +506,7 @@ async fn download_dependency(
             needed,
             &tmp_dir,
             &dest2,
+            &read2,
             |dir| {
                 if executable {
                     platform.prepare_unpacked_bundle(dir, &dir.join(needed))
@@ -501,10 +515,20 @@ async fn download_dependency(
                 }
             },
         )
-    })
-    .await
-    .context(MSG_UNPACK)?
-    .context(MSG_UNPACK)?;
+    });
+    let unpacked = loop {
+        tokio::select! {
+            r = &mut unpacking => break r,
+            _ = tokio::time::sleep(std::time::Duration::from_millis(200)) => {
+                let done = read.load(std::sync::atomic::Ordering::Relaxed);
+                progress(DownloadProgress::Percent(Some(
+                    crate::download::unpack_percent(done, size),
+                )));
+            }
+        }
+    };
+    unpacked.context(MSG_UNPACK)?.context(MSG_UNPACK)?;
+    progress(DownloadProgress::Percent(Some(100)));
     let line = match previous {
         Some(p) if p != dep.release => format!("Updated {} to {}.", kind.name, shown(&dep.release)),
         _ => format!(
@@ -517,10 +541,12 @@ async fn download_dependency(
     Ok(Some(line))
 }
 
-/// How far the engine package's download is, for setup's progress.
+/// How far the engine package's download is, for setup's progress: its
+/// percentage covers the download (0 to 60) and the unpacking (60 to 100),
+/// None while the download's size is unknown.
 enum DownloadProgress {
     Started,
-    Bytes { received: u64, total: Option<u64> },
+    Percent(Option<u32>),
 }
 
 /// No progress to show (a download before an operation, with console

@@ -95,7 +95,7 @@
     testbenches,
     type WorkingProject,
   } from "./lib/workingProject";
-  import { appendCapped, formatBytes, progressFraction } from "./lib/format";
+  import { appendCapped } from "./lib/format";
   import { Redraws } from "./lib/redraw";
   import { addLinks, parseAnsi, type Segment } from "./lib/ansi";
   import { BARE_MINIMUM, examplesSummary, type ExampleEntry } from "./lib/examples";
@@ -243,22 +243,18 @@
 
   let stage = $state<SetupStage | null>(null);
   let setupError = $state<string | null>(null);
-  let download = $state<{ received: number; total: number | null } | null>(
-    null,
-  );
-
-  /** The engine's package download: current phase and its percentage. */
+  /**
+   * A download's progress (Logix Engine itself, or the engine's packages):
+   * the current phase and its percentage, 0-60 downloading and 60-100
+   * unpacking (the org's rule).
+   */
   let downloadStep = $state<{ message: string; percent: number | null } | null>(
     null,
   );
 
   const ready = $derived(stage === "ready");
   const downloadFraction = $derived(
-    download
-      ? progressFraction(download.received, download.total)
-      : downloadStep?.percent != null
-        ? downloadStep.percent / 100
-        : null,
+    downloadStep?.percent != null ? downloadStep.percent / 100 : null,
   );
 
   /** Output lines not yet sent to the log file (sent in batches). */
@@ -344,11 +340,8 @@
     switch (event.kind) {
       case "stage":
         stage = event.stage;
-        if (event.stage !== "downloadingEngine") download = null;
-        if (event.stage !== "downloadingEnginePackages") downloadStep = null;
-        break;
-      case "download":
-        download = { received: event.received, total: event.total };
+        // Each stage's progress starts afresh.
+        downloadStep = null;
         break;
       case "progress":
         downloadStep = { message: event.message, percent: event.percent };
@@ -723,14 +716,9 @@
     stage !== null && stage !== "ready" && !setupError,
   );
 
-  /** Setup's progress detail: bytes downloaded, or the package and its %. */
+  /** Setup's progress detail: what it downloads, and its %. */
   const setupDetail = $derived.by(() => {
     if (!settingUp) return "";
-    if (download)
-      return (
-        formatBytes(download.received) +
-        (download.total ? ` of ${formatBytes(download.total)}` : "")
-      );
     if (downloadStep?.message)
       return (
         downloadStep.message +
