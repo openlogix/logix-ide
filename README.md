@@ -60,8 +60,10 @@ itself.
 
 ## Install Logix IDE
 
-Logix IDE runs on **Macs with Apple Silicon** (M1 or newer) for now. Windows and
-Linux are planned.
+Logix IDE runs on **Macs with Apple Silicon** (M1 or newer) and on **Windows
+PCs (x64)**. Linux is planned.
+
+### macOS
 
 1. On the [releases page](https://github.com/openlogix/logix-ide/releases), find the release marked
    **Latest** (not necessarily the newest one: newer pre-releases are
@@ -83,6 +85,18 @@ Linux are planned.
    press Return). The first time, it downloads the FPGA tools it needs. This
    takes a few minutes and needs an internet connection. After that, Logix IDE
    starts quickly and works offline too.
+
+### Windows
+
+1. On the [releases page](https://github.com/openlogix/logix-ide/releases), find the release marked
+   **Latest** and download its `logix-ide-windows-x86-64-<date>.msi`.
+2. Double-click it. If Windows says **Windows protected your PC**, click
+   **More info**, then **Run anyway**: Logix IDE isn't signed yet.
+3. Follow the installer, and choose **Yes** when Windows asks whether it may
+   make changes to your device.
+4. Start Logix IDE from the **Start** menu. The first time, it downloads the
+   FPGA tools it needs, as on macOS. Many boards also need the WinUSB driver:
+   **Upload** offers to install it the first time.
 
 That's it: nothing else to install.
 

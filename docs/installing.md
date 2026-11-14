@@ -1,12 +1,17 @@
 # Installing Logix IDE
 
-Logix IDE needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
+Logix IDE runs on:
 
-## Download and install
+- **macOS** on a Mac with **Apple Silicon** (M1 or newer), macOS 11 or newer.
+- **Windows** on a 64-bit (x64) PC, Windows 10 or 11.
 
-1. On the [releases page](https://github.com/openlogix/logix-ide/releases), find the release marked
-   **Latest** (not necessarily the newest one: newer pre-releases are
-   development builds) and download its `logix-ide-darwin-arm64-<date>.dmg` to
+On the [releases page](https://github.com/openlogix/logix-ide/releases), always
+use the release marked **Latest** (not necessarily the newest one: newer
+pre-releases are development builds).
+
+## macOS
+
+1. From the **Latest** release, download `logix-ide-darwin-arm64-<date>.dmg` to
    your **Downloads** folder.
 2. Open **Terminal** and run this command.
    Logix IDE isn't signed with an Apple Developer ID yet, and this tells macOS to
@@ -23,6 +28,20 @@ Logix IDE needs a Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer
    press Return). You can then eject the **Logix IDE** disk in Finder's
    sidebar.
 
+## Windows
+
+1. From the **Latest** release, download `logix-ide-windows-x86-64-<date>.msi`.
+2. Double-click it. If Windows says **Windows protected your PC**, click
+   **More info**, then **Run anyway**: Logix IDE isn't signed yet.
+3. Follow the installer. When Windows asks whether the installer may make
+   changes to your device, choose **Yes**. If your PC doesn't have Microsoft
+   Edge WebView2 yet, the installer downloads it.
+4. Start Logix IDE from the **Start** menu.
+
+Many boards need the WinUSB driver before Logix IDE can program them on
+Windows. You don't need to install it beforehand: **Upload** offers it the
+first time. See [Drivers on Windows](using-logix.md#drivers-on-windows).
+
 ## The first start
 
 On its first start, Logix IDE downloads the FPGA tools it needs (Logix Engine
@@ -38,14 +57,21 @@ the examples, and downloads them by itself (**Help > Check for Updates** checks 
 
 ## Where Logix IDE keeps its files
 
-| What | Where |
-| :--- | :--- |
-| Your projects (by default) | `~/Documents/OpenLogix/IDE` |
-| The FPGA tools and settings | `~/.logix/ide` |
+| What | macOS | Windows |
+| :--- | :--- | :--- |
+| Your projects (by default) | `~/Documents/OpenLogix/IDE` | `Documents\OpenLogix\IDE` in your user folder |
+| The FPGA tools, settings and logs | `~/.logix/ide` | `.logix\ide` in your user folder |
 
 You can choose another projects folder in **Settings**.
 
 ## Uninstalling
 
-Drag Logix IDE from **Applications** to the Trash. To also remove the FPGA tools
-and settings, delete the `~/.logix/ide` folder. Your projects stay where they are.
+- **macOS:** drag Logix IDE from **Applications** to the Trash.
+- **Windows:** open **Settings**, then **Apps** > **Installed apps**, and
+  uninstall **Logix IDE**. If Logix IDE installed the WinUSB driver for a
+  board and you want the board maker's tools to use the board again, remove
+  the driver first in **Tools > Connected Devices…** (**Remove Driver…**).
+
+To also remove the FPGA tools, settings and logs, delete the `.logix/ide`
+folder in your user folder (`~/.logix/ide` on macOS). Your projects stay
+where they are.
