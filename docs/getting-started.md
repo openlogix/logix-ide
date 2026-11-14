@@ -211,7 +211,7 @@ projects** on the start screen. The projects folder is, by default:
 ## 13. Explore the boards
 
 Open the board list in the toolbar to see every board Logix IDE supports, 81
-so far. The **ⓘ** button next to the list opens the **Board Explorer**, with
+so far (the [predefined boards](https://www.openlogix.org/logix-catalog/boards/)). The **ⓘ** button next to the list opens the **Board Explorer**, with
 the selected board's facts: its FPGA, what its pins connect to (the clock, LEDs,
 buttons), how it's programmed, and its examples.
 

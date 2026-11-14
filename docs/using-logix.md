@@ -273,9 +273,9 @@ named after the board's ID, such as **boards/my-upduino.json**, written
 with any text editor (Logix IDE doesn't edit them).
 **Project > Show Project Folder** opens the folder in Finder (File Explorer on Windows). Since they're
 part of the project, anyone who opens the project gets the same boards.
-Each file describes one board in the format of
-[Logix Catalog](https://www.openlogix.org/logix-catalog/boards/), Open Logix's own board
-list, so a board can be copied from the catalog as a file, and a board you
+Each file describes one board in the same format as the
+[predefined boards](https://www.openlogix.org/logix-catalog/boards/), so a predefined board can be copied from
+[Logix Catalog](https://github.com/openlogix/logix-catalog) as a file, and a board you
 describe can be contributed to it as is:
 
 ```json
