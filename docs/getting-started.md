@@ -10,25 +10,52 @@ every board Logix IDE supports; only the example's details differ.
 
 ## What you need
 
-- A Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
-- An **FPGA board** and the USB cable that connects it to your Mac. You can
-  follow most of this page without a board; only the upload needs one.
+- A computer:
+
+    === "macOS"
+
+        A Mac with **Apple Silicon** (M1 or newer) and macOS 11 or newer.
+
+    === "Windows"
+
+        A 64-bit (x64) PC with Windows 10 or 11.
+
+- An **FPGA board** and the USB cable that connects it to your computer. You
+  can follow most of this page without a board; only the upload needs one.
 - An internet connection the first time you start Logix IDE.
+
+The steps that differ between macOS and Windows have a tab for each: choose
+yours once, and every tab on these pages follows.
 
 There's nothing else to install: Logix IDE downloads the FPGA tools it needs.
 
 ## 1. Install Logix IDE
 
-Install Logix IDE as [Installing](installing.md) describes: download it,
-allow it to open, and drag it into the **Applications** folder.
+=== "macOS"
+
+    Install Logix IDE as [Installing](installing.md) describes: download it,
+    allow it to open, and drag it into the **Applications** folder.
+
+=== "Windows"
+
+    Install Logix IDE as [Installing](installing.md) describes: download the
+    `.msi` installer, allow it to run, and follow its steps.
 
 ## 2. Start Logix IDE
 
-Open **Finder**, click **Applications** in the sidebar and double-click
-**Logix IDE** (or press Command-Space, type `Logix IDE` and press Return).
-Dragging it into Applications only copied it, so this is its first start. The
-first time, it
-downloads its FPGA tools, which takes a few minutes. The status bar at the
+=== "macOS"
+
+    Open **Finder**, click **Applications** in the sidebar and double-click
+    **Logix IDE** (or press Command-Space, type `Logix IDE` and press
+    Return). Dragging it into Applications only copied it, so this is its
+    first start.
+
+=== "Windows"
+
+    Open the **Start** menu and click **Logix IDE** (or press the Windows
+    key, type `Logix IDE` and press Enter).
+
+The first time, Logix IDE downloads its FPGA tools, which takes a few minutes. The status bar at the
 bottom of the window shows the progress, and the output area above it shows
 what's happening:
 
@@ -56,7 +83,7 @@ project and the examples:
 
 ## 3. Connect your board and select it
 
-Connect the board to your Mac with its USB cable. Then select it in the board
+Connect the board to your computer with its USB cable. Then select it in the board
 list in the toolbar: type part of its name to find it. The list starts with
 the boards you've used recently, followed by every board grouped by FPGA
 family. The iCESugar v1.5 is selected at first.
@@ -76,8 +103,8 @@ Blinky opens as a new project. Its files are in tabs above the editor:
   the RGB LED in green, about once a second. Its comments explain each part.
 - `pinout.pcf` is the pin file: it says which FPGA pins connect to what on the
   board, such as the clock and the LED.
-- `main_tb.v` is a testbench: it checks the design on your Mac, without a
-  board.
+- `main_tb.v` is a testbench: it checks the design on your computer, without
+  a board.
 
 ## 5. Verify the design
 
@@ -139,8 +166,21 @@ Logix IDE builds the design if it changed and programs the board. A few
 seconds later the LED starts blinking: on the iCESugar v1.5, the RGB LED
 blinks green.
 
+=== "macOS"
+
+    No driver is needed: macOS lets Logix IDE program every board as it is.
+
+=== "Windows"
+
+    The iCESugar v1.5 needs no driver. Many other boards, such as those with
+    an FTDI chip, need the WinUSB driver first: the first time, Upload asks
+    to install it. Click **Install Driver**, then **Yes** when Windows asks
+    whether Logix Engine may make changes to your device. Installing takes a
+    minute or two, then the upload goes on. See
+    [Drivers on Windows](using-logix.md#drivers-on-windows).
+
 The design is stored in the board's flash memory, so it runs again whenever
-the board gets power, even without your Mac.
+the board gets power, even without your computer.
 
 ## 11. Modify the design
 
@@ -157,8 +197,16 @@ fast.
 ## 12. Save it as your project
 
 Choose **File > Save Project** and give the project a name. Logix IDE creates
-a folder for it, in `~/Documents/OpenLogix/IDE` by default, and lists it under
-**Recent projects** on the start screen.
+a folder for it in your projects folder and lists it under **Recent
+projects** on the start screen. The projects folder is, by default:
+
+=== "macOS"
+
+    `~/Documents/OpenLogix/IDE`
+
+=== "Windows"
+
+    `Documents\OpenLogix\IDE` in your user folder
 
 ## 13. Explore the boards
 
@@ -169,7 +217,17 @@ buttons), how it's programmed, and its examples.
 
 ## 14. Explore the settings
 
-Choose **Logix IDE > Settings…** (on Windows, **File > Settings…**) to change how Logix IDE works:
+Open the settings to change how Logix IDE works:
+
+=== "macOS"
+
+    Choose **Logix IDE > Settings…** (Command-,).
+
+=== "Windows"
+
+    Choose **File > Settings…** (Ctrl+,).
+
+The settings are:
 
 - **Projects folder location**: where new projects are saved.
 - **Editor font size**, **Interface scale** and **Theme** (System, Light or
@@ -184,6 +242,8 @@ Choose **Logix IDE > Settings…** (on Windows, **File > Settings…**) to chang
 | Problem | What to do |
 | :--- | :--- |
 | macOS says Logix IDE can't be opened | Run the `xattr -c` command from [Installing](installing.md) again, then install it again. |
+| Windows says "Windows protected your PC" | Click **More info**, then **Run anyway**: Logix IDE isn't signed yet. |
+| On Windows, Upload says the board needs a driver | Click **Install Driver**, then **Yes** in Windows' prompt. See [Drivers on Windows](using-logix.md#drivers-on-windows). |
 | The FPGA tools don't download | A red bar shows the problem. Check your internet connection and click **Retry**. |
 | Upload can't find the board | Check that **Connected** shows next to the board list, and try another USB cable: some cables only charge. |
 | Your board isn't in the list | It isn't supported yet. To ask for it, choose **Help > Report a Problem**. |
