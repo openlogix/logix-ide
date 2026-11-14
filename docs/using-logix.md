@@ -253,8 +253,9 @@ iCESugar need none.
   changes. Installing takes a minute or two; the status bar says
   "Installing the board's driver…" meanwhile.
 - **Tools > Connected Devices…** shows each board's driver, with **Install
-  Driver…** or **Remove Driver…**, and shows the progress at its bottom
-  while one runs. A board without its driver is listed as **no driver
+  Driver…** or **Remove Driver…**. While one runs, the bottom of the window
+  says how it's going, then turns green when it's done (red if it failed);
+  **Show log** shows the details. A board without its driver is listed as **no driver
   yet**, since Logix IDE can't read its name until then. Removing the
   driver gives Windows' own driver back, for example for the board maker's
   tools.

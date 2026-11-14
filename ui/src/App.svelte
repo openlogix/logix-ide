@@ -57,15 +57,17 @@
   import BuildReportDialog from "./lib/BuildReport.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
+  import ConfirmDialog from "./lib/ConfirmDialog.svelte";
   import {
+    type ConfirmContent,
     deviceSummaryLines,
-    driverOfferText,
-    driverRemoveText,
+    driverOffer,
+    driverRemove,
     type DriverWork,
     isBoardNotFound,
     needsDeviceChoice,
     needsDriver,
-    sameIdsText,
+    sameIdsQuestion,
   } from "./lib/devices";
   import Icon from "./lib/Icon.svelte";
   import { pinCommentToken } from "./lib/pinFiles";
@@ -1094,6 +1096,25 @@
    */
   let driverWork = $state<DriverWork | null>(null);
 
+  /**
+   * The question shown in Logix IDE's own dialog (`ConfirmDialog`), while one
+   * is open, with what to do with the answer.
+   */
+  let question = $state<{ content: ConfirmContent; answer: (yes: boolean) => void } | null>(null);
+
+  /** Asks in Logix IDE's own dialog; true if the user agrees. */
+  function confirmInApp(content: ConfirmContent): Promise<boolean> {
+    return new Promise((resolve) => {
+      question = {
+        content,
+        answer: (yes) => {
+          question = null;
+          resolve(yes);
+        },
+      };
+    });
+  }
+
   /** Starts showing a driver change, and returns where its events go. */
   function startDriverWork(title: string): (event: TaskEvent) => void {
     const work: DriverWork = { title, step: null, lines: [], result: null };
@@ -1108,7 +1129,12 @@
   }
 
   function endDriverWork(text: string, kind: "ok" | "error") {
-    if (driverWork) driverWork.result = { text, kind };
+    if (driverWork) {
+      driverWork.result = { text, kind };
+      // The log ends the way the status line does, not with the engine's
+      // last progress line (such as "Waiting for permission").
+      driverWork.lines = [...driverWork.lines, `${kind === "ok" ? "Done" : "Failed"}: ${text}`];
+    }
     status = { text, kind };
   }
 
@@ -1119,14 +1145,13 @@
    * the board for people ("the Alhambra II", or the device's label).
    */
   async function installDeviceDriver(id: string, who: string, current: string | null) {
-    if (!(await backend.askConfirm("Install a Driver for the Board?", driverOfferText(who, current), "Install Driver", "info")))
-      return;
+    if (!(await confirmInApp(driverOffer(who, current)))) return;
     devicesBusy = true;
     try {
       let onEvent = startDriverWork(`Installing the WinUSB driver for ${who}…`);
       let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false, onEvent);
       if (result.sameIds !== null) {
-        if (!(await backend.askConfirm("Other Devices With the Same USB IDs", sameIdsText(result.sameIds), "Continue for All"))) {
+        if (!(await confirmInApp(sameIdsQuestion(result.sameIds)))) {
           driverWork = null;
           return;
         }
@@ -1144,8 +1169,7 @@
 
   /** Tools > Connected Devices > Remove Driver… (Windows). `who` as for installing. */
   async function removeDeviceDriver(id: string, who: string) {
-    if (!(await backend.askConfirm("Remove the Board's Driver?", driverRemoveText(who), "Remove Driver")))
-      return;
+    if (!(await confirmInApp(driverRemove(who)))) return;
     devicesBusy = true;
     try {
       const onEvent = startDriverWork(`Removing the WinUSB driver for ${who}…`);
@@ -1177,13 +1201,13 @@
     const d = outcome.driverDevice;
     if (!d) return;
     if (outcome.action === "disconnect_devices") {
-      if (await backend.askConfirm("Other Devices With the Same USB IDs", sameIdsText(outcome.sameIds ?? ""), "Continue for All"))
+      if (await confirmInApp(sameIdsQuestion(outcome.sameIds ?? "")))
         runTask("upload", null, d.id, { install: true, allowSameIds: true });
       else status = { text: "Unplug the other devices, then choose Upload again.", kind: "info" };
       return;
     }
     const who = project?.board ? `the ${boardName(project.board)}` : d.label;
-    if (await backend.askConfirm("Install a Driver for the Board?", driverOfferText(who, d.current), "Install Driver", "info"))
+    if (await confirmInApp(driverOffer(who, d.current)))
       runTask("upload", null, d.id, { install: true, allowSameIds: false });
     else status = { text: "Upload needs the board's driver: choose Upload again to install it.", kind: "info" };
   }
@@ -2186,6 +2210,10 @@
       if (!devicesBusy) driverWork = null;
     }}
   />
+{/if}
+
+{#if question}
+  <ConfirmDialog content={question.content} onAnswer={question.answer} />
 {/if}
 
 {#if explorer}

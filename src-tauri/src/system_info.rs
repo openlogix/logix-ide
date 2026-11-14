@@ -46,23 +46,31 @@ pub fn ide_lines(
                 "Examples: release {}",
                 crate::version::shown(&u.examples)
             ));
+            // A short block, one fact per line (the user's request,
+            // 2026-11-14: one line was too long to read).
             let c = &u.config.channel;
+            lines.push(format!("Remote config: {}", remote_config::CONFIG_VERSION));
             lines.push(format!(
-                "Remote config: config {}, channel {} ({}{}), {}{}, read {}",
-                remote_config::CONFIG_VERSION,
+                "  Channel: {} ({}{})",
                 c.name,
                 c.how,
                 if c.file != format!("{}.jsonc", c.name) {
                     format!(", using {}", c.file)
                 } else {
                     String::new()
-                },
+                }
+            ));
+            lines.push(format!(
+                "  Source: {}{}",
                 u.config.source,
                 if u.config.is_override {
                     format!(" ({})", remote_config::DEV_REMOTE_CONFIG_VARIABLE)
                 } else {
                     String::new()
-                },
+                }
+            ));
+            lines.push(format!(
+                "  Read: {}",
                 remote_config::utc_time(u.config.read_at)
             ));
         }
@@ -173,7 +181,10 @@ Operating system: macOS 26.5 (macos-arm64)
 Log file: /Users/you/.logix/ide/logs/logix-ide-latest.log
 Logix Engine used: release 2026.11.08
 Examples: release 2026.11.12
-Remote config: config 001, channel dev (default, using prod.jsonc), https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/, read 2026-11-12 00:00 UTC
+Remote config: 001
+  Channel: dev (default, using prod.jsonc)
+  Source: https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/
+  Read: 2026-11-12 00:00 UTC
 
 Logix Engine 2026.11.08
 Platform: darwin-arm64"
@@ -208,8 +219,13 @@ Platform: darwin-arm64"
             "Logix Engine used: local binary /w/logix-engine (LOGIX_DEV_ENGINE_BINARY)"
         );
         assert_eq!(
-            ide[5],
-            "Remote config: config 001, channel beta (LOGIX_IDE_CHANNEL), /w/001 (LOGIX_IDE_DEV_REMOTE_CONFIG), read 1970-01-01 00:00 UTC"
+            ide[5..],
+            [
+                "Remote config: 001",
+                "  Channel: beta (LOGIX_IDE_CHANNEL)",
+                "  Source: /w/001 (LOGIX_IDE_DEV_REMOTE_CONFIG)",
+                "  Read: 1970-01-01 00:00 UTC",
+            ]
         );
     }
 }

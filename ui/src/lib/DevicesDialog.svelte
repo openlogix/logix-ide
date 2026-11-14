@@ -7,7 +7,9 @@
   device that can't be opened yet (no driver) is listed with the others,
   with a note on which board it may be. On Windows, a device whose board
   needs a driver says which one it has, with Install Driver… (WinUSB) or
-  Remove Driver…; while one runs, the bottom shows its phase and output.
+  Remove Driver…; while one runs, the bottom shows a status line (green or
+  red when it ends) and its log, collapsed by default (the user's requests,
+  2026-11-14), above the Close button.
 -->
 <script lang="ts">
   import type { Devices } from "./backend";
@@ -87,10 +89,14 @@
     return label;
   }
 
-  /** The output panel: kept scrolled to its last line. */
+  /** Whether the driver change's log is shown: collapsed by default. */
+  let logOpen = $state(false);
+
+  /** The log: kept scrolled to its last line. */
   let outputEl = $state<HTMLPreElement | null>(null);
   $effect(() => {
     void driverWork?.lines.length;
+    void logOpen;
     if (outputEl) outputEl.scrollTop = outputEl.scrollHeight;
   });
 
@@ -158,17 +164,31 @@
     </div>
 
     {#if driverWork}
-      <footer class="work" aria-live="polite">
-        <div class="work-status" class:error={driverWork.result?.kind === "error"}>
+      <section class="work" aria-live="polite">
+        <div
+          class="work-status"
+          class:ok={driverWork.result?.kind === "ok"}
+          class:error={driverWork.result?.kind === "error"}
+        >
           {#if !driverWork.result}<span class="spinner" aria-label="Busy"></span>{/if}
           <span>{driverWork.result?.text ?? driverWork.title}</span>
-          {#if !driverWork.result && driverWork.step}<span class="muted">{driverWork.step}</span>{/if}
+          {#if !driverWork.result && driverWork.step}<span class="step">{driverWork.step}</span>{/if}
         </div>
         {#if driverWork.lines.length > 0}
-          <pre class="work-output" bind:this={outputEl}>{driverWork.lines.join("\n")}</pre>
+          <button class="toggle log-toggle" aria-expanded={logOpen} onclick={() => (logOpen = !logOpen)}
+            >{@render chevron(logOpen)}{logOpen ? "Hide log" : "Show log"}<span class="count">{driverWork.lines.length}</span></button
+          >
+          {#if logOpen}
+            <pre class="work-output" bind:this={outputEl}>{driverWork.lines.join("\n")}</pre>
+          {/if}
         {/if}
-      </footer>
+      </section>
     {/if}
+
+    <footer class="actions">
+      <span class="spacer"></span>
+      <button onclick={onClose}>Close</button>
+    </footer>
   </div>
 </div>
 
@@ -437,10 +457,10 @@
   .note {
     font-size: 13px;
   }
-  /* A driver change: its status line, then its output. */
+  /* A driver change: its status line, then its log (collapsed by default). */
   .work {
     flex: none;
-    padding: 8px 16px 12px;
+    padding: 10px 16px 4px;
     border-top: 1px solid var(--border);
   }
   .work-status {
@@ -448,7 +468,46 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--tabs-bg);
     font-size: 13px;
+  }
+  .work-status .step {
+    opacity: 0.75;
+    font-size: 12px;
+  }
+  /* How it ended: green, or red, as the status bar. */
+  .work-status.ok {
+    background: var(--status-ok-bg);
+    color: var(--status-ok-fg);
+  }
+  .work-status.error {
+    background: var(--banner-error-bg);
+    color: var(--banner-error-fg);
+  }
+  .log-toggle {
+    margin-top: 4px;
+    width: auto;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  /* The bottom bar: Close. */
+  .actions {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .actions button {
+    padding: 4px 16px;
+    font: inherit;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
   }
   .work-output {
     margin: 6px 0 0;

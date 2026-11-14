@@ -69,37 +69,64 @@ function driverName(service: string): string {
 }
 
 /**
+ * A question shown in Logix IDE's own confirmation dialog (`ConfirmDialog`):
+ * a title, a lead sentence, what happens as a short list, an optional note,
+ * and the button that agrees (Cancel is always there).
+ */
+export interface ConfirmContent {
+  title: string;
+  lead: string;
+  steps: string[];
+  note: string | null;
+  okLabel: string;
+}
+
+/**
  * The question before installing WinUSB for a board (Upload or Connected
  * Devices). `board` names it for people: the board's name when known, such
- * as "the Alhambra II", else the device's label.
+ * as "the Alhambra II", else the device's label. Plain words, the user's
+ * request (2026-11-14): what it's for, what happens, and how to undo it.
  */
-export function driverOfferText(board: string, current: string | null): string {
-  const now = current ? ` Windows uses ${driverName(current)} for it now, which Logix IDE can't program the board with.` : "";
-  return [
-    `Logix IDE programs ${board} through the WinUSB driver.${now}`,
-    "What happens:",
-    "• Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
-    "• Installing takes a minute or two.",
-    "• Only the part of the board that programs the FPGA gets WinUSB. Its other parts, such as a serial port, keep working as before.",
-    "• Other connected devices of the same kind (with the same USB IDs) get WinUSB too.",
-    "You can undo it later in Tools > Connected Devices (Remove Driver…).",
-  ].join("\n\n");
+export function driverOffer(board: string, current: string | null): ConfirmContent {
+  const now = current ? ` Right now Windows uses ${driverName(current)} for it.` : "";
+  return {
+    title: "Install the board's USB driver?",
+    lead: `To program ${board}, Logix IDE needs Windows to use the WinUSB driver for it.${now}`,
+    steps: [
+      "Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
+      "It takes a minute or two.",
+      "Only the part of the board that programs the FPGA changes. Its other parts, such as a serial port, keep working as before.",
+      "Other connected boards of the same kind get the driver too.",
+    ],
+    note: "You can undo it any time in Tools > Connected Devices.",
+    okLabel: "Install Driver",
+  };
 }
 
 /** The question when other connected devices have the same USB IDs (Logix Engine's message names them). */
-export function sameIdsText(engineMessage: string): string {
-  return `${engineMessage}\n\nUnplug them and try again, or continue: they get the WinUSB driver too.`;
+export function sameIdsQuestion(engineMessage: string): ConfirmContent {
+  return {
+    title: "Other devices of the same kind are connected",
+    lead: engineMessage,
+    steps: [],
+    note: "Unplug them and try again, or continue: they get the same driver too.",
+    okLabel: "Continue for All",
+  };
 }
 
-/** The question before removing WinUSB from a board. `board` as for `driverOfferText`. */
-export function driverRemoveText(board: string): string {
-  return [
-    `This removes the WinUSB driver Logix IDE installed for ${board}. Windows then uses the driver it had before (such as FTDI's), so the board maker's own tools can use the board again.`,
-    "What happens:",
-    "• Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
-    "• Other connected devices of the same kind (with the same USB IDs) go back to their driver too.",
-    "• Logix IDE can't program the board until WinUSB is installed again. Upload offers to install it when it's needed.",
-  ].join("\n\n");
+/** The question before removing WinUSB from a board. `board` as for `driverOffer`. */
+export function driverRemove(board: string): ConfirmContent {
+  return {
+    title: "Remove the board's USB driver?",
+    lead: `This gives ${board} back the driver Windows had before (such as FTDI's), so the board maker's own tools can use it again.`,
+    steps: [
+      "Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
+      "Other connected boards of the same kind go back to their driver too.",
+      "To program the board again, click Upload: Logix IDE offers to install WinUSB again.",
+    ],
+    note: null,
+    okLabel: "Remove Driver",
+  };
 }
 
 /**

@@ -8,9 +8,9 @@ import {
   needsDeviceChoice,
   needsDriver,
   driverStateText,
-  driverOfferText,
-  driverRemoveText,
-  sameIdsText,
+  driverOffer,
+  driverRemove,
+  sameIdsQuestion,
   orderedDevices,
   unreachableNote,
 } from "./devices";
@@ -68,20 +68,25 @@ describe("devices", () => {
     expect(driverStateText({ needed: "winusb", interface: 2, current: null, ready: false })).toContain(
       "interface 2 to program the board (it has no driver now)",
     );
-    const offer = driverOfferText("the Alhambra II", "ftdibus");
-    expect(offer).toContain("Logix IDE programs the Alhambra II through the WinUSB driver. Windows uses FTDI's driver for it now");
-    expect(offer).toContain("Windows asks whether Logix Engine may make changes to your device. Choose Yes.");
-    expect(offer).toContain("a minute or two");
-    expect(offer).toContain("such as a serial port, keep working");
-    expect(offer).not.toContain("interface");
-    expect(offer).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
-    expect(driverOfferText("the Alhambra II", null)).not.toContain("Windows uses");
-    expect(sameIdsText("Another device (0403:6010) is connected.")).toContain("they get the WinUSB driver too");
-    const remove = driverRemoveText("the Alhambra II");
-    expect(remove).toContain("removes the WinUSB driver Logix IDE installed for the Alhambra II");
-    expect(remove).toContain("the board maker's own tools");
-    expect(remove).toContain("same USB IDs");
-    expect(remove).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
+    const offer = driverOffer("the Alhambra II", "ftdibus");
+    const offerText = [offer.title, offer.lead, ...offer.steps, offer.note].join("\n");
+    expect(offer.lead).toBe(
+      "To program the Alhambra II, Logix IDE needs Windows to use the WinUSB driver for it. Right now Windows uses FTDI's driver for it.",
+    );
+    expect(offer.steps[0]).toBe("Windows asks whether Logix Engine may make changes to your device. Choose Yes.");
+    expect(offerText).toContain("a minute or two");
+    expect(offerText).toContain("such as a serial port, keep working");
+    expect(offerText).not.toContain("interface");
+    expect(offerText).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
+    expect(offer.okLabel).toBe("Install Driver");
+    expect(driverOffer("the Alhambra II", null).lead).not.toContain("Right now");
+    expect(sameIdsQuestion("Another device (0403:6010) is connected.").note).toContain("they get the same driver too");
+    const remove = driverRemove("the Alhambra II");
+    const removeText = [remove.title, remove.lead, ...remove.steps].join("\n");
+    expect(remove.lead).toContain("gives the Alhambra II back the driver Windows had before");
+    expect(removeText).toContain("the board maker's own tools");
+    expect(removeText).toContain("same kind");
+    expect(removeText).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
   });
 
   it("lists the likely FPGA boards first, the selected board's first of all", () => {
