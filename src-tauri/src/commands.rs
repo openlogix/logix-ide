@@ -1537,13 +1537,16 @@ pub fn show_editor_menu(
 /// is rebuilt only when it changes.
 #[tauri::command]
 pub fn set_menu_state(app: AppHandle, state: State<'_, AppState>, menu: crate::menu::MenuState) {
-    let changed = {
+    let (changed, same_items) = {
         let mut current = state.menu_state.lock().unwrap();
         let changed = *current != menu;
-        *current = menu;
-        changed
+        let same_items = crate::menu::same_items(&current, &menu);
+        *current = menu.clone();
+        (changed, same_items)
     };
-    if changed {
+    // Only a different set of items rebuilds the menu bar: anything else
+    // is updated in place, which doesn't redraw the window.
+    if changed && !(same_items && crate::menu::update(&app, &menu)) {
         crate::menu::refresh(&app);
     }
 }

@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use tauri::menu::{
     AboutMetadata, CheckMenuItemBuilder, ContextMenu, Menu, MenuBuilder, MenuItemBuilder,
-    SubmenuBuilder,
+    MenuItemKind, SubmenuBuilder,
 };
 use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 
@@ -514,6 +514,81 @@ pub fn show_output_menu<R: Runtime>(window: &WebviewWindow<R>) -> tauri::Result<
     menu.popup(window.as_ref().window())
 }
 
+/// Whether two menu states give the menu bar the same items, so going from
+/// one to the other only changes which are enabled or checked.
+pub fn same_items(a: &MenuState, b: &MenuState) -> bool {
+    /// A submenu's ID and label, and each value's.
+    type Shape<'a> = Vec<(&'a str, &'a str, Vec<(&'a str, &'a str)>)>;
+    fn shape(s: &MenuState) -> Shape<'_> {
+        s.variant_menus
+            .iter()
+            .map(|d| {
+                let values = d.values.iter().map(|v| (v.id.as_str(), v.label.as_str()));
+                (d.id.as_str(), d.label.as_str(), values.collect())
+            })
+            .collect()
+    }
+    shape(a) == shape(b)
+}
+
+/// Whether an item's enabled state follows the menu state.
+fn follows_state(id: &str) -> bool {
+    NEEDS_PROJECT.contains(&id)
+        || matches!(
+            id,
+            AUTO_FORMAT | TOGGLE_COMMENT | GO_TO_DEFINITION | RUN_TESTS | SIMULATE
+        )
+}
+
+/// Updates the menu bar's items in place to `state`: which are enabled,
+/// and the variant items' check marks. Replacing the whole menu bar
+/// redraws the whole window on Windows, so the window flickered when the
+/// toolbar's Flash/RAM choice changed (the user's report, 2026-11-14).
+/// Returns false when there's no menu bar to update.
+pub fn update<R: Runtime>(app: &AppHandle<R>, state: &MenuState) -> bool {
+    fn walk<R: Runtime>(items: Vec<MenuItemKind<R>>, state: &MenuState) {
+        for item in items {
+            match item {
+                MenuItemKind::Submenu(sub) => {
+                    if let Ok(children) = sub.items() {
+                        walk(children, state);
+                    }
+                }
+                MenuItemKind::MenuItem(i) => {
+                    let id = i.id().0.as_str();
+                    if follows_state(id) {
+                        let _ = i.set_enabled(is_enabled(id, state));
+                    }
+                }
+                MenuItemKind::Check(c) => {
+                    let id = c.id().0.clone();
+                    let value = id.strip_prefix(VARIANT_PREFIX).and_then(|rest| {
+                        let (dim, value) = rest.split_once(':')?;
+                        state
+                            .variant_menus
+                            .iter()
+                            .find(|d| d.id == dim)?
+                            .values
+                            .iter()
+                            .find(|v| v.id == value)
+                    });
+                    if let Some(v) = value {
+                        let _ = c.set_checked(v.checked);
+                        let _ = c.set_enabled(v.enabled);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    let Some(menu) = app.menu() else { return false };
+    let Ok(items) = menu.items() else {
+        return false;
+    };
+    walk(items, state);
+    true
+}
+
 /// Rebuilds the menu bar, e.g. after the recent projects changed.
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
     match build(app) {
@@ -549,6 +624,47 @@ fn recent_labels(dirs: &[PathBuf]) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_new_check_mark_keeps_the_items() {
+        let memory = |flash: bool, ram_enabled: bool| MenuState {
+            project: true,
+            variant_menus: vec![VariantMenu {
+                id: "memory".into(),
+                label: "Memory".into(),
+                values: vec![
+                    VariantMenuValue {
+                        id: "flash".into(),
+                        label: "Flash".into(),
+                        checked: flash,
+                        enabled: true,
+                    },
+                    VariantMenuValue {
+                        id: "ram".into(),
+                        label: "RAM".into(),
+                        checked: !flash,
+                        enabled: ram_enabled,
+                    },
+                ],
+            }],
+            ..Default::default()
+        };
+        // Flash to RAM, or a greyed item: updated in place.
+        assert!(same_items(&memory(true, true), &memory(false, true)));
+        assert!(same_items(&memory(true, true), &memory(true, false)));
+        // Another board's variants (or none): rebuilt.
+        assert!(!same_items(&memory(true, true), &MenuState::default()));
+        assert!(same_items(
+            &MenuState::default(),
+            &MenuState {
+                project: true,
+                ..Default::default()
+            }
+        ));
+        // Only items that follow the state are touched.
+        assert!(follows_state(SIMULATE) && follows_state(SAVE));
+        assert!(!follows_state(OPEN) && !follows_state(CLEAR_RECENT));
+    }
 
     #[test]
     fn help_links_are_web_pages() {
