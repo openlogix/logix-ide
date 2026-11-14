@@ -279,8 +279,8 @@ pub(super) fn same_ids(error: &Value) -> Option<String> {
 }
 
 /// Removes the WinUSB driver libwdi installed for a device's interface (the
-/// engine's `uninstall_driver`, Windows only), so Windows gives back its
-/// own driver, for every device with the same USB IDs. Returns the driver
+/// engine's `uninstall_driver`, Windows only), so Windows restores its
+/// original driver, for every device with the same USB IDs. Returns the driver
 /// packages removed (none: nothing to do).
 pub async fn uninstall_driver(
     engine: &Engine,

@@ -236,7 +236,9 @@ one, use **Module Diagram** on it.
 computer, which helps when Upload can't find the board. Under each device,
 **Matches** lists the boards it most likely is, and **Other possible
 matches** the boards it could also be (click a heading to open or close it,
-or a device to skip it). Click a board's name to select it.
+or a device to skip it). Click a board's name to select it. **Copy** puts
+all of it on the clipboard as text, to paste into a problem report, and
+you can also select and copy any part, such as a serial number.
 
 ![The Connected Devices window with an Alhambra II board](images/devices.png)
 
@@ -257,8 +259,8 @@ iCESugar need none.
   says how it's going, then turns green when it's done (red if it failed);
   **Show log** shows the details. A board without its driver is listed as **no driver
   yet**, since Logix IDE can't read its name until then. Removing the
-  driver gives Windows' own driver back, for example for the board maker's
-  tools.
+  driver restores the board's original Windows driver, if it had one, for
+  example for the board maker's tools.
 
 Only the USB interface the programmer uses gets WinUSB: a board's serial
 port keeps its driver. Windows gives drivers by USB IDs, not per board, so

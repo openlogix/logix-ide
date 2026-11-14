@@ -12,11 +12,12 @@
   2026-11-14), above the Close button.
 -->
 <script lang="ts">
-  import type { Devices } from "./backend";
+  import { backend, type Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
   import type { Driver, UnreachableDevice, UsbDevice } from "./backend";
   import {
     deviceBoardGroups,
+    devicesReport,
     driverStateText,
     orderedDevices,
     unreachableNote,
@@ -99,6 +100,18 @@
     void logOpen;
     if (outputEl) outputEl.scrollTop = outputEl.scrollHeight;
   });
+
+  /** Copy: the whole dialog as text, for a problem report. */
+  let copied = $state<string | null>(null);
+  async function copy() {
+    if (!devices) return;
+    try {
+      await backend.copyText(devicesReport(devices, board, boardName, driverWork));
+      copied = "Copied.";
+    } catch (e) {
+      copied = `Couldn't copy: ${(e as { message?: string }).message ?? String(e)}`;
+    }
+  }
 
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -186,7 +199,9 @@
     {/if}
 
     <footer class="actions">
+      <span class="muted copy-note">{copied ?? "Copy it all for a problem report, or select any part."}</span>
       <span class="spacer"></span>
+      <button disabled={!devices} onclick={copy}>Copy</button>
       <button onclick={onClose}>Close</button>
     </footer>
   </div>
@@ -197,9 +212,12 @@
   {@const fits = g.matches.length + g.others.length > 0}
   {@const open = isOpen(d.id, fits)}
   <li class="device">
-    <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
-      >{@render chevron(open)}<span class="name">{d.label}</span>{#if d.serialNumber}{" "}<span class="muted">· serial {d.serialNumber}</span>{/if}</button
-    >
+    <!-- The serial number outside the button, so it can be selected. -->
+    <div class="device-head">
+      <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
+        >{@render chevron(open)}<span class="name">{d.label}</span></button
+      >{#if d.serialNumber}<span class="muted serial">· serial {d.serialNumber}</span>{/if}
+    </div>
     {#if d.driver}
       {@render driverLine(d.id, whoOf(d.label, d.boards.map((b) => b.board), d.likelyBoards), d.driver)}
     {/if}
@@ -305,6 +323,18 @@
     text-align: left;
     cursor: pointer;
   }
+  .device-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .device-head .device-toggle {
+    width: auto;
+  }
+  .serial {
+    font-size: 13px;
+  }
   .device-toggle .name {
     font-weight: 600;
   }
@@ -400,9 +430,12 @@
   .close {
     border: none !important;
   }
+  /* Any part can be selected and copied, such as a serial number (the
+     user's request, 2026-11-14). */
   .body {
     overflow: auto;
     padding: 4px 16px 14px;
+    user-select: text;
   }
   h3 {
     margin: 14px 0 6px;
@@ -498,6 +531,12 @@
     align-items: center;
     padding: 10px 16px;
     border-top: 1px solid var(--border);
+  }
+  .actions {
+    gap: 8px;
+  }
+  .copy-note {
+    font-size: 12px;
   }
   .actions button {
     padding: 4px 16px;

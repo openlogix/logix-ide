@@ -820,7 +820,7 @@ export const backend = {
 
   /**
    * Removes the WinUSB driver Logix Engine installed for a device's board
-   * (Windows), so Windows gives back its own, for every device with the
+   * (Windows), so Windows restores its original driver, for every device with the
    * same USB IDs. Resolves with how many driver packages were removed.
    */
   uninstallDeviceDriver: (

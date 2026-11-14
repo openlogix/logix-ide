@@ -13,6 +13,7 @@ import {
   sameIdsQuestion,
   orderedDevices,
   unreachableNote,
+  devicesReport,
 } from "./devices";
 import type { TaskOutcome, UsbDevice } from "./backend";
 
@@ -83,10 +84,43 @@ describe("devices", () => {
     expect(sameIdsQuestion("Another device (0403:6010) is connected.").note).toContain("they get the same driver too");
     const remove = driverRemove("the Alhambra II");
     const removeText = [remove.title, remove.lead, ...remove.steps].join("\n");
-    expect(remove.lead).toContain("gives the Alhambra II back the driver Windows had before");
+    expect(remove.lead).toContain("restores the original Windows driver for the Alhambra II");
     expect(removeText).toContain("the board maker's own tools");
     expect(removeText).toContain("same kind");
     expect(removeText).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
+  });
+
+  it("copies Connected Devices as text for a problem report", () => {
+    const locked = {
+      id: "usb:1-2:0403:6010", label: "USB device (0403:6010)", vid: "0403", pid: "6010",
+      action: "install_drivers", actionDescription: "Install the driver.",
+      driver: { needed: "winusb", interface: 0, current: "ftdibus", ready: false },
+      boards: [{ board: "alhambra-ii", level: "weak" as const }, { board: "tangnano9k", level: "weak" as const }],
+    };
+    const name = (id: string) => ({ "alhambra-ii": "Alhambra II", tangnano9k: "Sipeed Tang Nano 9k" })[id] ?? id;
+    const text = devicesReport({ usb: [alhambra], unreachable: [locked] }, "tangnano9k", name, {
+      title: "Installing the WinUSB driver…", step: null, lines: ["Permission given."],
+      result: { text: "Installed.", kind: "ok" },
+    });
+    expect(text.split("\n")).toEqual([
+      "Connected Devices",
+      "Selected board: Sipeed Tang Nano 9k (tangnano9k)",
+      "",
+      "USB device (0403:6010), no driver yet",
+      "  ID: usb:1-2:0403:6010",
+      "  Driver: needs WinUSB on USB interface 0 to program the board (it has FTDI's driver now).",
+      "  Install the driver.",
+      "  Boards with these USB IDs (2): Alhambra II, Sipeed Tang Nano 9k",
+      "Alhambra II v1.0A (AlhambraBits, 0403:6010)",
+      "  ID: usb:1-1:0403:6010:FTATANKC",
+      "  Serial: FTATANKC",
+      "  Matches: Alhambra II",
+      "",
+      "Last driver change: Installing the WinUSB driver…",
+      "  Done: Installed.",
+      "  | Permission given.",
+    ]);
+    expect(devicesReport({ usb: [], unreachable: [] }, null, name, null)).toContain("No USB devices.");
   });
 
   it("lists the likely FPGA boards first, the selected board's first of all", () => {

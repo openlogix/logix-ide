@@ -95,7 +95,6 @@
     testbenches,
     type WorkingProject,
   } from "./lib/workingProject";
-  import { appendCapped } from "./lib/format";
   import { Redraws } from "./lib/redraw";
   import { addLinks, parseAnsi, type Segment } from "./lib/ansi";
   import { BARE_MINIMUM, examplesSummary, type ExampleEntry } from "./lib/examples";
@@ -307,18 +306,43 @@
   function clearConsole() {
     const final = redraws.end();
     if (final.length) sendToLogFile(final);
+    shownQueue = [];
     consoleLines = [];
   }
 
-  async function show(lines: string[], replaceLast: boolean) {
+  /**
+   * Lines waiting to be shown, each with whether it replaces the line
+   * before it (a redraw). They're shown together a few times a second, not
+   * one by one: a tool that printed thousands of lines a second (an
+   * unplugged board's programmer) froze the window, Stop included (the
+   * user's report, 2026-11-14).
+   */
+  let shownQueue: { line: string; replace: boolean }[] = [];
+  let shownFlush: Promise<void> | null = null;
+
+  function show(lines: string[], replaceLast: boolean): Promise<void> {
+    lines.forEach((line, i) => shownQueue.push({ line, replace: replaceLast && i === 0 }));
+    shownFlush ??= new Promise((resolve) => setTimeout(resolve, 30)).then(flushShown);
+    return shownFlush;
+  }
+
+  async function flushShown() {
+    const queue = shownQueue;
+    shownQueue = [];
+    shownFlush = null;
     const el = consoleEl;
     const atBottom =
       !el || el.scrollHeight - el.scrollTop - el.clientHeight < 20;
-    consoleLines = appendCapped(
-      replaceLast ? consoleLines.slice(0, -1) : consoleLines,
-      lines.map((line) => addLinks(parseAnsi(line))),
-      MAX_CONSOLE_LINES,
-    );
+    // Only the lines that will stay are parsed.
+    const next: (string | Segment[])[] = consoleLines.slice();
+    for (const { line, replace } of queue) {
+      if (replace) next.pop();
+      next.push(line);
+      if (next.length > 2 * MAX_CONSOLE_LINES) next.splice(0, next.length - MAX_CONSOLE_LINES);
+    }
+    consoleLines = next
+      .slice(-MAX_CONSOLE_LINES)
+      .map((l) => (typeof l === "string" ? addLinks(parseAnsi(l)) : l));
     if (atBottom) {
       await tick();
       el?.scrollTo({ top: el.scrollHeight });
@@ -1164,7 +1188,7 @@
       const removed = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id, onEvent);
       endDriverWork(
         removed > 0
-          ? `Removed the WinUSB driver for ${who}: Windows uses its own driver again.`
+          ? `Removed the WinUSB driver for ${who}: Windows uses its original driver again.`
           : `Logix IDE found no WinUSB driver it installed for ${who}.`,
         "ok",
       );

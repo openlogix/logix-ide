@@ -118,10 +118,10 @@ export function sameIdsQuestion(engineMessage: string): ConfirmContent {
 export function driverRemove(board: string): ConfirmContent {
   return {
     title: "Remove the board's USB driver?",
-    lead: `This gives ${board} back the driver Windows had before (such as FTDI's), so the board maker's own tools can use it again.`,
+    lead: `This restores the original Windows driver for ${board} (such as FTDI's), if it had one, so the board maker's own tools can use it again.`,
     steps: [
       "Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
-      "Other connected boards of the same kind go back to their driver too.",
+      "Other connected boards of the same kind get their original driver back too.",
       "To program the board again, click Upload: Logix IDE offers to install WinUSB again.",
     ],
     note: null,
@@ -218,4 +218,50 @@ export function deviceSummaryLines(devices: Devices): string[] {
     "If your board isn't listed, check the cable and power.",
     "If it's listed, check that the board selected in the toolbar matches it.",
   ];
+}
+
+/**
+ * Tools > Connected Devices as plain text, for a problem report (its Copy
+ * button; the user's request, 2026-11-14: parts such as a serial number
+ * were hard to copy): every device in the dialog's order, with its ID,
+ * serial number, driver and boards, then the last driver change and its
+ * log.
+ */
+export function devicesReport(
+  devices: Devices,
+  selected: string | null,
+  boardName: (id: string) => string,
+  work: DriverWork | null,
+): string {
+  const names = (ids: string[]) => ids.map(boardName).join(", ");
+  const out = [
+    "Connected Devices",
+    `Selected board: ${selected === null ? "none" : `${boardName(selected)} (${selected})`}`,
+    "",
+  ];
+  const listed = orderedDevices(devices, selected);
+  if (listed.length === 0) out.push("No USB devices.");
+  for (const item of listed) {
+    const d = item.device;
+    out.push(item.kind === "usb" ? d.label : `${d.label}, no driver yet`);
+    out.push(`  ID: ${d.id}`);
+    if (item.kind === "usb" && item.device.serialNumber) out.push(`  Serial: ${item.device.serialNumber}`);
+    if (d.driver) out.push(`  ${driverStateText(d.driver)}`);
+    if (item.kind === "usb") {
+      const { matches, others } = deviceBoardGroups(item.device, selected);
+      if (matches.length > 0) out.push(`  Matches: ${names(matches)}`);
+      if (others.length > 0) out.push(`  Other possible matches: ${names(others)}`);
+      if (matches.length + others.length === 0) out.push("  Not a board Logix IDE knows.");
+    } else {
+      out.push(`  ${item.device.actionDescription}`);
+      const ids = item.device.boards.map((b) => b.board);
+      if (ids.length > 0) out.push(`  Boards with these USB IDs (${ids.length}): ${names(ids)}`);
+    }
+  }
+  if (work) {
+    out.push("", `Last driver change: ${work.title}`);
+    out.push(`  ${work.result ? `${work.result.kind === "ok" ? "Done" : "Failed"}: ${work.result.text}` : `Running${work.step ? `: ${work.step}` : ""}`}`);
+    out.push(...work.lines.map((l) => `  | ${l}`));
+  }
+  return out.join("\n");
 }

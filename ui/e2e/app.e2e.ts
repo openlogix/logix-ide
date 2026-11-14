@@ -546,15 +546,13 @@ test("changing the board offers project options: the current project first", asy
   const current = dialog.getByRole("button", { name: /^Change the board of the current project to “iCEBreaker”/ });
   await expect(current).not.toHaveClass(/selected/);
   await expect(dialog.locator("button.selected")).toHaveCount(0);
-  // The change, then its implications, the risky ones red.
+  // The change, and how many things to check: the red implications show
+  // only once the option is chosen.
   await expect(current.locator(".note .point")).toHaveText([
     "FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
-    /^FPGA-specific parts/,
-    /^The design may not fit/,
-    /^The pins, clock frequency and LED and button wiring may differ/,
+    "3 things to check: choose this option to see them.",
   ]);
-  // Every implication is red.
-  await expect(current.locator(".note .point.risky")).toHaveCount(3);
+  await expect(current.locator(".note .point.risky")).toHaveCount(0);
   await expect(dialog.getByText("New project", { exact: true })).toBeVisible();
   // The main button waits for a choice, then follows it; Enter does
   // nothing before.
@@ -565,6 +563,14 @@ test("changing the board offers project options: the current project first", asy
   await expect(dialog).toBeVisible();
   await current.click();
   await expect(main).toHaveText("Change the Board");
+  // Chosen: the change, then its implications, all red.
+  await expect(current.locator(".note .point")).toHaveText([
+    "FPGA: ICE40HX4K-TQ144 → ICE40UP5K-SG48.",
+    /^FPGA-specific parts/,
+    /^The design may not fit/,
+    /^The pins, clock frequency and LED and button wiring may differ/,
+  ]);
+  await expect(current.locator(".note .point.risky")).toHaveCount(3);
   await dialog.getByRole("button", { name: /^blinky/ }).click();
   await expect(main).toHaveText("New Project");
   await expect(current).not.toHaveClass(/selected/);
@@ -578,6 +584,7 @@ test("changing the board offers project options: the current project first", asy
   await expect(other.locator(".note .point").first()).toHaveText(
     "FPGA family: Lattice iCE40 → Lattice ECP5.",
   );
+  await other.click();
   await expect(other.locator(".note .point.risky")).toHaveText([
     "Needs a .lpf pin file instead of pinout.pcf, with this board's pins.",
     /^Probably significant changes/,
@@ -1161,7 +1168,7 @@ test("Connected Devices lists a board with no driver first, and says what it may
     f.menu("devices");
   });
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
-  await expect(dialog.locator("li.device > button.device-toggle .name")).toHaveText([
+  await expect(dialog.locator("li.device button.device-toggle .name")).toHaveText([
     "USB device (0403:6010)",
     "USB Receiver (Logitech, 046d:c52b)",
   ]);
@@ -1193,6 +1200,12 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog.locator("ul.boards li")).toHaveText(["Alhambra II (selected)"]);
   // A strong match: the weaker ones aren't listed.
   await expect(dialog.getByRole("button", { name: /^Other possible matches/ })).toHaveCount(0);
+  // Copy: all of it as text, for a problem report.
+  await dialog.getByRole("button", { name: "Copy", exact: true }).click();
+  await expect(dialog.locator(".copy-note")).toHaveText("Copied.");
+  const copied = await page.evaluate(() => (window as unknown as { __fake: { copiedText: string | null } }).__fake.copiedText);
+  expect(copied).toMatch(/^Connected Devices\nSelected board: Alhambra II \(alhambra-ii\)\n\nAlhambra II v1\.0A \(AlhambraBits, 0403:6010\)\n  ID: usb:/);
+  expect(copied).toContain("  Matches: Alhambra II");
   // The device collapses, to skip it.
   await device.click();
   await expect(device).toHaveAttribute("aria-expanded", "false");

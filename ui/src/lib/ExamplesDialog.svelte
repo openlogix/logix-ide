@@ -282,12 +282,21 @@
               <!-- The change, then its implications, as list items (spans: a
                    button can't hold a list). -->
               {#if changeNote.length > 0}
+                <!-- The red implications only once this option is chosen, so
+                     they don't take over the dialog (the user's request,
+                     2026-11-14); until then, how many there are. -->
+                {@const risky = changeNote.filter((p) => p.kind === "risky").length}
                 <span class="example-desc note">
-                  {#each changeNote as point, i (i)}<span
+                  {#each selectedCurrent ? changeNote : changeNote.filter((p) => p.kind !== "risky") as point, i (i)}<span
                       class="point"
                       class:change={point.kind === "change"}
                       class:risky={point.kind === "risky"}>{point.text}</span
                     >{/each}
+                  {#if !selectedCurrent && risky > 0}<span class="point more"
+                      >{risky === 1 ? "One thing" : `${risky} things`} to check: choose this option to see {risky === 1
+                        ? "it"
+                        : "them"}.</span
+                    >{/if}
                 </span>
               {/if}
             </button>
