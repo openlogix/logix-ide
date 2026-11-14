@@ -88,12 +88,12 @@ inside another project.
 ## Boards and examples
 
 Choose the board in the toolbar's board list; the project remembers it. Click
-it to see all boards, grouped by FPGA type (Lattice iCE40, Lattice ECP5,
-Gowin, Xilinx), and type to search. Click a group's name to open or close
+it to see all boards, grouped by FPGA family (such as Lattice iCE40, Gowin
+GW1N or Xilinx Artix-7), and type to search. Click a group's name to open or close
 it; the group of the current board opens by itself. The keyboard works
 too.
 
-![The board list: recently used boards first, then all boards by FPGA type](images/boards.png)
+![The board list: recently used boards first, then all boards by FPGA family](images/boards.png)
 
 Choosing a board opens **Project options** for it. The first choice
 changes the board of your current project, files unchanged; a note says what that means, such as when the new board has
@@ -154,7 +154,7 @@ upload to RAM only, such as the Zybo and PYNQ boards and the ULX3S. After
 **Upload**, the output says where the design went.
 
 **File > Examples…** lists the examples for each board, with a search box.
-The boards are grouped by FPGA type in the same way.
+The boards are grouped by FPGA family in the same way.
 
 ![The Examples window: boards on the left, the selected board's examples on the right](images/examples.png)
 

@@ -37,6 +37,9 @@ Create a file whose name ends with `_tb.v` (the **+** at the end of the tabs).
 Logix IDE fills it with a starting point:
 
 ```verilog
+// Testbench. Run it with Project > Run Tests, or view its signals
+// with Project > Simulate.
+
 `timescale 1ns / 1ps
 
 module counter_tb;
@@ -44,7 +47,11 @@ module counter_tb;
   initial begin
     $dumpvars(0, counter_tb);
 
-    // Your test steps go here.
+    // Your test steps go here. To fail the test when a check fails:
+    //   if (actual !== expected)
+    //     $error("expected %h, got %h", expected, actual);
+    // Run Tests stops at the first error; Simulate runs to the end and
+    // shows the signals in GTKWave.
 
     #100;
     $finish;

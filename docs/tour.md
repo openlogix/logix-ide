@@ -68,7 +68,7 @@ Every board's list starts with **bare-minimum**: the board's pins and a
 design that does nothing yet, to start from scratch. Choosing a board never
 changes your files.
 
-![The Examples window: boards grouped by FPGA type on the left, the selected board's examples on the right](images/examples.png)
+![The Examples window: boards grouped by FPGA family on the left, the selected board's examples on the right](images/examples.png)
 
 ## Verify: check, build, report
 

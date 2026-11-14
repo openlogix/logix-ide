@@ -69,7 +69,7 @@ Downloading Logix Engine 2026.11.12...
 Logix Engine 2026.11.12 downloaded.
 Downloading the FPGA tools. The first time can take a few minutes.
 Downloading logix-core 2026.11.11...
-FPGA tools downloaded (logix-core).
+FPGA tools for Logix Engine downloaded (logix-core).
 117 examples available.
 Ready.
 ```
@@ -97,8 +97,7 @@ IDE finds your board on USB.
 ## 4. Open the Blinky example
 
 Click **Examples…** on the start screen. The window lists the examples for
-your board: select **blinky** and click **New Project**. (On a few boards, the
-first example is called **ledon**.)
+your board: select **blinky** and click **New Project**.
 
 Blinky opens as a new project. Its files are in tabs above the editor:
 
