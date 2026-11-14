@@ -331,7 +331,7 @@ Things deliberately postponed. Revisit them when the related feature is worked o
 ## Product page (on the org site)
 
 - The Logix IDE home page (marketing, not docs) is **https://www.openlogix.org/ide/**. It lives in the org site repo `openlogix/openlogix.github.io` (`docs/ide/index.html`), not here, so every Open Logix product page shares one stylesheet and look; that repo's `CLAUDE.md` owns its design and template. Why `/ide/` and not `/logix-ide/`: the org site's custom domain also serves every repo's Pages site, so `www.openlogix.org/logix-ide/` is these docs (and `openlogix.github.io/logix-ide/` redirects there).
-- It shows docs screenshots straight from the published docs (`www.openlogix.org/logix-ide/images/main.png`, `examples.png`, `error.png`, `tests.png`, `diagram.png`) and links to `installing/` and `tour/`. Don't rename those without updating the product page.
+- It shows docs screenshots straight from the published docs (`www.openlogix.org/logix-ide/images/main.png`, `examples.png`, `error.png`, `tests.png`, `gtkwave.png`, `diagram.png`) and links to `installing/` and `tour/`. Don't rename those without updating the product page.
 - It links to the product page from: README (top), Help > Logix IDE Website (`HELP_LINKS`), the release notes, and the docs header logo and footer. Downloads link to the repo's Releases page, not `/releases/latest` (GitHub's "latest" skips pre-releases).
 
 ## Repository notes
