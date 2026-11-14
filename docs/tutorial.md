@@ -139,9 +139,20 @@ clocks with their maximum speeds.
 
 Choose **Project > Show Diagram**. Logix IDE draws the design as a schematic
 in a window of its own: the counter's register, the adder that counts, and the
-pins. Hover over a block for its details, and double-click it to see its line
-in `main.v`. You can keep the window open while you work: it's drawn again after
-each Verify.
+pins.
+
+![The diagram of the blinky design: the clock, the counter and its adder, and the RGB LED's pins](images/diagram.png)
+
+Try it:
+
+- **Hover** over a block or a wire to see its details, such as a signal's
+  name and width.
+- **Double-click** the counter to see its line in `main.v`.
+- **Drag** to move the drawing, **scroll** to zoom, and click **Fit** to see
+  all of it again.
+
+You can keep the window open while you work: it's drawn again after each
+Verify. [Diagram](using-logix.md#diagram) has more.
 
 ## 8. Run the tests
 
@@ -155,9 +166,23 @@ design still works.
 
 Click **Simulate** ![Simulate button](images/icon-simulate.png){ .toolbar-icon }.
 Logix IDE runs the testbench too, but instead of a pass or fail result it opens
-the design's signals in **GTKWave**, a waveform viewer. There you can see each
-signal change over time, such as the counter and the LED, to understand why
-the design behaves as it does.
+the design's signals in **GTKWave**, a waveform viewer, in a window of its own.
+
+![GTKWave showing a testbench's signals over time: the clock, the counter and the LEDs](images/gtkwave.png)
+
+Try it:
+
+- **Read the waves:** each row on the right is one signal over time, from
+  left to right: the clock ticking, the counter counting up, and the LED
+  turning on and off as the counter's top bit changes.
+- **Zoom** with the zoom buttons in GTKWave's toolbar, to see single clock
+  cycles or the whole simulation.
+- **Add a signal:** select the testbench in the tree at the top left, select a
+  signal in the list below it, and click **Append**.
+- **Keep your view:** choose **File > Write Save File** in GTKWave, and the
+  next simulation opens the same way.
+
+Close GTKWave when you're done.
 
 [Testbenches and simulation](testbenches.md) explains both.
 
