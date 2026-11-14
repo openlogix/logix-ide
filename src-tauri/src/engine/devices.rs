@@ -34,6 +34,38 @@ pub struct UsbDevice {
     /// With a build folder: how well it matches the build's board in the
     /// build's variant.
     pub build_match: Option<MatchLevel>,
+    /// On Windows, for a board whose programmer needs one: the driver it
+    /// needs (WinUSB) and the one it has (the engine's `driver`).
+    pub driver: Option<Driver>,
+}
+
+/// The engine's `driver` for a device (Windows only): which driver the
+/// board's programmer needs on which USB interface, the one Windows has on
+/// it now, and whether the programmer can use it as it is.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Driver {
+    /// The driver needed: "winusb".
+    pub needed: String,
+    /// The USB interface that needs it, e.g. 0 (an FTDI chip's first
+    /// channel; its other channels, such as a serial port, keep theirs).
+    pub interface: u8,
+    /// The driver Windows has on it now, by its service name in lowercase
+    /// (e.g. "ftdibus"); None without one.
+    pub current: Option<String>,
+    /// Whether the programmer can use it as it is; false: install_driver.
+    pub ready: bool,
+}
+
+/// The engine's `driver` field, if any.
+fn parse_driver(v: &Value) -> Option<Driver> {
+    let d = v.as_object()?;
+    Some(Driver {
+        needed: d.get("needed")?.as_str()?.to_string(),
+        interface: d.get("interface")?.as_u64()?.try_into().ok()?,
+        current: d.get("current").and_then(Value::as_str).map(String::from),
+        ready: d.get("ready")?.as_bool()?,
+    })
 }
 
 /// The engine's match level: what a match means for the user (weak <
@@ -79,6 +111,9 @@ pub struct DeviceBoard {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnreachableDevice {
+    /// The engine's device ID, for `install_driver` (not for
+    /// `program_board`, which refuses it).
+    pub id: String,
     /// The engine's name for people, e.g. "USB device (0403:6014)".
     pub label: String,
     pub vid: String,
@@ -87,6 +122,8 @@ pub struct UnreachableDevice {
     pub action: String,
     /// The fix in words.
     pub action_description: String,
+    /// As for `UsbDevice`: on Windows, the driver it needs and has.
+    pub driver: Option<Driver>,
 }
 
 /// What `list_devices` found.
@@ -145,6 +182,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                 })
                 .unwrap_or_default(),
             build_match: MatchLevel::parse(&d["build_match"]),
+            driver: parse_driver(&d["driver"]),
         })
         .collect();
     let unreachable = result["unreachable"]
@@ -152,6 +190,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
         .map(|list| {
             list.iter()
                 .map(|d| UnreachableDevice {
+                    id: text(d, "id"),
                     label: text(d, "label"),
                     vid: text(d, "vid"),
                     pid: text(d, "pid"),
@@ -160,6 +199,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                         .as_str()
                         .unwrap_or("")
                         .to_string(),
+                    driver: parse_driver(&d["driver"]),
                 })
                 .collect()
         })
@@ -168,6 +208,94 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
         devices,
         unreachable,
     })
+}
+
+/// The engine's action code for a device that needs a driver first.
+pub const INSTALL_DRIVERS: &str = "install_drivers";
+
+/// The engine's action code when `install_driver` refuses because other
+/// connected devices have the same USB IDs (they'd get WinUSB too).
+pub const DISCONNECT_DEVICES: &str = "disconnect_devices";
+
+/// What `install_driver` did.
+#[derive(Debug, Clone, PartialEq)]
+pub enum DriverInstall {
+    /// Installed (or ready already): the device's ID now.
+    Done { device: String, installed: bool },
+    /// Refused: other connected devices have the same USB IDs. The engine's
+    /// message names them; retry with `allow_same_ids` only if the user
+    /// agrees they get WinUSB too.
+    SameIds(String),
+}
+
+/// Installs WinUSB on a device's interface (the engine's `install_driver`,
+/// Windows only): the user must have agreed, and Windows asks for
+/// permission naming Logix Engine. `build_folder` picks the build's board.
+pub async fn install_driver(
+    engine: &Engine,
+    device: &str,
+    boards_file: Option<&super::BoardsFolder>,
+    build_folder: Option<&std::path::Path>,
+    allow_same_ids: bool,
+) -> Result<DriverInstall> {
+    let mut args = json!({ "device": device, "allow_same_ids": allow_same_ids });
+    if let Some(file) = boards_file {
+        args["custom_boards_folder"] = json!(file.path);
+        args["display_paths"] = file.display_paths();
+    }
+    if let Some(folder) = build_folder {
+        args["build_folder"] = json!(folder);
+    }
+    match engine.call("install_driver", args, None).await? {
+        Ok(r) => Ok(install_result(&r, device)),
+        Err(e) => match same_ids(&e) {
+            Some(message) => Ok(DriverInstall::SameIds(message)),
+            None => Err(tool_error("install_driver", &e)),
+        },
+    }
+}
+
+/// `install_driver`'s result: the device's ID now (it can change once the
+/// driver lets the engine read its serial number).
+pub(super) fn install_result(r: &Value, device: &str) -> DriverInstall {
+    DriverInstall::Done {
+        device: r["device"].as_str().unwrap_or(device).to_string(),
+        installed: r["installed"].as_bool().unwrap_or(true),
+    }
+}
+
+/// The engine's message when its error is the same-USB-IDs refusal.
+pub(super) fn same_ids(error: &Value) -> Option<String> {
+    (error["action"]["code"] == DISCONNECT_DEVICES)
+        .then(|| error["message"].as_str().unwrap_or("").to_string())
+}
+
+/// Removes the WinUSB driver libwdi installed for a device's interface (the
+/// engine's `uninstall_driver`, Windows only), so Windows gives back its
+/// own driver, for every device with the same USB IDs. Returns the driver
+/// packages removed (none: nothing to do).
+pub async fn uninstall_driver(
+    engine: &Engine,
+    device: &str,
+    boards_file: Option<&super::BoardsFolder>,
+) -> Result<Vec<String>> {
+    let mut args = json!({ "device": device });
+    if let Some(file) = boards_file {
+        args["custom_boards_folder"] = json!(file.path);
+        args["display_paths"] = file.display_paths();
+    }
+    let r = engine
+        .call("uninstall_driver", args, None)
+        .await?
+        .map_err(|e| tool_error("uninstall_driver", &e))?;
+    Ok(r["removed"]
+        .as_array()
+        .map(|l| {
+            l.iter()
+                .filter_map(|p| p.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default())
 }
 
 fn parse_board(b: &Value) -> DeviceBoard {

@@ -10,6 +10,9 @@
     type Example,
     type Devices,
     type UsbDevice,
+    type TaskOutcome,
+    type UploadDriver,
+    NO_DRIVER,
     type Diagnostic,
     type Preferences,
     type MenuId,
@@ -53,7 +56,15 @@
   import BuildReportDialog from "./lib/BuildReport.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
-  import { deviceSummaryLines, isBoardNotFound, needsDeviceChoice } from "./lib/devices";
+  import {
+    deviceSummaryLines,
+    driverOfferText,
+    driverRemoveText,
+    isBoardNotFound,
+    needsDeviceChoice,
+    needsDriver,
+    sameIdsText,
+  } from "./lib/devices";
   import Icon from "./lib/Icon.svelte";
   import { pinCommentToken } from "./lib/pinFiles";
   import {
@@ -1067,6 +1078,70 @@
     refreshDevices();
   }
 
+  /**
+   * Tools > Connected Devices > Install Driver… (Windows): WinUSB for a
+   * device's board, after the user agrees; asks again when other devices
+   * with the same USB IDs are connected (they'd get it too).
+   */
+  async function installDeviceDriver(id: string, label: string, iface: number, current: string | null) {
+    if (!(await backend.askConfirm("Install the WinUSB Driver?", driverOfferText(label, iface, current), "Install Driver", "info")))
+      return;
+    devicesBusy = true;
+    try {
+      let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false);
+      if (result.sameIds !== null) {
+        if (!(await backend.askConfirm("Other Devices With the Same USB IDs", sameIdsText(result.sameIds), "Continue for All")))
+          return;
+        result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, true);
+      }
+      status = { text: result.installed ? `Installed the WinUSB driver for ${label}.` : `${label} has its driver already.`, kind: "ok" };
+    } catch (e) {
+      devicesError = toUserError(e).message;
+    } finally {
+      devicesBusy = false;
+    }
+    await refreshDevices();
+  }
+
+  /** Tools > Connected Devices > Remove Driver… (Windows). */
+  async function removeDeviceDriver(id: string, label: string) {
+    if (!(await backend.askConfirm("Remove the WinUSB Driver?", driverRemoveText(label), "Remove Driver")))
+      return;
+    devicesBusy = true;
+    try {
+      const removed = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id);
+      status = {
+        text: removed > 0
+          ? `Removed the WinUSB driver for ${label}: Windows gives back its own driver.`
+          : `Logix IDE found no WinUSB driver it installed for ${label}.`,
+        kind: "ok",
+      };
+    } catch (e) {
+      devicesError = toUserError(e).message;
+    } finally {
+      devicesBusy = false;
+    }
+    await refreshDevices();
+  }
+
+  /**
+   * Upload stopped because the board needs WinUSB first (Windows): asks the
+   * user, then runs Upload again, installing it first.
+   */
+  async function offerUploadDriver(outcome: TaskOutcome) {
+    const d = outcome.driverDevice;
+    if (!d) return;
+    if (outcome.action === "disconnect_devices") {
+      if (await backend.askConfirm("Other Devices With the Same USB IDs", sameIdsText(outcome.sameIds ?? ""), "Continue for All"))
+        runTask("upload", null, d.id, { install: true, allowSameIds: true });
+      else status = { text: "Unplug the other devices, then choose Upload again.", kind: "info" };
+      return;
+    }
+    if (await backend.askConfirm("Install the WinUSB Driver?", driverOfferText(d.label, d.interface, d.current), "Install Driver", "info"))
+      runTask("upload", null, d.id, { install: true, allowSameIds: false });
+    else status = { text: "Upload needs the board's driver: choose Upload again to install it.", kind: "info" };
+  }
+
   /** After Upload couldn't find the board: say what is connected. */
   async function logConnectedDevices() {
     try {
@@ -1128,6 +1203,7 @@
     task: Task,
     testbench: string | null = null,
     device: string | null = null,
+    driver: UploadDriver = NO_DRIVER,
   ) {
     if (!project || running) return;
     if (!ready) {
@@ -1186,6 +1262,7 @@
           }
           else taskStep = { message: event.message, percent: event.percent };
         },
+        task === "upload" ? driver : NO_DRIVER,
       );
       taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
@@ -1211,6 +1288,13 @@
         isBoardNotFound(outcome)
       ) {
         await logConnectedDevices();
+      }
+      if (task === "upload" && needsDriver(outcome)) {
+        // Not a failure: Upload goes on once the user agrees to the driver
+        // (asked once this run is over, so Upload can run again).
+        status = { text: "The board needs a driver first.", kind: "info" };
+        setTimeout(() => offerUploadDriver(outcome), 0);
+        return;
       }
       if (task === "upload" && needsDeviceChoice(outcome)) {
         // Not a failure: Upload goes on once the user picks a device.
@@ -2042,6 +2126,8 @@
     board={currentBoard}
     {boardName}
     onRefresh={refreshDevices}
+    onInstallDriver={installDeviceDriver}
+    onRemoveDriver={removeDeviceDriver}
     onPick={(id) => {
       devicesOpen = false;
       setBoard(id);

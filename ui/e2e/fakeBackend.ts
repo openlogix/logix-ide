@@ -309,6 +309,21 @@ const fake = {
   uploadDevices: null as Real.UsbDevice[] | null,
   /** The device id the last Upload used. */
   uploadedDevice: null as string | null,
+  /**
+   * Windows: the driver Upload's device has (`driver` in list_devices); a
+   * driver that isn't ready makes Upload ask to install WinUSB first.
+   */
+  uploadDriver: null as Real.Driver | null,
+  /**
+   * When set, Logix Engine refuses to install a driver without
+   * `allowSameIds`, with this message (other devices with the same USB IDs
+   * are connected).
+   */
+  sameIdsMessage: null as string | null,
+  /** The drivers installed (`install_driver`), oldest first. */
+  driverInstalls: [] as { device: string; allowSameIds: boolean }[],
+  /** The devices whose drivers were removed (`uninstall_driver`). */
+  driverRemovals: [] as string[],
   /** The menu state the UI reported last (`setMenuState`). */
   menuState: null as Real.MenuState | null,
   /** The menu state when the editor's right-click menu was shown last. */
@@ -356,7 +371,7 @@ const icesugarDevice: Real.UsbDevice = {
   serialNumber: "0700000001",
   boards: [{ board: "icesugar-1-5", level: "possible" }],
   likelyBoards: ["icesugar-1-5"],
-  buildMatch: "possible",
+  buildMatch: "possible", driver: null,
 };
 
 
@@ -375,7 +390,7 @@ const alhambraDevice: Real.UsbDevice = {
     { board: "alchitry-au", level: "weak" },
   ],
   likelyBoards: ["alhambra-ii"],
-  buildMatch: "strong",
+  buildMatch: "strong", driver: null,
 };
 
 const unlisten = async () => () => {};
@@ -410,7 +425,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         cancelled: false,
         seconds: 0.5,
         action: null,
-        devices: [],
+        devices: [], driverDevice: null, sameIds: null,
       },
     };
   }
@@ -437,7 +452,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
        
         seconds: 0.5,
         action: null,
-        devices: [],
+        devices: [], driverDevice: null, sameIds: null,
       },
     };
   }
@@ -465,7 +480,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
        
         seconds: 0.4,
         action: null,
-        devices: [],
+        devices: [], driverDevice: null, sameIds: null,
       },
     };
   }
@@ -481,7 +496,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
        
       seconds: 1.2,
       action: null,
-      devices: [],
+      devices: [], driverDevice: null, sameIds: null,
     },
   };
 }
@@ -538,7 +553,19 @@ export const backend: typeof Real.backend = {
   openBareMinimum: async (board) => bareDoc(board),
   openExample: async (board) => blinkyDoc(board),
 
-  runTask: async (task, target, _key, sourceDir, _projectDir, files, board, variant, device, onEvent) => {
+  runTask: async (
+    task,
+    target,
+    _key,
+    sourceDir,
+    _projectDir,
+    files,
+    board,
+    variant,
+    device,
+    onEvent,
+    driver = { install: false, allowSameIds: false },
+  ) => {
     fake.taskVariant = variant;
     fake.taskBoardsFolder = sourceDir;
     // As the IDE's backend: a file with problems stops the task, its
@@ -548,7 +575,7 @@ export const backend: typeof Real.backend = {
       for (const line of boardsProblemLines(own.problem)) onEvent({ kind: "line", line });
       return {
         ok: false, diagnostics: own.problem.diagnostics, testbenches: [], report: null,
-        cancelled: false, seconds: 0.1, action: null, devices: [],
+        cancelled: false, seconds: 0.1, action: null, devices: [], driverDevice: null, sameIds: null,
       };
     }
     const onLine = (line: string) => onEvent({ kind: "line", line });
@@ -595,8 +622,31 @@ export const backend: typeof Real.backend = {
         diagnostics: [{ severity: "error", file: null, line: null, column: null, message }],
       };
     }
+    // Windows: the board needs WinUSB first. Upload asks the user, then
+    // runs again with the driver to install (Logix Engine's install_driver).
+    let uploadId = device ?? fits[0].id;
+    const needsDriver = fake.uploadDriver && !fake.uploadDriver.ready ? fake.uploadDriver : null;
+    if (phases && task === "upload" && outcome.ok && needsDriver) {
+      const label = fits.find((d) => d.id === uploadId)?.label ?? fits[0].label;
+      const driverDevice = { id: uploadId, label, interface: needsDriver.interface, current: needsDriver.current };
+      if (!driver.install) {
+        return { ...outcome, ok: false, report: null, action: "install_drivers", driverDevice };
+      }
+      if (fake.sameIdsMessage && !driver.allowSameIds) {
+        return {
+          ...outcome, ok: false, report: null, action: "disconnect_devices", driverDevice,
+          sameIds: fake.sameIdsMessage,
+        };
+      }
+      onLine(`Installing the WinUSB driver for ${label}… Windows asks for permission for Logix Engine.`);
+      fake.driverInstalls.push({ device: uploadId, allowSameIds: driver.allowSameIds });
+      fake.uploadDriver = { ...needsDriver, current: "winusb", ready: true };
+      // The engine reads the serial number once the driver lets it.
+      uploadId = `${uploadId}FT1`;
+      onLine(`Installed the WinUSB driver for ${label}.`);
+    }
     if (phases && task === "upload" && outcome.ok) {
-      fake.uploadedDevice = device ?? fits[0].id;
+      fake.uploadedDevice = uploadId;
       // The engine's messages (program_board), for the board's memory.
       const info = [...own.boards, ...BOARDS].find((b) => b.id === board);
       const memory = info && resolve(info, variant).memory === "ram" ? "RAM" : "flash";
@@ -738,6 +788,21 @@ export const backend: typeof Real.backend = {
   chooseFolderDialog: async () => "/Users/you/fpga",
 
   scanDevices: async () => ({ usb: fake.usb ?? [icesugarDevice], unreachable: [] }),
+  installDeviceDriver: async (_folder, _saved, device, allowSameIds) => {
+    if (fake.sameIdsMessage && !allowSameIds) return { installed: false, sameIds: fake.sameIdsMessage };
+    fake.driverInstalls.push({ device, allowSameIds });
+    fake.usb = (fake.usb ?? []).map((d) =>
+      d.id === device && d.driver ? { ...d, driver: { ...d.driver, current: "winusb", ready: true } } : d,
+    );
+    return { installed: true, sameIds: null };
+  },
+  uninstallDeviceDriver: async (_folder, _saved, device) => {
+    fake.driverRemovals.push(device);
+    fake.usb = (fake.usb ?? []).map((d) =>
+      d.id === device && d.driver ? { ...d, driver: { ...d.driver, current: "ftdibus", ready: false } } : d,
+    );
+    return 1;
+  },
   onOpenRecent: unlisten,
 
   checkFileName: async (name, existing) => {

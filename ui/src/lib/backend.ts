@@ -280,6 +280,57 @@ export interface TaskOutcome {
   action: string | null;
   /** For Upload's "select_device": the devices that fit, best first. */
   devices: UsbDevice[];
+  /**
+   * For Upload's "install_drivers" (Windows): the device whose USB
+   * interface needs the WinUSB driver first, for the user to agree; also
+   * for "disconnect_devices", when Logix Engine refused because other
+   * connected devices have the same USB IDs (its message in `sameIds`).
+   */
+  driverDevice: DriverDevice | null;
+  sameIds: string | null;
+}
+
+/** For Upload (Windows): install the board's driver first, which the user agreed to. */
+export interface UploadDriver {
+  install: boolean;
+  /** Also while other devices with the same USB IDs are connected. */
+  allowSameIds: boolean;
+}
+export const NO_DRIVER: UploadDriver = { install: false, allowSameIds: false };
+
+/** A device that needs a driver before Upload can program it. */
+export interface DriverDevice {
+  /** Logix Engine's device id, for Upload with `installDriver`. */
+  id: string;
+  /** The engine's name for people. */
+  label: string;
+  /** The USB interface that needs WinUSB. */
+  interface: number;
+  /** The driver Windows has on it now (e.g. "ftdibus"), if any. */
+  current: string | null;
+}
+
+/**
+ * On Windows, for a board whose programmer needs one: the driver it needs
+ * (WinUSB) on which USB interface, the one Windows has on it, and whether
+ * the programmer can use it (Logix Engine's `driver`).
+ */
+export interface Driver {
+  needed: string;
+  interface: number;
+  current: string | null;
+  ready: boolean;
+}
+
+/** What Install Driver did (Tools > Connected Devices). */
+export interface DriverInstalled {
+  /** False when the driver was ready already. */
+  installed: boolean;
+  /**
+   * Set when Logix Engine refused because other connected devices have the
+   * same USB IDs: its message, naming them.
+   */
+  sameIds: string | null;
 }
 
 /** Streamed while a task runs: console lines, and the current phase. */
@@ -319,6 +370,8 @@ export interface UsbDevice {
   likelyBoards: string[];
   /** For Upload's candidates: how well it matches the build's board. */
   buildMatch: MatchLevel | null;
+  /** On Windows, the driver its board needs and has; null elsewhere. */
+  driver: Driver | null;
 }
 
 /**
@@ -331,6 +384,8 @@ export type MatchLevel = "strong" | "possible" | "weak";
 
 /** A device that may be a board but can't be opened yet. */
 export interface UnreachableDevice {
+  /** Logix Engine's device id, for Install Driver (not for Upload). */
+  id: string;
   /** The engine's name for people, e.g. "USB device (0403:6014)". */
   label: string;
   vid: string;
@@ -338,6 +393,8 @@ export interface UnreachableDevice {
   /** The suggested fix, e.g. "fix_device_permissions". */
   action: string;
   actionDescription: string;
+  /** On Windows, the driver its board needs and has. */
+  driver: Driver | null;
 }
 
 /** Connected devices, from Logix Engine. */
@@ -546,6 +603,7 @@ export const backend = {
     variant: Variant,
     device: string | null,
     onEvent: (event: TaskEvent) => void,
+    driver: UploadDriver = NO_DRIVER,
   ): Promise<TaskOutcome> => {
     const channel = new Channel<TaskEvent>();
     channel.onmessage = onEvent;
@@ -559,6 +617,8 @@ export const backend = {
       board,
       variant,
       device,
+      installDriver: driver.install,
+      allowSameIds: driver.allowSameIds,
       onEvent: channel,
     });
   },
@@ -733,6 +793,28 @@ export const backend = {
    */
   scanDevices: (folder: string | null, saved: boolean): Promise<Devices> =>
     invoke<Devices>("scan_devices", { folder, saved }),
+
+  /**
+   * Installs the WinUSB driver a device's board needs (Windows), after the
+   * user agreed; Windows asks for permission for Logix Engine. With
+   * `allowSameIds`, also while other devices with the same USB IDs are
+   * connected (they get it too).
+   */
+  installDeviceDriver: (
+    folder: string | null,
+    saved: boolean,
+    device: string,
+    allowSameIds: boolean,
+  ): Promise<DriverInstalled> =>
+    invoke<DriverInstalled>("install_device_driver", { folder, saved, device, allowSameIds }),
+
+  /**
+   * Removes the WinUSB driver Logix Engine installed for a device's board
+   * (Windows), so Windows gives back its own, for every device with the
+   * same USB IDs. Resolves with how many driver packages were removed.
+   */
+  uninstallDeviceDriver: (folder: string | null, saved: boolean, device: string): Promise<number> =>
+    invoke<number>("uninstall_device_driver", { folder, saved, device }),
 
   /**
    * The connected USB devices that fit boards (the catalog's and those of

@@ -177,7 +177,9 @@ The **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }:
 
 The **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon } builds the design, shows the same summary, and
 programs the board. If several connected devices could be the board (for
-example two of the same board), Upload asks which one to use.
+example two of the same board), Upload asks which one to use. (On Windows,
+some boards need the WinUSB driver first: Upload offers to install it. See
+[Drivers on Windows](#drivers-on-windows).)
 
 Both use the files as they are in the editor, saved or not. The **Stop**
 button ![Stop button](images/icon-stop.png){ .toolbar-icon } stops a build or upload that takes too long.
@@ -237,6 +239,27 @@ matches** the boards it could also be (click a heading to open or close it,
 or a device to skip it). Click a board's name to select it.
 
 ![The Connected Devices window with an Alhambra II board](images/devices.png)
+
+### Drivers on Windows
+
+On Windows, boards whose programmer chip is an FTDI chip (such as the
+iCEstick, the Alhambra II, the Arty and the Tang Nano), and boards in their
+USB bootloader, need the WinUSB driver before Logix IDE can program them.
+Windows gives them another driver by itself, such as FTDI's. Boards like the
+iCESugar need none.
+
+- **Upload** offers to install it when the board needs it. Click **Install
+  Driver**, then **Yes** when Windows asks whether Logix Engine may make
+  changes.
+- **Tools > Connected Devices…** shows each board's driver, with **Install
+  Driver…** or **Remove Driver…**. Removing it gives Windows' own driver
+  back, for example for the board maker's tools.
+
+Only the USB interface the programmer uses gets WinUSB: a board's serial
+port keeps its driver. Windows gives drivers by USB IDs, not per board, so
+other devices with the same USB IDs (such as another board with the same
+FTDI chip) use the same driver. If one is connected while installing,
+Logix IDE says so: unplug it, or continue for all.
 
 ## Your own boards
 

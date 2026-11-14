@@ -1014,6 +1014,93 @@ test("Upload asks which device when several fit the board", async ({ page }) => 
   ).toBe("usb:1-B2:0403:6010:B2");
 });
 
+// Windows: a board whose programmer needs WinUSB, which it doesn't have
+// yet (FTDI's driver). Upload asks first, then installs it and programs the board.
+test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
+  type Fake = {
+    uploadDevices: unknown[];
+    uploadDriver: unknown;
+    sameIdsMessage: string | null;
+    confirmAnswer: boolean;
+    confirms: { title: string; okLabel: string }[];
+    driverInstalls: { device: string; allowSameIds: boolean }[];
+    uploadedDevice: string;
+  };
+  const fake = (p: Page) => p.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await start(page);
+  await chooseBoard(page, "Alhambra II");
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.uploadDevices = [{
+      id: "usb:1-2:0403:6010:", label: "USB device (0403:6010)", likelyBoards: [],
+      vid: "0403", pid: "6010", manufacturer: "", product: "", serialNumber: "",
+      boards: [{ board: "alhambra-ii", level: "weak" }], buildMatch: "weak", driver: null,
+    }];
+    f.uploadDriver = { needed: "winusb", interface: 0, current: "ftdibus", ready: false };
+    f.confirmAnswer = false;
+  });
+  // Declined: nothing is installed, and Upload says why it stopped.
+  await menu(page, "upload");
+  await expect(status(page)).toContainText("Upload needs the board's driver");
+  expect((await fake(page)).confirms.at(-1)).toMatchObject({ title: "Install the WinUSB Driver?", okLabel: "Install Driver" });
+  expect((await fake(page)).driverInstalls).toEqual([]);
+
+  // Agreed, while another device with the same USB IDs is connected: asked
+  // again, then installed for all, and the board is programmed.
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.confirmAnswer = true;
+    f.sameIdsMessage = "Another connected device has the same USB IDs (0403:6010): Dual RS232-HS.";
+  });
+  await menu(page, "upload");
+  await expect(output(page)).toContainText("Installed the WinUSB driver for USB device (0403:6010).");
+  await expect(output(page)).toContainText("Programmed the flash of the Alhambra II");
+  const f = await fake(page);
+  expect(f.confirms.slice(-2).map((c) => c.title)).toEqual([
+    "Install the WinUSB Driver?",
+    "Other Devices With the Same USB IDs",
+  ]);
+  expect(f.driverInstalls).toEqual([{ device: "usb:1-2:0403:6010:", allowSameIds: true }]);
+  // Programmed with the device's ID after the driver (its serial number now read).
+  expect(f.uploadedDevice).toBe("usb:1-2:0403:6010:FT1");
+
+  // Next time the driver is ready: no question.
+  const asked = f.confirms.length;
+  await menu(page, "upload");
+  await expect(status(page)).toContainText("Upload succeeded");
+  expect((await fake(page)).confirms.length).toBe(asked);
+});
+
+test("Connected Devices installs and removes a board's driver", async ({ page }) => {
+  type Fake = {
+    usb: unknown[];
+    driverInstalls: { device: string }[];
+    driverRemovals: string[];
+    menu: (id: string) => void;
+  };
+  await start(page);
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.usb = [{
+      id: "usb:1-4:0403:6010:", label: "Alhambra II v1.0A (AlhambraBits, 0403:6010)", likelyBoards: ["alhambra-ii"],
+      vid: "0403", pid: "6010", manufacturer: "AlhambraBits", product: "Alhambra II v1.0A", serialNumber: "",
+      boards: [{ board: "alhambra-ii", level: "strong" }], buildMatch: null,
+      driver: { needed: "winusb", interface: 0, current: "ftdibus", ready: false },
+    }];
+    f.menu("devices");
+  });
+  const dialog = page.getByRole("dialog", { name: "Connected Devices" });
+  await expect(dialog).toContainText("Driver: needs WinUSB on USB interface 0 to program the board (it has FTDI's driver now).");
+  await dialog.getByRole("button", { name: "Install Driver…" }).click();
+  await expect(dialog).toContainText("Driver: WinUSB, ready to program the board.");
+  await expect(status(page)).toContainText("Installed the WinUSB driver for Alhambra II v1.0A");
+  await dialog.getByRole("button", { name: "Remove Driver…" }).click();
+  await expect(dialog).toContainText("it has FTDI's driver now");
+  const f = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  expect(f.driverInstalls.map((i) => i.device)).toEqual(["usb:1-4:0403:6010:"]);
+  expect(f.driverRemovals).toEqual(["usb:1-4:0403:6010:"]);
+});
+
 test("lists the connected devices", async ({ page }) => {
   await start(page);
   await chooseBoard(page, "Alhambra II");
@@ -1046,7 +1133,7 @@ test("lists the connected devices", async ({ page }) => {
       {
         id: "usb:1-4:0403:6010:", label: "Dual RS232-HS (FTDI, 0403:6010)", likelyBoards: [],
         vid: "0403", pid: "6010", manufacturer: "FTDI",
-        product: "Dual RS232-HS", serialNumber: "", buildMatch: null,
+        product: "Dual RS232-HS", serialNumber: "", buildMatch: null, driver: null,
         boards: [{ board: "alchitry-au", level: "weak" }, { board: "icestick", level: "weak" }],
       },
     ];

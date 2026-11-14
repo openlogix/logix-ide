@@ -467,6 +467,8 @@ pub async fn run_task(
     board: String,
     variant: engine::Variant,
     device: Option<String>,
+    install_driver: Option<bool>,
+    allow_same_ids: Option<bool>,
     on_event: Channel<outcome::TaskEvent>,
 ) -> Result<outcome::TaskOutcome, UserError> {
     let Ok(_running) = state.task.try_lock() else {
@@ -587,6 +589,8 @@ pub async fn run_task(
         lint: lint_on_verify(),
         target: testbench.as_deref(),
         device: device.as_deref(),
+        install_driver: install_driver.unwrap_or(false),
+        allow_same_ids: allow_same_ids.unwrap_or(false),
         redraw_diagram: task == outcome::Task::Build && diagram_window::is_open(&app, &key_kept),
         // Show Diagram starts at the chosen module; Verify redraws the
         // module the window shows.
@@ -820,6 +824,69 @@ pub async fn scan_devices(
         usb: list.devices,
         unreachable: list.unreachable,
     })
+}
+
+/// What Tools > Connected Devices' Install Driver did.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DriverInstalled {
+    /// False when the driver was ready already.
+    installed: bool,
+    /// Set when Logix Engine refused because other connected devices have
+    /// the same USB IDs: its message, naming them. Retry with
+    /// `allow_same_ids` only if the user agrees they get WinUSB too.
+    same_ids: Option<String>,
+}
+
+/// Installs the WinUSB driver a device's board needs (Windows; Tools >
+/// Connected Devices > Install Driver…), after the user agreed: Windows asks
+/// for permission for Logix Engine.
+#[tauri::command]
+pub async fn install_device_driver(
+    state: State<'_, AppState>,
+    folder: Option<String>,
+    saved: bool,
+    device: String,
+    allow_same_ids: bool,
+) -> Result<DriverInstalled, UserError> {
+    let engine = ready_engine(&state).await?;
+    let file = boards_file(folder.as_deref(), saved);
+    crate::log!("Installing the WinUSB driver for {device} (allow_same_ids: {allow_same_ids})");
+    let result = engine::install_driver(&engine, &device, file.as_ref(), None, allow_same_ids)
+        .await
+        .context("Couldn't install the driver.")?;
+    crate::log!("install_driver: {result:?}");
+    Ok(match result {
+        engine::DriverInstall::Done { installed, .. } => DriverInstalled {
+            installed,
+            same_ids: None,
+        },
+        engine::DriverInstall::SameIds(message) => DriverInstalled {
+            installed: false,
+            same_ids: Some(message),
+        },
+    })
+}
+
+/// Removes the WinUSB driver Logix Engine installed for a device's board
+/// (Windows; Tools > Connected Devices > Remove Driver…), so Windows gives
+/// back its own, for every device with the same USB IDs. Returns how many
+/// driver packages were removed.
+#[tauri::command]
+pub async fn uninstall_device_driver(
+    state: State<'_, AppState>,
+    folder: Option<String>,
+    saved: bool,
+    device: String,
+) -> Result<usize, UserError> {
+    let engine = ready_engine(&state).await?;
+    let file = boards_file(folder.as_deref(), saved);
+    crate::log!("Removing the WinUSB driver for {device}");
+    let removed = engine::uninstall_driver(&engine, &device, file.as_ref())
+        .await
+        .context("Couldn't remove the driver.")?;
+    crate::log!("uninstall_driver removed: {removed:?}");
+    Ok(removed.len())
 }
 
 /// The connected USB devices that fit catalog boards, each with the boards

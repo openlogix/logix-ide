@@ -37,6 +37,15 @@ fn pick_device(
 ) -> std::result::Result<String, (Value, Vec<super::UsbDevice>)> {
     match list.devices.as_slice() {
         [one] => Ok(one.id.clone()),
+        // Windows: a board Windows gave another driver (such as FTDI's) can
+        // be one the engine can't open: Upload offers its driver.
+        [] if let Some(u) = list
+            .unreachable
+            .iter()
+            .find(|u| u.driver.as_ref().is_some_and(|d| !d.ready)) =>
+        {
+            Ok(u.id.clone())
+        }
         [] => {
             let error = match list.unreachable.first() {
                 Some(u) => json!({
@@ -63,9 +72,32 @@ fn pick_device(
     }
 }
 
-/// What `choose_device` decided.
+/// The device Upload uses, when its board's programmer needs a driver it
+/// doesn't have yet (Windows: the engine's `driver` isn't ready).
+fn driver_needed(list: &super::DeviceList, id: &str) -> Option<crate::outcome::DriverDevice> {
+    let (label, driver) = list
+        .devices
+        .iter()
+        .find(|d| d.id == id)
+        .map(|d| (&d.label, &d.driver))
+        .or_else(|| {
+            list.unreachable
+                .iter()
+                .find(|u| u.id == id)
+                .map(|u| (&u.label, &u.driver))
+        })?;
+    let driver = driver.as_ref().filter(|d| !d.ready)?;
+    Some(crate::outcome::DriverDevice {
+        id: id.to_string(),
+        label: label.clone(),
+        interface: driver.interface,
+        current: driver.current.clone(),
+    })
+}
+
+/// What `choose_device` decided: the device, with the list it came from.
 enum Choice {
-    Device(String),
+    Device(String, super::DeviceList),
     /// The outcome says why Upload can't go on.
     Stop,
     Cancelled,
@@ -99,6 +131,11 @@ pub struct TaskInput<'a> {
     /// For Upload: the device the user chose (an engine device ID), when
     /// several fit the board. `None` lets Upload pick the only one.
     pub device: Option<&'a str>,
+    /// For Upload (Windows): install the driver the device needs first
+    /// (`install_driver`), which the user agreed to; with `allow_same_ids`
+    /// also when other connected devices have the same USB IDs.
+    pub install_driver: bool,
+    pub allow_same_ids: bool,
     /// For Verify: draw the diagram again after a successful build, for
     /// the project's open Diagram window.
     pub redraw_diagram: bool,
@@ -160,6 +197,8 @@ pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOu
         seconds: 0.0,
         action: None,
         devices: Vec::new(),
+        driver_device: None,
+        same_ids: None,
     }
 }
 
@@ -175,6 +214,8 @@ fn new_outcome() -> TaskOutcome {
         seconds: 0.0,
         action: None,
         devices: Vec::new(),
+        driver_device: None,
+        same_ids: None,
     }
 }
 
@@ -342,14 +383,57 @@ where
         }
 
         if task == Task::Upload && outcome.ok {
-            let device = match input.device {
-                Some(id) => id.to_string(),
-                None => match self.choose_device(outcome).await? {
-                    Choice::Device(id) => id,
-                    Choice::Stop => return Ok(true),
-                    Choice::Cancelled => return Ok(false),
-                },
+            let (mut device, list) = match self.choose_device(input.device, outcome).await? {
+                Choice::Device(id, list) => (id, list),
+                Choice::Stop => return Ok(true),
+                Choice::Cancelled => return Ok(false),
             };
+            // Windows: a board whose programmer needs WinUSB, which it
+            // doesn't have yet. The user agrees first (Upload stops and asks),
+            // then Upload runs again with install_driver.
+            if let Some(needs) = driver_needed(&list, &device) {
+                if !input.install_driver {
+                    outcome.ok = false;
+                    outcome.action = Some(super::devices::INSTALL_DRIVERS.into());
+                    outcome.driver_device = Some(needs);
+                    return Ok(true);
+                }
+                self.line(format!(
+                    "Installing the WinUSB driver for {}… Windows asks for permission for Logix Engine.",
+                    needs.label
+                ));
+                let args = json!({
+                    "device": device,
+                    "build_folder": self.build_folder(),
+                    "allow_same_ids": input.allow_same_ids,
+                    "custom_boards_folder": self.custom_boards_folder,
+                    "display_paths": self.display_paths,
+                });
+                match self.call("install_driver", args).await? {
+                    Ok(r) => {
+                        if let super::DriverInstall::Done { device: id, .. } =
+                            super::devices::install_result(&r, &device)
+                        {
+                            device = id;
+                        }
+                        self.line(format!("Installed the WinUSB driver for {}.", needs.label));
+                    }
+                    Err(e) if is_cancelled(&e) => return Ok(false),
+                    Err(e) => match super::devices::same_ids(&e) {
+                        Some(message) => {
+                            outcome.ok = false;
+                            outcome.action = Some(super::devices::DISCONNECT_DEVICES.into());
+                            outcome.driver_device = Some(needs);
+                            outcome.same_ids = Some(message);
+                            return Ok(true);
+                        }
+                        None => {
+                            self.failed(outcome, &e);
+                            return Ok(true);
+                        }
+                    },
+                }
+            }
             let result = self
                 .call(
                     "program_board",
@@ -377,11 +461,16 @@ where
         Ok(true)
     }
 
-    /// Upload's device: the only one that fits the build's board (the
-    /// engine's `list_devices` with the build folder). With none, or with
+    /// Upload's device: the one the user chose, else the only one that fits
+    /// the build's board (the engine's `list_devices` with the build
+    /// folder), with that list (for its drivers). With none, or with
     /// several (`select_device`, the candidates in `outcome.devices` for the
     /// user to choose), the outcome says so and Upload stops.
-    async fn choose_device(&self, outcome: &mut TaskOutcome) -> Result<Choice> {
+    async fn choose_device(
+        &self,
+        chosen: Option<&str>,
+        outcome: &mut TaskOutcome,
+    ) -> Result<Choice> {
         let result = self
             .call(
                 "list_devices",
@@ -400,8 +489,11 @@ where
                 return Ok(Choice::Stop);
             }
         };
+        if let Some(id) = chosen {
+            return Ok(Choice::Device(id.to_string(), list));
+        }
         match pick_device(&list) {
-            Ok(id) => Ok(Choice::Device(id)),
+            Ok(id) => Ok(Choice::Device(id, list)),
             Err((error, candidates)) => {
                 self.failed(outcome, &error);
                 outcome.devices = candidates;
@@ -766,6 +858,61 @@ mod tests {
         assert!(err["message"].as_str().unwrap().contains("Allow it."));
     }
 
+    // Windows: a board whose interface has another driver (such as FTDI's)
+    // is one the engine may not open. Upload picks it, to offer WinUSB.
+    #[test]
+    fn upload_offers_the_driver_a_board_needs() {
+        let driver = |current: Option<&str>, ready: bool| json!({"needed": "winusb", "interface": 0, "current": current, "ready": ready});
+        let unreachable = super::super::devices::parse_devices(&json!({"devices": [], "unreachable": [
+            {"id": "usb:1-2:0403:6010:", "label": "USB device (0403:6010)", "vid": "0403", "pid": "6010",
+             "action": {"code": "install_drivers", "description": "Install the driver."},
+             "driver": driver(Some("ftdibus"), false)}
+        ]})).unwrap();
+        let id = pick_device(&unreachable).unwrap();
+        assert_eq!(id, "usb:1-2:0403:6010:");
+        let needs = driver_needed(&unreachable, &id).unwrap();
+        assert_eq!(needs.interface, 0);
+        assert_eq!(needs.current.as_deref(), Some("ftdibus"));
+        assert_eq!(needs.label, "USB device (0403:6010)");
+
+        // An open device whose driver is ready, or that has none (macOS, or a
+        // board that needs no driver): nothing to install.
+        let open = |d: serde_json::Value| {
+            super::super::devices::parse_devices(&json!({"devices": [
+                {"id": "a", "kind": "usb", "label": "Alhambra II", "vid": "0403", "pid": "6010", "driver": d}
+            ]})).unwrap()
+        };
+        assert_eq!(
+            driver_needed(&open(driver(Some("winusb"), true)), "a"),
+            None
+        );
+        assert_eq!(driver_needed(&open(serde_json::Value::Null), "a"), None);
+        let needs = driver_needed(&open(driver(None, false)), "a").unwrap();
+        assert_eq!((needs.label.as_str(), needs.current), ("Alhambra II", None));
+    }
+
+    #[test]
+    fn same_ids_refusals_are_told_apart() {
+        let refused = json!({"category": "request", "message": "Another device (0403:6010) is connected.",
+            "action": {"code": "disconnect_devices"}});
+        assert_eq!(
+            super::super::devices::same_ids(&refused).as_deref(),
+            Some("Another device (0403:6010) is connected.")
+        );
+        let other = json!({"category": "setup", "message": "No permission.", "action": {"code": "install_drivers"}});
+        assert_eq!(super::super::devices::same_ids(&other), None);
+        assert_eq!(
+            super::super::devices::install_result(
+                &json!({"device": "new", "installed": true}),
+                "old"
+            ),
+            super::super::DriverInstall::Done {
+                device: "new".into(),
+                installed: true
+            }
+        );
+    }
+
     /// The default configuration of the test boards.
 
     #[test]
@@ -855,6 +1002,8 @@ mod tests {
             seconds: 0.0,
             action: None,
             devices: Vec::new(),
+            driver_device: None,
+            same_ids: None,
         };
         let lines = Mutex::new(Vec::new());
         let e = json!({
@@ -988,6 +1137,8 @@ mod tests {
             lint: true,
             target: None,
             device: None,
+            install_driver: false,
+            allow_same_ids: false,
             redraw_diagram: false,
             diagram_module: None,
         };
@@ -1185,6 +1336,8 @@ mod tests {
                     lint: true,
                     target: None,
                     device: None,
+                    install_driver: false,
+                    allow_same_ids: false,
                     redraw_diagram: false,
                     diagram_module: None,
                 };
@@ -1312,6 +1465,8 @@ mod tests {
                 lint: true,
                 target,
                 device: None,
+                install_driver: false,
+                allow_same_ids: false,
                 redraw_diagram: false,
                 diagram_module: None,
             };

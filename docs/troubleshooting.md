@@ -31,6 +31,17 @@ click **Retry**.
   the board selected in the toolbar matches it. A device listed under
   **Found but can't be opened** needs permissions or a driver first; the
   dialog says what to do.
+- On Windows: if the board needs the WinUSB driver, Upload offers it, and
+  **Tools > Connected Devices…** shows each board's driver. See
+  [Drivers on Windows](using-logix.md#drivers-on-windows).
+
+## Windows didn't install the driver
+
+- When Windows asks whether Logix Engine may make changes, choose **Yes**:
+  without it nothing changes, and Upload offers the driver again next time.
+- Unplug the board, plug it in again, and choose **Upload** again.
+- If it still fails, the output shows why. Report it (see
+  [Still stuck?](#still-stuck)) with the Logix IDE log.
 
 ## My design is gone after unplugging the board
 

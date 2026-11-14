@@ -55,6 +55,28 @@ pub struct TaskOutcome {
     /// For Upload with `select_device`: the devices that fit the board, best
     /// first, for the user to choose from.
     pub devices: Vec<crate::engine::UsbDevice>,
+    /// For Upload with `install_drivers` (Windows): the device whose
+    /// interface needs WinUSB first, for the user to agree to install it;
+    /// also with `disconnect_devices`, when the engine refused because other
+    /// connected devices have the same USB IDs.
+    pub driver_device: Option<DriverDevice>,
+    /// For Upload with `disconnect_devices`: the engine's message, naming
+    /// the other devices with the same USB IDs (they'd get WinUSB too).
+    pub same_ids: Option<String>,
+}
+
+/// A device that needs a driver before Upload can program it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DriverDevice {
+    /// The engine's device ID, for Upload with `install_driver`.
+    pub id: String,
+    /// The engine's name for people.
+    pub label: String,
+    /// The USB interface that needs WinUSB.
+    pub interface: u8,
+    /// The driver Windows has on it now (e.g. "ftdibus"), if any.
+    pub current: Option<String>,
 }
 
 /// Streamed to the UI while a task runs.

@@ -138,6 +138,8 @@ pub fn run() {
             commands::run_task,
             commands::cancel_task,
             commands::scan_devices,
+            commands::install_device_driver,
+            commands::uninstall_device_driver,
             commands::connected_devices,
             commands::lsp_start,
             commands::lsp_send,

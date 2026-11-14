@@ -22,7 +22,8 @@ pub use catalog::{
 };
 pub use client::Engine;
 pub use devices::{
-    connected_devices, list_devices, ConnectedDevice, DeviceList, UnreachableDevice, UsbDevice,
+    connected_devices, install_driver, list_devices, uninstall_driver, ConnectedDevice, DeviceList,
+    DriverInstall, UnreachableDevice, UsbDevice,
 };
 pub use format::format_file;
 pub use info::program_path;

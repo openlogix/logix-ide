@@ -3,13 +3,14 @@
   group (open when it may be a board), with the boards it may be as bullet
   lists in two collapsible groups: Matches (its most likely boards, open)
   and Other possible matches (weaker ones, closed). Board names select the
-  board.
+  board. On Windows, a device whose board needs a driver says which one it
+  has, with Install Driver… (WinUSB) or Remove Driver….
 -->
 <script lang="ts">
   import type { Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
-  import type { UsbDevice } from "./backend";
-  import { deviceBoardGroups } from "./devices";
+  import type { Driver, UsbDevice } from "./backend";
+  import { deviceBoardGroups, driverStateText } from "./devices";
 
   let {
     devices,
@@ -18,6 +19,8 @@
     board,
     boardName,
     onRefresh,
+    onInstallDriver,
+    onRemoveDriver,
     onPick,
     onClose,
   }: {
@@ -31,6 +34,10 @@
     error: string | null;
     busy: boolean;
     onRefresh: () => void;
+    /** Install Driver… (Windows): WinUSB for the device's board. */
+    onInstallDriver: (id: string, label: string, iface: number, current: string | null) => void;
+    /** Remove Driver… (Windows): Windows' own driver back. */
+    onRemoveDriver: (id: string, label: string) => void;
     /** A board name was clicked: select that board. */
     onPick: (board: string) => void;
     onClose: () => void;
@@ -110,6 +117,9 @@
                 <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
                   >{@render chevron(open)}<span class="name">{d.label}</span>{#if d.serialNumber}{" "}<span class="muted">· serial {d.serialNumber}</span>{/if}</button
                 >
+                {#if d.driver}
+                  {@render driverLine(d.id, d.label, d.driver)}
+                {/if}
                 {#if open}
                   <div class="groups">
                     {#if !fits}
@@ -152,7 +162,11 @@
             {#each devices.unreachable as u, i (i)}
               <li>
                 <span class="name">A USB device ({u.vid}:{u.pid})</span>
-                <span class="muted">{u.actionDescription}</span>
+                {#if u.driver}
+                  {@render driverLine(u.id, u.label, u.driver)}
+                {:else}
+                  <span class="muted">{u.actionDescription}</span>
+                {/if}
               </li>
             {/each}
           </ul>
@@ -168,6 +182,20 @@
     </div>
   </div>
 </div>
+
+{#snippet driverLine(id: string, label: string, driver: Driver)}
+  <div class="driver">
+    <span class="muted">{driverStateText(driver)}</span>
+    {#if driver.ready}
+      <button disabled={busy} onclick={() => onRemoveDriver(id, label)}>Remove Driver…</button>
+    {:else}
+      <button
+        disabled={busy}
+        onclick={() => onInstallDriver(id, label, driver.interface, driver.current)}>Install Driver…</button
+      >
+    {/if}
+  </div>
+{/snippet}
 
 {#snippet chevron(open: boolean)}<svg
     class="chevron"
@@ -325,6 +353,28 @@
   }
   .hint {
     margin-top: 14px;
+  }
+  /* A device's driver (Windows): its state, then its button. */
+  .driver {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-left: 18px;
+  }
+  .driver button {
+    padding: 1px 10px;
+    font: inherit;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .driver button:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
   .error {
     color: var(--error-mark);
