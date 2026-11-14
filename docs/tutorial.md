@@ -10,7 +10,7 @@ every one of the [predefined boards](https://www.openlogix.org/logix-catalog/boa
 
 ## What you need
 
-- A computer:
+- **A computer:**
 
     === "macOS"
 
@@ -20,12 +20,12 @@ every one of the [predefined boards](https://www.openlogix.org/logix-catalog/boa
 
         A 64-bit (x64) PC with Windows 10 or 11.
 
-- An **FPGA board**, one of the [predefined boards](https://www.openlogix.org/logix-catalog/boards/), and the USB
+- **An FPGA board:** one of the [predefined boards](https://www.openlogix.org/logix-catalog/boards/), and the USB
   cable that connects it to your computer. You can follow most of this page
   without a board; only the upload needs one. You can also add a board that
   isn't on the list ([Your own boards](using-logix.md#your-own-boards)), but
   that's outside this tutorial.
-- An internet connection the first time you start Logix IDE.
+- **An internet connection:** the first time you start Logix IDE.
 
 The steps that differ between macOS and Windows have a tab for each: choose
 yours once, and every tab on these pages follows.
