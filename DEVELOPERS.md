@@ -57,7 +57,7 @@ Logix IDE supports so far.
 
    ```
    git clone https://github.com/openlogix/logix-ide.git
-   cd logix
+   cd logix-ide
    ```
 
 4. **WebKit for the end-to-end UI tests** (once per machine):
