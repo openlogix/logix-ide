@@ -165,6 +165,14 @@
 
     {#if driverWork}
       <section class="work" aria-live="polite">
+        {#if driverWork.lines.length > 0}
+          <button class="toggle log-toggle" aria-expanded={logOpen} onclick={() => (logOpen = !logOpen)}
+            >{@render chevron(logOpen)}{logOpen ? "Hide log" : "Show log"}<span class="count">{driverWork.lines.length}</span></button
+          >
+          {#if logOpen}
+            <pre class="work-output" bind:this={outputEl}>{driverWork.lines.join("\n")}</pre>
+          {/if}
+        {/if}
         <div
           class="work-status"
           class:ok={driverWork.result?.kind === "ok"}
@@ -174,14 +182,6 @@
           <span>{driverWork.result?.text ?? driverWork.title}</span>
           {#if !driverWork.result && driverWork.step}<span class="step">{driverWork.step}</span>{/if}
         </div>
-        {#if driverWork.lines.length > 0}
-          <button class="toggle log-toggle" aria-expanded={logOpen} onclick={() => (logOpen = !logOpen)}
-            >{@render chevron(logOpen)}{logOpen ? "Hide log" : "Show log"}<span class="count">{driverWork.lines.length}</span></button
-          >
-          {#if logOpen}
-            <pre class="work-output" bind:this={outputEl}>{driverWork.lines.join("\n")}</pre>
-          {/if}
-        {/if}
       </section>
     {/if}
 
@@ -457,13 +457,14 @@
   .note {
     font-size: 13px;
   }
-  /* A driver change: its status line, then its log (collapsed by default). */
+  /* A driver change: its log (collapsed by default), then its status line, just above Close. */
   .work {
     flex: none;
-    padding: 10px 16px 4px;
+    padding: 6px 16px 10px;
     border-top: 1px solid var(--border);
   }
   .work-status {
+    margin-top: 6px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -487,7 +488,6 @@
     color: var(--banner-error-fg);
   }
   .log-toggle {
-    margin-top: 4px;
     width: auto;
     color: var(--muted);
     font-size: 12px;
@@ -510,7 +510,7 @@
     cursor: pointer;
   }
   .work-output {
-    margin: 6px 0 0;
+    margin: 4px 0 0;
     max-height: 140px;
     overflow: auto;
     padding: 6px 8px;
