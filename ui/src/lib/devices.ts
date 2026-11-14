@@ -241,8 +241,10 @@ export function devicesReport(
   ];
   const listed = orderedDevices(devices, selected);
   if (listed.length === 0) out.push("No USB devices.");
-  for (const item of listed) {
+  for (const [i, item] of listed.entries()) {
     const d = item.device;
+    // A blank line between devices (the user's request, 2026-11-14).
+    if (i > 0) out.push("");
     out.push(item.kind === "usb" ? d.label : `${d.label}, no driver yet`);
     out.push(`  ID: ${d.id}`);
     if (item.kind === "usb" && item.device.serialNumber) out.push(`  Serial: ${item.device.serialNumber}`);

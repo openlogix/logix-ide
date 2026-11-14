@@ -111,6 +111,7 @@ describe("devices", () => {
       "  Driver: needs WinUSB on USB interface 0 to program the board (it has FTDI's driver now).",
       "  Install the driver.",
       "  Boards with these USB IDs (2): Alhambra II, Sipeed Tang Nano 9k",
+      "",
       "Alhambra II v1.0A (AlhambraBits, 0403:6010)",
       "  ID: usb:1-1:0403:6010:FTATANKC",
       "  Serial: FTATANKC",
