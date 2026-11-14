@@ -6,7 +6,7 @@ what the tools tell you about it, upload it to your board, and then change it
 and save it as your own project.
 
 The steps use the **iCESugar v1.5** board as the example. They're the same for
-every board Logix IDE supports; only the example's details differ.
+every one of the [predefined boards](https://www.openlogix.org/logix-catalog/boards/); only the example's details differ.
 
 ## What you need
 
@@ -20,8 +20,11 @@ every board Logix IDE supports; only the example's details differ.
 
         A 64-bit (x64) PC with Windows 10 or 11.
 
-- An **FPGA board** and the USB cable that connects it to your computer. You
-  can follow most of this page without a board; only the upload needs one.
+- An **FPGA board**, one of the [predefined boards](https://www.openlogix.org/logix-catalog/boards/), and the USB
+  cable that connects it to your computer. You can follow most of this page
+  without a board; only the upload needs one. You can also add a board that
+  isn't on the list ([Your own boards](using-logix.md#your-own-boards)), but
+  that's outside this tutorial.
 - An internet connection the first time you start Logix IDE.
 
 The steps that differ between macOS and Windows have a tab for each: choose
