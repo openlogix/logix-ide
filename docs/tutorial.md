@@ -6,7 +6,7 @@ what the tools tell you about it, upload it to your board, and then change it
 and save it as your own project.
 
 The steps use the **iCESugar v1.5** board as the example. They're the same for
-every one of the [predefined boards](https://www.openlogix.org/logix-catalog/boards/); only the example's details differ.
+every one of the [supported boards](https://www.openlogix.org/logix-catalog/boards/); only the example's details differ.
 
 ## What you need
 
@@ -20,7 +20,7 @@ every one of the [predefined boards](https://www.openlogix.org/logix-catalog/boa
 
         A 64-bit (x64) PC with Windows 10 or 11.
 
-- **An FPGA board:** one of the [predefined boards](https://www.openlogix.org/logix-catalog/boards/), and the USB
+- **An FPGA board:** one of the [supported boards](https://www.openlogix.org/logix-catalog/boards/), and the USB
   cable that connects it to your computer. You can follow most of this page
   without a board; only the upload needs one. You can also add a board that
   isn't on the list ([Your own boards](using-logix.md#your-own-boards)), but
@@ -213,8 +213,8 @@ projects** on the start screen. The projects folder is, by default:
 
 ## 13. Explore the boards
 
-Open the board list in the toolbar to see every board Logix IDE supports, 81
-so far (the [predefined boards](https://www.openlogix.org/logix-catalog/boards/)). The **ⓘ** button next to the list opens the **Board Explorer**, with
+Open the board list in the toolbar to see the [supported boards](https://www.openlogix.org/logix-catalog/boards/),
+81 so far, and any boards of your own ([Your own boards](using-logix.md#your-own-boards)). The **ⓘ** button next to the list opens the **Board Explorer**, with
 the selected board's facts: its FPGA, what its pins connect to (the clock, LEDs,
 buttons), how it's programmed, and its examples.
 

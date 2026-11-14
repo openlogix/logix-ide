@@ -73,11 +73,14 @@ code while typing** is on in **Settings**.
 
 ## My board isn't in the list
 
-Logix IDE's build engine, Logix Engine, supports 81 [predefined boards](https://www.openlogix.org/logix-catalog/boards/) so far, with
+Logix IDE's build engine, Logix Engine, has 81 [supported boards](https://www.openlogix.org/logix-catalog/boards/) so far, with
 iCE40, ECP5, Gowin and Xilinx 7-series FPGAs (the [supported FPGAs](https://www.openlogix.org/logix-catalog/fpgas/)), programmed with
 openFPGALoader, iceprog, dfu-util or icesprog. More boards are added as their programmers are
 supported. A project for a board that isn't supported yet opens, but
 Verify and Upload ask you to choose another board.
+
+If your board uses one of these programmers, you can add it yourself, in a
+file in your project: see [Your own boards](using-logix.md#your-own-boards).
 
 A board that can be programmed through different USB adapters, or into
 flash or RAM, is listed once: choose the adapter or memory next to the

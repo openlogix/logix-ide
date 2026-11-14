@@ -274,7 +274,7 @@ with any text editor (Logix IDE doesn't edit them).
 **Project > Show Project Folder** opens the folder in Finder (File Explorer on Windows). Since they're
 part of the project, anyone who opens the project gets the same boards.
 Each file describes one board in the same format as the
-[predefined boards](https://www.openlogix.org/logix-catalog/boards/), so a predefined board can be copied from
+[supported boards](https://www.openlogix.org/logix-catalog/boards/), so a supported board can be copied from
 [Logix Catalog](https://github.com/openlogix/logix-catalog) as a file, and a board you
 describe can be contributed to it as is:
 
