@@ -104,6 +104,10 @@ pub enum TaskEvent {
         message: String,
         percent: Option<u32>,
     },
+    /// What the task is doing now, for the status bar, when it isn't what
+    /// the task's name says (Upload installing the board's driver first);
+    /// None: back to the task's own text ("Uploading…").
+    Status { text: Option<String> },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]

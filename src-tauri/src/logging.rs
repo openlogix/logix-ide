@@ -2,11 +2,13 @@
 //! reports, since an app opened from Finder has nowhere to print them.
 //!
 //! `log!(...)` prints `[logix] <message>` to stderr (the `./run.sh` terminal)
-//! and appends it, with a UTC time, to `~/.logix/logs/logix.log`. What the
+//! and appends it, with a UTC time, to `~/.logix/ide/logs/logix-ide-latest.log`. What the
 //! output pane shows is appended too (`output`), as `| <line>`, so a report
 //! has the tools' messages; after `MAX_BYTES` only messages are kept. Each run
-//! starts a new file; the previous runs are kept as `logix.1.log` (newest)
-//! to `logix.<KEEP-1>.log`. Help > Show Log Folder opens the folder.
+//! starts a new file; the previous runs are kept as
+//! `logix-ide-previous-1.log` (the run before) to
+//! `logix-ide-previous-<KEEP-1>.log`, so each name says which run it is.
+//! Help > Show Log Folder opens the folder.
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -30,7 +32,7 @@ pub fn strip_ansi(text: &str) -> std::borrow::Cow<'_, str> {
 
 /// Log files kept: this run's and the previous runs'.
 const KEEP: usize = 5;
-const NAME: &str = "logix";
+const NAME: &str = "logix-ide";
 
 /// Above this size, output pane lines are no longer written (messages
 /// still are), so a long session can't fill the disk.
@@ -141,14 +143,14 @@ fn lock() -> std::sync::MutexGuard<'static, Option<Log>> {
 
 fn path(dir: &Path, index: usize) -> PathBuf {
     if index == 0 {
-        dir.join(format!("{NAME}.log"))
+        dir.join(format!("{NAME}-latest.log"))
     } else {
-        dir.join(format!("{NAME}.{index}.log"))
+        dir.join(format!("{NAME}-previous-{index}.log"))
     }
 }
 
-/// Shifts the old logs (logix.log -> logix.1.log -> ...), dropping the
-/// oldest, and creates a fresh logix.log.
+/// Shifts the old logs (logix-ide-latest.log -> logix-ide-previous-1.log
+/// -> ...), dropping the oldest, and creates a fresh logix-ide-latest.log.
 fn open_new(dir: &Path) -> std::io::Result<File> {
     std::fs::create_dir_all(dir)?;
     for index in (0..KEEP - 1).rev() {
@@ -243,6 +245,8 @@ mod tests {
             let mut file = open_new(&dir).unwrap();
             write!(file, "run {run}").unwrap();
         }
+        assert!(path(&dir, 0).ends_with("logix-ide-latest.log"));
+        assert!(path(&dir, 1).ends_with("logix-ide-previous-1.log"));
         let read = |i| std::fs::read_to_string(path(&dir, i)).unwrap();
         assert_eq!(read(0), format!("run {}", KEEP + 1));
         assert_eq!(read(1), format!("run {KEEP}"));

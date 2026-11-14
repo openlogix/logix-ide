@@ -320,6 +320,12 @@ const fake = {
    * are connected).
    */
   sameIdsMessage: null as string | null,
+  /** Devices that can't be opened yet (`list_devices` `unreachable`). */
+  unreachable: [] as Real.UnreachableDevice[],
+  /** While set, Install Driver waits for it, as for Windows' prompt. */
+  driverHold: null as Promise<void> | null,
+  /** The status texts Upload sent while installing a driver. */
+  driverStatuses: [] as string[],
   /** The drivers installed (`install_driver`), oldest first. */
   driverInstalls: [] as { device: string; allowSameIds: boolean }[],
   /** The devices whose drivers were removed (`uninstall_driver`). */
@@ -638,12 +644,15 @@ export const backend: typeof Real.backend = {
           sameIds: fake.sameIdsMessage,
         };
       }
-      onLine(`Installing the WinUSB driver for ${label}… Windows asks for permission for Logix Engine.`);
+      onEvent({ kind: "status", text: "Installing the board's driver…" });
+      onLine(`Installing the WinUSB driver for ${label}…`);
+      fake.driverStatuses.push("Installing the board's driver…");
       fake.driverInstalls.push({ device: uploadId, allowSameIds: driver.allowSameIds });
       fake.uploadDriver = { ...needsDriver, current: "winusb", ready: true };
       // The engine reads the serial number once the driver lets it.
       uploadId = `${uploadId}FT1`;
       onLine(`Installed the WinUSB driver for ${label}.`);
+      onEvent({ kind: "status", text: null });
     }
     if (phases && task === "upload" && outcome.ok) {
       fake.uploadedDevice = uploadId;
@@ -739,7 +748,7 @@ export const backend: typeof Real.backend = {
     [
       "Logix IDE " + packageJson.version,
       "Operating system: macOS 26.5 (macos-arm64)",
-      "Log file: /Users/you/.logix/ide/logs/logix.log",
+      "Log file: /Users/you/.logix/ide/logs/logix-ide-latest.log",
       "Logix Engine used: release 2026.11.08",
       "Remote config: config 001, channel dev (default, using prod.jsonc), https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/, read 2026-11-12 00:00 UTC",
       "",
@@ -787,16 +796,26 @@ export const backend: typeof Real.backend = {
   },
   chooseFolderDialog: async () => "/Users/you/fpga",
 
-  scanDevices: async () => ({ usb: fake.usb ?? [icesugarDevice], unreachable: [] }),
-  installDeviceDriver: async (_folder, _saved, device, allowSameIds) => {
+  scanDevices: async () => ({ usb: fake.usb ?? [icesugarDevice], unreachable: fake.unreachable }),
+  installDeviceDriver: async (_folder, _saved, device, allowSameIds, onEvent) => {
     if (fake.sameIdsMessage && !allowSameIds) return { installed: false, sameIds: fake.sameIdsMessage };
+    // Logix Engine's phases and output, as install_driver sends them.
+    onEvent({ kind: "progress", message: "Waiting for permission", percent: null });
+    onEvent({ kind: "line", line: "Installing WinUSB for the Alhambra II (USB interface 0)." });
+    if (fake.driverHold) await fake.driverHold;
+    onEvent({ kind: "progress", message: "Installing driver", percent: null });
+    onEvent({ kind: "line", line: "\x1b[2m$ wdi-simple.exe --vid 0x0403 --pid 0x6010\x1b[0m" });
+    onEvent({ kind: "line", line: "Success", tool: "wdi-simple" });
     fake.driverInstalls.push({ device, allowSameIds });
     fake.usb = (fake.usb ?? []).map((d) =>
       d.id === device && d.driver ? { ...d, driver: { ...d.driver, current: "winusb", ready: true } } : d,
     );
+    fake.unreachable = fake.unreachable.filter((u) => u.id !== device);
     return { installed: true, sameIds: null };
   },
-  uninstallDeviceDriver: async (_folder, _saved, device) => {
+  uninstallDeviceDriver: async (_folder, _saved, device, onEvent) => {
+    onEvent({ kind: "progress", message: "Removing driver", percent: null });
+    onEvent({ kind: "line", line: "\x1b[2m$ pnputil /delete-driver oem12.inf /uninstall /force\x1b[0m" });
     fake.driverRemovals.push(device);
     fake.usb = (fake.usb ?? []).map((d) =>
       d.id === device && d.driver ? { ...d, driver: { ...d.driver, current: "ftdibus", ready: false } } : d,

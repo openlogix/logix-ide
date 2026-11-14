@@ -28,7 +28,7 @@ pub use devices::{
 pub use format::format_file;
 pub use info::program_path;
 pub use setup::{check_for_updates, download_missing, start as start_engine, update_if_due};
-pub use task::{boards_problem_outcome, run as run_task, TaskInput};
+pub use task::{boards_problem_outcome, live_options, run as run_task, TaskInput};
 
 use client::{Progress, ProgressSink};
 

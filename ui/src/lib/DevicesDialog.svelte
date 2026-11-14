@@ -1,21 +1,31 @@
 <!--
-  Tools > Connected Devices: the USB devices connected, each a collapsible
-  group (open when it may be a board), with the boards it may be as bullet
-  lists in two collapsible groups: Matches (its most likely boards, open)
-  and Other possible matches (weaker ones, closed). Board names select the
-  board. On Windows, a device whose board needs a driver says which one it
-  has, with Install Driver… (WinUSB) or Remove Driver….
+  Tools > Connected Devices: the USB devices connected, the likely FPGA
+  boards first (`orderedDevices`), each a collapsible group (open when it
+  may be a board), with the boards it may be as bullet lists in two
+  collapsible groups: Matches (its most likely boards, open) and Other
+  possible matches (weaker ones, closed). Board names select the board. A
+  device that can't be opened yet (no driver) is listed with the others,
+  with a note on which board it may be. On Windows, a device whose board
+  needs a driver says which one it has, with Install Driver… (WinUSB) or
+  Remove Driver…; while one runs, the bottom shows its phase and output.
 -->
 <script lang="ts">
   import type { Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
-  import type { Driver, UsbDevice } from "./backend";
-  import { deviceBoardGroups, driverStateText } from "./devices";
+  import type { Driver, UnreachableDevice, UsbDevice } from "./backend";
+  import {
+    deviceBoardGroups,
+    driverStateText,
+    orderedDevices,
+    unreachableNote,
+    type DriverWork,
+  } from "./devices";
 
   let {
     devices,
     error,
     busy,
+    driverWork,
     board,
     boardName,
     onRefresh,
@@ -33,11 +43,16 @@
     /** Why scanning failed, if it did. */
     error: string | null;
     busy: boolean;
+    /** A driver install or removal running or just ended, if any. */
+    driverWork: DriverWork | null;
     onRefresh: () => void;
-    /** Install Driver… (Windows): WinUSB for the device's board. */
-    onInstallDriver: (id: string, label: string, iface: number, current: string | null) => void;
+    /**
+     * Install Driver… (Windows): WinUSB for the device's board. `who` names
+     * the board for people ("the Alhambra II", else the device's label).
+     */
+    onInstallDriver: (id: string, who: string, current: string | null) => void;
     /** Remove Driver… (Windows): Windows' own driver back. */
-    onRemoveDriver: (id: string, label: string) => void;
+    onRemoveDriver: (id: string, who: string) => void;
     /** A board name was clicked: select that board. */
     onPick: (board: string) => void;
     onClose: () => void;
@@ -64,6 +79,20 @@
       others: [...others].sort((a, b) => boardName(a).localeCompare(boardName(b))),
     };
   }
+
+  /** The board a device's driver is for, for people. */
+  function whoOf(label: string, boards: string[], likely: string[]): string {
+    if (board !== null && boards.includes(board)) return `the ${boardName(board)}`;
+    if (likely.length === 1) return `the ${boardName(likely[0])}`;
+    return label;
+  }
+
+  /** The output panel: kept scrolled to its last line. */
+  let outputEl = $state<HTMLPreElement | null>(null);
+  $effect(() => {
+    void driverWork?.lines.length;
+    if (outputEl) outputEl.scrollTop = outputEl.scrollHeight;
+  });
 
   function onKey(e: KeyboardEvent) {
     if (e.key === "Escape") {
@@ -101,77 +130,24 @@
       {:else if !devices}
         <p class="muted">Scanning…</p>
       {:else}
+        {@const listed = orderedDevices(devices, board)}
         <h3>USB devices</h3>
-        {#if devices.usb.length === 0}
+        {#if listed.length === 0}
           <p class="muted">
             None. Check that the board is plugged in and powered, and try
             another cable (some USB cables only charge and don't carry data).
           </p>
         {:else}
           <ul class="devices">
-            {#each devices.usb as d (d.id)}
-              {@const g = groupsOf(d)}
-              {@const fits = g.matches.length + g.others.length > 0}
-              {@const open = isOpen(d.id, fits)}
-              <li class="device">
-                <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
-                  >{@render chevron(open)}<span class="name">{d.label}</span>{#if d.serialNumber}{" "}<span class="muted">· serial {d.serialNumber}</span>{/if}</button
-                >
-                {#if d.driver}
-                  {@render driverLine(d.id, d.label, d.driver)}
-                {/if}
-                {#if open}
-                  <div class="groups">
-                    {#if !fits}
-                      <p class="muted">Not a board Logix IDE knows.</p>
-                    {/if}
-                    {#each [{ key: "matches", label: "Matches", list: g.matches, byDefault: true }, { key: "others", label: "Other possible matches", list: g.others, byDefault: false }] as group (group.key)}
-                      {#if group.list.length > 0}
-                        {@const groupOpen = isOpen(`${d.id}:${group.key}`, group.byDefault)}
-                        <button
-                          class="toggle"
-                          aria-expanded={groupOpen}
-                          onclick={() => toggle(`${d.id}:${group.key}`)}
-                          >{@render chevron(groupOpen)}{group.label}<span class="count">{group.list.length}</span></button
-                        >
-                        {#if groupOpen}
-                          <ul class="boards">
-                            {#each group.list as id (id)}
-                              <li>
-                                <button
-                                  class="board-pick"
-                                  title="Select the {boardName(id)}"
-                                  onclick={() => onPick(id)}>{boardName(id)}</button
-                                >{#if id === board}{" "}<span class="muted">(selected)</span>{/if}
-                              </li>
-                            {/each}
-                          </ul>
-                        {/if}
-                      {/if}
-                    {/each}
-                  </div>
-                {/if}
-              </li>
+            {#each listed as item (item.device.id)}
+              {#if item.kind === "usb"}
+                {@render usbDevice(item.device)}
+              {:else}
+                {@render lockedDevice(item.device)}
+              {/if}
             {/each}
           </ul>
         {/if}
-
-        {#if devices.unreachable.length > 0}
-          <h3>Found but can't be opened</h3>
-          <ul>
-            {#each devices.unreachable as u, i (i)}
-              <li>
-                <span class="name">A USB device ({u.vid}:{u.pid})</span>
-                {#if u.driver}
-                  {@render driverLine(u.id, u.label, u.driver)}
-                {:else}
-                  <span class="muted">{u.actionDescription}</span>
-                {/if}
-              </li>
-            {/each}
-          </ul>
-        {/if}
-
 
         <p class="muted hint">
           Upload finds the board by its USB ids and name, and asks which one
@@ -180,18 +156,97 @@
         </p>
       {/if}
     </div>
+
+    {#if driverWork}
+      <footer class="work" aria-live="polite">
+        <div class="work-status" class:error={driverWork.result?.kind === "error"}>
+          {#if !driverWork.result}<span class="spinner" aria-label="Busy"></span>{/if}
+          <span>{driverWork.result?.text ?? driverWork.title}</span>
+          {#if !driverWork.result && driverWork.step}<span class="muted">{driverWork.step}</span>{/if}
+        </div>
+        {#if driverWork.lines.length > 0}
+          <pre class="work-output" bind:this={outputEl}>{driverWork.lines.join("\n")}</pre>
+        {/if}
+      </footer>
+    {/if}
   </div>
 </div>
 
-{#snippet driverLine(id: string, label: string, driver: Driver)}
+{#snippet usbDevice(d: UsbDevice)}
+  {@const g = groupsOf(d)}
+  {@const fits = g.matches.length + g.others.length > 0}
+  {@const open = isOpen(d.id, fits)}
+  <li class="device">
+    <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
+      >{@render chevron(open)}<span class="name">{d.label}</span>{#if d.serialNumber}{" "}<span class="muted">· serial {d.serialNumber}</span>{/if}</button
+    >
+    {#if d.driver}
+      {@render driverLine(d.id, whoOf(d.label, d.boards.map((b) => b.board), d.likelyBoards), d.driver)}
+    {/if}
+    {#if open}
+      <div class="groups">
+        {#if !fits}
+          <p class="muted">Not a board Logix IDE knows.</p>
+        {/if}
+        {#each [{ key: "matches", label: "Matches", list: g.matches, byDefault: true }, { key: "others", label: "Other possible matches", list: g.others, byDefault: false }] as group (group.key)}
+          {#if group.list.length > 0}
+            {@render boardGroup(d.id, group.key, group.label, group.list, group.byDefault)}
+          {/if}
+        {/each}
+      </div>
+    {/if}
+  </li>
+{/snippet}
+
+<!-- A device that can't be opened yet: its names are unknown until it has
+     its driver, so the note says which board it may be. -->
+{#snippet lockedDevice(u: UnreachableDevice)}
+  {@const ids = u.boards.map((b) => b.board)}
+  {@const open = isOpen(u.id, true)}
+  <li class="device">
+    <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(u.id)}
+      >{@render chevron(open)}<span class="name">{u.label}</span>{" "}<span class="muted">· no driver yet</span></button
+    >
+    {#if u.driver}
+      {@render driverLine(u.id, whoOf(u.label, ids, []), u.driver)}
+    {/if}
+    {#if open}
+      <div class="groups">
+        <p class="note">{unreachableNote(u, board, boardName)}</p>
+        {#if ids.length > 0}
+          {@render boardGroup(u.id, "others", "Boards with these USB IDs", [...ids].sort((a, b) => boardName(a).localeCompare(boardName(b))), false)}
+        {/if}
+      </div>
+    {/if}
+  </li>
+{/snippet}
+
+{#snippet boardGroup(id: string, key: string, label: string, list: string[], byDefault: boolean)}
+  {@const groupOpen = isOpen(`${id}:${key}`, byDefault)}
+  <button class="toggle" aria-expanded={groupOpen} onclick={() => toggle(`${id}:${key}`)}
+    >{@render chevron(groupOpen)}{label}<span class="count">{list.length}</span></button
+  >
+  {#if groupOpen}
+    <ul class="boards">
+      {#each list as b (b)}
+        <li>
+          <button class="board-pick" title="Select the {boardName(b)}" onclick={() => onPick(b)}
+            >{boardName(b)}</button
+          >{#if b === board}{" "}<span class="muted">(selected)</span>{/if}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
+
+{#snippet driverLine(id: string, who: string, driver: Driver)}
   <div class="driver">
     <span class="muted">{driverStateText(driver)}</span>
     {#if driver.ready}
-      <button disabled={busy} onclick={() => onRemoveDriver(id, label)}>Remove Driver…</button>
+      <button disabled={busy} onclick={() => onRemoveDriver(id, who)}>Remove Driver…</button>
     {:else}
-      <button
-        disabled={busy}
-        onclick={() => onInstallDriver(id, label, driver.interface, driver.current)}>Install Driver…</button
+      <button disabled={busy} onclick={() => onInstallDriver(id, who, driver.current)}
+        >Install Driver…</button
       >
     {/if}
   </div>
@@ -378,5 +433,48 @@
   }
   .error {
     color: var(--error-mark);
+  }
+  .note {
+    font-size: 13px;
+  }
+  /* A driver change: its status line, then its output. */
+  .work {
+    flex: none;
+    padding: 8px 16px 12px;
+    border-top: 1px solid var(--border);
+  }
+  .work-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  .work-output {
+    margin: 6px 0 0;
+    max-height: 140px;
+    overflow: auto;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    user-select: text;
+  }
+  .spinner {
+    flex: none;
+    width: 11px;
+    height: 11px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    opacity: 0.8;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

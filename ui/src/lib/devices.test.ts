@@ -11,6 +11,8 @@ import {
   driverOfferText,
   driverRemoveText,
   sameIdsText,
+  orderedDevices,
+  unreachableNote,
 } from "./devices";
 import type { TaskOutcome, UsbDevice } from "./backend";
 
@@ -66,12 +68,44 @@ describe("devices", () => {
     expect(driverStateText({ needed: "winusb", interface: 2, current: null, ready: false })).toContain(
       "interface 2 to program the board (it has no driver now)",
     );
-    const offer = driverOfferText("Alhambra II", 0, "ftdibus");
-    expect(offer).toContain("Alhambra II needs the WinUSB driver on its USB interface 0. It has FTDI's driver there now.");
-    expect(offer).toContain("Logix Engine");
+    const offer = driverOfferText("the Alhambra II", "ftdibus");
+    expect(offer).toContain("Logix IDE programs the Alhambra II through the WinUSB driver. Windows uses FTDI's driver for it now");
+    expect(offer).toContain("Windows asks whether Logix Engine may make changes to your device. Choose Yes.");
+    expect(offer).toContain("a minute or two");
+    expect(offer).toContain("such as a serial port, keep working");
+    expect(offer).not.toContain("interface");
     expect(offer).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
+    expect(driverOfferText("the Alhambra II", null)).not.toContain("Windows uses");
     expect(sameIdsText("Another device (0403:6010) is connected.")).toContain("they get the WinUSB driver too");
-    expect(driverRemoveText("Alhambra II")).toContain("every device with the same USB IDs");
+    const remove = driverRemoveText("the Alhambra II");
+    expect(remove).toContain("removes the WinUSB driver Logix IDE installed for the Alhambra II");
+    expect(remove).toContain("the board maker's own tools");
+    expect(remove).toContain("same USB IDs");
+    expect(remove).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
+  });
+
+  it("lists the likely FPGA boards first, the selected board's first of all", () => {
+    const mouse = { ...alhambra, id: "mouse", label: "USB Mouse", boards: [], likelyBoards: [] };
+    const other = { ...alhambra, id: "other", boards: [{ board: "icestick", level: "weak" as const }] };
+    const locked = {
+      id: "locked", label: "USB device (0403:6010)", vid: "0403", pid: "6010",
+      action: "install_drivers", actionDescription: "Install the driver.",
+      driver: { needed: "winusb", interface: 0, current: "ftdibus", ready: false },
+      boards: [{ board: "alhambra-ii", level: "weak" as const }, { board: "alchitry-au", level: "weak" as const }],
+    };
+    const ids = (selected: string | null) =>
+      orderedDevices({ usb: [mouse, other], unreachable: [locked] }, selected).map((d) => d.device.id);
+    expect(ids("alhambra-ii")).toEqual(["locked", "other", "mouse"]);
+    expect(ids("icestick")).toEqual(["other", "locked", "mouse"]);
+    expect(ids(null)).toEqual(["other", "locked", "mouse"]);
+    const name = (id: string) => ({ "alhambra-ii": "Alhambra II", "alchitry-au": "Alchitry Au" })[id] ?? id;
+    expect(unreachableNote(locked, "alhambra-ii", name)).toBe(
+      "This may be your Alhambra II (the board selected in the toolbar): it has the same USB IDs. Install its driver so Logix IDE can read its name and program it.",
+    );
+    expect(unreachableNote(locked, "icestick", name)).toContain("This may be an FPGA board: 2 boards have its USB IDs.");
+    expect(unreachableNote({ ...locked, boards: [locked.boards[0]] }, null, name)).toContain("the Alhambra II: it has its USB IDs");
+    // Elsewhere (Linux permissions), the engine's fix.
+    expect(unreachableNote({ ...locked, driver: null, actionDescription: "Fix the permissions." }, null, name)).toContain("Fix the permissions.");
   });
 
   it("tells whether a device may be a board", () => {
@@ -125,7 +159,7 @@ describe("devices", () => {
     );
     const none = deviceSummaryLines({
       usb: [],
-      unreachable: [{ id: "usb:1-3:0403:6014:", driver: null, label: "USB device (0403:6014)", vid: "0403", pid: "6014", action: "fix_device_permissions", actionDescription: "Allow it." }],
+      unreachable: [{ id: "usb:1-3:0403:6014:", driver: null, label: "USB device (0403:6014)", vid: "0403", pid: "6014", action: "fix_device_permissions", actionDescription: "Allow it.", boards: [] }],
     });
     expect(none[0]).toBe("No USB devices are connected.");
     expect(none[1]).toBe("  • USB device (0403:6014) can't be opened. Allow it.");

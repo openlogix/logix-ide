@@ -11,6 +11,7 @@
     type Devices,
     type UsbDevice,
     type TaskOutcome,
+    type TaskEvent,
     type UploadDriver,
     NO_DRIVER,
     type Diagnostic,
@@ -60,6 +61,7 @@
     deviceSummaryLines,
     driverOfferText,
     driverRemoveText,
+    type DriverWork,
     isBoardNotFound,
     needsDeviceChoice,
     needsDriver,
@@ -1083,45 +1085,88 @@
    * device's board, after the user agrees; asks again when other devices
    * with the same USB IDs are connected (they'd get it too).
    */
-  async function installDeviceDriver(id: string, label: string, iface: number, current: string | null) {
-    if (!(await backend.askConfirm("Install the WinUSB Driver?", driverOfferText(label, iface, current), "Install Driver", "info")))
+  /**
+   * A driver install or removal in Tools > Connected Devices, shown at the
+   * dialog's bottom while it runs (the user's request, 2026-11-14: it can
+   * take a minute, with nothing showing): what it does, the engine's phase,
+   * its output, then how it ended. Kept until the next one or the dialog
+   * closes.
+   */
+  let driverWork = $state<DriverWork | null>(null);
+
+  /** Starts showing a driver change, and returns where its events go. */
+  function startDriverWork(title: string): (event: TaskEvent) => void {
+    const work: DriverWork = { title, step: null, lines: [], result: null };
+    driverWork = work;
+    return (event) => {
+      if (driverWork === null) return;
+      if (event.kind === "line") {
+        const text = parseAnsi(event.line).map((s) => s.text).join("");
+        driverWork.lines = [...driverWork.lines, text].slice(-500);
+      } else if (event.kind === "progress") driverWork.step = event.message;
+    };
+  }
+
+  function endDriverWork(text: string, kind: "ok" | "error") {
+    if (driverWork) driverWork.result = { text, kind };
+    status = { text, kind };
+  }
+
+  /**
+   * Tools > Connected Devices > Install Driver… (Windows): WinUSB for a
+   * device's board, after the user agrees; asks again when other devices
+   * with the same USB IDs are connected (they'd get it too). `who` names
+   * the board for people ("the Alhambra II", or the device's label).
+   */
+  async function installDeviceDriver(id: string, who: string, current: string | null) {
+    if (!(await backend.askConfirm("Install a Driver for the Board?", driverOfferText(who, current), "Install Driver", "info")))
       return;
     devicesBusy = true;
     try {
-      let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false);
+      let onEvent = startDriverWork(`Installing the WinUSB driver for ${who}…`);
+      let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false, onEvent);
       if (result.sameIds !== null) {
-        if (!(await backend.askConfirm("Other Devices With the Same USB IDs", sameIdsText(result.sameIds), "Continue for All")))
+        if (!(await backend.askConfirm("Other Devices With the Same USB IDs", sameIdsText(result.sameIds), "Continue for All"))) {
+          driverWork = null;
           return;
-        result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, true);
+        }
+        onEvent = startDriverWork(`Installing the WinUSB driver for ${who}…`);
+        result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, true, onEvent);
       }
-      status = { text: result.installed ? `Installed the WinUSB driver for ${label}.` : `${label} has its driver already.`, kind: "ok" };
+      endDriverWork(result.installed ? `Installed the WinUSB driver for ${who}.` : `${capitalize(who)} has its driver already.`, "ok");
     } catch (e) {
-      devicesError = toUserError(e).message;
+      endDriverWork(toUserError(e).message, "error");
     } finally {
       devicesBusy = false;
     }
     await refreshDevices();
   }
 
-  /** Tools > Connected Devices > Remove Driver… (Windows). */
-  async function removeDeviceDriver(id: string, label: string) {
-    if (!(await backend.askConfirm("Remove the WinUSB Driver?", driverRemoveText(label), "Remove Driver")))
+  /** Tools > Connected Devices > Remove Driver… (Windows). `who` as for installing. */
+  async function removeDeviceDriver(id: string, who: string) {
+    if (!(await backend.askConfirm("Remove the Board's Driver?", driverRemoveText(who), "Remove Driver")))
       return;
     devicesBusy = true;
     try {
-      const removed = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id);
-      status = {
-        text: removed > 0
-          ? `Removed the WinUSB driver for ${label}: Windows gives back its own driver.`
-          : `Logix IDE found no WinUSB driver it installed for ${label}.`,
-        kind: "ok",
-      };
+      const onEvent = startDriverWork(`Removing the WinUSB driver for ${who}…`);
+      const removed = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id, onEvent);
+      endDriverWork(
+        removed > 0
+          ? `Removed the WinUSB driver for ${who}: Windows uses its own driver again.`
+          : `Logix IDE found no WinUSB driver it installed for ${who}.`,
+        "ok",
+      );
     } catch (e) {
-      devicesError = toUserError(e).message;
+      endDriverWork(toUserError(e).message, "error");
     } finally {
       devicesBusy = false;
     }
     await refreshDevices();
+  }
+
+  /** "the Alhambra II" -> "The Alhambra II", at the start of a sentence. */
+  function capitalize(text: string): string {
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   /**
@@ -1137,7 +1182,8 @@
       else status = { text: "Unplug the other devices, then choose Upload again.", kind: "info" };
       return;
     }
-    if (await backend.askConfirm("Install the WinUSB Driver?", driverOfferText(d.label, d.interface, d.current), "Install Driver", "info"))
+    const who = project?.board ? `the ${boardName(project.board)}` : d.label;
+    if (await backend.askConfirm("Install a Driver for the Board?", driverOfferText(who, d.current), "Install Driver", "info"))
       runTask("upload", null, d.id, { install: true, allowSameIds: false });
     else status = { text: "Upload needs the board's driver: choose Upload again to install it.", kind: "info" };
   }
@@ -1260,6 +1306,8 @@
             if (event.tool) logToolLine(event.line, event.tool, !!event.redraw);
             else log(event.line);
           }
+          else if (event.kind === "status")
+            status = { text: event.text ?? runningText(task), kind: "info" };
           else taskStep = { message: event.message, percent: event.percent };
         },
         task === "upload" ? driver : NO_DRIVER,
@@ -2126,13 +2174,17 @@
     board={currentBoard}
     {boardName}
     onRefresh={refreshDevices}
+    {driverWork}
     onInstallDriver={installDeviceDriver}
     onRemoveDriver={removeDeviceDriver}
     onPick={(id) => {
       devicesOpen = false;
       setBoard(id);
     }}
-    onClose={() => (devicesOpen = false)}
+    onClose={() => {
+      devicesOpen = false;
+      if (!devicesBusy) driverWork = null;
+    }}
   />
 {/if}
 

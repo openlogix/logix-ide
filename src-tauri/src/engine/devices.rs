@@ -124,6 +124,9 @@ pub struct UnreachableDevice {
     pub action_description: String,
     /// As for `UsbDevice`: on Windows, the driver it needs and has.
     pub driver: Option<Driver>,
+    /// The boards whose USB IDs it has (all weak: its names can't be read
+    /// until it has its driver).
+    pub boards: Vec<DeviceBoard>,
 }
 
 /// What `list_devices` found.
@@ -200,6 +203,10 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                         .unwrap_or("")
                         .to_string(),
                     driver: parse_driver(&d["driver"]),
+                    boards: d["boards"]
+                        .as_array()
+                        .map(|boards| boards.iter().map(parse_board).collect())
+                        .unwrap_or_default(),
                 })
                 .collect()
         })
@@ -237,6 +244,7 @@ pub async fn install_driver(
     boards_file: Option<&super::BoardsFolder>,
     build_folder: Option<&std::path::Path>,
     allow_same_ids: bool,
+    options: super::client::CallOptions,
 ) -> Result<DriverInstall> {
     let mut args = json!({ "device": device, "allow_same_ids": allow_same_ids });
     if let Some(file) = boards_file {
@@ -246,7 +254,7 @@ pub async fn install_driver(
     if let Some(folder) = build_folder {
         args["build_folder"] = json!(folder);
     }
-    match engine.call("install_driver", args, None).await? {
+    match engine.call_with("install_driver", args, options).await? {
         Ok(r) => Ok(install_result(&r, device)),
         Err(e) => match same_ids(&e) {
             Some(message) => Ok(DriverInstall::SameIds(message)),
@@ -278,6 +286,7 @@ pub async fn uninstall_driver(
     engine: &Engine,
     device: &str,
     boards_file: Option<&super::BoardsFolder>,
+    options: super::client::CallOptions,
 ) -> Result<Vec<String>> {
     let mut args = json!({ "device": device });
     if let Some(file) = boards_file {
@@ -285,7 +294,7 @@ pub async fn uninstall_driver(
         args["display_paths"] = file.display_paths();
     }
     let r = engine
-        .call("uninstall_driver", args, None)
+        .call_with("uninstall_driver", args, options)
         .await?
         .map_err(|e| tool_error("uninstall_driver", &e))?;
     Ok(r["removed"]
@@ -458,7 +467,7 @@ mod tests {
             "unreachable": [{
                 "kind": "usb", "label": "USB device (0403:6014)",
                 "vid": "0403", "pid": "6014", "bus": 1, "device": 9,
-                "boards": [],
+                "boards": [{"board": "icestick", "variants": [{"selector": {}, "match": "weak"}]}],
                 "action": {"code": "fix_device_permissions", "description": "Allow it."}
             }]
         }))
@@ -473,6 +482,9 @@ mod tests {
         assert_eq!(d.boards[0].board, "alhambra-ii");
         assert_eq!(d.boards[0].level, MatchLevel::Strong);
         assert_eq!(list.unreachable[0].action, "fix_device_permissions");
+        // Its boards, for Connected Devices' note on what it may be.
+        assert_eq!(list.unreachable[0].boards[0].board, "icestick");
+        assert_eq!(list.unreachable[0].boards[0].level, MatchLevel::Weak);
         assert!(parse_devices(&json!({})).is_err());
     }
 }

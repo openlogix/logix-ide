@@ -343,7 +343,12 @@ export type TaskEvent =
       /** The tool prints over it: replace it with that tool's next line. */
       redraw?: boolean;
     }
-  | { kind: "progress"; message: string; percent: number | null };
+  | { kind: "progress"; message: string; percent: number | null }
+  /**
+   * What the task does now, when it isn't what its name says (Upload
+   * installing the board's driver first); null: back to the task's own text.
+   */
+  | { kind: "status"; text: string | null };
 
 /** The result of Auto Format. */
 export interface FormatResult {
@@ -395,6 +400,8 @@ export interface UnreachableDevice {
   actionDescription: string;
   /** On Windows, the driver its board needs and has. */
   driver: Driver | null;
+  /** The boards whose USB IDs it has (all weak: its names can't be read yet). */
+  boards: { board: string; level: MatchLevel }[];
 }
 
 /** Connected devices, from Logix Engine. */
@@ -805,16 +812,28 @@ export const backend = {
     saved: boolean,
     device: string,
     allowSameIds: boolean,
-  ): Promise<DriverInstalled> =>
-    invoke<DriverInstalled>("install_device_driver", { folder, saved, device, allowSameIds }),
+    onEvent: (event: TaskEvent) => void,
+  ): Promise<DriverInstalled> => {
+    const channel = new Channel<TaskEvent>();
+    channel.onmessage = onEvent;
+    return invoke<DriverInstalled>("install_device_driver", { folder, saved, device, allowSameIds, onEvent: channel });
+  },
 
   /**
    * Removes the WinUSB driver Logix Engine installed for a device's board
    * (Windows), so Windows gives back its own, for every device with the
    * same USB IDs. Resolves with how many driver packages were removed.
    */
-  uninstallDeviceDriver: (folder: string | null, saved: boolean, device: string): Promise<number> =>
-    invoke<number>("uninstall_device_driver", { folder, saved, device }),
+  uninstallDeviceDriver: (
+    folder: string | null,
+    saved: boolean,
+    device: string,
+    onEvent: (event: TaskEvent) => void,
+  ): Promise<number> => {
+    const channel = new Channel<TaskEvent>();
+    channel.onmessage = onEvent;
+    return invoke<number>("uninstall_device_driver", { folder, saved, device, onEvent: channel });
+  },
 
   /**
    * The connected USB devices that fit boards (the catalog's and those of

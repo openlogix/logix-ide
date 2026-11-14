@@ -146,7 +146,7 @@ mod tests {
             "Logix IDE",
             "2026.11.12",
             "macOS 26.5 (macos-arm64)",
-            Some(Path::new("/Users/you/.logix/ide/logs/logix.log")),
+            Some(Path::new("/Users/you/.logix/ide/logs/logix-ide-latest.log")),
             Some(&InUse {
                 engine: EngineInUse::Release("2026-11-08".into()),
                 examples: "2026-11-12".into(),
@@ -170,7 +170,7 @@ mod tests {
             report(&ide, &engine),
             "Logix IDE 2026.11.12
 Operating system: macOS 26.5 (macos-arm64)
-Log file: /Users/you/.logix/ide/logs/logix.log
+Log file: /Users/you/.logix/ide/logs/logix-ide-latest.log
 Logix Engine used: release 2026.11.08
 Examples: release 2026.11.12
 Remote config: config 001, channel dev (default, using prod.jsonc), https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/, read 2026-11-12 00:00 UTC

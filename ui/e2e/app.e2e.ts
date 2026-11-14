@@ -1024,6 +1024,7 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
     confirmAnswer: boolean;
     confirms: { title: string; okLabel: string }[];
     driverInstalls: { device: string; allowSameIds: boolean }[];
+    driverStatuses: string[];
     uploadedDevice: string;
   };
   const fake = (p: Page) => p.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
@@ -1042,7 +1043,7 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
   // Declined: nothing is installed, and Upload says why it stopped.
   await menu(page, "upload");
   await expect(status(page)).toContainText("Upload needs the board's driver");
-  expect((await fake(page)).confirms.at(-1)).toMatchObject({ title: "Install the WinUSB Driver?", okLabel: "Install Driver" });
+  expect((await fake(page)).confirms.at(-1)).toMatchObject({ title: "Install a Driver for the Board?", okLabel: "Install Driver" });
   expect((await fake(page)).driverInstalls).toEqual([]);
 
   // Agreed, while another device with the same USB IDs is connected: asked
@@ -1057,10 +1058,12 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
   await expect(output(page)).toContainText("Programmed the flash of the Alhambra II");
   const f = await fake(page);
   expect(f.confirms.slice(-2).map((c) => c.title)).toEqual([
-    "Install the WinUSB Driver?",
+    "Install a Driver for the Board?",
     "Other Devices With the Same USB IDs",
   ]);
   expect(f.driverInstalls).toEqual([{ device: "usb:1-2:0403:6010:", allowSameIds: true }]);
+  // The status said so while the driver was installed, not "Uploading…".
+  expect(f.driverStatuses).toEqual(["Installing the board's driver…"]);
   // Programmed with the device's ID after the driver (its serial number now read).
   expect(f.uploadedDevice).toBe("usb:1-2:0403:6010:FT1");
 
@@ -1076,6 +1079,8 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
     usb: unknown[];
     driverInstalls: { device: string }[];
     driverRemovals: string[];
+    driverHold: Promise<void> | null;
+    release: () => void;
     menu: (id: string) => void;
   };
   await start(page);
@@ -1091,14 +1096,64 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
   });
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
   await expect(dialog).toContainText("Driver: needs WinUSB on USB interface 0 to program the board (it has FTDI's driver now).");
+  // While it installs, the dialog's bottom shows it with the engine's
+  // phase and output (held here as Windows' prompt would).
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.driverHold = new Promise((resolve) => (f.release = resolve));
+  });
   await dialog.getByRole("button", { name: "Install Driver…" }).click();
+  const work = dialog.locator("footer.work");
+  await expect(work).toContainText("Installing the WinUSB driver for the Alhambra II…");
+  await expect(work).toContainText("Waiting for permission");
+  await expect(work.locator(".spinner")).toBeVisible();
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.release());
   await expect(dialog).toContainText("Driver: WinUSB, ready to program the board.");
-  await expect(status(page)).toContainText("Installed the WinUSB driver for Alhambra II v1.0A");
+  await expect(work).toContainText("Installed the WinUSB driver for the Alhambra II.");
+  await expect(work).toContainText("$ wdi-simple.exe --vid 0x0403 --pid 0x6010");
+  await expect(work.locator(".spinner")).toHaveCount(0);
+  await expect(status(page)).toContainText("Installed the WinUSB driver for the Alhambra II");
   await dialog.getByRole("button", { name: "Remove Driver…" }).click();
   await expect(dialog).toContainText("it has FTDI's driver now");
+  await expect(work).toContainText("$ pnputil /delete-driver oem12.inf");
   const f = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
   expect(f.driverInstalls.map((i) => i.device)).toEqual(["usb:1-4:0403:6010:"]);
   expect(f.driverRemovals).toEqual(["usb:1-4:0403:6010:"]);
+});
+
+// Windows: a board with FTDI's driver can't be opened, so its names are
+// unknown. It's listed first, before devices that aren't boards, and says
+// which board it may be (the user's requests, 2026-11-14).
+test("Connected Devices lists a board with no driver first, and says what it may be", async ({ page }) => {
+  type Fake = { usb: unknown[]; unreachable: unknown[]; menu: (id: string) => void };
+  await start(page);
+  await chooseBoard(page, "Alhambra II");
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.usb = [{
+      id: "usb:1-1:046d:c52b:", label: "USB Receiver (Logitech, 046d:c52b)", likelyBoards: [],
+      vid: "046d", pid: "c52b", manufacturer: "Logitech", product: "USB Receiver", serialNumber: "",
+      boards: [], buildMatch: null, driver: null,
+    }];
+    f.unreachable = [{
+      id: "usb:1-4:0403:6010:", label: "USB device (0403:6010)", vid: "0403", pid: "6010",
+      action: "install_drivers", actionDescription: "Install the driver this device needs.",
+      driver: { needed: "winusb", interface: 0, current: "ftdibus", ready: false },
+      boards: [{ board: "alhambra-ii", level: "weak" }, { board: "icestick", level: "weak" }],
+    }];
+    f.menu("devices");
+  });
+  const dialog = page.getByRole("dialog", { name: "Connected Devices" });
+  await expect(dialog.locator("li.device > button.device-toggle .name")).toHaveText([
+    "USB device (0403:6010)",
+    "USB Receiver (Logitech, 046d:c52b)",
+  ]);
+  await expect(dialog).toContainText(
+    "This may be your Alhambra II (the board selected in the toolbar): it has the same USB IDs. Install its driver so Logix IDE can read its name and program it.",
+  );
+  await expect(dialog.getByRole("button", { name: /^Boards with these USB IDs\s*2$/ })).toBeVisible();
+  await dialog.getByRole("button", { name: "Install Driver…" }).click();
+  await expect(dialog.locator("footer.work")).toContainText("Installed the WinUSB driver for the Alhambra II.");
 });
 
 test("lists the connected devices", async ({ page }) => {

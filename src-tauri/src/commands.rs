@@ -840,7 +840,8 @@ pub struct DriverInstalled {
 
 /// Installs the WinUSB driver a device's board needs (Windows; Tools >
 /// Connected Devices > Install Driver…), after the user agreed: Windows asks
-/// for permission for Logix Engine.
+/// for permission for Logix Engine. The engine's phases and output stream
+/// on `on_event`, for the dialog's progress area.
 #[tauri::command]
 pub async fn install_device_driver(
     state: State<'_, AppState>,
@@ -848,13 +849,27 @@ pub async fn install_device_driver(
     saved: bool,
     device: String,
     allow_same_ids: bool,
+    on_event: Channel<outcome::TaskEvent>,
 ) -> Result<DriverInstalled, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
     crate::log!("Installing the WinUSB driver for {device} (allow_same_ids: {allow_same_ids})");
-    let result = engine::install_driver(&engine, &device, file.as_ref(), None, allow_same_ids)
-        .await
-        .context("Couldn't install the driver.")?;
+    let options = engine::live_options(
+        move |e| {
+            let _ = on_event.send(e);
+        },
+        None,
+    );
+    let result = engine::install_driver(
+        &engine,
+        &device,
+        file.as_ref(),
+        None,
+        allow_same_ids,
+        options,
+    )
+    .await
+    .context("Couldn't install the driver.")?;
     crate::log!("install_driver: {result:?}");
     Ok(match result {
         engine::DriverInstall::Done { installed, .. } => DriverInstalled {
@@ -878,11 +893,18 @@ pub async fn uninstall_device_driver(
     folder: Option<String>,
     saved: bool,
     device: String,
+    on_event: Channel<outcome::TaskEvent>,
 ) -> Result<usize, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
     crate::log!("Removing the WinUSB driver for {device}");
-    let removed = engine::uninstall_driver(&engine, &device, file.as_ref())
+    let options = engine::live_options(
+        move |e| {
+            let _ = on_event.send(e);
+        },
+        None,
+    );
+    let removed = engine::uninstall_driver(&engine, &device, file.as_ref(), options)
         .await
         .context("Couldn't remove the driver.")?;
     crate::log!("uninstall_driver removed: {removed:?}");

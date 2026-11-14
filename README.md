@@ -152,7 +152,7 @@ Check [Troubleshooting](https://www.openlogix.org/logix-ide/troubleshooting/)
 first. If you're still stuck, choose **Help > Report a Problem** in Logix IDE, or
 [open an issue on GitHub](https://github.com/openlogix/logix-ide/issues/new). It
 helps a lot to attach Logix IDE's log: **Help > Show Log Folder**, then drag
-`logix.log` into your report.
+`logix-ide-latest.log` into your report.
 
 ## Thanks
 

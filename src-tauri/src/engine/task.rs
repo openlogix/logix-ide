@@ -26,6 +26,9 @@ const TOP_MODULE: &str = "main";
 /// Shown when the project has no pin file.
 pub const NO_CONSTRAINT_FILE: &str = "The project has no pin file (e.g. pinout.pcf) for the board. Start a new project with the board selected, or open one of the board's examples.";
 
+/// The status while Upload installs the board's driver first (Windows).
+pub const INSTALLING_DRIVER: &str = "Installing the board's driver…";
+
 /// Upload's outcome action when several devices fit the board.
 pub const SELECT_DEVICE: &str = "select_device";
 
@@ -295,19 +298,7 @@ where
     /// Calls an engine tool, with its live output in the console and its
     /// phases in the status bar.
     async fn call(&self, name: &str, args: Value) -> Result<ToolResult> {
-        let console = Console::new(self.on_event.clone());
-        let on_event = self.on_event.clone();
-        let progress = phase_sink(move |message, percent, _new| {
-            on_event(TaskEvent::Progress {
-                message: message.to_string(),
-                percent,
-            })
-        });
-        let options = CallOptions {
-            on_progress: Some(progress),
-            on_output: Some(console.sink()),
-            cancel: Some(self.cancel.clone()),
-        };
+        let options = live_options(self.on_event.clone(), Some(self.cancel.clone()));
         self.engine.call_with(name, args, options).await
     }
 
@@ -398,10 +389,10 @@ where
                     outcome.driver_device = Some(needs);
                     return Ok(true);
                 }
-                self.line(format!(
-                    "Installing the WinUSB driver for {}… Windows asks for permission for Logix Engine.",
-                    needs.label
-                ));
+                (self.on_event)(TaskEvent::Status {
+                    text: Some(INSTALLING_DRIVER.into()),
+                });
+                self.line(format!("Installing the WinUSB driver for {}…", needs.label));
                 let args = json!({
                     "device": device,
                     "build_folder": self.build_folder(),
@@ -417,6 +408,7 @@ where
                             device = id;
                         }
                         self.line(format!("Installed the WinUSB driver for {}.", needs.label));
+                        (self.on_event)(TaskEvent::Status { text: None });
                     }
                     Err(e) if is_cancelled(&e) => return Ok(false),
                     Err(e) => match super::devices::same_ids(&e) {
@@ -795,6 +787,27 @@ fn red(text: &str) -> String {
 /// engine's `redraw` flag (the tool prints over it, as a progress bar
 /// does), so the console shows it at once and replaces it with that tool's
 /// next line, as a terminal does (`logToolLine` in the UI).
+/// Call options that send a call's phases (`TaskEvent::Progress`, the
+/// status bar) and its live output (`TaskEvent::Line`, the console) as task
+/// events.
+pub fn live_options<F>(on_event: F, cancel: Option<CancellationToken>) -> CallOptions
+where
+    F: Fn(TaskEvent) + Send + Sync + Clone + 'static,
+{
+    let console = Console::new(on_event.clone());
+    let progress = phase_sink(move |message, percent, _new| {
+        on_event(TaskEvent::Progress {
+            message: message.to_string(),
+            percent,
+        })
+    });
+    CallOptions {
+        on_progress: Some(progress),
+        on_output: Some(console.sink()),
+        cancel,
+    }
+}
+
 #[derive(Clone)]
 pub(super) struct Console<F> {
     on_event: F,

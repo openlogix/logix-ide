@@ -142,7 +142,7 @@ are made the same way.
 
 ### The log
 
-Logix IDE writes a log to `~/.logix/ide/logs/logix.log` (and the dev terminal shows
+Logix IDE writes a log to `~/.logix/ide/logs/logix-ide-latest.log` (older runs: `logix-ide-previous-1.log` to `-4`) (and the dev terminal shows
 the same `[logix] ...` lines): versions, errors, and what the output pane
 showed. Logix Engine keeps its own log in `~/.logix/ide/engine/logs/`. In the app: **Help > Show Log
 Folder**.
