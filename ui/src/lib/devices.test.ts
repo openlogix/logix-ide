@@ -115,7 +115,7 @@ describe("devices", () => {
       "Alhambra II v1.0A (AlhambraBits, 0403:6010)",
       "  ID: usb:1-1:0403:6010:FTATANKC",
       "  Serial: FTATANKC",
-      "  Matches: Alhambra II",
+      "  Matching boards: Alhambra II",
       "",
       "Last driver change: Installing the WinUSB driver…",
       "  Done: Installed.",

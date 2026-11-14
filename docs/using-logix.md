@@ -238,7 +238,7 @@ one, use **Module Diagram** on it.
 
 **Tools > Connected Devices…** lists the USB devices connected to the
 computer, which helps when Upload can't find the board. Under each device,
-**Matches** lists the boards it most likely is, and **Other possible
+**Matching boards** lists the boards it most likely is, and **Other possible
 matches** the boards it could also be (click a heading to open or close it,
 or a device to skip it). Click a board's name to select it. **Copy** puts
 all of it on the clipboard as text, to paste into a problem report, and

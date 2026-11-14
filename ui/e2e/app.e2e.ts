@@ -1198,7 +1198,7 @@ test("lists the connected devices", async ({ page }) => {
   // The device is a group, open, with its matches as a bullet list.
   const device = dialog.getByRole("button", { name: /Alhambra II v1.0A/ });
   await expect(device).toHaveAttribute("aria-expanded", "true");
-  const matches = dialog.getByRole("button", { name: /^Matches/ });
+  const matches = dialog.getByRole("button", { name: /^Matching boards/ });
   await expect(matches).toHaveAttribute("aria-expanded", "true");
   await expect(dialog.locator("ul.boards li")).toHaveText(["Alhambra II (selected)"]);
   // A strong match: the weaker ones aren't listed.
@@ -1208,7 +1208,7 @@ test("lists the connected devices", async ({ page }) => {
   await expect(dialog.locator(".copy-note")).toHaveText("Copied.");
   const copied = await page.evaluate(() => (window as unknown as { __fake: { copiedText: string | null } }).__fake.copiedText);
   expect(copied).toMatch(/^Connected Devices\nSelected board: Alhambra II \(alhambra-ii\)\n\nAlhambra II v1\.0A \(AlhambraBits, 0403:6010\)\n  ID: usb:/);
-  expect(copied).toContain("  Matches: Alhambra II");
+  expect(copied).toContain("  Matching boards: Alhambra II");
   // The device collapses, to skip it.
   await device.click();
   await expect(device).toHaveAttribute("aria-expanded", "false");
