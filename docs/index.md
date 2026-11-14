@@ -31,8 +31,8 @@ its first start.
 
 ## Platforms
 
-Logix IDE runs on **macOS with Apple Silicon** for now. Windows and Linux are
-planned.
+Logix IDE runs on **macOS with Apple Silicon** and on **Windows (x64)**. Linux
+is planned.
 
 ## Next steps
 
