@@ -292,6 +292,8 @@ const fake = {
   usb: null as Real.UsbDevice[] | null,
   /** The folder Show Project Folder showed last (`showProjectFolder`). */
   shownFolder: null as string | null,
+  /** The window's title state last set (`setDocumentState`). */
+  documentState: null as { name: string; dirty: boolean } | null,
   /** The text System Info's Copy copied last (`copyText`). */
   copiedText: null as string | null,
   /** The path Copy Project Folder Path copied last (`copyProjectPath`). */
@@ -845,7 +847,9 @@ export const backend: typeof Real.backend = {
     return fake.confirmAnswer;
   },
   askSaveChanges: async () => "discard",
-  setDocumentState: async () => {},
+  setDocumentState: async (name: string, dirty: boolean) => {
+    fake.documentState = { name, dirty };
+  },
   closeWindow: async () => {},
   logOutput: async () => {},
   connectedDevices: async (folder) => {

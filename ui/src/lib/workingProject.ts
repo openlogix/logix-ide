@@ -23,10 +23,13 @@ export interface WorkingProject {
   board: string | null;
   /** Board as last loaded or saved. */
   savedBoard: string | null;
-  /** The board's variant ({} for its default), as stored in the project. */
+  /**
+   * The board's variant ({} for its default): how the board is connected
+   * and programmed. Saved with the project, but changing it doesn't mark
+   * the project unsaved (the user's decision, 2026-11-14: choosing Flash
+   * or RAM isn't a change to the design).
+   */
   variant: Variant;
-  /** Variant as last loaded or saved. */
-  savedVariant: Variant;
   /** The main file (main.v or main.sv) first. */
   files: OpenFile[];
   /** Files in the folder that were deleted or renamed since the last save. */
@@ -43,7 +46,6 @@ export function fromDoc(doc: ProjectDoc): WorkingProject {
     board: doc.board,
     savedBoard: doc.board,
     variant: { ...doc.variant },
-    savedVariant: { ...doc.variant },
     files: doc.files.map((f) => ({
       name: f.name,
       text: f.text,
@@ -63,16 +65,10 @@ export function isDirty(p: WorkingProject): boolean {
   return (
     p.structureChanged ||
     p.board !== p.savedBoard ||
-    !sameVariant(p.variant, p.savedVariant) ||
     p.files.some((f) => f.text !== f.savedText)
   );
 }
 
-/** Whether two variants have the same values. */
-export function sameVariant(a: Variant, b: Variant): boolean {
-  const ka = Object.keys(a);
-  return ka.length === Object.keys(b).length && ka.every((k) => a[k] === b[k]);
-}
 
 /**
  * The modules the diagram can show: those declared in the project's
@@ -269,9 +265,9 @@ export function deleteFile(p: WorkingProject, name: string) {
 }
 
 /**
- * After a successful save of `saved` (from `filesForSave`), `board` and
- * `variant` into `dir`, which may be new after Save As. Changes made while
- * saving stay unsaved.
+ * After a successful save of `saved` (from `filesForSave`) and `board`
+ * into `dir`, which may be new after Save As (the variant is saved too, but
+ * never makes the project unsaved). Changes made while saving stay unsaved.
  */
 export function markSaved(
   p: WorkingProject,
@@ -279,13 +275,11 @@ export function markSaved(
   name: string,
   saved: { name: string; text: string }[],
   board: string | null,
-  variant: Variant,
 ) {
   p.dir = dir;
   p.templateDir = null;
   p.name = name;
   p.savedBoard = board;
-  p.savedVariant = { ...variant };
   for (const f of p.files) {
     const s = saved.find((x) => x.name === f.name);
     if (s) {

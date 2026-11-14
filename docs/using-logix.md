@@ -153,6 +153,10 @@ boards, such as the Xilinx boards, flash hasn't been tried yet. A few
 upload to RAM only, such as the Zybo and PYNQ boards and the ULX3S. After
 **Upload**, the output says where the design went.
 
+A new project starts with the board's default options. Changing them doesn't
+count as a change to your project, but saving the project keeps them, so it
+opens with them next time.
+
 **File > Examples…** lists the examples for each board, with a search box.
 The boards are grouped by FPGA family in the same way.
 

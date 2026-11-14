@@ -434,6 +434,7 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
       menuState: { variantMenus: { label: string; values: { label: string; checked: boolean }[] }[] };
       taskVariant: unknown;
       saved: { board: string; variant: unknown } | null;
+      documentState: { name: string; dirty: boolean } | null;
     }>;
   const summary = page.locator(".variant .summary");
   await start(page);
@@ -490,9 +491,11 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
     variant: { connection: "usb", memory: "ram" },
   });
 
-  // Tools > Memory > Flash: back to the default, stored as nothing.
+  // Tools > Memory > Flash: back to the default, stored as nothing. The
+  // project isn't marked unsaved for it, but Save stores it.
   await menu(page, "variant:memory:flash");
   await expect(summary).toHaveText(/^\s*USB · Flash/);
+  await expect.poll(async () => (await fake()).documentState?.dirty).toBe(false);
   await menu(page, "save");
   await expect(status(page)).toContainText("Saved");
   expect((await fake()).saved).toEqual({ board: "icesugar-pro", variant: {} });

@@ -1751,11 +1751,6 @@
     return true;
   }
 
-  /** The variant the toolbar had for `board` before a project replaced it. */
-  function currentVariantOf(board: string | null): Variant {
-    return board !== null && board === homeBoard ? homeVariant : {};
-  }
-
   /** File > New Project: the board's pins and an empty
    * design (its Bare Minimum). */
   async function newProject() {
@@ -1763,11 +1758,8 @@
     if (!(await confirmLeave())) return;
     try {
       loadDoc(await during("Creating a new project…", () => backend.newProject(board)));
-      // It starts with the toolbar's variant, as with its board.
-      if (project && project.board === board) {
-        project.variant = { ...currentVariantOf(board) };
-        project.savedVariant = { ...project.variant };
-      }
+      // It starts with the board's default variant (the user's decision,
+      // 2026-11-14), as the backend gives it.
       finish("New project.");
     } catch (e) {
       commandFailed(e);
@@ -1890,7 +1882,7 @@
       await during("Saving…", () =>
         backend.saveProject(dir, files, [...p.removed], board, variant),
       );
-      markSaved(p, dir, p.name, files, board, variant);
+      markSaved(p, dir, p.name, files, board);
       fileError = null;
       finish(`Saved ${dir}.`);
       return true;
@@ -1919,7 +1911,7 @@
       );
       if (!doc || !doc.dir) return false;
       // Keep the editor (and its undo history) as is.
-      markSaved(p, doc.dir, doc.name, files, board, variant);
+      markSaved(p, doc.dir, doc.name, files, board);
       fileError = null;
       finish(`Saved ${doc.dir}.`);
       return true;
