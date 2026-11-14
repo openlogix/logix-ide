@@ -11,11 +11,13 @@
 
   // Logix Engine, which builds, tests and programs the board, and downloads
   // its own FPGA tools and board catalog (its own remote config).
-  // 2026-11-13: for Windows (Milestone 3): the first engine release with a
-  // Windows package, so Logix IDE can be tried on Windows.
+  // 2026-11-14: for Windows drivers (Milestone 3): list_devices' driver,
+  // install_driver and uninstall_driver, for Upload's "Install the WinUSB
+  // Driver?" and Tools > Connected Devices' Install Driver… and Remove
+  // Driver…; its own dev config names a logix-core with wdi-simple.
   "logix-engine": {
     "repo": "openlogix/logix-engine",
-    "release": "2026-11-13",
+    "release": "2026-11-14",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
   },
 
