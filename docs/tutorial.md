@@ -1,4 +1,4 @@
-# Getting started
+# Tutorial
 
 This page takes you from nothing to your own design running on an FPGA
 board. You'll install Logix IDE, open an example that blinks an LED, look at

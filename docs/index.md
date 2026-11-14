@@ -38,4 +38,4 @@ is planned.
 
 - [A tour of Logix IDE](tour.md): what's on the screen and how it all fits together.
 - [Install Logix IDE](installing.md)
-- [Getting started](getting-started.md): from nothing to your own design running on your board.
+- [Tutorial](tutorial.md): from nothing to your own design running on your board.

@@ -117,4 +117,4 @@ see its line in the editor.
 3. Click the **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }.
 4. Click the **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon }. The LED blinks.
 
-[Getting started](getting-started.md) walks through it step by step.
+The [tutorial](tutorial.md) walks through it step by step.

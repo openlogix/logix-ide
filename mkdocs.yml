@@ -74,7 +74,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Getting started: getting-started.md
+  - Tutorial: tutorial.md
   - Installing: installing.md
   - Tour: tour.md
   - Using Logix IDE: using-logix.md
