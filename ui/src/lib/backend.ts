@@ -68,6 +68,8 @@ export interface VersionEntry {
   overriddenBy?: string | null;
   /** Lines under the entry in the text (what Copy gives). */
   notes: string[];
+  /** Why the entry is incomplete, shown on its row. */
+  problem?: string | null;
   /** The rest, shown on hover. */
   details: InfoDetail[];
   children: VersionEntry[];

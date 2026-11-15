@@ -33,6 +33,10 @@ pub struct VersionEntry {
     /// don't tell.
     #[serde(default)]
     pub notes: Vec<String>,
+    /// Why the entry is incomplete, shown on its row in the dialog (its
+    /// notes, in the text): set by Logix IDE when the engine can't be asked.
+    #[serde(default)]
+    pub problem: Option<String>,
     /// The rest, shown on hover; left out of the text.
     #[serde(default)]
     pub details: Vec<Detail>,
@@ -124,6 +128,7 @@ pub fn build(
         channel: None,
         overridden_by: None,
         notes: Vec::new(),
+        problem: None,
         details: vec![
             detail("Repo", remote_config::CONFIG_REPO),
             if remote_config::IS_RELEASE_BUILD {
@@ -184,6 +189,7 @@ pub fn build(
                 channel: None,
                 overridden_by: None,
                 notes: Vec::new(),
+                problem: None,
                 details: vec![
                     detail("Repo", remote_config::CONFIG_REPO),
                     detail("Release", &u.examples),
@@ -214,6 +220,7 @@ fn engine_entry(u: &InUse, engine: &EnginePart, named_by: &str) -> VersionEntry 
                 channel: None,
                 overridden_by: None,
                 notes: vec![format!("get_engine_info gave no version tree: {e}")],
+                problem: Some("no version tree (an engine older than 2026.11.15)".into()),
                 details: Vec::new(),
                 children: Vec::new(),
             }),
@@ -227,6 +234,7 @@ fn engine_entry(u: &InUse, engine: &EnginePart, named_by: &str) -> VersionEntry 
             channel: None,
             overridden_by: None,
             notes: vec![why.clone()],
+            problem: Some(why.clone()),
             details: Vec::new(),
             children: Vec::new(),
         },

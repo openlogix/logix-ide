@@ -67,8 +67,12 @@ pub async fn system_info(
     state: State<'_, AppState>,
 ) -> Result<crate::system_info::SystemInfo, UserError> {
     use crate::system_info as info;
-    // Setup holds the lock while it runs: then there's no engine yet.
-    let running = state.engine.try_lock().ok().and_then(|slot| slot.clone());
+    // Setup holds the lock while it runs (then there's no engine yet), and an
+    // update check briefly: wait a little for it, then say it isn't running.
+    let running = tokio::time::timeout(std::time::Duration::from_secs(3), state.engine.lock())
+        .await
+        .ok()
+        .and_then(|slot| slot.clone());
     let engine_part = info::engine_part_from(running.as_deref()).await;
     Ok(info::build(
         crate::version::APP_VERSION,

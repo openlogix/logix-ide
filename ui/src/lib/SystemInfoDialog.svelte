@@ -101,6 +101,7 @@
       <span class="version">{e.version}</span>
       {#if e.channel}<span class="channel">· {e.channel}</span>{/if}
       {#if e.overriddenBy}<span class="override">dev override</span>{/if}
+      {#if e.problem}<span class="problem">{e.problem}</span>{/if}
     </button>
     {#if open}
       <ul>
@@ -346,6 +347,10 @@
     border: 1px solid var(--warning-mark);
     border-radius: 99px;
     color: var(--warning-mark);
+  }
+  .problem {
+    font-size: 12px;
+    color: var(--error-mark);
   }
   .details {
     position: fixed;
