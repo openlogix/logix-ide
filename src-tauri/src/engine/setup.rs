@@ -183,6 +183,7 @@ where
             let dep = config.engine().clone();
             let progress = {
                 let emit = emit.clone();
+                let message = format!("Downloading Logix Engine {}", shown(&dep.release));
                 move |p| match p {
                     DownloadProgress::Started => emit(SetupEvent::Stage {
                         stage: SetupStage::DownloadingEngine,
@@ -191,7 +192,7 @@ where
                     // (60% and 40%, the org's rule), as the engine reports
                     // its own packages.
                     DownloadProgress::Percent(percent) => emit(SetupEvent::Progress {
-                        message: "Downloading Logix Engine".into(),
+                        message: message.clone(),
                         percent,
                     }),
                 }
@@ -269,7 +270,7 @@ fn remove_other_releases(layout: &Layout, release: &str) {
 pub struct Updated {
     /// A new engine release is in place: the caller starts it.
     pub engine: bool,
-    /// What changed, a line each, such as "Updated the examples to 2026.11.13."
+    /// What changed, a line each, such as "Updated logix-ide-examples to 2026.11.13."
     pub lines: Vec<String>,
 }
 
@@ -363,8 +364,9 @@ pub async fn check_for_updates(
     Ok(update_lines(&out))
 }
 
-/// `check_updates`' `updates`, as lines such as "Updated the boards and
-/// FPGAs to 2026.11.24." (the engine gives versions as yyyy.mm.dd).
+/// `check_updates`' `updates`, as lines such as "Updated logix-catalog to
+/// 2026.11.24.": packages by their names, as the engine gives them (the
+/// org's rule, 2026-11-15), and versions as yyyy.mm.dd.
 fn update_lines(out: &Value) -> Vec<String> {
     out["updates"]
         .as_array()
@@ -372,11 +374,7 @@ fn update_lines(out: &Value) -> Vec<String> {
         .flatten()
         .filter_map(|u| {
             let to = u["to"].as_str()?;
-            let what = match u["name"].as_str()? {
-                "logix-catalog" => "the boards and FPGAs".to_string(),
-                "logix-core" => "the FPGA tools".to_string(),
-                other => other.to_string(),
-            };
+            let what = u["name"].as_str()?;
             Some(format!("Updated {what} to {to}."))
         })
         .collect()
@@ -400,13 +398,18 @@ where
         .context(MSG_PACKAGES)?
         .map_err(|e| tool_error("download_packages", &e))
         .context(MSG_PACKAGES)?;
-    let downloaded = downloaded_packages(&out);
-    if !downloaded.is_empty() {
+    for name in downloaded_packages(&out) {
+        let version = out["packages"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|p| p["name"] == name.as_str())
+            .and_then(|p| p["version"].as_str());
         emit(SetupEvent::Log {
-            line: format!(
-                "FPGA tools for Logix Engine downloaded ({}).",
-                downloaded.join(", ")
-            ),
+            line: match version {
+                Some(v) => format!("Downloaded {name} {v}."),
+                None => format!("Downloaded {name}."),
+            },
         });
     }
     Ok(())
@@ -414,7 +417,9 @@ where
 
 /// A kind of dependency package: how it's named for people and laid out.
 struct DependencyKind {
-    /// As in "Downloading Logix Engine 2026.11.12...", "Updated the examples to ...".
+    /// As in "Downloading Logix Engine 2026.11.12...", "Updated
+    /// logix-ide-examples to ...": a program by its product name, a data
+    /// package by its package name (the org's rule, 2026-11-15).
     name: &'static str,
     /// The package's one top-level folder.
     top: &'static str,
@@ -427,7 +432,7 @@ struct DependencyKind {
 
 impl DependencyKind {
     const EXAMPLES: DependencyKind = DependencyKind {
-        name: "the examples",
+        name: "logix-ide-examples",
         top: "logix-ide-examples",
         needed: "README.md",
         executable: false,
@@ -441,14 +446,6 @@ impl DependencyKind {
             executable: true,
         }
     }
-}
-
-/// Makes the first letter a capital ("the examples" to "The examples").
-fn capitalized(s: &str) -> String {
-    let mut c = s.chars();
-    c.next()
-        .map(|f| f.to_uppercase().collect::<String>() + c.as_str())
-        .unwrap_or_default()
 }
 
 /// Downloads the dependency `dep` into `dest` if its receipt there doesn't
@@ -531,11 +528,7 @@ async fn download_dependency(
     progress(DownloadProgress::Percent(Some(100)));
     let line = match previous {
         Some(p) if p != dep.release => format!("Updated {} to {}.", kind.name, shown(&dep.release)),
-        _ => format!(
-            "{} {} downloaded.",
-            capitalized(kind.name),
-            shown(&dep.release)
-        ),
+        _ => format!("Downloaded {} {}.", kind.name, shown(&dep.release)),
     };
     log(line.clone());
     Ok(Some(line))
@@ -612,8 +605,8 @@ mod tests {
         assert_eq!(
             update_lines(&out),
             vec![
-                "Updated the boards and FPGAs to 2026.11.30.",
-                "Updated the FPGA tools to 2026.12.01."
+                "Updated logix-catalog to 2026.11.30.",
+                "Updated logix-core to 2026.12.01."
             ]
         );
         assert!(update_lines(&json!({"updates": []})).is_empty());

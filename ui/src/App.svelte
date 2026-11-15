@@ -868,8 +868,8 @@
   }
 
   /**
-   * Help > Check for Updates: Logix Engine and its packages (the FPGA tools,
-   * the boards and FPGAs), with the progress in the output and what changed
+   * Help > Check for Updates: Logix Engine and its packages (logix-core,
+   * logix-catalog), with the progress in the output and what changed
    * at the end. Logix IDE also checks on its own every 24 hours, before an
    * operation; this checks now.
    */

@@ -63,13 +63,13 @@ bottom of the window shows the progress, and the output area above it shows
 what's happening:
 
 ```
-Downloading the examples 2026.11.12...
-The examples 2026.11.12 downloaded.
+Downloading logix-ide-examples 2026.11.12...
+Downloaded logix-ide-examples 2026.11.12.
 Downloading Logix Engine 2026.11.12...
-Logix Engine 2026.11.12 downloaded.
+Downloaded Logix Engine 2026.11.12.
 Downloading the FPGA tools. The first time can take a few minutes.
 Downloading logix-core 2026.11.11...
-FPGA tools for Logix Engine downloaded (logix-core).
+Downloaded logix-core 2026.11.11.
 117 examples available.
 Ready.
 ```

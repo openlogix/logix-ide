@@ -991,8 +991,8 @@ test("Check for Updates shows the progress and what changed", async ({ page }) =
   await menu(page, "check-for-updates");
   await expect(output(page)).toContainText("Checking for updates…");
   await expect(output(page)).toContainText("Downloading logix-catalog 2026.11.30...");
-  await expect(output(page)).toContainText("Updated the boards and FPGAs to 2026.11.30.");
-  await expect(status(page)).toContainText("Updated the boards and FPGAs to 2026.11.30.");
+  await expect(output(page)).toContainText("Updated logix-catalog to 2026.11.30.");
+  await expect(status(page)).toContainText("Updated logix-catalog to 2026.11.30.");
 });
 
 test("Upload asks which device when several fit the board", async ({ page }) => {

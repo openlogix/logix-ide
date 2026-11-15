@@ -744,7 +744,7 @@ export const backend: typeof Real.backend = {
     // As the real one: the engine's progress in the console, then what
     // changed.
     handlers.output?.("Downloading logix-catalog 2026.11.30...");
-    return ["Updated the boards and FPGAs to 2026.11.30."];
+    return ["Updated logix-catalog to 2026.11.30."];
   },
   systemInfo: async () =>
     [
