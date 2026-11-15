@@ -165,8 +165,8 @@ You can also open these pages from Logix IDE's **Help** menu.
 Check [Troubleshooting](https://www.openlogix.org/logix-ide/troubleshooting/)
 first. If you're still stuck, choose **Help > Report a Problem** in Logix IDE, or
 [open an issue on GitHub](https://github.com/openlogix/logix-ide/issues/new). It
-helps a lot to attach Logix IDE's log: **Help > Show Log Folder**, then drag
-`logix-ide-latest.log` into your report.
+helps a lot to attach Logix IDE's logs: **Help > Show Log Folder**, then drag
+the `.log` files in that folder into your report.
 
 ## Thanks
 

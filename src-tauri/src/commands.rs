@@ -85,6 +85,32 @@ pub async fn system_info(
     ))
 }
 
+/// Deletes old log session folders in `~/.logix/ide/logs` with the engine's
+/// `clean_logs` tool, keeping this session's. Best effort: a failure is only
+/// logged.
+async fn clean_logs(engine: &engine::Engine) {
+    let (Some(dir), Some(session)) = (crate::logging::dir(), crate::logging::session()) else {
+        return;
+    };
+    let args = serde_json::json!({
+        "logs_folder": dir.display().to_string(),
+        "keep": [session.display().to_string()],
+    });
+    match engine.call("clean_logs", args, None).await {
+        Ok(Ok(out)) => {
+            let n = out["deleted"].as_array().map_or(0, Vec::len);
+            if n > 0 {
+                crate::log!("Deleted {n} old log session folders");
+            }
+        }
+        Ok(Err(e)) => crate::log!(
+            "Can't clean the logs: {}",
+            e["message"].as_str().unwrap_or("no message")
+        ),
+        Err(e) => crate::log!("Can't clean the logs: {e:#}"),
+    }
+}
+
 /// Help > Check for Updates: reads Logix IDE's remote config now and
 /// switches to a new engine release if it names one, then has the engine
 /// check its own packages (`check_updates`), with the progress in the
@@ -168,7 +194,12 @@ pub async fn setup(
         match result {
             Ok(ready) => {
                 crate::log!("Engine setup ready");
-                *engine_slot = Some(std::sync::Arc::new(ready));
+                let ready = std::sync::Arc::new(ready);
+                // Old log session folders go, by the engine's policy, the
+                // same for every frontend (logging.rs).
+                let engine = ready.clone();
+                tauri::async_runtime::spawn(async move { clean_logs(&engine).await });
+                *engine_slot = Some(ready);
                 // About names the engine release, chosen now.
                 crate::menu::refresh(&app);
             }

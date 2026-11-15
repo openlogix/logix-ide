@@ -142,10 +142,16 @@ are made the same way.
 
 ### The log
 
-Logix IDE writes a log to `~/.logix/ide/logs/logix-ide-latest.log` (older runs: `logix-ide-previous-1.log` to `-4`) (and the dev terminal shows
-the same `[logix] ...` lines): versions, errors, and what the output pane
-showed. Logix Engine keeps its own log in `~/.logix/ide/engine/logs/`. In the app: **Help > Show Log
-Folder**.
+Logix IDE follows the Open Logix log layout (Logix Engine's
+`docs/command-line.md`, Logs): each run makes a session folder,
+`~/.logix/ide/logs/<yyyymmdd>-<hhmmss>-<pid>/` (local time), with
+`logix-ide.log` (versions, errors, and what the output pane showed; the dev
+terminal shows the same `[logix] ...` lines), `logix-ide.logix-engine.log`
+(the engine Logix IDE started), `logix-ide.logix-engine.gtkwave.log` (its
+GTKWave windows) and `logix-ide.verible-verilog-ls.log` (the language
+server). Each run of a program appends after a separator line. Old session
+folders are deleted by the engine's `clean_logs`. In the app: **Help > Show
+Log Folder** opens this session's folder.
 
 ### Moving to a new Logix Engine release
 

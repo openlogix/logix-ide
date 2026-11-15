@@ -779,14 +779,14 @@ export const backend: typeof Real.backend = {
     return {
       facts: [
         { label: "Operating system", value: "macOS 26.5 (darwin-arm64)" },
-        { label: "Log file", value: "/Users/you/.logix/ide/logs/logix-ide-latest.log" },
+        { label: "Log file", value: "/Users/you/.logix/ide/logs/20261115-171205-4412/logix-ide.log" },
       ],
       developerSettings: [],
       versions,
       text: [
         `Logix IDE ${packageJson.version}`,
         "Operating system: macOS 26.5 (darwin-arm64)",
-        "Log file: /Users/you/.logix/ide/logs/logix-ide-latest.log",
+        "Log file: /Users/you/.logix/ide/logs/20261115-171205-4412/logix-ide.log",
         "",
         "Versions:",
         `Logix IDE ${packageJson.version}`,

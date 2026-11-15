@@ -68,6 +68,8 @@ fn install_panic_logging() {
 }
 
 pub fn run() {
+    // First, before any thread starts (logging.rs).
+    logging::init_local_offset();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())

@@ -1,20 +1,32 @@
 //! The Logix IDE log: developer messages, also kept in a file for problem
 //! reports, since an app opened from Finder has nowhere to print them.
 //!
+//! The Open Logix log layout (the website repo's `CLAUDE.md`, Log files;
+//! Logix Engine's docs/command-line.md, Logs): Logix IDE is a top program,
+//! so each run makes a session folder in `~/.logix/ide/logs`, named by its
+//! start (local time) and process ID, `<yyyymmdd>-<hhmmss>-<pid>`, and writes
+//! `logix-ide.log` there after a separator line. The programs it starts log
+//! into the same folder, named by their chain: the engine
+//! `logix-ide.logix-engine.log` (`--log-folder`, `--log-name`, and its
+//! GTKWave `logix-ide.logix-engine.gtkwave.log`), Verible's language server
+//! `logix-ide.verible-verilog-ls.log` (`child_file`). Old session folders
+//! are deleted by the engine's `clean_logs` tool once the engine runs
+//! (`commands::setup`), so the policy is the engine's, the same for every
+//! frontend.
+//!
 //! `log!(...)` prints `[logix] <message>` to stderr (the `./run.sh` terminal)
-//! and appends it, with a UTC time, to `~/.logix/ide/logs/logix-ide-latest.log`. What the
-//! output pane shows is appended too (`output`), as `| <line>`, so a report
-//! has the tools' messages; after `MAX_BYTES` only messages are kept. Each run
-//! starts a new file; the previous runs are kept as
-//! `logix-ide-previous-1.log` (the run before) to
-//! `logix-ide-previous-<KEEP-1>.log`, so each name says which run it is.
-//! Help > Show Log Folder opens the folder.
+//! and appends it, with the local time, to the file. What the output pane
+//! shows is appended too (`output`), as `| <line>`, so a report has the
+//! tools' messages; after `MAX_BYTES` only messages are kept. Help > Show
+//! Log Folder opens this session's folder.
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::sync::{LazyLock, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::{LazyLock, Mutex, OnceLock};
+
+use time::macros::format_description;
+use time::{OffsetDateTime, UtcOffset};
 
 use regex::Regex;
 
@@ -30,9 +42,8 @@ pub fn strip_ansi(text: &str) -> std::borrow::Cow<'_, str> {
     ANSI.replace_all(text, "")
 }
 
-/// Log files kept: this run's and the previous runs'.
-const KEEP: usize = 5;
-const NAME: &str = "logix-ide";
+/// Logix IDE's name in log file names.
+pub const NAME: &str = "logix-ide";
 
 /// Above this size, output pane lines are no longer written (messages
 /// still are), so a long session can't fill the disk.
@@ -45,6 +56,53 @@ struct Log {
 }
 
 static FILE: Mutex<Option<Log>> = Mutex::new(None);
+/// This run's session folder, once `init` made it.
+static SESSION: OnceLock<PathBuf> = OnceLock::new();
+/// The local time's offset from UTC, read once at startup.
+static LOCAL_OFFSET: OnceLock<UtcOffset> = OnceLock::new();
+
+/// Reads the local time's offset from UTC. Call it first in `run`, before
+/// any thread starts: the time crate reads it reliably only then on macOS
+/// and Linux. Falls back to UTC when it can't be read.
+pub fn init_local_offset() {
+    let _ = LOCAL_OFFSET.set(UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC));
+}
+
+fn now_local() -> OffsetDateTime {
+    OffsetDateTime::now_utc().to_offset(*LOCAL_OFFSET.get().unwrap_or(&UtcOffset::UTC))
+}
+
+/// A session folder's name: `<yyyymmdd>-<hhmmss>-<pid>` (local time).
+fn session_name(at: OffsetDateTime, pid: u32) -> String {
+    let started = at
+        .format(format_description!(
+            "[year][month][day]-[hour][minute][second]"
+        ))
+        .unwrap_or_default();
+    format!("{started}-{pid}")
+}
+
+/// A separator line, written before each run's lines in a log file.
+pub fn separator(what: &str) -> String {
+    separator_at(now_local(), what)
+}
+
+fn separator_at(at: OffsetDateTime, what: &str) -> String {
+    let when = at
+        .format(format_description!(
+            "[year]-[month]-[day] [hour]:[minute]:[second] [offset_hour sign:mandatory]:[offset_minute]"
+        ))
+        .unwrap_or_default();
+    format!("=== {when}  {what} ===\n")
+}
+
+/// A log line's time: local, to the second (the offset is in the separator).
+fn line_time(at: OffsetDateTime) -> String {
+    at.format(format_description!(
+        "[year]-[month]-[day] [hour]:[minute]:[second]"
+    ))
+    .unwrap_or_default()
+}
 
 /// Logs a message (format arguments, like `println!`).
 #[macro_export]
@@ -54,7 +112,7 @@ macro_rules! log {
     };
 }
 
-/// Where the log files are.
+/// Where the session folders are: `~/.logix/ide/logs`.
 pub fn dir() -> Option<PathBuf> {
     Some(
         crate::platform::current_implemented()
@@ -65,37 +123,66 @@ pub fn dir() -> Option<PathBuf> {
     )
 }
 
+/// This run's session folder, once `init` has made it.
+pub fn session() -> Option<PathBuf> {
+    SESSION.get().cloned()
+}
+
 /// This run's log file, once `init` has created it.
 pub fn current_file() -> Option<PathBuf> {
     lock().as_ref()?;
-    dir().map(|d| path(&d, 0))
+    session().map(|s| s.join(format!("{NAME}.log")))
 }
 
-/// Starts this run's log file, keeping the previous ones. Without a log
-/// folder (e.g. an unsupported platform), messages only go to stderr.
+/// The log file of a program Logix IDE starts, such as
+/// `verible-verilog-ls`: `logix-ide.<program>.log` in this session's folder.
+pub fn child_file(program: &str) -> Option<PathBuf> {
+    session().map(|s| s.join(format!("{NAME}.{program}.log")))
+}
+
+/// Opens a log file of this session for appending, with a separator line
+/// saying `what`, for a program's output (such as the language server's).
+pub fn open_child(program: &str, what: &str) -> Option<File> {
+    let path = child_file(program)?;
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .ok()?;
+    file.write_all(separator(what).as_bytes()).ok()?;
+    Some(file)
+}
+
+/// Makes this run's session folder and log file, and writes its separator.
+/// Without a log folder (e.g. an unsupported platform), messages only go to
+/// stderr.
 pub fn init(header: &str) {
     let Some(dir) = dir() else { return };
-    match open_new(&dir) {
+    let session = dir.join(session_name(now_local(), std::process::id()));
+    match open_new(&session) {
         Ok(file) => {
-            *lock() = Some(Log {
+            let _ = SESSION.set(session);
+            let mut log = Log {
                 file,
                 bytes: 0,
                 output_truncated: false,
-            })
+            };
+            append(&mut log, &separator(header));
+            *lock() = Some(log);
         }
         Err(e) => eprintln!(
             "[logix] Can't create the log file in {}: {e}",
-            dir.display()
+            session.display()
         ),
     }
-    write(header);
+    eprintln!("[logix] {header}");
 }
 
 /// Writes one message to stderr and the log file.
 pub fn write(message: &str) {
     eprintln!("[logix] {message}");
     if let Some(log) = lock().as_mut() {
-        append(log, &format!("{} {message}\n", utc_time(SystemTime::now())));
+        append(log, &format!("{} {message}\n", line_time(now_local())));
     }
 }
 
@@ -115,7 +202,7 @@ fn output_into(log: &mut Log, lines: &[String]) {
         log.output_truncated = true;
         let note = format!(
             "{} Output truncated: the log is over {} MB.\n",
-            utc_time(SystemTime::now()),
+            line_time(now_local()),
             MAX_BYTES / 1024 / 1024
         );
         append(log, &note);
@@ -141,57 +228,13 @@ fn lock() -> std::sync::MutexGuard<'static, Option<Log>> {
     FILE.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-fn path(dir: &Path, index: usize) -> PathBuf {
-    if index == 0 {
-        dir.join(format!("{NAME}-latest.log"))
-    } else {
-        dir.join(format!("{NAME}-previous-{index}.log"))
-    }
-}
-
-/// Shifts the old logs (logix-ide-latest.log -> logix-ide-previous-1.log
-/// -> ...), dropping the oldest, and creates a fresh logix-ide-latest.log.
-fn open_new(dir: &Path) -> std::io::Result<File> {
-    std::fs::create_dir_all(dir)?;
-    for index in (0..KEEP - 1).rev() {
-        let from = path(dir, index);
-        if from.exists() {
-            std::fs::rename(&from, path(dir, index + 1))?;
-        }
-    }
+/// Creates a session folder and its `logix-ide.log`.
+fn open_new(session: &Path) -> std::io::Result<File> {
+    std::fs::create_dir_all(session)?;
     OpenOptions::new()
         .create(true)
-        .write(true)
-        .truncate(true)
-        .open(path(dir, 0))
-}
-
-/// "2026-10-27 14:05:09Z" (UTC; std has no time zones).
-fn utc_time(time: SystemTime) -> String {
-    let secs = time.duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
-    let (days, rest) = (secs / 86_400, secs % 86_400);
-    let (y, m, d) = civil_from_days(days as i64);
-    format!(
-        "{y:04}-{m:02}-{d:02} {:02}:{:02}:{:02}Z",
-        rest / 3600,
-        rest % 3600 / 60,
-        rest % 60
-    )
-}
-
-/// Days since 1970-01-01 to (year, month, day), from Howard Hinnant's
-/// `civil_from_days` algorithm.
-fn civil_from_days(days: i64) -> (i64, u32, u32) {
-    let z = days + 719_468;
-    let era = z.div_euclid(146_097);
-    let doe = z.rem_euclid(146_097);
-    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
-    let y = yoe + era * 400 + i64::from(m <= 2);
-    (y, m, d)
+        .append(true)
+        .open(session.join(format!("{NAME}.log")))
 }
 
 #[cfg(test)]
@@ -206,14 +249,17 @@ mod tests {
         assert_eq!(strip_ansi("\x1b]8;;http://x\x07link\x1b]8;;\x07"), "link");
         assert_eq!(strip_ansi("plain"), "plain");
     }
-    use std::time::Duration;
-
     #[test]
-    fn formats_utc_times() {
-        let at = |secs| utc_time(UNIX_EPOCH + Duration::from_secs(secs));
-        assert_eq!(at(0), "1970-01-01 00:00:00Z");
-        assert_eq!(at(951_782_400), "2000-02-29 00:00:00Z");
-        assert_eq!(at(1_793_113_489), "2026-10-27 15:04:49Z");
+    fn session_names_separators_and_times() {
+        let t = OffsetDateTime::from_unix_timestamp(1_793_145_600 + 3_723)
+            .unwrap()
+            .to_offset(UtcOffset::from_hms(-8, 0, 0).unwrap()); // 2026-10-27 17:02:03 -08:00
+        assert_eq!(session_name(t, 4412), "20261027-170203-4412");
+        assert_eq!(
+            separator_at(t, "Logix IDE 2026.11.15 started"),
+            "=== 2026-10-27 17:02:03 -08:00  Logix IDE 2026.11.15 started ===\n"
+        );
+        assert_eq!(line_time(t), "2026-10-27 17:02:03");
     }
 
     #[test]
@@ -229,29 +275,11 @@ mod tests {
         log.bytes = MAX_BYTES + 1;
         output_into(&mut log, &["dropped".to_string()]);
         output_into(&mut log, &["dropped too".to_string()]);
-        let text = std::fs::read_to_string(path(&dir, 0)).unwrap();
+        let text = std::fs::read_to_string(dir.join("logix-ide.log")).unwrap();
         assert!(text.starts_with("| Build succeeded\n"), "{text}");
         assert!(text.contains("Output truncated"), "{text}");
         assert!(!text.contains("dropped"), "{text}");
         assert_eq!(text.matches("truncated").count(), 1, "{text}");
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[test]
-    fn keeps_the_last_runs() {
-        let dir = std::env::temp_dir().join(format!("logix-log-test-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&dir);
-        for run in 0..KEEP + 2 {
-            let mut file = open_new(&dir).unwrap();
-            write!(file, "run {run}").unwrap();
-        }
-        assert!(path(&dir, 0).ends_with("logix-ide-latest.log"));
-        assert!(path(&dir, 1).ends_with("logix-ide-previous-1.log"));
-        let read = |i| std::fs::read_to_string(path(&dir, i)).unwrap();
-        assert_eq!(read(0), format!("run {}", KEEP + 1));
-        assert_eq!(read(1), format!("run {KEEP}"));
-        assert!(path(&dir, KEEP - 1).exists());
-        assert!(!path(&dir, KEEP).exists());
         std::fs::remove_dir_all(&dir).unwrap();
     }
 }

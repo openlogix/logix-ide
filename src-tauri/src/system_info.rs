@@ -406,7 +406,9 @@ mod tests {
             "2026.11.15",
             "973dd78",
             "macOS 26.5 (darwin-arm64)",
-            Some(Path::new("/Users/you/.logix/ide/logs/logix-ide-latest.log")),
+            Some(Path::new(
+                "/Users/you/.logix/ide/logs/20261115-171205-4412/logix-ide.log",
+            )),
             Some(&u),
             EnginePart::Info(engine_info()),
             Vec::new(),
@@ -415,7 +417,7 @@ mod tests {
             info.text,
             "Logix IDE 2026.11.15
 Operating system: macOS 26.5 (darwin-arm64)
-Log file: /Users/you/.logix/ide/logs/logix-ide-latest.log
+Log file: /Users/you/.logix/ide/logs/20261115-171205-4412/logix-ide.log
 
 Versions:
 Logix IDE 2026.11.15

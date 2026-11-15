@@ -108,10 +108,12 @@ the tools again.
 Please report a problem with **Help > Report a Problem**, or
 [on GitHub](https://github.com/openlogix/logix-ide/issues/new). Include what you did
 and what Logix IDE showed (the output area has the details), and attach the
-Logix IDE log: **Help > Show Log Folder** opens the folder in Finder (File Explorer on Windows); drag
-`logix-ide-latest.log` into the report: it's the log of the current run, or of
-the last one if Logix IDE is closed. Logix IDE keeps the logs of its last 5 runs:
-`logix-ide-previous-1.log` is the run before, `logix-ide-previous-2.log` the
-one before that, and so on. The
-log has what the output area showed and what Logix IDE did, including the paths
+Logix IDE logs: **Help > Show Log Folder** opens this run's log folder in
+Finder (File Explorer on Windows); drag the `.log` files in it into the report.
+Each run of Logix IDE has a folder of its own, in `~/.logix/ide/logs`, named by
+the date and time it started, so for a run that has ended, pick its folder
+there. The folder has Logix IDE's log, `logix-ide.log`, and the logs of the
+programs it started, such as `logix-ide.logix-engine.log` for the FPGA tools.
+Logix IDE keeps the folders of its last 10 runs. The
+logs have what the output area showed and what Logix IDE did, including the paths
 of your projects; it stays on your computer unless you attach it.

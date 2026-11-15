@@ -30,11 +30,15 @@ impl LanguageServer {
         M: Fn(String) + Send + 'static,
         E: FnOnce() + Send + 'static,
     {
+        // Its messages, in this session's log folder (logging.rs).
+        let stderr =
+            crate::logging::open_child("verible-verilog-ls", &format!("{} started", exe.display()))
+                .map_or_else(Stdio::null, Stdio::from);
         let mut cmd = Command::new(exe);
         cmd.args(SERVER_ARGS)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(stderr)
             .kill_on_drop(true);
         crate::platform::hide_console_async(&mut cmd);
         let mut child = cmd

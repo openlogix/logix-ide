@@ -22,6 +22,7 @@ flate2 = "1"
 tar = "0.4"
 futures-util = "0.3"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+time = { version = "0.3", features = ["formatting", "macros", "local-offset"] }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "sync", "time"] }
 tauri-plugin-dialog = "2"
 regex = "1"

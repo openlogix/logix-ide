@@ -323,7 +323,7 @@ stop, and the status line says the boards folder has problems.
 The **Help** menu links to these pages, the keyboard shortcuts and
 troubleshooting.
 **Report a Problem** opens a new report on GitHub, and **Show Log Folder**
-opens the folder with Logix IDE's log, to attach to a report (see
+opens this run's folder of logs, to attach to a report (see
 [Troubleshooting](troubleshooting.md#still-stuck)).
 
 ## Settings
