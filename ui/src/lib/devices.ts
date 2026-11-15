@@ -273,7 +273,7 @@ export function devicesReport(
     if (item.kind === "usb") {
       const { matches, others } = deviceBoardGroups(item.device, selected);
       if (matches.length > 0) out.push(`  Matching boards: ${names(matches)}`);
-      if (others.length > 0) out.push(`  Other possible matches: ${names(others)}`);
+      if (others.length > 0) out.push(`  Other possible boards: ${names(others)}`);
       if (matches.length + others.length === 0) out.push("  Not a board Logix IDE knows.");
     } else {
       out.push(`  ${item.device.actionDescription}`);

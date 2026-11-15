@@ -3,7 +3,7 @@
   boards first (`orderedDevices`), each a collapsible group (open when it
   may be a board), with the boards it may be as bullet lists in two
   collapsible groups: Matching boards (its most likely boards, open) and Other
-  possible matches (weaker ones, closed). Board names select the board. A
+  possible boards (weaker ones, closed). Board names select the board. A
   device that can't be opened yet (no driver) is listed with the others,
   with a note on which board it may be. On Windows, a device whose board
   needs a driver says which one it has, with Install Driver… (WinUSB) or
@@ -227,7 +227,7 @@
         {#if !fits}
           <p class="muted">Not a board Logix IDE knows.</p>
         {/if}
-        {#each [{ key: "matches", label: "Matching boards", list: g.matches, byDefault: true }, { key: "others", label: "Other possible matches", list: g.others, byDefault: false }] as group (group.key)}
+        {#each [{ key: "matches", label: "Matching boards", list: g.matches, byDefault: true }, { key: "others", label: "Other possible boards", list: g.others, byDefault: false }] as group (group.key)}
           {#if group.list.length > 0}
             {@render boardGroup(d.id, group.key, group.label, group.list, group.byDefault)}
           {/if}

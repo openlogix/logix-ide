@@ -1204,7 +1204,7 @@ test("lists the connected devices", async ({ page }) => {
   await expect(matches).toHaveAttribute("aria-expanded", "true");
   await expect(dialog.locator("ul.boards li")).toHaveText(["Alhambra II (selected)"]);
   // A strong match: the weaker ones aren't listed.
-  await expect(dialog.getByRole("button", { name: /^Other possible matches/ })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: /^Other possible boards/ })).toHaveCount(0);
   // Copy: all of it as text, for a problem report.
   await dialog.getByRole("button", { name: "Copy", exact: true }).click();
   await expect(dialog.locator(".copy-note")).toHaveText("Copied.");
@@ -1230,7 +1230,7 @@ test("lists the connected devices", async ({ page }) => {
     ];
     (window as unknown as { __fake: { menu: (id: string) => void } }).__fake.menu("devices");
   });
-  const others = dialog.getByRole("button", { name: /^Other possible matches\s*2$/ });
+  const others = dialog.getByRole("button", { name: /^Other possible boards\s*2$/ });
   await expect(others).toHaveAttribute("aria-expanded", "false");
   await others.click();
   await expect(dialog.getByRole("button", { name: /^Alchitry Au/ })).toBeVisible();
