@@ -1132,8 +1132,8 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
   await expect(work.locator(".spinner")).toHaveCount(0);
   await work.getByRole("button", { name: /Show log/ }).click();
   await expect(work.locator(".work-output")).toContainText("$ wdi-simple.exe --vid 0x0403 --pid 0x6010");
-  expect((await work.locator(".work-output").textContent())?.trim().split("\n").at(-1)).toBe(
-    "Done: Installed the WinUSB driver for the Alhambra II.",
+  expect((await work.locator(".work-output").textContent())?.trim().split("\n").at(-1)).toMatch(
+    /^Done in \d+ s: Installed the WinUSB driver for the Alhambra II\.$/,
   );
   await expect(status(page)).toContainText("Installed the WinUSB driver for the Alhambra II");
   await dialog.getByRole("button", { name: "Remove Driver…" }).click();

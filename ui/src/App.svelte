@@ -64,6 +64,7 @@
     driverOffer,
     driverRemove,
     type DriverWork,
+    driverWorkEnd,
     isBoardNotFound,
     needsDeviceChoice,
     needsDriver,
@@ -1129,7 +1130,7 @@
 
   /** Starts showing a driver change, and returns where its events go. */
   function startDriverWork(title: string): (event: TaskEvent) => void {
-    const work: DriverWork = { title, step: null, lines: [], result: null };
+    const work: DriverWork = { title, step: null, lines: [], result: null, started: Date.now() };
     driverWork = work;
     return (event) => {
       if (driverWork === null) return;
@@ -1145,7 +1146,7 @@
       driverWork.result = { text, kind };
       // The log ends the way the status line does, not with the engine's
       // last progress line (such as "Waiting for permission").
-      driverWork.lines = [...driverWork.lines, `${kind === "ok" ? "Done" : "Failed"}: ${text}`];
+      driverWork.lines = [...driverWork.lines, driverWorkEnd(text, kind, Date.now() - driverWork.started)];
     }
     status = { text, kind };
   }

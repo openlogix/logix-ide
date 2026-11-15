@@ -139,6 +139,27 @@ export interface DriverWork {
   step: string | null;
   lines: string[];
   result: { text: string; kind: "ok" | "error" } | null;
+  /** When it started (ms since the epoch), for how long it took. */
+  started: number;
+}
+
+/**
+ * How long something took, for people: "48 s" under a minute, else
+ * "1 min 12 s" (a driver change takes a minute or two, mostly Windows).
+ */
+export function durationText(ms: number): string {
+  const s = Math.max(0, Math.round(ms / 1000));
+  if (s < 60) return `${s} s`;
+  return s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)} min ${s % 60} s`;
+}
+
+/**
+ * The log's last line when a driver change ends: how it ended, the way the
+ * status line says it, and after a success how long it took (the user's
+ * request, 2026-11-15).
+ */
+export function driverWorkEnd(text: string, kind: "ok" | "error", ms: number): string {
+  return kind === "ok" ? `Done in ${durationText(ms)}: ${text}` : `Failed: ${text}`;
 }
 
 /**

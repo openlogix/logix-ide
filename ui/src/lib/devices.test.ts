@@ -14,6 +14,8 @@ import {
   orderedDevices,
   unreachableNote,
   devicesReport,
+  durationText,
+  driverWorkEnd,
 } from "./devices";
 import type { TaskOutcome, UsbDevice } from "./backend";
 
@@ -90,6 +92,15 @@ describe("devices", () => {
     expect(removeText).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
   });
 
+  it("says how long a driver change took", () => {
+    expect(durationText(400)).toBe("0 s");
+    expect(durationText(48_400)).toBe("48 s");
+    expect(durationText(60_000)).toBe("1 min");
+    expect(durationText(72_300)).toBe("1 min 12 s");
+    expect(driverWorkEnd("Installed.", "ok", 72_300)).toBe("Done in 1 min 12 s: Installed.");
+    expect(driverWorkEnd("Couldn't install.", "error", 5_000)).toBe("Failed: Couldn't install.");
+  });
+
   it("copies Connected Devices as text for a problem report", () => {
     const locked = {
       id: "usb:1-2:0403:6010", label: "USB device (0403:6010)", vid: "0403", pid: "6010",
@@ -99,7 +110,7 @@ describe("devices", () => {
     };
     const name = (id: string) => ({ "alhambra-ii": "Alhambra II", tangnano9k: "Sipeed Tang Nano 9k" })[id] ?? id;
     const text = devicesReport({ usb: [alhambra], unreachable: [locked] }, "tangnano9k", name, {
-      title: "Installing the WinUSB driver…", step: null, lines: ["Permission given."],
+      title: "Installing the WinUSB driver…", step: null, lines: ["Permission given."], started: 0,
       result: { text: "Installed.", kind: "ok" },
     });
     expect(text.split("\n")).toEqual([
