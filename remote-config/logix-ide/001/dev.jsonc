@@ -15,9 +15,11 @@
   // install_driver and uninstall_driver, for Upload's "Install the WinUSB
   // Driver?" and Tools > Connected Devices' Install Driver… and Remove
   // Driver…; its own dev config names a logix-core with wdi-simple.
+  // 2026-11-15: get_engine_info's version tree and developer settings, for
+  // Help > System Info's new layout (otherwise the same as 2026-11-14).
   "logix-engine": {
     "repo": "openlogix/logix-engine",
-    "release": "2026-11-14",
+    "release": "2026-11-15",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
   },
 
