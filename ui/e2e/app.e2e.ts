@@ -975,31 +975,22 @@ test("the editor's right-click menu shows the diagram of the module at the curso
   expect(shown?.module).toBeNull();
 });
 
-test("a local engine is shown for the whole session", async ({ page }) => {
-  await page.goto("/?devEngine");
-  const banner = page.getByRole("status").filter({ hasText: "local Logix Engine" });
-  await expect(banner).toContainText(
-    "Using a local Logix Engine, for diagnosis: /Users/you/logix-engine/target/debug/logix-engine",
+test("developer settings show one banner for the whole session", async ({ page }) => {
+  await page.goto("/?developerSettings");
+  const banner = page.getByRole("status").filter({ hasText: "developer configuration" });
+  await expect(banner).toHaveText(
+    "Using a developer configuration. See Help > System Info for details.",
   );
+  // Hovering it lists the settings, Logix IDE's and the engine's.
+  await expect(banner).toHaveAttribute("title", "LOGIX_DEV_ENGINE_BINARY\nLOGIX_ENGINE_CHANNEL");
   // Still there once setup is done.
   await expect(output(page)).toContainText("Ready.");
   await expect(banner).toBeVisible();
 });
 
-test("a test remote config is shown for the whole session", async ({ page }) => {
-  await page.goto("/?devRemoteConfig");
-  const banner = page.getByRole("status").filter({ hasText: "test remote config" });
-  await expect(banner).toContainText("Using a test remote config: /Users/you/remote-config/logix-ide/001");
-  await expect(output(page)).toContainText("Ready.");
-  await expect(banner).toBeVisible();
-});
-
-test("a channel override is shown for the whole session", async ({ page }) => {
-  await page.goto("/?channelOverride");
-  const banner = page.getByRole("status").filter({ hasText: "release channel" });
-  await expect(banner).toContainText("Using the prod release channel, for testing (LOGIX_IDE_CHANNEL)");
-  await expect(output(page)).toContainText("Ready.");
-  await expect(banner).toBeVisible();
+test("no banner without developer settings", async ({ page }) => {
+  await start(page);
+  await expect(page.getByText("developer configuration")).toHaveCount(0);
 });
 
 test("Check for Updates shows the progress and what changed", async ({ page }) => {

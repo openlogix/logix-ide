@@ -139,19 +139,24 @@ where
     let layout = Layout::new(&platform.data_dir()?, &source);
     let dev = dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE)).context(MSG_START)?;
 
-    if let Some(channel) = remote_config::channel_variable().context(MSG_CONFIG)? {
-        emit(SetupEvent::ChannelOverride {
-            channel: channel.clone(),
+    // Logix IDE's own developer settings, shown from the start; the
+    // engine's are added once it runs.
+    let mut developer_settings: Vec<String> = crate::system_info::ide_developer_settings()
+        .into_iter()
+        .map(|s| s.name)
+        .collect();
+    if !developer_settings.is_empty() {
+        emit(SetupEvent::DeveloperSettings {
+            names: developer_settings.clone(),
         });
+    }
+    if let Some(channel) = remote_config::channel_variable().context(MSG_CONFIG)? {
         log(format!(
             "Using the release channel {channel} ({}).",
             remote_config::CHANNEL_VARIABLE
         ));
     }
     if source.is_override {
-        emit(SetupEvent::DevRemoteConfig {
-            location: source.location.clone(),
-        });
         log(format!(
             "Using the remote config {} ({}), with its own folder {}.",
             source.location,
@@ -166,9 +171,6 @@ where
 
     let (exe, folder, in_use) = match dev {
         Some(exe) => {
-            emit(SetupEvent::DevEngine {
-                path: exe.display().to_string(),
-            });
             log(format!(
                 "Using the local Logix Engine {} ({DEV_ENGINE_VARIABLE}).",
                 exe.display()
@@ -237,6 +239,20 @@ where
         info["log_file"].as_str().unwrap_or("?"),
         info["boards_schema"].as_str().unwrap_or("(not reported)")
     );
+    // The engine's own developer settings, inherited from Logix IDE's
+    // environment or not, join the banner.
+    let engine_settings: Vec<String> = info["developer_settings"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|s| s["name"].as_str().map(str::to_string))
+        .collect();
+    if !engine_settings.is_empty() {
+        developer_settings.extend(engine_settings);
+        emit(SetupEvent::DeveloperSettings {
+            names: developer_settings,
+        });
+    }
 
     Ok((engine, info))
 }

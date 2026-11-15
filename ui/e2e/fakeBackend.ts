@@ -521,18 +521,15 @@ export const backend: typeof Real.backend = {
 
   setup: async (onEvent) => {
     onEvent({ kind: "stage", stage: "checking" });
-    // With `/?devEngine`, setup uses a local engine (LOGIX_DEV_ENGINE_BINARY).
-    if (new URLSearchParams(location.search).has("devEngine")) {
-      onEvent({ kind: "devEngine", path: "/Users/you/logix-engine/target/debug/logix-engine" });
-    }
-    // With `/?devRemoteConfig`, the remote config comes from the override
-    // (LOGIX_IDE_DEV_REMOTE_CONFIG).
-    if (new URLSearchParams(location.search).has("devRemoteConfig")) {
-      onEvent({ kind: "devRemoteConfig", location: "/Users/you/remote-config/logix-ide/001" });
-    }
-    // With `/?channelOverride`, the channel comes from LOGIX_IDE_CHANNEL.
-    if (new URLSearchParams(location.search).has("channelOverride")) {
-      onEvent({ kind: "channelOverride", channel: "prod" });
+    // With `/?developerSettings`, developer settings are in effect: Logix
+    // IDE's first, then the engine's once it runs, as the real setup sends
+    // them.
+    if (new URLSearchParams(location.search).has("developerSettings")) {
+      onEvent({ kind: "developerSettings", names: ["LOGIX_DEV_ENGINE_BINARY"] });
+      onEvent({
+        kind: "developerSettings",
+        names: ["LOGIX_DEV_ENGINE_BINARY", "LOGIX_ENGINE_CHANNEL"],
+      });
     }
     // With `/?engineSetup`, setup stops in the engine's package download
     // until a test calls `__fake.finishSetup()`.

@@ -106,12 +106,11 @@ export type SetupEvent =
   | { kind: "stage"; stage: SetupStage }
   | { kind: "progress"; message: string; percent: number | null }
   | { kind: "log"; line: string }
-  /** A local engine (LOGIX_DEV_ENGINE_BINARY) is used, for diagnosis. */
-  | { kind: "devEngine"; path: string }
-  /** The remote config comes from the override (LOGIX_IDE_DEV_REMOTE_CONFIG). */
-  | { kind: "devRemoteConfig"; location: string }
-  /** The release channel comes from the override (LOGIX_IDE_CHANNEL). */
-  | { kind: "channelOverride"; channel: string }
+  /**
+   * Developer settings are in effect (such as LOGIX_DEV_ENGINE_BINARY or
+   * LOGIX_IDE_CHANNEL): their names, Logix IDE's and then the engine's.
+   */
+  | { kind: "developerSettings"; names: string[] }
   /** The board and example lists are ready, before the FPGA tools are. */
   | { kind: "catalogReady" };
 

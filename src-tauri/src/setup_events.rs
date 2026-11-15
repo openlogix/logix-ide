@@ -38,22 +38,12 @@ pub enum SetupEvent {
     Log {
         line: String,
     },
-    /// Setup uses a local engine (`LOGIX_DEV_ENGINE_BINARY`) instead of the
-    /// release the remote config names, for diagnosis: the UI shows it for
-    /// the whole session.
-    DevEngine {
-        path: String,
-    },
-    /// Setup reads the remote config from the override
-    /// (`LOGIX_IDE_DEV_REMOTE_CONFIG`), a URL or a local file, for testing a
-    /// config change: the UI shows it for the whole session.
-    DevRemoteConfig {
-        location: String,
-    },
-    /// Setup reads the release channel the override names
-    /// (`LOGIX_IDE_CHANNEL`) instead of the one `channels.jsonc` gives: the
-    /// UI shows it for the whole session.
-    ChannelOverride {
-        channel: String,
+    /// Developer settings are in effect (such as `LOGIX_DEV_ENGINE_BINARY`,
+    /// `LOGIX_IDE_CHANNEL`, `LOGIX_IDE_DEV_REMOTE_CONFIG`, or the engine's
+    /// own): their names, Logix IDE's first, then the engine's once it runs
+    /// (sent again with all of them). The UI shows a banner for the whole
+    /// session, pointing to Help > System Info for the details.
+    DeveloperSettings {
+        names: Vec<String>,
     },
 }

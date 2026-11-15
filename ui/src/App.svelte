@@ -351,15 +351,11 @@
   }
 
   /**
-   * The local engine in use instead of the released one
-   * (LOGIX_DEV_ENGINE_BINARY), shown for the whole session so it's never
-   * forgotten while diagnosing.
+   * The developer settings in effect (Logix IDE's and the engine's, such as
+   * LOGIX_DEV_ENGINE_BINARY), shown as one banner for the whole session so
+   * they're never forgotten; System Info has the details.
    */
-  let devEngine = $state<string | null>(null);
-  /** The remote config override's URL or file (LOGIX_IDE_DEV_REMOTE_CONFIG). */
-  let devRemoteConfig = $state<string | null>(null);
-  /** The release channel the override names (LOGIX_IDE_CHANNEL). */
-  let channelOverride = $state<string | null>(null);
+  let developerSettings = $state<string[]>([]);
 
   function onSetupEvent(event: SetupEvent) {
     switch (event.kind) {
@@ -374,14 +370,8 @@
       case "log":
         log(event.line);
         break;
-      case "devEngine":
-        devEngine = event.path;
-        break;
-      case "devRemoteConfig":
-        devRemoteConfig = event.location;
-        break;
-      case "channelOverride":
-        channelOverride = event.channel;
+      case "developerSettings":
+        developerSettings = event.names;
         break;
       case "catalogReady":
         // The start screen's Examples work while the FPGA tools download.
@@ -2401,28 +2391,9 @@
     {/if}
   </header>
 
-  {#if channelOverride}
-    <div class="banner dev-engine" role="status">
-      <span
-        >Using the {channelOverride} release channel, for testing (LOGIX_IDE_CHANNEL). Start
-        Logix IDE normally to use its regular channel.</span
-      >
-    </div>
-  {/if}
-  {#if devRemoteConfig}
-    <div class="banner dev-engine" role="status">
-      <span
-        >Using a test remote config: {devRemoteConfig}. Its Logix Engine is kept apart from
-        the regular one. Start Logix IDE normally to use the regular config.</span
-      >
-    </div>
-  {/if}
-  {#if devEngine}
-    <div class="banner dev-engine" role="status">
-      <span
-        >Using a local Logix Engine, for diagnosis: {devEngine}. Start Logix IDE
-        normally to use the regular engine.</span
-      >
+  {#if developerSettings.length > 0}
+    <div class="banner dev-engine" role="status" title={developerSettings.join("\n")}>
+      <span>Using a developer configuration. See Help &gt; System Info for details.</span>
     </div>
   {/if}
 
