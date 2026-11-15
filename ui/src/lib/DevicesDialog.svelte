@@ -212,12 +212,13 @@
   {@const fits = g.matches.length + g.others.length > 0}
   {@const open = isOpen(d.id, fits)}
   <li class="device">
-    <!-- The serial number outside the button, so it can be selected. -->
-    <div class="device-head">
-      <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
-        >{@render chevron(open)}<span class="name">{d.label}</span></button
-      >{#if d.serialNumber}<span class="muted serial">· serial {d.serialNumber}</span>{/if}
-    </div>
+    <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(d.id)}
+      >{@render chevron(open)}<span class="name">{d.label}</span></button
+    >
+    <!-- The serial number on its own line under the name, as the driver's,
+         outside the button so it can be selected (the user's requests,
+         2026-11-14 and 2026-11-15: a long one wrapped to the left edge). -->
+    {#if d.serialNumber}<div class="muted serial">Serial: {d.serialNumber}</div>{/if}
     {#if d.driver}
       {@render driverLine(d.id, whoOf(d.label, d.boards.map((b) => b.board), d.likelyBoards), d.driver)}
     {/if}
@@ -323,17 +324,10 @@
     text-align: left;
     cursor: pointer;
   }
-  .device-head {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .device-head .device-toggle {
-    width: auto;
-  }
   .serial {
+    padding-left: 18px;
     font-size: 13px;
+    overflow-wrap: anywhere;
   }
   .device-toggle .name {
     font-weight: 600;
