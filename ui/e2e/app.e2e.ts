@@ -283,18 +283,34 @@ test("Copy Project Folder Path offers Save As… first, then copies the path and
   );
 });
 
-test("Help > System Info shows the report and copies it", async ({ page }) => {
+test("Help > System Info shows the version tree and copies the text", async ({ page }) => {
   type Fake = { copiedText: string | null };
   const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
   await start(page);
   await menu(page, "system-info");
   const dialog = page.getByRole("dialog", { name: "System Info" });
-  // The IDE's lines, a blank line, then the engine's report.
-  await expect(dialog.locator(".report")).toContainText("Logix Engine used: release 2026.11.08");
-  await expect(dialog.locator(".report")).toContainText("Boards schema: https://www.openlogix.org/schemas/logix-board-v1.json");
+  // Logix IDE's facts, then the tree: the top two levels open.
+  await expect(dialog).toContainText("Operating system: macOS 26.5 (darwin-arm64)");
+  const row = (name: string) => dialog.locator(".row", { hasText: name });
+  await expect(row("Logix Engine")).toContainText("2026.11.14");
+  await expect(row("logix-core")).toBeVisible();
+  // logix-core starts closed; a click opens it and another closes it again.
+  await expect(row("OSS CAD Suite")).toHaveCount(0);
+  await row("logix-core").click();
+  await expect(row("OSS CAD Suite")).toBeVisible();
+  await row("logix-core").click();
+  await expect(row("OSS CAD Suite")).toHaveCount(0);
+  // Details on hover.
+  await row("Logix Engine").hover();
+  await expect(dialog.getByRole("tooltip")).toContainText("Logix IDE's remote config 001, prod.jsonc");
+  // No developer settings for users.
+  await expect(dialog).not.toContainText("Developer settings");
+  // Copy gives the text, with the whole tree.
   await dialog.getByRole("button", { name: "Copy" }).click();
   await expect(dialog).toContainText("Copied.");
-  expect((await fake()).copiedText).toMatch(/^Logix IDE .*\n\nLogix Engine 2026.11.08\n/s);
+  const text = (await fake()).copiedText ?? "";
+  expect(text).toMatch(/^Logix IDE .*\n\nVersions:\nLogix IDE /s);
+  expect(text).toContain("│  │  └─ OSS CAD Suite 2026-11-04");
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });

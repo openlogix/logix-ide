@@ -59,23 +59,26 @@ pub fn app_info(app: tauri::AppHandle) -> AppInfo {
     }
 }
 
-/// Help > System Info: the IDE's lines, a blank line, then the engine's
-/// `report` (fetched now, so package status is current), as the engine's
-/// recipe "Show system info" describes (`system_info.rs`).
+/// Help > System Info: Logix IDE's facts, the developer settings, and the
+/// version tree with the engine's own under it (`get_engine_info`, called
+/// now, so it shows what's in place), as `system_info.rs` builds it.
 #[tauri::command]
-pub async fn system_info(state: State<'_, AppState>) -> Result<String, UserError> {
+pub async fn system_info(
+    state: State<'_, AppState>,
+) -> Result<crate::system_info::SystemInfo, UserError> {
     use crate::system_info as info;
-    let ide = info::ide_lines(
-        "Logix IDE",
-        crate::version::APP_VERSION,
-        &info::os_description(platform::current()),
-        crate::logging::current_file().as_deref(),
-        engine::in_use().as_ref(),
-    );
     // Setup holds the lock while it runs: then there's no engine yet.
     let running = state.engine.try_lock().ok().and_then(|slot| slot.clone());
     let engine_part = info::engine_part_from(running.as_deref()).await;
-    Ok(info::report(&ide, &engine_part))
+    Ok(info::build(
+        crate::version::APP_VERSION,
+        crate::version::APP_COMMIT,
+        &info::os_description(platform::current()),
+        crate::logging::current_file().as_deref(),
+        engine::in_use().as_ref(),
+        engine_part,
+        info::ide_developer_settings(),
+    ))
 }
 
 /// Help > Check for Updates: reads Logix IDE's remote config now and

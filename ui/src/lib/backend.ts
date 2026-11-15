@@ -48,6 +48,47 @@ export function withReason(err: UserError): string {
   return `${err.message} ${/[.!?]$/.test(reason) ? reason : `${reason}.`}`;
 }
 
+/** One label and value: a System Info fact or a version entry's detail. */
+export interface InfoDetail {
+  label: string;
+  value: string;
+}
+
+/**
+ * One entry of System Info's version tree: a program, a package or a
+ * third-party release, with its own dependencies under it.
+ */
+export interface VersionEntry {
+  name: string;
+  version: string;
+  kind: "program" | "package" | "third_party";
+  /** A program's release channel, such as prod. */
+  channel?: string | null;
+  /** The developer setting that replaces this entry. */
+  overriddenBy?: string | null;
+  /** Lines under the entry in the text (what Copy gives). */
+  notes: string[];
+  /** The rest, shown on hover. */
+  details: InfoDetail[];
+  children: VersionEntry[];
+}
+
+/** A developer setting in effect: an environment variable and its value. */
+export interface DeveloperSetting {
+  name: string;
+  value: string;
+}
+
+/** Help > System Info's report. */
+export interface SystemInfo {
+  /** Logix IDE's facts: the operating system, the log file. */
+  facts: InfoDetail[];
+  developerSettings: DeveloperSetting[];
+  versions: VersionEntry;
+  /** The whole report as plain text, what Copy gives. */
+  text: string;
+}
+
 export type SetupStage =
   | "checking"
   | "downloadingEngine"
@@ -532,10 +573,11 @@ export const backend = {
   appInfo: (): Promise<AppInfo> => invoke<AppInfo>("app_info"),
 
   /**
-   * Help > System Info: the report for bug reports, the IDE's lines, a
-   * blank line, then the engine's (its `get_engine_info` `report`).
+   * Help > System Info: the report for bug reports: Logix IDE's facts, the
+   * developer settings, and the version tree with the engine's own under
+   * it (`system_info.rs`); `text` is what Copy gives.
    */
-  systemInfo: (): Promise<string> => invoke<string>("system_info"),
+  systemInfo: (): Promise<SystemInfo> => invoke<SystemInfo>("system_info"),
 
   /**
    * Help > Check for Updates: reads Logix IDE's remote config now, switches

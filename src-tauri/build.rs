@@ -3,6 +3,7 @@ fn main() {
     // so rebuild when they change.
     println!("cargo:rerun-if-changed=icons");
     app_version();
+    app_commit();
     tauri_build::build()
 }
 
@@ -34,6 +35,27 @@ fn app_version() {
         _ => today_utc(),
     };
     println!("cargo:rustc-env=LOGIX_IDE_BUILD_VERSION={version}");
+}
+
+/// LOGIX_IDE_BUILD_COMMIT: the commit built, short (7 hex digits), for
+/// Help > System Info. Empty outside a git checkout. Release builds check
+/// out exactly the commit they build, so it's that one.
+fn app_commit() {
+    let git = |args: &[&str]| {
+        std::process::Command::new("git")
+            .args(args)
+            .output()
+            .ok()
+            .filter(|o| o.status.success())
+            .map(|o| String::from_utf8_lossy(&o.stdout).trim().to_string())
+    };
+    // Rebuild when HEAD moves (a commit, a checkout).
+    if let Some(dir) = git(&["rev-parse", "--absolute-git-dir"]) {
+        println!("cargo:rerun-if-changed={dir}/HEAD");
+        println!("cargo:rerun-if-changed={dir}/logs/HEAD");
+    }
+    let commit = git(&["rev-parse", "--short=7", "HEAD"]).unwrap_or_default();
+    println!("cargo:rustc-env=LOGIX_IDE_BUILD_COMMIT={commit}");
 }
 
 /// Today's UTC date as yyyy.mm.dd.

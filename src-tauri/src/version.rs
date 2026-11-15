@@ -6,6 +6,10 @@
 /// in `LOGIX_IDE_BUILD_VERSION` for releases, otherwise today's UTC date.
 pub const APP_VERSION: &str = env!("LOGIX_IDE_BUILD_VERSION");
 
+/// The commit Logix IDE was built from, short (7 hex digits); empty when
+/// built outside a git checkout. Set by build.rs.
+pub const APP_COMMIT: &str = env!("LOGIX_IDE_BUILD_COMMIT");
+
 /// The version people see for a release tag: `yyyy.mm.dd` for `yyyy-mm-dd`.
 /// Anything else is returned as is.
 pub fn shown(tag: &str) -> String {

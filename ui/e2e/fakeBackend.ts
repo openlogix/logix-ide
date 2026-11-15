@@ -12,10 +12,12 @@
 import type * as Real from "../src/lib/backend";
 import type {
   Diagnostic,
+  InfoDetail,
   MenuId,
   ProjectDoc,
   ProjectFile,
   TaskOutcome,
+  VersionEntry,
 } from "../src/lib/backend";
 
 // Everything except `backend` comes from the real module (types, toUserError).
@@ -746,21 +748,59 @@ export const backend: typeof Real.backend = {
     handlers.output?.("Downloading logix-catalog 2026.11.30...");
     return ["Updated logix-catalog to 2026.11.30."];
   },
-  systemInfo: async () =>
-    [
-      "Logix IDE " + packageJson.version,
-      "Operating system: macOS 26.5 (macos-arm64)",
-      "Log file: /Users/you/.logix/ide/logs/logix-ide-latest.log",
-      "Logix Engine used: release 2026.11.08",
-      "Remote config: 001",
-      "  Channel: dev (default, using prod.jsonc)",
-      "  Source: https://raw.githubusercontent.com/openlogix/logix-ide/main/remote-config/logix-ide/001/",
-      "  Read: 2026-11-12 00:00 UTC",
-      "",
-      "Logix Engine 2026.11.08",
-      "Platform: darwin-arm64",
-      "Boards schema: https://www.openlogix.org/schemas/logix-board-v1.json",
-    ].join("\n"),
+  systemInfo: async () => {
+    // As the real one (system_info.rs): Logix IDE's entry with the
+    // engine's own tree and the examples under it.
+    const leaf = (name: string, version: string, kind: VersionEntry["kind"], notes: string[] = [], details: InfoDetail[] = []): VersionEntry =>
+      ({ name, version, kind, notes, details, children: [] });
+    const versions: VersionEntry = {
+      ...leaf("Logix IDE", packageJson.version, "program", ["channel prod, commit 973dd78, remote config 001"],
+        [{ label: "Repo", value: "openlogix/logix-ide" }]),
+      channel: "prod",
+      children: [
+        {
+          ...leaf("Logix Engine", "2026.11.14", "program", ["channel prod, commit a1b2c3d, remote config 001"],
+            [{ label: "Named by", value: "Logix IDE's remote config 001, prod.jsonc" }]),
+          channel: "prod",
+          children: [
+            {
+              ...leaf("logix-core", "2026.11.14", "package"),
+              children: [
+                leaf("OSS CAD Suite", "2026-11-04", "third_party", ["from YosysHQ/oss-cad-suite-build"],
+                  [{ label: "Uses", value: "yosys, nextpnr-ice40, openFPGALoader" }]),
+              ],
+            },
+            leaf("logix-catalog", "2026.11.14", "package"),
+          ],
+        },
+        leaf("logix-ide-examples", "2026.11.15", "package"),
+      ],
+    };
+    return {
+      facts: [
+        { label: "Operating system", value: "macOS 26.5 (darwin-arm64)" },
+        { label: "Log file", value: "/Users/you/.logix/ide/logs/logix-ide-latest.log" },
+      ],
+      developerSettings: [],
+      versions,
+      text: [
+        `Logix IDE ${packageJson.version}`,
+        "Operating system: macOS 26.5 (darwin-arm64)",
+        "Log file: /Users/you/.logix/ide/logs/logix-ide-latest.log",
+        "",
+        "Versions:",
+        `Logix IDE ${packageJson.version}`,
+        "│    channel prod, commit 973dd78, remote config 001",
+        "├─ Logix Engine 2026.11.14",
+        "│  │    channel prod, commit a1b2c3d, remote config 001",
+        "│  ├─ logix-core 2026.11.14",
+        "│  │  └─ OSS CAD Suite 2026-11-04",
+        "│  │          from YosysHQ/oss-cad-suite-build",
+        "│  └─ logix-catalog 2026.11.14",
+        "└─ logix-ide-examples 2026.11.15",
+      ].join("\n"),
+    };
+  },
   copyText: async (text) => {
     fake.copiedText = text;
   },
