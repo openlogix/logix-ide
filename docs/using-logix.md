@@ -99,7 +99,9 @@ Choosing a board opens **Project options** for it. The first choice
 changes the board of your current project, files unchanged; a note says what that means, such as when the new board has
 another FPGA and needs another pin file. Or start a new project from
 **bare-minimum** or one of its examples. **Cancel** keeps the board you had. Choosing the current board
-again is a quick way to get to its examples.
+again is a quick way to get to its examples. On the start screen, with no
+project open, it offers only the new projects, and the board you chose
+stays selected for your next project.
 
 ![Project options after choosing the iCEBreaker](images/project-options.png)
 

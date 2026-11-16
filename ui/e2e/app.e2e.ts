@@ -123,8 +123,18 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   });
   await menu(page, "recents-changed");
   await expect(start.getByRole("button", { name: "counter" })).toBeVisible();
-  // The board can still be changed; it's used for the next project.
+  // The board can still be changed; it's used for the next project, and
+  // its project options offer new projects on it, as in the editor (no
+  // current project to move).
   await pickBoard(page, "iCEBreaker");
+  await expect(boardButton(page)).toHaveText(/iCEBreaker/);
+  const options = page.getByRole("dialog");
+  await expect(options.getByRole("heading")).toHaveText("Project options for board “iCEBreaker”");
+  await expect(options.getByRole("button", { name: /^Change the board of/ })).toHaveCount(0);
+  await expect(options.getByRole("button", { name: /^blinky/ })).toBeVisible();
+  // Cancel: still the start screen, with the board kept for the next project.
+  await page.keyboard.press("Escape");
+  await expect(options).toHaveCount(0);
   await expect(boardButton(page)).toHaveText(/iCEBreaker/);
   await expect(start).toBeVisible();
   // A recent project brings its own board to the toolbar.

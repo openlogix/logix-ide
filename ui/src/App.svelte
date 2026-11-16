@@ -561,10 +561,16 @@
     // Another board starts with its default variant.
     const variant = id === currentBoard ? currentVariant : {};
     rememberBoard(id, variant);
-    // No project (the start screen): it's the board for the next one.
+    // No project (the start screen): it's the board for the next one, and
+    // its project options offer a new project on it, as in the editor (the
+    // user's request, 2026-11-15).
     if (!project) {
       homeBoard = id;
       homeVariant = variant;
+      if (examples.length > 0) {
+        pendingBoard = id;
+        examplesOpen = true;
+      }
       return;
     }
     if (examples.length === 0) {
