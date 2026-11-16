@@ -28,6 +28,7 @@
     type SetupStage,
     type Variant,
     type BuildReport,
+    type ProjectFile,
   } from "./lib/backend";
   import Editor from "./lib/Editor.svelte";
   import { setHoverEnabled, startLanguageServer } from "./lib/lsp";
@@ -1378,6 +1379,7 @@
       );
       taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
+      if (outcome.layouts) takeLayouts(p, outcome.layouts, false);
       if (task === "test") log("", ...testbenchLines(outcome));
       // The report is always the last build's: a failed or stopped build
       // has none, so the previous one's goes (Upload's report is its
@@ -1862,17 +1864,38 @@
     await backend.cancelTask();
   }
 
+  /**
+   * Takes GTKWave layouts the user saved in GTKWave into the project `p`:
+   * a layout is a project file like the sources (the user's decision,
+   * 2026-11-16), so a new or changed one is an edit, saved with the
+   * project. `announce` logs it (a run already did).
+   */
+  function takeLayouts(p: WorkingProject, layouts: ProjectFile[], announce: boolean) {
+    for (const l of layouts) {
+      const f = findFile(p, l.name);
+      if (f?.text === l.text) continue;
+      if (f) {
+        f.text = l.text;
+        editor?.replaceText(l.name, l.text);
+      } else {
+        addFile(p, l.name, l.text);
+        editor?.add(l.name, l.text);
+      }
+      if (announce) log(`Took the layout saved in GTKWave into ${l.name} (not saved yet).`);
+    }
+  }
+
   // GTKWave layouts are saved from GTKWave while Logix IDE is in the
-  // background; copy them into the project when the user comes back.
+  // background; take them into the project when the user comes back.
   $effect(() => {
     const onFocus = async () => {
       const p = project;
-      if (!p?.dir) return;
+      if (!p) return;
       try {
-        const lines = await backend.saveGtkwaveLayouts(buildKey(p), p.dir);
-        if (lines.length > 0) log(...lines);
+        const layouts = await backend.readGtkwaveLayouts(buildKey(p));
+        if (project === p) takeLayouts(p, layouts, true);
       } catch {
-        // Best effort; the next run tries again.
+        // Best effort; the next run takes them too.
       }
     };
     window.addEventListener("focus", onFocus);
@@ -1937,7 +1960,6 @@
         [...p.removed],
         board,
         variant,
-        buildKey(p),
       );
       if (!doc || !doc.dir) return false;
       // Keep the editor (and its undo history) as is.
@@ -2538,6 +2560,8 @@
                     class="tab-icon"><Icon name="test" size={12} /></span
                   >{:else if fileRole(f.name, mainFile(project), pinExtension) === "pins"}<span
                     class="tab-icon"><Icon name="chip" size={12} /></span
+                  >{:else if fileRole(f.name, mainFile(project), pinExtension) === "layout"}<span
+                    class="tab-icon"><Icon name="simulate" size={12} /></span
                   >{/if}{f.name}{#if fileProblems.get(f.name) === "error"}<span
                     class="problem-icon error"><Icon name="error" size={12} /></span
                   >{:else if fileProblems.get(f.name) === "warning"}<span

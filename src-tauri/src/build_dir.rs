@@ -84,19 +84,11 @@ pub fn prepare(root: &Path, input: &BuildInput) -> Result<PathBuf> {
     std::fs::create_dir_all(root).with_context(|| format!("can't create {}", root.display()))?;
 
     // Remove everything from the previous build except the engine's output, so
-    // deleted or renamed files don't linger. GTKWave layouts the user saved
-    // stay too: a project that has a folder got them back already
-    // (`save_back_gtkw`, before each task), but a project never saved has
-    // none, and its layout would be lost at the next Simulate (the user's
-    // report, 2026-11-16). The project's own layouts, copied below, replace
-    // them.
+    // deleted or renamed files don't linger.
     for entry in std::fs::read_dir(root)? {
         let entry = entry?;
         let name = entry.file_name();
         if name == OUTPUT_DIR || name == KEY_FILE {
-            continue;
-        }
-        if is_user_gtkw(&entry.path()) {
             continue;
         }
         let path = entry.path();
@@ -149,40 +141,29 @@ fn is_user_gtkw(path: &Path) -> bool {
         })
 }
 
-/// Copies GTKWave layouts (.gtkw) the user saved from GTKWave in the build
-/// folder back to the project folder `project_dir`, so they're kept (the
-/// build folder is cleared before each run). Only if `root` was prepared
-/// for the same project (`key`). Skips generated layouts and
-/// files the project already has unchanged. Returns the copied names.
-pub fn save_back_gtkw(root: &Path, key: &str, project_dir: &Path) -> Result<Vec<String>> {
+/// The GTKWave layouts (.gtkw) the user saved from GTKWave in the build
+/// folder (those without the engine's generated-layout marker), as project
+/// files: the UI takes them into the project like edits, so a layout is
+/// saved with the project like any other file (the user's decision,
+/// 2026-11-16). Only if `root` was prepared for the project `key`.
+pub fn user_layouts(root: &Path, key: &str) -> Result<Vec<ProjectFile>> {
     let same_project = std::fs::read_to_string(root.join(KEY_FILE)).is_ok_and(|k| k == key);
-    if !same_project || !project_dir.is_dir() {
+    if !same_project {
         return Ok(Vec::new());
     }
-    let mut copied = Vec::new();
+    let mut out = Vec::new();
     for entry in std::fs::read_dir(root)? {
         let entry = entry?;
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let is_gtkw = Path::new(&name)
-            .extension()
-            .is_some_and(|e| e.eq_ignore_ascii_case("gtkw"));
-        if !is_gtkw || !entry.path().is_file() {
+        if !is_user_gtkw(&entry.path()) {
             continue;
         }
-        let text = std::fs::read(entry.path())?;
-        let content = String::from_utf8_lossy(&text);
-        if GTKW_AUTO_MARKERS.iter().any(|m| content.contains(m)) {
-            continue;
-        }
-        let target = project_dir.join(&name);
-        if std::fs::read(&target).is_ok_and(|existing| existing == text) {
-            continue;
-        }
-        project::write_atomic(&target, &text)?;
-        copied.push(name);
+        out.push(ProjectFile {
+            name: entry.file_name().to_string_lossy().into_owned(),
+            text: String::from_utf8_lossy(&std::fs::read(entry.path())?).into_owned(),
+        });
     }
-    copied.sort();
-    Ok(copied)
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(out)
 }
 
 #[cfg(test)]
@@ -247,49 +228,6 @@ mod tests {
             !root.join("_build").exists(),
             "another project starts clean"
         );
-    }
-
-    // A project never saved has no folder to keep a layout saved from
-    // GTKWave, so the build folder keeps it from run to run; generated ones
-    // go, and the project's own layout replaces it.
-    #[test]
-    fn keeps_user_gtkwave_layouts_between_runs() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path().join("build");
-        let files = [file("main.v", "x")];
-        let input = |key, source_dir| BuildInput {
-            key,
-            source_dir,
-            files: &files,
-        };
-        prepare(&root, &input("untitled", None)).unwrap();
-        std::fs::write(root.join("main_tb.gtkw"), "[*] user layout\n").unwrap();
-        std::fs::write(
-            root.join("auto_tb.gtkw"),
-            format!("[*] {}\n", GTKW_AUTO_MARKERS[0]),
-        )
-        .unwrap();
-
-        prepare(&root, &input("untitled", None)).unwrap();
-        assert_eq!(
-            std::fs::read_to_string(root.join("main_tb.gtkw")).unwrap(),
-            "[*] user layout\n"
-        );
-        assert!(!root.join("auto_tb.gtkw").exists(), "generated layouts go");
-
-        // The project's own layout wins.
-        let src = tmp.path().join("src");
-        std::fs::create_dir_all(&src).unwrap();
-        std::fs::write(src.join("main_tb.gtkw"), "[*] project layout\n").unwrap();
-        prepare(&root, &input("untitled", Some(&src))).unwrap();
-        assert_eq!(
-            std::fs::read_to_string(root.join("main_tb.gtkw")).unwrap(),
-            "[*] project layout\n"
-        );
-
-        // Another project starts clean.
-        prepare(&root, &input("other", None)).unwrap();
-        assert!(!root.join("main_tb.gtkw").exists());
     }
 
     #[test]
@@ -381,11 +319,9 @@ mod tests {
     }
 
     #[test]
-    fn saves_back_user_gtkwave_layouts() {
+    fn finds_the_gtkwave_layouts_the_user_saved() {
         let tmp = tempfile::tempdir().unwrap();
         let root = tmp.path().join("build");
-        let project = tmp.path().join("project");
-        std::fs::create_dir_all(&project).unwrap();
         let files = [file("main.v", "m")];
         prepare(
             &root,
@@ -405,22 +341,13 @@ mod tests {
             .unwrap();
         }
         std::fs::write(root.join("main_tb.gtkw"), "[*] user layout\n").unwrap();
-        std::fs::write(root.join("same_tb.gtkw"), "same").unwrap();
-        std::fs::write(project.join("same_tb.gtkw"), "same").unwrap();
 
-        // Another project's build folder: nothing is copied.
-        assert!(save_back_gtkw(&root, "p2", &project).unwrap().is_empty());
-
-        let copied = save_back_gtkw(&root, "p1", &project).unwrap();
-        assert_eq!(copied, ["main_tb.gtkw"]);
+        // Another project's build folder: none.
+        assert!(user_layouts(&root, "p2").unwrap().is_empty());
         assert_eq!(
-            std::fs::read_to_string(project.join("main_tb.gtkw")).unwrap(),
-            "[*] user layout\n"
+            user_layouts(&root, "p1").unwrap(),
+            [file("main_tb.gtkw", "[*] user layout\n")]
         );
-        assert!(!project.join("auto0_tb.gtkw").exists());
-        assert!(!project.join("auto1_tb.gtkw").exists());
-        // Unchanged since: nothing more to copy.
-        assert!(save_back_gtkw(&root, "p1", &project).unwrap().is_empty());
     }
 
     #[test]

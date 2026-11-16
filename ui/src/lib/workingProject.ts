@@ -136,7 +136,8 @@ export type FileRole =
   | "include"
   | "testbench"
   | "pins"
-  | "otherPins";
+  | "otherPins"
+  | "layout";
 
 /**
  * The project's own boards: a folder in the project, a board file each in
@@ -169,6 +170,7 @@ export function fileRole(
   pinExtension: string | null = null,
 ): FileRole {
   if (name === main) return "main";
+  if (/\.gtkw$/i.test(name)) return "layout";
   if (isTestbench(name)) return "testbench";
   if (PIN_FILE.test(name)) {
     const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
@@ -194,6 +196,7 @@ export function roleTooltip(role: FileRole, pinExtension: string | null = null):
     otherPins: `Pin file for another kind of board: not used with this board${
       pinExtension ? `, whose pin file is a .${pinExtension} file` : ""
     }`,
+    layout: "GTKWave layout: the signals Simulate shows for its testbench, saved from GTKWave",
   };
   return role === "main"
     ? `${what.main}.`

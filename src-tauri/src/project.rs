@@ -71,8 +71,11 @@ pub fn custom_boards_stamp(folder: &Path) -> Option<String> {
 }
 
 /// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
-/// and headers, and the pin constraint formats of the supported boards.
-pub const EDITABLE_EXTENSIONS: &[&str] = &["v", "sv", "vh", "svh", "pcf", "lpf", "cst", "xdc"];
+/// and headers, the pin constraint formats of the supported boards, and
+/// GTKWave layouts (`.gtkw`: what Simulate shows for a testbench), which are
+/// project files like the others (the user's decision, 2026-11-16).
+pub const EDITABLE_EXTENSIONS: &[&str] =
+    &["v", "sv", "vh", "svh", "pcf", "lpf", "cst", "xdc", "gtkw"];
 
 /// Names that belong to the IDE or the build, never project files.
 pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "_build"];

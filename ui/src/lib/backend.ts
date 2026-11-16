@@ -329,6 +329,11 @@ export interface TaskOutcome {
    */
   driverDevice: DriverDevice | null;
   sameIds: string | null;
+  /**
+   * GTKWave layouts the user saved from GTKWave, which this run used: the
+   * UI takes them into the project, as edits. Absent when none.
+   */
+  layouts?: ProjectFile[];
 }
 
 /** For Upload (Windows and Linux): install the board's driver or udev rule first, which the user agreed to. */
@@ -760,8 +765,6 @@ export const backend = {
     removed: string[],
     board: string | null,
     variant: Variant,
-    /** The project's build key before saving: GTKWave layouts saved from its simulations are copied along. */
-    buildKey: string,
   ): Promise<ProjectDoc | null> =>
     invoke<ProjectDoc | null>("save_project_as_dialog", {
       projectDir,
@@ -769,7 +772,6 @@ export const backend = {
       suggestedName,
       files,
       removed,
-      buildKey,
       board,
       variant,
     }),
@@ -790,11 +792,12 @@ export const backend = {
     invoke<string>("copy_project_path", { dir }),
 
   /**
-   * Copies GTKWave layouts saved from a simulation back to the project
-   * folder. Returns console lines about what was saved.
+   * The GTKWave layouts the user saved from GTKWave for the project with
+   * this build key: the UI takes those that differ into the project, as
+   * edits, saved with it like any other file.
    */
-  saveGtkwaveLayouts: (key: string, projectDir: string): Promise<string[]> =>
-    invoke<string[]>("save_gtkwave_layouts", { key, projectDir }),
+  readGtkwaveLayouts: (key: string): Promise<ProjectFile[]> =>
+    invoke<ProjectFile[]>("read_gtkwave_layouts", { key }),
 
   /** The current preferences. */
   getPreferences: (): Promise<Preferences> =>

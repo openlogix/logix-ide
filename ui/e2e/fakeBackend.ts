@@ -318,6 +318,8 @@ const fake = {
    * driver that isn't ready makes Upload ask to install WinUSB first.
    */
   uploadDriver: null as Real.Driver | null,
+  /** GTKWave layouts the user saved, as `readGtkwaveLayouts` returns them (and the next run, as `layouts`). */
+  gtkwaveLayouts: [] as Real.ProjectFile[],
   /**
    * When set, Logix Engine refuses to install a driver without
    * `allowSameIds`, with this message (other devices with the same USB IDs
@@ -814,7 +816,7 @@ export const backend: typeof Real.backend = {
     fake.copiedPath = dir;
     return `'${dir}'`; // as the real one quotes a path with a space
   },
-  saveGtkwaveLayouts: async () => [],
+  readGtkwaveLayouts: async () => fake.gtkwaveLayouts,
   cancelTask: async () => false,
 
   // No language server in the fake: it never answers, so the UI quietly
@@ -879,8 +881,8 @@ export const backend: typeof Real.backend = {
     const n = name.trim();
     if (!n) return "Enter a file name.";
     if (/\s/.test(n)) return "A file name can't contain spaces.";
-    if (!/\.(s?vh?|pcf|lpf|cst|xdc)$/i.test(n)) {
-      return "Use one of these extensions: .v .sv .vh .svh .pcf .lpf .cst .xdc.";
+    if (!/\.(s?vh?|pcf|lpf|cst|xdc|gtkw)$/i.test(n)) {
+      return "Use one of these extensions: .v .sv .vh .svh .pcf .lpf .cst .xdc .gtkw.";
     }
     if (existing.some((e) => e.toLowerCase() === n.toLowerCase())) {
       return `There's already a file named "${n}".`;

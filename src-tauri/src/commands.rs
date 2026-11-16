@@ -578,13 +578,20 @@ pub async fn run_task(
         build_dir::constraint_file(&files, pin_extension.as_deref()).map(str::to_owned);
     let log = on_line;
     let (project_dir_kept, key_kept) = (project_dir.clone(), key.clone());
-    let dir = blocking(move || {
-        // Keep GTKWave layouts saved since the last run; preparing clears
-        // the build folder.
-        if let Some(project_dir) = &project_dir {
-            for name in save_back_gtkw(&root, &key, Path::new(project_dir)) {
-                log(gtkw_saved_message(&name));
+    let (dir, layouts) = blocking(move || {
+        // GTKWave layouts saved since the UI last read them (preparing
+        // clears the build folder): this run uses them, and the UI takes
+        // them into the project, as edits.
+        let mut files = files;
+        let mut layouts = Vec::new();
+        for layout in build_dir::user_layouts(&root, &key).unwrap_or_default() {
+            match files.iter_mut().find(|f| f.name == layout.name) {
+                Some(f) if f.text == layout.text => continue,
+                Some(f) => f.text = layout.text.clone(),
+                None => files.push(layout.clone()),
             }
+            log(gtkw_taken_message(&layout.name));
+            layouts.push(layout);
         }
         let prepared = build_dir::prepare(
             &root,
@@ -595,7 +602,7 @@ pub async fn run_task(
             },
         )
         .context("Couldn't prepare the build.")?;
-        Ok::<_, anyhow::Error>(prepared)
+        Ok::<_, anyhow::Error>((prepared, layouts))
     })
     .await??;
     // GTKWave windows open before the simulation, to recognize the new one.
@@ -647,6 +654,7 @@ pub async fn run_task(
         .context("Couldn't run Logix Engine.");
     *state.task_cancel.lock().unwrap() = None;
     let mut outcome = result?;
+    outcome.layouts = layouts;
     // Show Diagram, or Verify with the Diagram window open: the window
     // shows the engine's page.
     if let Some(page) = outcome.diagram_page.take() {
@@ -1016,33 +1024,27 @@ pub async fn connected_devices(
     Ok(found)
 }
 
-/// Copies GTKWave layouts the user saved (from a simulation) back to the
-/// project folder `project_dir`, and returns the console lines to show.
-/// The UI calls this when the window regains focus, i.e. typically after
-/// saving a layout in GTKWave.
+/// The GTKWave layouts the user saved from GTKWave for the project `key`
+/// (`build_dir::user_layouts`): the UI takes those that differ into the
+/// project, as edits, saved with it like any other file. The UI calls this
+/// when the window regains focus, typically after saving a layout in
+/// GTKWave; each run also does it before preparing the build folder.
 #[tauri::command]
-pub async fn save_gtkwave_layouts(
-    key: String,
-    project_dir: String,
-) -> Result<Vec<String>, UserError> {
+pub async fn read_gtkwave_layouts(key: String) -> Result<Vec<ProjectFile>, UserError> {
     let root = platform::current_implemented()?
         .data_dir()?
         .join("_scratch")
         .join("build");
-    let names = blocking(move || save_back_gtkw(&root, &key, Path::new(&project_dir))).await?;
-    Ok(names.iter().map(|n| gtkw_saved_message(n)).collect())
-}
-
-/// Best effort: a failure to save a layout back shouldn't stop a build.
-fn save_back_gtkw(root: &Path, key: &str, project_dir: &Path) -> Vec<String> {
-    build_dir::save_back_gtkw(root, key, project_dir).unwrap_or_else(|e| {
-        crate::log!("Can't save GTKWave layouts: {e:#}");
+    let layouts = blocking(move || build_dir::user_layouts(&root, &key)).await?;
+    Ok(layouts.unwrap_or_else(|e| {
+        crate::log!("Can't read GTKWave layouts: {e:#}");
         Vec::new()
-    })
+    }))
 }
 
-fn gtkw_saved_message(name: &str) -> String {
-    format!("Saved the GTKWave layout {name} to the project folder.")
+/// The console line when a run takes a layout saved in GTKWave.
+fn gtkw_taken_message(name: &str) -> String {
+    format!("Took the layout saved in GTKWave into {name} (not saved yet).")
 }
 
 /// Whether Verify lints (Settings > "Show lint warnings on Verify").
@@ -1447,7 +1449,6 @@ pub async fn save_project_as_dialog(
     removed: Vec<String>,
     board: Option<String>,
     variant: project::Variant,
-    build_key: String,
 ) -> Result<Option<ProjectDoc>, UserError> {
     let mut dialog = app.dialog().file().set_title("Save Project As");
     // Start next to the project's own folder (a project never saved, even
@@ -1490,16 +1491,6 @@ pub async fn save_project_as_dialog(
         project::load(&target)
     })
     .await??;
-    // GTKWave layouts saved from this project's simulations, kept in the
-    // build folder (a project never saved has nowhere else to keep them),
-    // become part of the new project.
-    if let Ok(dir) = platform::current_implemented().and_then(|p| p.data_dir()) {
-        let root = dir.join("_scratch").join("build");
-        let target = created.dir.clone();
-        for name in blocking(move || save_back_gtkw(&root, &build_key, &target)).await? {
-            crate::log!("{}", gtkw_saved_message(&name));
-        }
-    }
     remember_project(&app, &created.dir);
     Ok(Some(created.into()))
 }

@@ -22,7 +22,7 @@ export type LiveProblems = Map<string, Diagnostic[]>;
 export function taskReads(task: Task, role: FileRole): boolean {
   if (role === "pins" || role === "otherPins")
     return task === "build" || task === "upload" || task === "report";
-  if (role === "testbench") return task === "test" || task === "simulate";
+  if (role === "testbench" || role === "layout") return task === "test" || task === "simulate";
   return true;
 }
 

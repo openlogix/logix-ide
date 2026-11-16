@@ -193,6 +193,32 @@ test("a new project for a board builds right away", async ({ page }) => {
   await expect(output(page)).toContainText(/Build succeeded in .*\s*Ready\.\s*$/);
 });
 
+// A GTKWave layout saved in GTKWave is a project file like the sources
+// (the user's decision, 2026-11-16): back in Logix IDE, it's a new tab and
+// an unsaved change, even in a project never saved.
+test("a layout saved in GTKWave becomes an unsaved project file", async ({ page }) => {
+  await start(page);
+  await chooseBoard(page);
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: { gtkwaveLayouts: unknown[] } }).__fake;
+    f.gtkwaveLayouts = [{ name: "main_tb.gtkw", text: "[*] my layout\n" }];
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(tab(page, "main_tb.gtkw")).toBeVisible();
+  // The project is unsaved now (the window's document state).
+  const documentState = () =>
+    page.evaluate(
+      () =>
+        (window as unknown as { __fake: { documentState?: { dirty: boolean } } }).__fake
+          .documentState?.dirty,
+    );
+  await expect.poll(documentState).toBe(true);
+  await expect(output(page)).toContainText("Took the layout saved in GTKWave into main_tb.gtkw (not saved yet).");
+  // The same layout again changes nothing.
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(output(page).getByText("Took the layout saved in GTKWave")).toHaveCount(1);
+});
+
 test("Board Utilization shows the used resources, all on request, and copies them", async ({ page }) => {
   type Fake = { copiedText: string | null };
   const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);

@@ -63,6 +63,11 @@ pub struct TaskOutcome {
     /// For Upload with `disconnect_devices`: the engine's message, naming
     /// the other devices with the same USB IDs (they'd get WinUSB too).
     pub same_ids: Option<String>,
+    /// GTKWave layouts the user saved from GTKWave since the UI last read
+    /// them, which this run used: the UI takes them into the project, as
+    /// edits (`read_gtkwave_layouts`). Omitted when none.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub layouts: Vec<crate::project::ProjectFile>,
 }
 
 /// A device that needs a driver before Upload can program it.

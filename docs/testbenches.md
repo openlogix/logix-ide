@@ -28,8 +28,10 @@ opens zoomed in around the first failure, so you can see what led up to it.
 ![A testbench's signals in GTKWave: the clock, a counter and the LEDs over time](images/gtkwave.png)
 
 To keep how GTKWave shows the signals, save it from GTKWave with
-**File > Write Save File**. Logix IDE copies the saved layout (a `.gtkw` file)
-into the project, and the next simulation uses it.
+**File > Write Save File**. When you go back to Logix IDE, the saved layout
+(`main_tb.gtkw` for `main_tb.v`) becomes a file of your project, with a tab
+of its own, and the next simulation uses it. Like any other change, it's
+kept when you save the project.
 
 ## Writing a testbench
 

@@ -159,7 +159,7 @@ pub fn run() {
             commands::get_preferences,
             commands::set_preferences,
             commands::choose_folder_dialog,
-            commands::save_gtkwave_layouts,
+            commands::read_gtkwave_layouts,
             commands::format_file,
             commands::get_boards,
             commands::get_fpga_families,

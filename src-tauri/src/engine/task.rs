@@ -175,8 +175,9 @@ fn design_files(files: &[String]) -> Vec<String> {
 }
 
 /// The GTKWave layout for a testbench, next to it: `main_tb.v` ->
-/// `main_tb.gtkw`. The engine writes a default one there unless the user
-/// saved their own (`build_dir::save_back_gtkw` copies those back).
+/// `main_tb.gtkw`. The engine writes a default one there unless the project
+/// has its own, a project file like the sources (`build_dir::user_layouts`
+/// finds those the user saved from GTKWave).
 fn layout_file(testbench: &str) -> String {
     let stem = Path::new(testbench)
         .file_stem()
@@ -209,6 +210,7 @@ pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOu
         devices: Vec::new(),
         driver_device: None,
         same_ids: None,
+        layouts: Vec::new(),
     }
 }
 
@@ -226,6 +228,7 @@ fn new_outcome() -> TaskOutcome {
         devices: Vec::new(),
         driver_device: None,
         same_ids: None,
+        layouts: Vec::new(),
     }
 }
 
@@ -1056,6 +1059,7 @@ mod tests {
             devices: Vec::new(),
             driver_device: None,
             same_ids: None,
+            layouts: Vec::new(),
         };
         let lines = Mutex::new(Vec::new());
         let e = json!({
