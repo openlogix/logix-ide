@@ -5,8 +5,8 @@
 use std::path::{Path, PathBuf};
 
 use tauri::menu::{
-    AboutMetadata, CheckMenuItemBuilder, ContextMenu, Menu, MenuBuilder, MenuItemBuilder,
-    MenuItemKind, SubmenuBuilder,
+    AboutMetadata, CheckMenuItemBuilder, ContextMenu, IsMenuItem, Menu, MenuBuilder,
+    MenuItemBuilder, MenuItemKind, PredefinedMenuItem, Submenu, SubmenuBuilder,
 };
 use tauri::{AppHandle, Emitter, Manager, Runtime, WebviewWindow};
 
@@ -189,22 +189,15 @@ const SYSTEM_INFO: &str = "system-info";
 /// Help > Check for Updates: the UI runs `check_for_updates`.
 const CHECK_UPDATES: &str = "check-for-updates";
 const CLOSE: &str = "close";
+/// File > Open Recent, and Tools: submenus `refresh` changes in place.
+const OPEN_RECENT: &str = "open-recent";
+const TOOLS_MENU: &str = "tools-menu";
 const QUIT: &str = "quit";
 
-pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
-    let state = app
-        .try_state::<crate::AppState>()
-        .map(|s| s.menu_state.lock().unwrap().clone())
-        .unwrap_or_default();
-    let item = |id: &str, text: &str, accel: &str| {
-        MenuItemBuilder::with_id(id, text)
-            .accelerator(accel)
-            .enabled(is_enabled(id, &state))
-            .build(app)
-    };
-    let quit = item(QUIT, "Quit Logix IDE", "CmdOrCtrl+Q")?;
-    let settings_item = item(SETTINGS, "Settings…", "CmdOrCtrl+,")?;
-    let about = AboutMetadata {
+/// The About box's text. It names the Logix Engine release in use, so it
+/// changes once setup has chosen one (`refresh`).
+fn about_metadata() -> AboutMetadata<'static> {
+    AboutMetadata {
         name: Some("Logix IDE".into()),
         version: Some(crate::version::APP_VERSION.to_string()),
         comments: Some(format!(
@@ -221,31 +214,94 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         copyright: Some("Licensed under MIT or the Apache License 2.0.".into()),
         website: Some("https://www.openlogix.org/ide/".into()),
         ..Default::default()
+    }
+}
+
+/// File > Open Recent's items: the recent projects (or "No Recent
+/// Projects"), then Clear Menu. None has a shortcut, so `refresh` can
+/// replace them in place.
+fn recent_entries<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Vec<MenuItemKind<R>>> {
+    let recents = recent_projects();
+    let mut out: Vec<MenuItemKind<R>> = Vec::new();
+    for (i, label) in recent_labels(&recents).into_iter().enumerate() {
+        out.push(
+            MenuItemBuilder::with_id(format!("{RECENT_PREFIX}{i}"), label)
+                .build(app)?
+                .kind(),
+        );
+    }
+    if recents.is_empty() {
+        out.push(
+            MenuItemBuilder::with_id("no-recent", "No Recent Projects")
+                .enabled(false)
+                .build(app)?
+                .kind(),
+        );
+    }
+    out.push(PredefinedMenuItem::separator(app)?.kind());
+    out.push(
+        MenuItemBuilder::with_id(CLEAR_RECENT, "Clear Menu")
+            .enabled(!recents.is_empty())
+            .build(app)?
+            .kind(),
+    );
+    Ok(out)
+}
+
+/// Tools' board options (one submenu per dimension, as Arduino's board
+/// options), then a separator when there are any. No item has a shortcut,
+/// so `refresh` can replace them in place.
+fn variant_entries<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &MenuState,
+) -> tauri::Result<Vec<MenuItemKind<R>>> {
+    let mut out: Vec<MenuItemKind<R>> = Vec::new();
+    for dim in &state.variant_menus {
+        let mut sub = SubmenuBuilder::new(app, &dim.label);
+        for v in &dim.values {
+            sub = sub.item(
+                &CheckMenuItemBuilder::with_id(
+                    format!("{VARIANT_PREFIX}{}:{}", dim.id, v.id),
+                    &v.label,
+                )
+                .checked(v.checked)
+                .enabled(v.enabled)
+                .build(app)?,
+            );
+        }
+        out.push(sub.build()?.kind());
+    }
+    if !state.variant_menus.is_empty() {
+        out.push(PredefinedMenuItem::separator(app)?.kind());
+    }
+    Ok(out)
+}
+
+/// Borrows items for the builders' `items`.
+fn refs<R: Runtime>(items: &[MenuItemKind<R>]) -> Vec<&dyn IsMenuItem<R>> {
+    items.iter().map(|i| i as &dyn IsMenuItem<R>).collect()
+}
+
+pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
+    let state = app
+        .try_state::<crate::AppState>()
+        .map(|s| s.menu_state.lock().unwrap().clone())
+        .unwrap_or_default();
+    let item = |id: &str, text: &str, accel: &str| {
+        MenuItemBuilder::with_id(id, text)
+            .accelerator(accel)
+            .enabled(is_enabled(id, &state))
+            .build(app)
     };
+    let quit = item(QUIT, "Quit Logix IDE", "CmdOrCtrl+Q")?;
+    let settings_item = item(SETTINGS, "Settings…", "CmdOrCtrl+,")?;
+    let about = about_metadata();
     // macOS puts Quit in the application menu; others in File.
     let mac = platform::current().is_some_and(|p| p.has_app_menu());
 
     // File > Open Recent, from the recent projects in the settings.
-    let recents = recent_projects();
-    let mut recent = SubmenuBuilder::new(app, "Open Recent");
-    for (i, label) in recent_labels(&recents).into_iter().enumerate() {
-        recent = recent
-            .item(&MenuItemBuilder::with_id(format!("{RECENT_PREFIX}{i}"), label).build(app)?);
-    }
-    if recents.is_empty() {
-        recent = recent.item(
-            &MenuItemBuilder::with_id("no-recent", "No Recent Projects")
-                .enabled(false)
-                .build(app)?,
-        );
-    }
-    let recent = recent
-        .separator()
-        .item(
-            &MenuItemBuilder::with_id(CLEAR_RECENT, "Clear Menu")
-                .enabled(!recents.is_empty())
-                .build(app)?,
-        )
+    let recent = SubmenuBuilder::with_id(app, OPEN_RECENT, "Open Recent")
+        .items(&refs(&recent_entries(app)?))
         .build()?;
 
     // "Project" in the names: these act on the whole project, New File on
@@ -326,27 +382,10 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
 
     // As in the Arduino IDE: Tools > Auto Format, Cmd+T; then the board's
     // options, as Arduino's board options.
-    let mut tools = SubmenuBuilder::new(app, "Tools")
+    let tools = SubmenuBuilder::with_id(app, TOOLS_MENU, "Tools")
         .item(&item(AUTO_FORMAT, "Auto Format", "CmdOrCtrl+T")?)
-        .separator();
-    for dim in &state.variant_menus {
-        let mut sub = SubmenuBuilder::new(app, &dim.label);
-        for v in &dim.values {
-            sub = sub.item(
-                &CheckMenuItemBuilder::with_id(
-                    format!("{VARIANT_PREFIX}{}:{}", dim.id, v.id),
-                    &v.label,
-                )
-                .checked(v.checked)
-                .enabled(v.enabled)
-                .build(app)?,
-            );
-        }
-        tools = tools.item(&sub.build()?);
-    }
-    if !state.variant_menus.is_empty() {
-        tools = tools.separator();
-    }
+        .separator()
+        .items(&refs(&variant_entries(app, &state)?));
     let tools = tools
         .item(&MenuItemBuilder::with_id(BOARD_EXPLORER, "Board Explorer…").build(app)?)
         .item(&MenuItemBuilder::with_id(DEVICES, "Connected Devices…").build(app)?)
@@ -592,14 +631,96 @@ pub fn update<R: Runtime>(app: &AppHandle<R>, state: &MenuState) -> bool {
     true
 }
 
-/// Rebuilds the menu bar, e.g. after the recent projects changed.
+/// Brings the menu bar up to date after its contents changed: the recent
+/// projects, the board options, or the About text (the engine release).
+/// Those parts are replaced in place (`replace_parts`): replacing the whole
+/// menu bar made GTK warn about every shortcut of the old one ("no
+/// accelerator installed", from the menu library tearing it down; the
+/// user's report, 2026-11-16) and redraws the whole window on Windows. The
+/// whole menu bar is rebuilt only when it isn't laid out as expected.
 pub fn refresh<R: Runtime>(app: &AppHandle<R>) {
+    let state = app
+        .try_state::<crate::AppState>()
+        .map(|s| s.menu_state.lock().unwrap().clone())
+        .unwrap_or_default();
+    if let Some(menu) = app.menu() {
+        match replace_parts(app, &menu, &state) {
+            Ok(()) => {
+                update(app, &state);
+                return;
+            }
+            Err(e) => crate::log!("Can't update the menu in place, rebuilding it: {e}"),
+        }
+    }
     match build(app) {
         Ok(menu) => {
             let _ = app.set_menu(menu);
         }
         Err(e) => crate::log!("Can't rebuild the menu: {e}"),
     }
+}
+
+/// Replaces the parts of the menu bar that change, none of which has a
+/// shortcut: File > Open Recent's items, Tools' board options (between
+/// Auto Format's separator and Board Explorer), and the About item.
+fn replace_parts<R: Runtime>(
+    app: &AppHandle<R>,
+    menu: &Menu<R>,
+    state: &MenuState,
+) -> anyhow::Result<()> {
+    use anyhow::Context;
+    let top = menu.items()?;
+    let recent = find_submenu(&top, OPEN_RECENT).context("no Open Recent menu")?;
+    let tools = find_submenu(&top, TOOLS_MENU).context("no Tools menu")?;
+    let tool_items = tools.items()?;
+    let explorer = tool_items
+        .iter()
+        .position(|i| i.id().0 == BOARD_EXPLORER)
+        .context("no Board Explorer item")?;
+    // Auto Format and its separator stay.
+    let first = 2;
+    anyhow::ensure!(explorer >= first, "Tools isn't laid out as expected");
+    // The About item: a predefined one, in the app menu (macOS) or Help.
+    let about = top
+        .iter()
+        .filter_map(|i| match i {
+            MenuItemKind::Submenu(s) => Some(s.clone()),
+            _ => None,
+        })
+        .find_map(|sub| {
+            let items = sub.items().ok()?;
+            let at = items.iter().position(|i| match i {
+                MenuItemKind::Predefined(p) => p.text().is_ok_and(|t| t.starts_with("About")),
+                _ => false,
+            })?;
+            Some((sub, at))
+        });
+
+    for _ in 0..recent.items()?.len() {
+        recent.remove_at(0)?;
+    }
+    recent.append_items(&refs(&recent_entries(app)?))?;
+    for _ in first..explorer {
+        tools.remove_at(first)?;
+    }
+    tools.insert_items(&refs(&variant_entries(app, state)?), first)?;
+    if let Some((sub, at)) = about {
+        sub.remove_at(at)?;
+        sub.insert(
+            &PredefinedMenuItem::about(app, None::<&str>, Some(about_metadata()))?,
+            at,
+        )?;
+    }
+    Ok(())
+}
+
+/// The submenu with this ID, anywhere in the menu bar.
+fn find_submenu<R: Runtime>(items: &[MenuItemKind<R>], id: &str) -> Option<Submenu<R>> {
+    items.iter().find_map(|i| match i {
+        MenuItemKind::Submenu(sub) if sub.id().0 == id => Some(sub.clone()),
+        MenuItemKind::Submenu(sub) => find_submenu(&sub.items().ok()?, id),
+        _ => None,
+    })
 }
 
 pub fn recent_projects() -> Vec<PathBuf> {
