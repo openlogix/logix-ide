@@ -1161,8 +1161,14 @@ test("Upload offers the udev rule a board needs", async ({ page }) => {
   const ask = page.getByRole("alertdialog", { name: "Let Logix IDE program the board?" });
   await expect(ask).toContainText("To program the Alhambra II, Linux needs a udev rule that lets you use it.");
   await expect(ask).toContainText("Linux asks for your password.");
+  // The output says why Upload stopped, and waits for the answer.
+  await expect(output(page)).toContainText(/The board needs a udev rule first\.\s*$/);
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(status(page)).toContainText("Upload needs a udev rule for the board");
+  // The answer ends the output, then Ready.
+  await expect(output(page)).toContainText(
+    /The board needs a udev rule first\.\s*Upload needs a udev rule for the board: choose Upload again to add it\.\s*Ready\.\s*$/,
+  );
   expect((await fake(page)).driverInstalls).toEqual([]);
 
   await menu(page, "upload");

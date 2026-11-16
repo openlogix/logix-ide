@@ -1235,22 +1235,27 @@
   async function offerUploadDriver(outcome: TaskOutcome) {
     const d = outcome.driverDevice;
     if (!d) return;
+    // A No ends Upload's output, which waited for the answer: what to do,
+    // then "Ready." (the user's report, 2026-11-16: only "Ready." showed).
+    const declined = (text: string) => {
+      status = { text, kind: "info" };
+      logDone();
+    };
     if (outcome.action === "disconnect_devices") {
       if (await confirmInApp(sameIdsQuestion(outcome.sameIds ?? "")))
         runTask("upload", null, d.id, { install: true, allowSameIds: true });
-      else status = { text: "Unplug the other devices, then choose Upload again.", kind: "info" };
+      else declined("Unplug the other devices, then choose Upload again.");
       return;
     }
     const who = project?.board ? `the ${boardName(project.board)}` : d.label;
     if (await confirmInApp(driverOffer(who, d.needed, d.current)))
       runTask("upload", null, d.id, { install: true, allowSameIds: false });
     else
-      status = {
-        text: isUdevRule(d.needed)
+      declined(
+        isUdevRule(d.needed)
           ? "Upload needs a udev rule for the board: choose Upload again to add it."
           : "Upload needs the board's driver: choose Upload again to install it.",
-        kind: "info",
-      };
+      );
   }
 
   /** After Upload couldn't find the board: say what is connected. */
@@ -1327,6 +1332,8 @@
     }
     const p = project;
     const board = project.board;
+    /** Upload stopped to ask for the board's driver or udev rule. */
+    let askingDriver = false;
     const boardInfo = boards.find((b) => b.id === board) ?? null;
     const variant = boardInfo ? toStore(boardInfo, p.variant) : p.variant;
     if (task === "test" && testbenches(p).length === 0) {
@@ -1405,8 +1412,15 @@
       }
       if (task === "upload" && needsDriver(outcome)) {
         // Not a failure: Upload goes on once the user agrees to the driver
-        // (asked once this run is over, so Upload can run again).
-        status = { text: "The board needs a driver first.", kind: "info" };
+        // or udev rule (asked once this run is over, so Upload can run
+        // again). The answer ends the output (offerUploadDriver), so no
+        // "Ready." before it.
+        const udev = outcome.driverDevice !== null && isUdevRule(outcome.driverDevice.needed);
+        status = {
+          text: udev ? "The board needs a udev rule first." : "The board needs a driver first.",
+          kind: "info",
+        };
+        askingDriver = true;
         setTimeout(() => offerUploadDriver(outcome), 0);
         return;
       }
@@ -1446,7 +1460,10 @@
       running = null;
       systemInfoRefresh++;
       taskStep = null;
-      if (project === p) logDone();
+      if (project === p) {
+        if (askingDriver && status) log(status.text);
+        else logDone();
+      }
       if (opening && project === p) {
         status = { text: OPENING_GTKWAVE, kind: "info" };
         gtkwaveWait = opening;
