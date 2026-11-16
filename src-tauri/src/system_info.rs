@@ -193,7 +193,7 @@ pub fn build(
                 details: vec![
                     detail("Repo", remote_config::CONFIG_REPO),
                     detail("Release", &u.examples),
-                    detail("Named by", &named_by),
+                    detail("Pinned in", &named_by),
                 ],
                 children: Vec::new(),
             });
@@ -242,7 +242,7 @@ fn engine_entry(u: &InUse, engine: &EnginePart, named_by: &str) -> VersionEntry 
     match &u.engine {
         EngineInUse::Release(r) => {
             entry.details.push(detail("Release", r));
-            entry.details.push(detail("Named by", named_by));
+            entry.details.push(detail("Pinned in", named_by));
         }
         EngineInUse::Local(path) => {
             entry.overridden_by = Some(engine::DEV_ENGINE_VARIABLE.into());
@@ -433,7 +433,7 @@ Logix IDE 2026.11.15
         // Which config named the engine, on hover only.
         let engine = &info.versions.children[0];
         assert!(engine.details.iter().any(
-            |d| d.label == "Named by" && d.value == "Logix IDE's remote config 001, prod.jsonc"
+            |d| d.label == "Pinned in" && d.value == "Logix IDE's remote config 001, prod.jsonc"
         ));
     }
 

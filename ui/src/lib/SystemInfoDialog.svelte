@@ -280,8 +280,11 @@
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
     gap: 3px 14px;
+    /* Label and value on one text line, though the value's font differs. */
+    align-items: baseline;
     margin: 0;
     font-size: 12px;
+    line-height: 1.4;
   }
   dd {
     margin: 0;
