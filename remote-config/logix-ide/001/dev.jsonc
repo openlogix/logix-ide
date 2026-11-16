@@ -17,9 +17,12 @@
   // Driver…; its own dev config names a logix-core with wdi-simple.
   // 2026-11-15: get_engine_info's version tree and developer settings, for
   // Help > System Info's new layout (otherwise the same as 2026-11-14).
+  // 2026-11-16: the first with a Linux package (Milestone 4), and "Pinned
+  // in" and the shorter log names (engine.log) that Logix IDE 2026-11-16
+  // goes with.
   "logix-engine": {
     "repo": "openlogix/logix-engine",
-    "release": "2026-11-15",
+    "release": "2026-11-16",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
   },
 
