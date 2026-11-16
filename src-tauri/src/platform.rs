@@ -120,7 +120,7 @@ impl Platform {
         }
     }
 
-    /// Puts `text` on the clipboard (`pbcopy` on macOS, Windows' clipboard
+    /// Puts `text` on the clipboard (macOS's pasteboard, Windows' clipboard
     /// API, the desktop's clipboard on Linux). Done here rather
     /// than in the webview, whose clipboard may refuse a copy that a menu
     /// item, not a click in the page, started.
@@ -135,30 +135,17 @@ impl Platform {
                 #[cfg(not(windows))]
                 bail!("not on Windows");
             }
-            Platform::MacosArm64 => {
-                use std::io::Write;
-                let mut child = std::process::Command::new("/usr/bin/pbcopy")
-                    .stdin(std::process::Stdio::piped())
-                    .spawn()
-                    .context("can't run 'pbcopy'")?;
-                child
-                    .stdin
-                    .take()
-                    .context("no input for 'pbcopy'")?
-                    .write_all(text.as_bytes())
-                    .context("can't write to 'pbcopy'")?;
-                if !child.wait().context("'pbcopy' didn't finish")?.success() {
-                    bail!("'pbcopy' failed");
-                }
-                Ok(())
-            }
-            // Linux desktops install no clipboard command by default (xclip,
-            // wl-copy): a library, as Tauri's own clipboard plugin uses.
-            Platform::LinuxX86_64 => {
-                #[cfg(target_os = "linux")]
-                return linux::copy_text(text);
-                #[cfg(not(target_os = "linux"))]
-                bail!("not on Linux");
+            // A library (arboard, as Tauri's own clipboard plugin uses):
+            // on macOS not pbcopy, which decodes its input by the locale in
+            // LANG, which an app started from Finder doesn't have, so it
+            // read UTF-8 as Mac Roman ("│" pasted as "‚îÇ"; found
+            // 2026-11-16 in System Info's tree); on Linux, desktops install
+            // no clipboard command by default (xclip, wl-copy).
+            Platform::MacosArm64 | Platform::LinuxX86_64 => {
+                #[cfg(any(target_os = "macos", target_os = "linux"))]
+                return clipboard::copy_text(text);
+                #[cfg(not(any(target_os = "macos", target_os = "linux")))]
+                bail!("not on macOS or Linux");
             }
         }
     }
@@ -541,13 +528,14 @@ mod macos {
     }
 }
 
-#[cfg(target_os = "linux")]
-mod linux {
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+mod clipboard {
     use anyhow::{anyhow, Context, Result};
     use std::sync::{Mutex, OnceLock};
 
     // On X11 the copied text stays on the clipboard only while its owner
-    // lives, so one clipboard for the app's whole run.
+    // lives, so one clipboard for the app's whole run (on macOS it's simply
+    // reused).
     static CLIPBOARD: OnceLock<Mutex<arboard::Clipboard>> = OnceLock::new();
 
     pub fn copy_text(text: &str) -> Result<()> {
