@@ -113,7 +113,11 @@ jobs:
       - name: Verify the .deb
         run: |
           dpkg-deb --info "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb"
-          dpkg-deb --contents "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb" | grep -q "./usr/bin/logix-ide$"
+          # Into a file: grep -q stops reading at its match, which fails
+          # the pipe under pipefail.
+          dpkg-deb --contents "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb" > contents.txt
+          cat contents.txt
+          grep -q " ./usr/bin/logix-ide$" contents.txt
 
       - name: Export the .deb as an artifact
         uses: actions/upload-artifact@v7
