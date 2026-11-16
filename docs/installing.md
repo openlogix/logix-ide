@@ -7,9 +7,9 @@ Logix IDE runs on:
 - **Linux** on a 64-bit (x64) PC: Ubuntu 22.04 or newer, Debian, or a system
   based on them.
 
-On the [releases page](https://github.com/openlogix/logix-ide/releases), always
-use the release marked **Latest** (not necessarily the newest one: newer
-pre-releases are development builds).
+Always install the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest). Newer pre-releases on the
+[releases page](https://github.com/openlogix/logix-ide/releases) are
+development builds.
 
 ## Download and install
 
@@ -17,7 +17,7 @@ Choose your system: the steps on every page of these docs follow your choice.
 
 === "macOS"
 
-    1. From the **Latest** release, download
+    1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
        `logix-ide-darwin-arm64-<date>.dmg` to your **Downloads** folder.
     2. Open **Terminal** and run this command. Logix IDE isn't signed with an
        Apple Developer ID yet, and this tells macOS to allow it:
@@ -36,7 +36,7 @@ Choose your system: the steps on every page of these docs follow your choice.
 
 === "Windows"
 
-    1. From the **Latest** release, download
+    1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
        `logix-ide-windows-x86-64-<date>.msi`.
     2. Double-click it. If Windows says **Windows protected your PC**, click
        **More info**, then **Run anyway**: Logix IDE isn't signed yet.
@@ -54,7 +54,7 @@ Choose your system: the steps on every page of these docs follow your choice.
     Logix IDE comes as a `.deb` package, for Ubuntu, Debian and the systems
     based on them.
 
-    1. From the **Latest** release, download
+    1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
        `logix-ide-linux-x86-64-<date>.deb` to your **Downloads** folder.
     2. In a terminal, install it. apt also installs what Logix IDE needs, and
        asks for your password:

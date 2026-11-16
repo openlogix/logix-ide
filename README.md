@@ -60,15 +60,15 @@ itself.
 
 ## Install Logix IDE
 
-Logix IDE runs on **Macs with Apple Silicon** (M1 or newer) and on **Windows
-PCs (x64)**. Linux is planned.
+Logix IDE runs on **Macs with Apple Silicon** (M1 or newer), on **Windows
+PCs (x64)** and on **Linux PCs (x64)**: Ubuntu 22.04 or newer, Debian, or a
+system based on them. Always install the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest): newer
+pre-releases are development builds.
 
 ### macOS
 
-1. On the [releases page](https://github.com/openlogix/logix-ide/releases), find the release marked
-   **Latest** (not necessarily the newest one: newer pre-releases are
-   development builds) and download its `logix-ide-darwin-arm64-<date>.dmg` to
-   your **Downloads** folder.
+1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
+   `logix-ide-darwin-arm64-<date>.dmg` to your **Downloads** folder.
 2. Open **Terminal** and run this command, using the name of the file you
    downloaded. Logix IDE isn't signed by Apple yet, and this tells your Mac it's
    OK to open it:
@@ -88,8 +88,8 @@ PCs (x64)**. Linux is planned.
 
 ### Windows
 
-1. On the [releases page](https://github.com/openlogix/logix-ide/releases), find the release marked
-   **Latest** and download its `logix-ide-windows-x86-64-<date>.msi`.
+1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
+   `logix-ide-windows-x86-64-<date>.msi`.
 2. Double-click it. If Windows says **Windows protected your PC**, click
    **More info**, then **Run anyway**: Logix IDE isn't signed yet.
 3. Follow the installer, and choose **Yes** when Windows asks whether it may
@@ -97,6 +97,22 @@ PCs (x64)**. Linux is planned.
 4. Start Logix IDE from the **Start** menu. The first time, it downloads the
    FPGA tools it needs, as on macOS. Many boards also need the WinUSB driver:
    **Upload** offers to install it the first time.
+
+### Linux
+
+1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
+   `logix-ide-linux-x86-64-<date>.deb` to your **Downloads** folder.
+2. In a terminal, install it. apt also installs what Logix IDE needs, and asks
+   for your password:
+
+   ```
+   sudo apt install ~/Downloads/logix-ide-linux-x86-64-*.deb
+   ```
+
+3. Start Logix IDE from your applications: press the Super key, type
+   `Logix IDE` and press Enter. The first time, it downloads the FPGA tools it
+   needs, as on macOS. Most boards also need a udev rule: **Upload** offers to
+   add it the first time.
 
 That's it: nothing else to install.
 
