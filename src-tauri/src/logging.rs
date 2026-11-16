@@ -5,11 +5,11 @@
 //! Logix Engine's docs/command-line.md, Logs): Logix IDE is a top program,
 //! so each run makes a session folder in `~/.logix/ide/logs`, named by its
 //! start (local time) and process ID, `<yyyymmdd>-<hhmmss>-<pid>`, and writes
-//! `logix-ide.log` there after a separator line. The programs it starts log
+//! `ide.log` there after a separator line. The programs it starts log
 //! into the same folder, named by their chain: the engine
-//! `logix-ide.logix-engine.log` (`--log-folder`, `--log-name`, and its
-//! GTKWave `logix-ide.logix-engine.gtkwave.log`), Verible's language server
-//! `logix-ide.verible-verilog-ls.log` (`child_file`). Old session folders
+//! `ide.engine.log` (`--log-folder`, `--log-name`, and its
+//! GTKWave `ide.engine.gtkwave.log`), Verible's language server
+//! `ide.verible-verilog-ls.log` (`child_file`). Old session folders
 //! are deleted by the engine's `clean_logs` tool once the engine runs
 //! (`commands::setup`), so the policy is the engine's, the same for every
 //! frontend.
@@ -43,7 +43,7 @@ pub fn strip_ansi(text: &str) -> std::borrow::Cow<'_, str> {
 }
 
 /// Logix IDE's name in log file names.
-pub const NAME: &str = "logix-ide";
+pub const NAME: &str = "ide";
 
 /// Above this size, output pane lines are no longer written (messages
 /// still are), so a long session can't fill the disk.
@@ -228,7 +228,7 @@ fn lock() -> std::sync::MutexGuard<'static, Option<Log>> {
     FILE.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// Creates a session folder and its `logix-ide.log`.
+/// Creates a session folder and its `ide.log`.
 fn open_new(session: &Path) -> std::io::Result<File> {
     std::fs::create_dir_all(session)?;
     OpenOptions::new()
@@ -275,7 +275,7 @@ mod tests {
         log.bytes = MAX_BYTES + 1;
         output_into(&mut log, &["dropped".to_string()]);
         output_into(&mut log, &["dropped too".to_string()]);
-        let text = std::fs::read_to_string(dir.join("logix-ide.log")).unwrap();
+        let text = std::fs::read_to_string(dir.join("ide.log")).unwrap();
         assert!(text.starts_with("| Build succeeded\n"), "{text}");
         assert!(text.contains("Output truncated"), "{text}");
         assert!(!text.contains("dropped"), "{text}");

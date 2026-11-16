@@ -243,7 +243,7 @@ pub struct Engine {
 impl Engine {
     /// Launches the engine at `exe` with its engine folder and opens the MCP
     /// session. The engine logs into Logix IDE's session folder, as
-    /// `logix-ide.logix-engine.log` (the Open Logix log layout, logging.rs);
+    /// `ide.engine.log` (the Open Logix log layout, logging.rs);
     /// its stderr (warnings and errors) also goes to the IDE's stderr.
     pub async fn start(exe: &Path, engine_folder: &Path) -> Result<Engine> {
         let mut cmd = tokio::process::Command::new(exe);
@@ -252,7 +252,7 @@ impl Engine {
             cmd.arg("--log-folder")
                 .arg(session)
                 .arg("--log-name")
-                .arg(format!("{}.logix-engine", crate::logging::NAME));
+                .arg(format!("{}.engine", crate::logging::NAME));
         }
         cmd.stdin(Stdio::piped())
             .stdout(Stdio::piped())

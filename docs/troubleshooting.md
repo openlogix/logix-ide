@@ -112,8 +112,8 @@ Logix IDE logs: **Help > Show Log Folder** opens this run's log folder in
 Finder (File Explorer on Windows); drag the `.log` files in it into the report.
 Each run of Logix IDE has a folder of its own, in `~/.logix/ide/logs`, named by
 the date and time it started, so for a run that has ended, pick its folder
-there. The folder has Logix IDE's log, `logix-ide.log`, and the logs of the
-programs it started, such as `logix-ide.logix-engine.log` for the FPGA tools.
+there. The folder has Logix IDE's log, `ide.log`, and the logs of the
+programs it started, such as `ide.engine.log` for the FPGA tools.
 Logix IDE keeps the folders of its last 10 runs. The
 logs have what the output area showed and what Logix IDE did, including the paths
 of your projects; it stays on your computer unless you attach it.

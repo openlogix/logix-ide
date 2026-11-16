@@ -407,7 +407,7 @@ mod tests {
             "973dd78",
             "macOS 26.5 (darwin-arm64)",
             Some(Path::new(
-                "/Users/you/.logix/ide/logs/20261115-171205-4412/logix-ide.log",
+                "/Users/you/.logix/ide/logs/20261115-171205-4412/ide.log",
             )),
             Some(&u),
             EnginePart::Info(engine_info()),
@@ -417,7 +417,7 @@ mod tests {
             info.text,
             "Logix IDE 2026.11.15
 Operating system: macOS 26.5 (darwin-arm64)
-Log file: /Users/you/.logix/ide/logs/20261115-171205-4412/logix-ide.log
+Log file: /Users/you/.logix/ide/logs/20261115-171205-4412/ide.log
 
 Versions:
 Logix IDE 2026.11.15
@@ -432,9 +432,11 @@ Logix IDE 2026.11.15
         );
         // Which config named the engine, on hover only.
         let engine = &info.versions.children[0];
-        assert!(engine.details.iter().any(
-            |d| d.label == "Pinned in" && d.value == "Logix IDE's remote config 001, prod.jsonc"
-        ));
+        assert!(engine
+            .details
+            .iter()
+            .any(|d| d.label == "Pinned in"
+                && d.value == "Logix IDE's remote config 001, prod.jsonc"));
     }
 
     #[test]
