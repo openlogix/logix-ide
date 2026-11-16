@@ -4,6 +4,8 @@ Logix IDE runs on:
 
 - **macOS** on a Mac with **Apple Silicon** (M1 or newer), macOS 11 or newer.
 - **Windows** on a 64-bit (x64) PC, Windows 10 or 11.
+- **Linux** on a 64-bit (x64) PC: Ubuntu 22.04 or newer, Debian, or a system
+  based on them.
 
 On the [releases page](https://github.com/openlogix/logix-ide/releases), always
 use the release marked **Latest** (not necessarily the newest one: newer
@@ -47,6 +49,23 @@ Choose your system: the steps on every page of these docs follow your choice.
     Windows. You don't need to install it beforehand: **Upload** offers it
     the first time. See [Drivers on Windows](using-logix.md#drivers-on-windows).
 
+=== "Linux"
+
+    Logix IDE comes as a `.deb` package, for Ubuntu, Debian and the systems
+    based on them.
+
+    1. From the **Latest** release, download
+       `logix-ide-linux-x86-64-<date>.deb` to your **Downloads** folder.
+    2. In a terminal, install it. apt also installs what Logix IDE needs, and
+       asks for your password:
+
+        ```
+        sudo apt install ~/Downloads/logix-ide-linux-x86-64-*.deb
+        ```
+
+    3. Start Logix IDE from your applications: press the Super key, type
+       `Logix IDE` and press Enter.
+
 ## The first start
 
 On its first start, Logix IDE downloads the FPGA tools it needs (Logix Engine
@@ -76,6 +95,13 @@ the examples, and downloads them by itself (**Help > Check for Updates** checks 
     | Your projects (by default) | `Documents\OpenLogix\IDE` in your user folder |
     | The FPGA tools, settings and logs | `.logix\ide` in your user folder |
 
+=== "Linux"
+
+    | What | Where |
+    | :--- | :--- |
+    | Your projects (by default) | `~/Documents/OpenLogix/IDE` |
+    | The FPGA tools, settings and logs | `~/.logix/ide` |
+
 You can choose another projects folder in **Settings**.
 
 ## Uninstalling
@@ -94,5 +120,10 @@ You can choose another projects folder in **Settings**.
     Then open **Settings**, then **Apps** > **Installed apps**, and uninstall
     **Logix IDE**. To also remove the FPGA tools, settings and logs, delete the
     `.logix\ide` folder in your user folder.
+
+=== "Linux"
+
+    In a terminal, run `sudo apt remove logix-ide`. To also remove the FPGA
+    tools, settings and logs, delete the `~/.logix/ide` folder.
 
 Your projects stay where they are.

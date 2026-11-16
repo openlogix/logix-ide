@@ -20,6 +20,11 @@ every one of the [supported boards](https://www.openlogix.org/logix-catalog/boar
 
         A 64-bit (x64) PC with Windows 10 or 11.
 
+    === "Linux"
+
+        A 64-bit (x64) PC with Linux: Ubuntu 22.04 or newer, Debian, or a
+        system based on them.
+
 - **An FPGA board:** one of the [supported boards](https://www.openlogix.org/logix-catalog/boards/), and the USB
   cable that connects it to your computer. You can follow most of this page
   without a board; only the upload needs one. You can also add a board that
@@ -27,8 +32,8 @@ every one of the [supported boards](https://www.openlogix.org/logix-catalog/boar
   that's outside this tutorial.
 - **An internet connection:** the first time you start Logix IDE.
 
-The steps that differ between macOS and Windows have a tab for each: choose
-yours once, and every tab on these pages follows.
+The steps that differ between macOS, Windows and Linux have a tab for each:
+choose yours once, and every tab on these pages follows.
 
 There's nothing else to install: Logix IDE downloads the FPGA tools it needs.
 
@@ -44,6 +49,11 @@ There's nothing else to install: Logix IDE downloads the FPGA tools it needs.
     Install Logix IDE as [Installing](installing.md) describes: download the
     `.msi` installer, allow it to run, and follow its steps.
 
+=== "Linux"
+
+    Install Logix IDE as [Installing](installing.md) describes: download the
+    `.deb` package and install it with apt.
+
 ## 2. Start Logix IDE
 
 === "macOS"
@@ -57,6 +67,10 @@ There's nothing else to install: Logix IDE downloads the FPGA tools it needs.
 
     Open the **Start** menu and click **Logix IDE** (or press the Windows
     key, type `Logix IDE` and press Enter).
+
+=== "Linux"
+
+    Press the Super key, type `Logix IDE` and press Enter.
 
 The first time, Logix IDE downloads its FPGA tools, which takes a few minutes. The status bar at the
 bottom of the window shows the progress, and the output area above it shows
@@ -205,6 +219,12 @@ blinks green.
     minute or two, then the upload goes on. See
     [Drivers on Windows](using-logix.md#drivers-on-windows).
 
+=== "Linux"
+
+    Linux lets only the administrator use most USB devices, so a board
+    needs a udev rule before Logix IDE can program it. If Upload says it
+    can't open the board, the rule is missing.
+
 The design is stored in the board's flash memory, so it runs again whenever
 the board gets power, even without your computer.
 
@@ -234,6 +254,10 @@ projects** on the start screen. The projects folder is, by default:
 
     `Documents\OpenLogix\IDE` in your user folder
 
+=== "Linux"
+
+    `~/Documents/OpenLogix/IDE`
+
 ## 13. Explore the boards
 
 Open the board list in the toolbar to see the [supported boards](https://www.openlogix.org/logix-catalog/boards/),
@@ -250,6 +274,10 @@ Open the settings to change how Logix IDE works:
     Choose **Logix IDE > Settings…** (Command-,).
 
 === "Windows"
+
+    Choose **File > Settings…** (Ctrl+,).
+
+=== "Linux"
 
     Choose **File > Settings…** (Ctrl+,).
 
