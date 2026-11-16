@@ -513,6 +513,7 @@ pub async fn fetch(source: &ConfigSource, platform: &str) -> Result<Cached> {
     Ok(Cached {
         source: source.location.clone(),
         config_version: CONFIG_VERSION.into(),
+        reader: reader(),
         channel,
         fetched: now(),
         dependencies: deps,
@@ -528,9 +529,25 @@ pub struct Cached {
     pub config_version: String,
     /// The channel and the config file read.
     pub channel: Channel,
+    /// The Logix IDE build that read it (`reader()`): the channel depends
+    /// on it, so another build (a newer release, a local build sharing the
+    /// data folder) reads the config again.
+    pub reader: String,
     /// When it was read, in seconds since 1970 (UTC).
     pub fetched: u64,
     pub dependencies: BTreeMap<String, Dependency>,
+}
+
+/// This Logix IDE build, as the cache records it: its version, and whether
+/// it's a release build or a local one, which is what its channel depends
+/// on besides channels.jsonc and LOGIX_IDE_CHANNEL.
+pub fn reader() -> String {
+    let kind = if IS_RELEASE_BUILD {
+        "release"
+    } else {
+        "local build"
+    };
+    format!("{PRODUCT} {} {kind}", crate::version::APP_VERSION)
 }
 
 pub fn now() -> u64 {
@@ -541,15 +558,19 @@ pub fn now() -> u64 {
 }
 
 impl Cached {
-    /// Whether it's from this source and config version, read with the same
-    /// channel override (none, or the same LOGIX_IDE_CHANNEL), with every
-    /// dependency this Logix IDE needs.
+    /// Whether it's from this source and config version, read by this
+    /// Logix IDE build (a cache another build wrote may be another
+    /// channel's: found 2026-11-16, when a local build used the installed
+    /// prod release's cache and ran on prod) with the same channel override
+    /// (none, or the same LOGIX_IDE_CHANNEL), with every dependency this
+    /// Logix IDE needs.
     pub fn matches(&self, source: &ConfigSource) -> bool {
         let variable = channel_variable().ok().flatten();
         let cached_variable =
             (self.channel.how == CHANNEL_VARIABLE).then(|| self.channel.name.clone());
         self.source == source.location
             && self.config_version == CONFIG_VERSION
+            && self.reader == reader()
             && variable == cached_variable
             && DEPENDENCIES
                 .iter()
@@ -825,6 +846,7 @@ mod tests {
             },
             source: default_url(),
             config_version: CONFIG_VERSION.into(),
+            reader: reader(),
             fetched: now(),
             dependencies: [ENGINE, EXAMPLES]
                 .map(|name| {
@@ -849,6 +871,11 @@ mod tests {
             is_override: true,
         };
         assert!(!cached.matches(&other));
+        // Written by another build (the installed release, for a local
+        // build sharing its data folder): read again.
+        let mut other_build = cached.clone();
+        other_build.reader = "logix-ide 2026.11.15 release".into();
+        assert!(!other_build.matches(&ConfigSource::regular()));
         let mut no_examples = cached.clone();
         no_examples.dependencies.remove(EXAMPLES);
         assert!(!no_examples.matches(&ConfigSource::regular()));
