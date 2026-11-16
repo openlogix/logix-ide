@@ -23,10 +23,13 @@ impl Platform {
         }
     }
 
-    /// Whether the IDE is implemented for this platform yet: macOS ARM,
-    /// and Windows x64 (Milestone 3, being ported); Linux comes later.
+    /// Whether the IDE is implemented for this platform: macOS ARM, Windows
+    /// x64 (Milestone 3) and Linux x64 (Milestone 4, being ported).
     pub fn is_implemented(self) -> bool {
-        matches!(self, Platform::MacosArm64 | Platform::WindowsX86_64)
+        matches!(
+            self,
+            Platform::MacosArm64 | Platform::WindowsX86_64 | Platform::LinuxX86_64
+        )
     }
 
     /// Fails with a clear message if this platform isn't implemented yet.
@@ -70,7 +73,7 @@ impl Platform {
     }
 
     /// Opens `dir` in the system's file manager (Finder on macOS, File
-    /// Explorer on Windows).
+    /// Explorer on Windows, the desktop's own on Linux, through xdg-open).
     pub fn reveal_folder(self, dir: &Path) -> Result<()> {
         match self {
             Platform::WindowsX86_64 => {
@@ -91,7 +94,7 @@ impl Platform {
                 }
                 Ok(())
             }
-            other => other.ensure_implemented(),
+            Platform::LinuxX86_64 => xdg_open(dir.as_os_str()),
         }
     }
 
@@ -117,7 +120,8 @@ impl Platform {
         }
     }
 
-    /// Puts `text` on the clipboard (`pbcopy` on macOS). Done here rather
+    /// Puts `text` on the clipboard (`pbcopy` on macOS, Windows' clipboard
+    /// API, the desktop's clipboard on Linux). Done here rather
     /// than in the webview, whose clipboard may refuse a copy that a menu
     /// item, not a click in the page, started.
     pub fn copy_text(self, text: &str) -> Result<()> {
@@ -148,7 +152,14 @@ impl Platform {
                 }
                 Ok(())
             }
-            other => other.ensure_implemented(),
+            // Linux desktops install no clipboard command by default (xclip,
+            // wl-copy): a library, as Tauri's own clipboard plugin uses.
+            Platform::LinuxX86_64 => {
+                #[cfg(target_os = "linux")]
+                return linux::copy_text(text);
+                #[cfg(not(target_os = "linux"))]
+                bail!("not on Linux");
+            }
         }
     }
 
@@ -174,7 +185,7 @@ impl Platform {
                 cmd.spawn().context("can't open the link")?;
                 Ok(())
             }
-            other => other.ensure_implemented(),
+            Platform::LinuxX86_64 => xdg_open(url.as_ref()),
         }
     }
 
@@ -197,9 +208,27 @@ impl Platform {
                 let _ = (bundle_dir, exe);
                 Ok(())
             }
-            other => other.ensure_implemented(),
+            // Only the execute bit: Linux has no quarantine mark.
+            Platform::LinuxX86_64 => {
+                let _ = bundle_dir;
+                make_executable(exe)
+            }
         }
     }
+}
+
+/// Linux: opens a folder or a link with the desktop's default app
+/// (xdg-open, part of every desktop Linux). It's started and not waited for:
+/// some desktops' xdg-open waits for the app it opens.
+fn xdg_open(target: &std::ffi::OsStr) -> Result<()> {
+    std::process::Command::new("xdg-open")
+        .arg(target)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .context("can't run 'xdg-open'")?;
+    Ok(())
 }
 
 /// Windows: runs a console program (the engine, the language server)
@@ -233,8 +262,8 @@ pub fn move_to_trash(path: &Path) -> Result<()> {
         .with_context(|| format!("can't move {} to the {}", path.display(), trash_name()))
 }
 
-/// What the system calls its trash: the Trash on macOS, the Recycle Bin on
-/// Windows.
+/// What the system calls its trash: the Trash on macOS and Linux, the
+/// Recycle Bin on Windows.
 pub fn trash_name() -> &'static str {
     if cfg!(windows) {
         "Recycle Bin"
@@ -512,6 +541,31 @@ mod macos {
     }
 }
 
+#[cfg(target_os = "linux")]
+mod linux {
+    use anyhow::{anyhow, Context, Result};
+    use std::sync::{Mutex, OnceLock};
+
+    // On X11 the copied text stays on the clipboard only while its owner
+    // lives, so one clipboard for the app's whole run.
+    static CLIPBOARD: OnceLock<Mutex<arboard::Clipboard>> = OnceLock::new();
+
+    pub fn copy_text(text: &str) -> Result<()> {
+        if CLIPBOARD.get().is_none() {
+            let clipboard = arboard::Clipboard::new().context("can't open the clipboard")?;
+            let _ = CLIPBOARD.set(Mutex::new(clipboard));
+        }
+        let mut clipboard = CLIPBOARD
+            .get()
+            .context("no clipboard")?
+            .lock()
+            .map_err(|_| anyhow!("the clipboard is in use"))?;
+        clipboard
+            .set_text(text.to_string())
+            .context("can't copy to the clipboard")
+    }
+}
+
 #[cfg(unix)]
 fn make_executable(path: &Path) -> Result<()> {
     use std::os::unix::fs::PermissionsExt;
@@ -701,11 +755,10 @@ mod tests {
     }
 
     #[test]
-    fn macos_and_windows_are_implemented_linux_not_yet() {
+    fn macos_windows_and_linux_are_implemented() {
         assert!(Platform::MacosArm64.is_implemented());
         assert!(Platform::WindowsX86_64.is_implemented());
-        assert!(!Platform::LinuxX86_64.is_implemented());
-        assert!(Platform::LinuxX86_64.data_dir().is_err());
+        assert!(Platform::LinuxX86_64.is_implemented());
     }
 
     #[test]
