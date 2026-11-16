@@ -55,8 +55,8 @@ pub struct TaskOutcome {
     /// For Upload with `select_device`: the devices that fit the board, best
     /// first, for the user to choose from.
     pub devices: Vec<crate::engine::UsbDevice>,
-    /// For Upload with `install_drivers` (Windows): the device whose
-    /// interface needs WinUSB first, for the user to agree to install it;
+    /// For Upload with `install_drivers`: the device that needs a driver
+    /// (Windows: WinUSB) or a udev rule (Linux) first, for the user to agree;
     /// also with `disconnect_devices`, when the engine refused because other
     /// connected devices have the same USB IDs.
     pub driver_device: Option<DriverDevice>,
@@ -73,8 +73,10 @@ pub struct DriverDevice {
     pub id: String,
     /// The engine's name for people.
     pub label: String,
-    /// The USB interface that needs WinUSB.
-    pub interface: u8,
+    /// What it needs: "winusb" (Windows) or "udev-rule" (Linux).
+    pub needed: String,
+    /// The USB interface that needs WinUSB (Windows); None on Linux.
+    pub interface: Option<u8>,
     /// The driver Windows has on it now (e.g. "ftdibus"), if any.
     pub current: Option<String>,
 }

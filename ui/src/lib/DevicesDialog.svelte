@@ -7,16 +7,18 @@
   device that can't be opened yet (no driver) is listed with the others,
   with a note on which board it may be. On Windows, a device whose board
   needs a driver says which one it has, with Install Driver… (WinUSB) or
-  Remove Driver…; while one runs, the bottom shows a status line (green or
+  Remove Driver…; on Linux, a board says whether it can be opened, with Add
+  udev Rule… or, when Logix IDE added its rule, Remove udev Rule…; while one runs, the bottom shows a status line (green or
   red when it ends) and its log, collapsed by default (the user's requests,
   2026-11-14), above the Close button.
 -->
 <script lang="ts">
   import { backend, type Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
-  import type { Driver, UnreachableDevice, UsbDevice } from "./backend";
+  import { isUdevRule, type Driver, type UnreachableDevice, type UsbDevice } from "./backend";
   import {
     deviceBoardGroups,
+    lockedTag,
     devicesReport,
     driverStateText,
     orderedDevices,
@@ -50,12 +52,13 @@
     driverWork: DriverWork | null;
     onRefresh: () => void;
     /**
-     * Install Driver… (Windows): WinUSB for the device's board. `who` names
-     * the board for people ("the Alhambra II", else the device's label).
+     * Install Driver… (Windows: WinUSB) or Add udev Rule… (Linux) for the
+     * device's board. `who` names the board for people ("the Alhambra II",
+     * else the device's label).
      */
-    onInstallDriver: (id: string, who: string, current: string | null) => void;
-    /** Remove Driver… (Windows): Windows' own driver back. */
-    onRemoveDriver: (id: string, who: string) => void;
+    onInstallDriver: (id: string, who: string, driver: Driver) => void;
+    /** Remove Driver… (Windows: Windows' own driver back) or Remove udev Rule… (Linux). */
+    onRemoveDriver: (id: string, who: string, driver: Driver) => void;
     /** A board name was clicked: select that board. */
     onPick: (board: string) => void;
     onClose: () => void;
@@ -244,7 +247,7 @@
   {@const open = isOpen(u.id, true)}
   <li class="device">
     <button class="toggle device-toggle" aria-expanded={open} onclick={() => toggle(u.id)}
-      >{@render chevron(open)}<span class="name">{u.label}</span>{" "}<span class="muted">· no driver yet</span></button
+      >{@render chevron(open)}<span class="name">{u.label}</span>{" "}<span class="muted">· {lockedTag(u)}</span></button
     >
     {#if u.driver}
       {@render driverLine(u.id, whoOf(u.label, ids, []), u.driver)}
@@ -281,12 +284,16 @@
 {#snippet driverLine(id: string, who: string, driver: Driver)}
   <div class="driver">
     <span class="muted">{driverStateText(driver)}</span>
-    {#if driver.ready}
-      <button disabled={busy} onclick={() => onRemoveDriver(id, who)}>Remove Driver…</button>
+    {#if isUdevRule(driver.needed)}
+      {#if !driver.ready}
+        <button disabled={busy} onclick={() => onInstallDriver(id, who, driver)}>Add udev Rule…</button>
+      {:else if driver.current}
+        <button disabled={busy} onclick={() => onRemoveDriver(id, who, driver)}>Remove udev Rule…</button>
+      {/if}
+    {:else if driver.ready}
+      <button disabled={busy} onclick={() => onRemoveDriver(id, who, driver)}>Remove Driver…</button>
     {:else}
-      <button disabled={busy} onclick={() => onInstallDriver(id, who, driver.current)}
-        >Install Driver…</button
-      >
+      <button disabled={busy} onclick={() => onInstallDriver(id, who, driver)}>Install Driver…</button>
     {/if}
   </div>
 {/snippet}

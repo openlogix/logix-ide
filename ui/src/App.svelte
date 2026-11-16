@@ -14,6 +14,8 @@
     type TaskOutcome,
     type TaskEvent,
     type UploadDriver,
+    type Driver,
+    isUdevRule,
     NO_DRIVER,
     type Diagnostic,
     type Preferences,
@@ -1161,26 +1163,31 @@
   }
 
   /**
-   * Tools > Connected Devices > Install Driver… (Windows): WinUSB for a
-   * device's board, after the user agrees; asks again when other devices
-   * with the same USB IDs are connected (they'd get it too). `who` names
-   * the board for people ("the Alhambra II", or the device's label).
+   * Tools > Connected Devices > Install Driver… (Windows: WinUSB) or Add
+   * udev Rule… (Linux) for a device's board, after the user agrees; asks
+   * again when other devices with the same USB IDs are connected (on
+   * Windows they'd get it too). `who` names the board for people ("the
+   * Alhambra II", or the device's label).
    */
-  async function installDeviceDriver(id: string, who: string, current: string | null) {
-    if (!(await confirmInApp(driverOffer(who, current)))) return;
+  async function installDeviceDriver(id: string, who: string, driver: Driver) {
+    if (!(await confirmInApp(driverOffer(who, driver.needed, driver.current)))) return;
+    const udev = isUdevRule(driver.needed);
+    const doing = udev ? `Adding a udev rule for ${who}…` : `Installing the WinUSB driver for ${who}…`;
     devicesBusy = true;
     try {
-      let onEvent = startDriverWork(`Installing the WinUSB driver for ${who}…`);
+      let onEvent = startDriverWork(doing);
       let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false, onEvent);
       if (result.sameIds !== null) {
         if (!(await confirmInApp(sameIdsQuestion(result.sameIds)))) {
           driverWork = null;
           return;
         }
-        onEvent = startDriverWork(`Installing the WinUSB driver for ${who}…`);
+        onEvent = startDriverWork(doing);
         result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, true, onEvent);
       }
-      endDriverWork(result.installed ? `Installed the WinUSB driver for ${who}.` : `${capitalize(who)} has its driver already.`, "ok");
+      const done = udev ? `Added a udev rule for ${who}.` : `Installed the WinUSB driver for ${who}.`;
+      const already = udev ? `${capitalize(who)} can be programmed already.` : `${capitalize(who)} has its driver already.`;
+      endDriverWork(result.installed ? done : already, "ok");
     } catch (e) {
       endDriverWork(toUserError(e).message, "error");
     } finally {
@@ -1189,17 +1196,22 @@
     await refreshDevices();
   }
 
-  /** Tools > Connected Devices > Remove Driver… (Windows). `who` as for installing. */
-  async function removeDeviceDriver(id: string, who: string) {
-    if (!(await confirmInApp(driverRemove(who)))) return;
+  /** Tools > Connected Devices > Remove Driver… (Windows) or Remove udev Rule… (Linux). `who` as for installing. */
+  async function removeDeviceDriver(id: string, who: string, driver: Driver) {
+    if (!(await confirmInApp(driverRemove(who, driver.needed)))) return;
+    const udev = isUdevRule(driver.needed);
     devicesBusy = true;
     try {
-      const onEvent = startDriverWork(`Removing the WinUSB driver for ${who}…`);
+      const onEvent = startDriverWork(udev ? `Removing the udev rule for ${who}…` : `Removing the WinUSB driver for ${who}…`);
       const removed = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id, onEvent);
       endDriverWork(
-        removed > 0
-          ? [`Removed the WinUSB driver for ${who}.`, "Windows uses its original driver again."]
-          : `Logix IDE found no WinUSB driver it installed for ${who}.`,
+        udev
+          ? removed > 0
+            ? [`Removed the udev rule for ${who}.`, "It takes effect once the board is plugged in again."]
+            : `Logix IDE found no udev rule it added for ${who}.`
+          : removed > 0
+            ? [`Removed the WinUSB driver for ${who}.`, "Windows uses its original driver again."]
+            : `Logix IDE found no WinUSB driver it installed for ${who}.`,
         "ok",
       );
     } catch (e) {
@@ -1216,8 +1228,8 @@
   }
 
   /**
-   * Upload stopped because the board needs WinUSB first (Windows): asks the
-   * user, then runs Upload again, installing it first.
+   * Upload stopped because the board needs WinUSB (Windows) or a udev rule
+   * (Linux) first: asks the user, then runs Upload again, adding it first.
    */
   async function offerUploadDriver(outcome: TaskOutcome) {
     const d = outcome.driverDevice;
@@ -1229,9 +1241,15 @@
       return;
     }
     const who = project?.board ? `the ${boardName(project.board)}` : d.label;
-    if (await confirmInApp(driverOffer(who, d.current)))
+    if (await confirmInApp(driverOffer(who, d.needed, d.current)))
       runTask("upload", null, d.id, { install: true, allowSameIds: false });
-    else status = { text: "Upload needs the board's driver: choose Upload again to install it.", kind: "info" };
+    else
+      status = {
+        text: isUdevRule(d.needed)
+          ? "Upload needs a udev rule for the board: choose Upload again to add it."
+          : "Upload needs the board's driver: choose Upload again to install it.",
+        kind: "info",
+      };
   }
 
   /** After Upload couldn't find the board: say what is connected. */

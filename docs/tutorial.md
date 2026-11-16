@@ -222,8 +222,10 @@ blinks green.
 === "Linux"
 
     Linux lets only the administrator use most USB devices, so a board
-    needs a udev rule before Logix IDE can program it. If Upload says it
-    can't open the board, the rule is missing.
+    needs a udev rule before Logix IDE can program it. The first time,
+    Upload asks to add it: click **Add Rule**, then enter your password when
+    Linux asks for it, and the upload goes on. See
+    [udev rules on Linux](using-logix.md#udev-rules-on-linux).
 
 The design is stored in the board's flash memory, so it runs again whenever
 the board gets power, even without your computer.

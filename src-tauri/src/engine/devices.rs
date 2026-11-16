@@ -34,24 +34,28 @@ pub struct UsbDevice {
     /// With a build folder: how well it matches the build's board in the
     /// build's variant.
     pub build_match: Option<MatchLevel>,
-    /// On Windows, for a board whose programmer needs one: the driver it
-    /// needs (WinUSB) and the one it has (the engine's `driver`).
+    /// What it needs for its board's programmer and what it has (the
+    /// engine's `driver`): on Windows, for a board whose programmer needs
+    /// one, a driver (WinUSB); on Linux, for every board, a udev rule.
     pub driver: Option<Driver>,
 }
 
-/// The engine's `driver` for a device (Windows only): which driver the
-/// board's programmer needs on which USB interface, the one Windows has on
-/// it now, and whether the programmer can use it as it is.
+/// The engine's `driver` for a device (Windows and Linux): what the board's
+/// programmer needs (Windows: a driver on a USB interface; Linux: a udev
+/// rule), what the device has now, and whether the programmer can use it
+/// as it is.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Driver {
-    /// The driver needed: "winusb".
+    /// What's needed: "winusb" (Windows) or "udev-rule" (Linux).
     pub needed: String,
-    /// The USB interface that needs it, e.g. 0 (an FTDI chip's first
-    /// channel; its other channels, such as a serial port, keep theirs).
-    pub interface: u8,
-    /// The driver Windows has on it now, by its service name in lowercase
-    /// (e.g. "ftdibus"); None without one.
+    /// On Windows, the USB interface that needs it, e.g. 0 (an FTDI chip's
+    /// first channel; its other channels, such as a serial port, keep
+    /// theirs). None on Linux: a rule is for the whole device.
+    pub interface: Option<u8>,
+    /// Windows: the driver it has now, by its service name in lowercase
+    /// (e.g. "ftdibus"). Linux: the file of Logix Engine's udev rule for
+    /// it, when there's one. None otherwise.
     pub current: Option<String>,
     /// Whether the programmer can use it as it is; false: install_driver.
     pub ready: bool,
@@ -62,7 +66,10 @@ fn parse_driver(v: &Value) -> Option<Driver> {
     let d = v.as_object()?;
     Some(Driver {
         needed: d.get("needed")?.as_str()?.to_string(),
-        interface: d.get("interface")?.as_u64()?.try_into().ok()?,
+        interface: d
+            .get("interface")
+            .and_then(Value::as_u64)
+            .and_then(|i| i.try_into().ok()),
         current: d.get("current").and_then(Value::as_str).map(String::from),
         ready: d.get("ready")?.as_bool()?,
     })
@@ -235,9 +242,10 @@ pub enum DriverInstall {
     SameIds(String),
 }
 
-/// Installs WinUSB on a device's interface (the engine's `install_driver`,
-/// Windows only): the user must have agreed, and Windows asks for
-/// permission naming Logix Engine. `build_folder` picks the build's board.
+/// Installs WinUSB on a device's interface (Windows) or adds its udev rule
+/// (Linux): the engine's `install_driver`. The user must have agreed;
+/// Windows then asks for permission naming Logix Engine, Linux for the
+/// user's password. `build_folder` picks the build's board.
 pub async fn install_driver(
     engine: &Engine,
     device: &str,
@@ -278,10 +286,10 @@ pub(super) fn same_ids(error: &Value) -> Option<String> {
         .then(|| error["message"].as_str().unwrap_or("").to_string())
 }
 
-/// Removes the WinUSB driver libwdi installed for a device's interface (the
-/// engine's `uninstall_driver`, Windows only), so Windows restores its
-/// original driver, for every device with the same USB IDs. Returns the driver
-/// packages removed (none: nothing to do).
+/// Removes the WinUSB driver libwdi installed for a device's interface
+/// (Windows), so Windows restores its original driver, or Logix Engine's
+/// udev rule (Linux), for every device with the same USB IDs: the engine's
+/// `uninstall_driver`. Returns what was removed (none: nothing to do).
 pub async fn uninstall_driver(
     engine: &Engine,
     device: &str,

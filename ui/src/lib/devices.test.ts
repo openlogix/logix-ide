@@ -16,6 +16,7 @@ import {
   devicesReport,
   durationText,
   driverWorkEnd,
+  lockedTag,
 } from "./devices";
 import type { TaskOutcome, UsbDevice } from "./backend";
 
@@ -54,7 +55,7 @@ describe("devices", () => {
   });
 
   it("stops Upload for a driver only with the device that needs it", () => {
-    const needs = { id: "usb:1-2:0403:6010:", label: "Alhambra II", interface: 0, current: "ftdibus" };
+    const needs = { id: "usb:1-2:0403:6010:", label: "Alhambra II", needed: "winusb", interface: 0, current: "ftdibus" };
     expect(needsDriver({ ...outcome("install_drivers"), driverDevice: needs })).toBe(true);
     expect(needsDriver({ ...outcome("disconnect_devices"), driverDevice: needs, sameIds: "x" })).toBe(true);
     expect(needsDriver(outcome("install_drivers"))).toBe(false);
@@ -71,7 +72,7 @@ describe("devices", () => {
     expect(driverStateText({ needed: "winusb", interface: 2, current: null, ready: false })).toContain(
       "interface 2 to program the board (it has no driver now)",
     );
-    const offer = driverOffer("the Alhambra II", "ftdibus");
+    const offer = driverOffer("the Alhambra II", "winusb", "ftdibus");
     const offerText = [offer.title, offer.lead, ...offer.steps, offer.note].join("\n");
     expect(offer.lead).toBe(
       "To program the Alhambra II, Logix IDE needs Windows to use the WinUSB driver for it. Right now Windows uses FTDI's driver for it.",
@@ -82,14 +83,47 @@ describe("devices", () => {
     expect(offerText).not.toContain("interface");
     expect(offerText).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
     expect(offer.okLabel).toBe("Install Driver");
-    expect(driverOffer("the Alhambra II", null).lead).not.toContain("Right now");
+    expect(driverOffer("the Alhambra II", "winusb", null).lead).not.toContain("Right now");
     expect(sameIdsQuestion("Another device (0403:6010) is connected.").note).toContain("they get the same driver too");
-    const remove = driverRemove("the Alhambra II");
+    const remove = driverRemove("the Alhambra II", "winusb");
     const removeText = [remove.title, remove.lead, ...remove.steps].join("\n");
     expect(remove.lead).toContain("restores the original Windows driver for the Alhambra II");
     expect(removeText).toContain("the board maker's own tools");
     expect(removeText).toContain("same kind");
     expect(removeText).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
+  });
+
+  it("on Linux, says what the udev rule is and what adding or removing it does", () => {
+    const rule = { needed: "udev-rule", interface: null, current: null, ready: false };
+    expect(driverStateText(rule)).toBe("Access: Linux needs a udev rule before you can program the board.");
+    expect(driverStateText({ ...rule, ready: true })).toBe("Access: ready to program the board.");
+    expect(driverStateText({ ...rule, ready: true, current: "70-logix-engine-1d50-602b.rules" })).toBe(
+      "Access: ready to program the board, with the udev rule Logix IDE added (70-logix-engine-1d50-602b.rules).",
+    );
+    const offer = driverOffer("the iCESugar v1.5", "udev-rule", null);
+    const offerText = [offer.title, offer.lead, ...offer.steps, offer.note].join("\n");
+    expect(offer.lead).toBe(
+      "To program the iCESugar v1.5, Linux needs a udev rule that lets you use it. Without one, only administrators can.",
+    );
+    expect(offer.steps[0]).toBe("Linux asks for your password. Enter it to allow the change.");
+    expect(offerText).not.toMatch(/Windows|WinUSB|driver/);
+    expect(offerText).not.toMatch(/\bLogix\b(?! (IDE|Engine))/);
+    expect(offer.okLabel).toBe("Add Rule");
+    const remove = driverRemove("the iCESugar v1.5", "udev-rule");
+    expect(remove.lead).toBe("This removes the udev rule Logix IDE added for the iCESugar v1.5.");
+    expect(remove.okLabel).toBe("Remove Rule");
+    const locked = {
+      id: "usb:1-2:1d50:602b:", label: "USB device (1d50:602b)", vid: "1d50", pid: "602b",
+      action: "fix_device_permissions", actionDescription: "Add a udev rule with install_driver.",
+      driver: rule, boards: [{ board: "icesugar-1-5", level: "weak" as const }],
+    };
+    expect(lockedTag(locked)).toBe("no udev rule yet");
+    expect(unreachableNote(locked, null, () => "iCESugar v1.5")).toContain(
+      "Add a udev rule for it so Logix IDE can read its name and program it.",
+    );
+    expect(deviceSummaryLines({ usb: [], unreachable: [locked] })[1]).toBe(
+      "  • USB device (1d50:602b) can't be opened. It needs a udev rule first: choose Upload, or Tools > Connected Devices, to add it.",
+    );
   });
 
   it("says how long a driver change took", () => {

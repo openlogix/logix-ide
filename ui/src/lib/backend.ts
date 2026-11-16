@@ -322,8 +322,8 @@ export interface TaskOutcome {
   /** For Upload's "select_device": the devices that fit, best first. */
   devices: UsbDevice[];
   /**
-   * For Upload's "install_drivers" (Windows): the device whose USB
-   * interface needs the WinUSB driver first, for the user to agree; also
+   * For Upload's "install_drivers": the device that needs the WinUSB driver
+   * (Windows) or a udev rule (Linux) first, for the user to agree; also
    * for "disconnect_devices", when Logix Engine refused because other
    * connected devices have the same USB IDs (its message in `sameIds`).
    */
@@ -331,7 +331,7 @@ export interface TaskOutcome {
   sameIds: string | null;
 }
 
-/** For Upload (Windows): install the board's driver first, which the user agreed to. */
+/** For Upload (Windows and Linux): install the board's driver or udev rule first, which the user agreed to. */
 export interface UploadDriver {
   install: boolean;
   /** Also while other devices with the same USB IDs are connected. */
@@ -345,22 +345,32 @@ export interface DriverDevice {
   id: string;
   /** The engine's name for people. */
   label: string;
-  /** The USB interface that needs WinUSB. */
-  interface: number;
-  /** The driver Windows has on it now (e.g. "ftdibus"), if any. */
+  /** What it needs: "winusb" (Windows) or "udev-rule" (Linux). */
+  needed: string;
+  /** The USB interface that needs WinUSB (Windows); null on Linux. */
+  interface: number | null;
+  /** The driver Windows has on it now (e.g. "ftdibus"), if any; on Linux, Logix Engine's rule file, if any. */
   current: string | null;
 }
 
 /**
+ * What a device needs for its board's programmer (Logix Engine's `driver`).
  * On Windows, for a board whose programmer needs one: the driver it needs
- * (WinUSB) on which USB interface, the one Windows has on it, and whether
- * the programmer can use it (Logix Engine's `driver`).
+ * (`needed` "winusb") on which USB interface, the one Windows has on it,
+ * and whether the programmer can use it. On Linux, for every board: a udev
+ * rule (`needed` "udev-rule", no interface), Logix Engine's rule file when
+ * there's one (`current`), and whether the board can be opened (`ready`).
  */
 export interface Driver {
   needed: string;
-  interface: number;
+  interface: number | null;
   current: string | null;
   ready: boolean;
+}
+
+/** Whether what a device needs is a udev rule (Linux), not a driver (Windows). */
+export function isUdevRule(needed: string): boolean {
+  return needed === "udev-rule";
 }
 
 /** What Install Driver did (Tools > Connected Devices). */

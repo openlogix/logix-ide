@@ -1110,6 +1110,44 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
 });
 
+// Linux: a board without a udev rule can't be opened. Upload asks first,
+// then adds the rule (Linux asks for the password) and programs the board.
+test("Upload offers the udev rule a board needs", async ({ page }) => {
+  type Fake = {
+    uploadDevices: unknown[];
+    uploadDriver: unknown;
+    driverInstalls: { device: string; allowSameIds: boolean }[];
+    driverStatuses: string[];
+  };
+  const fake = (p: Page) => p.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await start(page);
+  await chooseBoard(page, "Alhambra II");
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.uploadDevices = [{
+      id: "usb:1-2:0403:6010:", label: "USB device (0403:6010)", likelyBoards: [],
+      vid: "0403", pid: "6010", manufacturer: "", product: "", serialNumber: "",
+      boards: [{ board: "alhambra-ii", level: "weak" }], buildMatch: "weak", driver: null,
+    }];
+    f.uploadDriver = { needed: "udev-rule", interface: null, current: null, ready: false };
+  });
+  await menu(page, "upload");
+  const ask = page.getByRole("alertdialog", { name: "Let Logix IDE program the board?" });
+  await expect(ask).toContainText("To program the Alhambra II, Linux needs a udev rule that lets you use it.");
+  await expect(ask).toContainText("Linux asks for your password.");
+  await ask.getByRole("button", { name: "Cancel" }).click();
+  await expect(status(page)).toContainText("Upload needs a udev rule for the board");
+  expect((await fake(page)).driverInstalls).toEqual([]);
+
+  await menu(page, "upload");
+  await page.getByRole("alertdialog", { name: "Let Logix IDE program the board?" }).getByRole("button", { name: "Add Rule" }).click();
+  await expect(output(page)).toContainText("Added a udev rule for USB device (0403:6010).");
+  await expect(output(page)).toContainText("Programmed the flash of the Alhambra II");
+  const f = await fake(page);
+  expect(f.driverInstalls).toEqual([{ device: "usb:1-2:0403:6010:", allowSameIds: false }]);
+  expect(f.driverStatuses).toEqual(["Adding the board's udev rule…"]);
+});
+
 test("Connected Devices installs and removes a board's driver", async ({ page }) => {
   type Fake = {
     usb: unknown[];

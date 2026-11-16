@@ -876,9 +876,10 @@ pub struct DriverInstalled {
     same_ids: Option<String>,
 }
 
-/// Installs the WinUSB driver a device's board needs (Windows; Tools >
-/// Connected Devices > Install Driver…), after the user agreed: Windows asks
-/// for permission for Logix Engine. The engine's phases and output stream
+/// Installs the WinUSB driver (Windows; Tools > Connected Devices > Install
+/// Driver…) or adds the udev rule (Linux; Add udev Rule…) a device's board
+/// needs, after the user agreed: Windows asks for permission for Logix
+/// Engine, Linux for the user's password. The engine's phases and output stream
 /// on `on_event`, for the dialog's progress area.
 #[tauri::command]
 pub async fn install_device_driver(
@@ -891,7 +892,9 @@ pub async fn install_device_driver(
 ) -> Result<DriverInstalled, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
-    crate::log!("Installing the WinUSB driver for {device} (allow_same_ids: {allow_same_ids})");
+    crate::log!(
+        "Installing the driver or udev rule for {device} (allow_same_ids: {allow_same_ids})"
+    );
     let options = engine::live_options(
         move |e| {
             let _ = on_event.send(e);
@@ -921,10 +924,10 @@ pub async fn install_device_driver(
     })
 }
 
-/// Removes the WinUSB driver Logix Engine installed for a device's board
-/// (Windows; Tools > Connected Devices > Remove Driver…), so Windows gives
-/// back its own, for every device with the same USB IDs. Returns how many
-/// driver packages were removed.
+/// Removes the WinUSB driver (Windows; Tools > Connected Devices > Remove
+/// Driver…), so Windows gives back its own, or the udev rule (Linux; Remove
+/// udev Rule…) Logix Engine added for a device's board, for every device
+/// with the same USB IDs. Returns how many things were removed.
 #[tauri::command]
 pub async fn uninstall_device_driver(
     state: State<'_, AppState>,
@@ -935,7 +938,7 @@ pub async fn uninstall_device_driver(
 ) -> Result<usize, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
-    crate::log!("Removing the WinUSB driver for {device}");
+    crate::log!("Removing the driver or udev rule for {device}");
     let options = engine::live_options(
         move |e| {
             let _ = on_event.send(e);

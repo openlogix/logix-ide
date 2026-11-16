@@ -638,7 +638,7 @@ export const backend: typeof Real.backend = {
     const needsDriver = fake.uploadDriver && !fake.uploadDriver.ready ? fake.uploadDriver : null;
     if (phases && task === "upload" && outcome.ok && needsDriver) {
       const label = fits.find((d) => d.id === uploadId)?.label ?? fits[0].label;
-      const driverDevice = { id: uploadId, label, interface: needsDriver.interface, current: needsDriver.current };
+      const driverDevice = { id: uploadId, label, needed: needsDriver.needed, interface: needsDriver.interface, current: needsDriver.current };
       if (!driver.install) {
         return { ...outcome, ok: false, report: null, action: "install_drivers", driverDevice };
       }
@@ -648,14 +648,19 @@ export const backend: typeof Real.backend = {
           sameIds: fake.sameIdsMessage,
         };
       }
-      onEvent({ kind: "status", text: "Installing the board's driver…" });
-      onLine(`Installing the WinUSB driver for ${label}…`);
-      fake.driverStatuses.push("Installing the board's driver…");
+      // As the backend says it (engine/task.rs): a udev rule on Linux.
+      const udev = needsDriver.needed === "udev-rule";
+      const statusText = udev ? "Adding the board's udev rule…" : "Installing the board's driver…";
+      onEvent({ kind: "status", text: statusText });
+      onLine(udev ? `Adding a udev rule for ${label}…` : `Installing the WinUSB driver for ${label}…`);
+      fake.driverStatuses.push(statusText);
       fake.driverInstalls.push({ device: uploadId, allowSameIds: driver.allowSameIds });
-      fake.uploadDriver = { ...needsDriver, current: "winusb", ready: true };
+      fake.uploadDriver = udev
+        ? { ...needsDriver, current: "70-logix-engine-0403-6010.rules", ready: true }
+        : { ...needsDriver, current: "winusb", ready: true };
       // The engine reads the serial number once the driver lets it.
       uploadId = `${uploadId}FT1`;
-      onLine(`Installed the WinUSB driver for ${label}.`);
+      onLine(udev ? `Added a udev rule for ${label}.` : `Installed the WinUSB driver for ${label}.`);
       onEvent({ kind: "status", text: null });
     }
     if (phases && task === "upload" && outcome.ok) {

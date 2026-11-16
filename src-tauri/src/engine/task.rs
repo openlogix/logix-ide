@@ -29,6 +29,12 @@ pub const NO_CONSTRAINT_FILE: &str = "The project has no pin file (e.g. pinout.p
 /// The status while Upload installs the board's driver first (Windows).
 pub const INSTALLING_DRIVER: &str = "Installing the board's driver…";
 
+/// The engine's `driver.needed` on Linux: a udev rule, not a driver.
+pub const UDEV_RULE: &str = "udev-rule";
+
+/// The status line while Upload adds a board's udev rule (Linux).
+pub const ADDING_RULE: &str = "Adding the board's udev rule…";
+
 /// Upload's outcome action when several devices fit the board.
 pub const SELECT_DEVICE: &str = "select_device";
 
@@ -93,6 +99,7 @@ fn driver_needed(list: &super::DeviceList, id: &str) -> Option<crate::outcome::D
     Some(crate::outcome::DriverDevice {
         id: id.to_string(),
         label: label.clone(),
+        needed: driver.needed.clone(),
         interface: driver.interface,
         current: driver.current.clone(),
     })
@@ -379,9 +386,10 @@ where
                 Choice::Stop => return Ok(true),
                 Choice::Cancelled => return Ok(false),
             };
-            // Windows: a board whose programmer needs WinUSB, which it
-            // doesn't have yet. The user agrees first (Upload stops and asks),
-            // then Upload runs again with install_driver.
+            // A board whose programmer needs WinUSB (Windows) or a udev
+            // rule (Linux), which it doesn't have yet. The user agrees first
+            // (Upload stops and asks), then Upload runs again with
+            // install_driver.
             if let Some(needs) = driver_needed(&list, &device) {
                 if !input.install_driver {
                     outcome.ok = false;
@@ -390,9 +398,21 @@ where
                     return Ok(true);
                 }
                 (self.on_event)(TaskEvent::Status {
-                    text: Some(INSTALLING_DRIVER.into()),
+                    text: Some(
+                        if needs.needed == UDEV_RULE {
+                            ADDING_RULE
+                        } else {
+                            INSTALLING_DRIVER
+                        }
+                        .into(),
+                    ),
                 });
-                self.line(format!("Installing the WinUSB driver for {}…", needs.label));
+                let udev = needs.needed == UDEV_RULE;
+                self.line(if udev {
+                    format!("Adding a udev rule for {}…", needs.label)
+                } else {
+                    format!("Installing the WinUSB driver for {}…", needs.label)
+                });
                 let args = json!({
                     "device": device,
                     "build_folder": self.build_folder(),
@@ -407,7 +427,11 @@ where
                         {
                             device = id;
                         }
-                        self.line(format!("Installed the WinUSB driver for {}.", needs.label));
+                        self.line(if udev {
+                            format!("Added a udev rule for {}.", needs.label)
+                        } else {
+                            format!("Installed the WinUSB driver for {}.", needs.label)
+                        });
                         (self.on_event)(TaskEvent::Status { text: None });
                     }
                     Err(e) if is_cancelled(&e) => return Ok(false),
@@ -871,6 +895,21 @@ mod tests {
         assert!(err["message"].as_str().unwrap().contains("Allow it."));
     }
 
+    // Linux: a board without a udev rule can't be opened. Upload picks it,
+    // to offer the rule (Logix Engine's driver has no interface there).
+    #[test]
+    fn upload_offers_the_udev_rule_a_board_needs() {
+        let locked = super::super::devices::parse_devices(&json!({"devices": [], "unreachable": [
+            {"id": "usb:1-2:1d50:602b:", "label": "USB device (1d50:602b)", "vid": "1d50", "pid": "602b",
+             "action": {"code": "fix_device_permissions", "description": "Add a udev rule."},
+             "driver": {"needed": "udev-rule", "ready": false}}
+        ]})).unwrap();
+        let id = pick_device(&locked).unwrap();
+        let needs = driver_needed(&locked, &id).unwrap();
+        assert_eq!(needs.needed, UDEV_RULE);
+        assert_eq!((needs.interface, needs.current), (None, None));
+    }
+
     // Windows: a board whose interface has another driver (such as FTDI's)
     // is one the engine may not open. Upload picks it, to offer WinUSB.
     #[test]
@@ -884,7 +923,7 @@ mod tests {
         let id = pick_device(&unreachable).unwrap();
         assert_eq!(id, "usb:1-2:0403:6010:");
         let needs = driver_needed(&unreachable, &id).unwrap();
-        assert_eq!(needs.interface, 0);
+        assert_eq!(needs.interface, Some(0));
         assert_eq!(needs.current.as_deref(), Some("ftdibus"));
         assert_eq!(needs.label, "USB device (0403:6010)");
 

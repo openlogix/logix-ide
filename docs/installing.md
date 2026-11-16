@@ -66,6 +66,10 @@ Choose your system: the steps on every page of these docs follow your choice.
     3. Start Logix IDE from your applications: press the Super key, type
        `Logix IDE` and press Enter.
 
+    Most boards need a udev rule before Logix IDE can program them on Linux.
+    You don't need to add it beforehand: **Upload** offers it the first
+    time. See [udev rules on Linux](using-logix.md#udev-rules-on-linux).
+
 ## The first start
 
 On its first start, Logix IDE downloads the FPGA tools it needs (Logix Engine
