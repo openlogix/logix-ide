@@ -1,0 +1,134 @@
+# Builds the Logix IDE Linux (x64) packages: an AppImage and a .deb
+# (Milestone 4). Called by build-pre-release.yaml, which passes
+# BUILD-INFO.json as the 'build-info' artifact. While Linux is being ported
+# they're kept as the run's artifacts, not added to the release, and the
+# pre-release doesn't wait for them (a stated, temporary step: the website
+# repo's CLAUDE.md, Strict CI).
+
+name: build-linux-x86-64
+
+on:
+  workflow_call:
+
+jobs:
+  build:
+    # The oldest Ubuntu GitHub offers: a program built against an older
+    # glibc runs on more Linux distributions.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check required platform
+        uses: openlogix/.github/actions/check-platform@main
+        with:
+          os: linux
+          arch: x86_64
+
+      - name: Read the build info
+        uses: openlogix/.github/actions/read-build-info@main
+        with:
+          platform: linux-x86-64
+
+      # What Tauri needs to build on Linux (its WebKitGTK web view and
+      # GTK), and FUSE for the AppImage tools.
+      - name: Install the Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file libfuse2
+
+      # Into a subdirectory, not to step on BUILD-INFO.json.
+      - name: Checkout the commit to build
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ env.REPO }}
+          ref: ${{ env.REPO_COMMIT }}
+          path: _repo
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install JS dependencies
+        working-directory: _repo
+        run: npm ci
+
+      # For the end-to-end UI tests in scripts/test.sh.
+      - name: Install the Playwright WebKit browser
+        working-directory: _repo
+        run: npx playwright install --with-deps webkit
+
+      - name: Run checks and tests
+        working-directory: _repo
+        run: scripts/test.sh
+
+      # Tauri, Cargo and npm need a semver version: the release date without
+      # leading zeros (2026-05-07 is 2026.5.7). Windows Installer needs its
+      # own, with a major and a minor of at most 255: the date as yy.mm.dd
+      # (2026-05-07 is 26.5.7), which Windows shows in its list of apps.
+      # Logix IDE itself shows yyyy.mm.dd (LOGIX_IDE_BUILD_VERSION, below).
+      # The Open Logix versioning rule.
+      # Tauri, Cargo and npm need a semver version: the release date without
+      # leading zeros (2026-05-07 is 2026.5.7), never shown (the Open Logix
+      # versioning rule). Logix IDE itself shows yyyy.mm.dd
+      # (LOGIX_IDE_BUILD_VERSION, below).
+      - name: Write the semver version
+        working-directory: _repo
+        run: |
+          IFS=- read -r y m d <<< "$RELEASE_TAG"
+          export SEMVER="$((10#$y)).$((10#$m)).$((10#$d))"
+          perl -pi -e 's/^  "version": "0\.0\.0",/  "version": "$ENV{SEMVER}",/' package.json src-tauri/tauri.conf.json
+          perl -0pi -e 's/(\n  "name": "logix-ide",\n  "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/; s/(\n    "": \{\n      "name": "logix-ide",\n      "version": )"0\.0\.0"/$1"$ENV{SEMVER}"/' package-lock.json
+          perl -0pi -e 's/^version = "0\.0\.0"/version = "$ENV{SEMVER}"/m' src-tauri/Cargo.toml
+          perl -0pi -e 's/(name = "logix-ide"\nversion = )"0\.0\.0"/$1"$ENV{SEMVER}"/' src-tauri/Cargo.lock
+          git diff --stat
+          test "$(git diff --numstat | wc -l)" -eq 5
+
+      # The AppImage tools are AppImages themselves: extracting them avoids
+      # needing FUSE at build time.
+      - name: Build Logix IDE, the AppImage and the .deb
+        working-directory: _repo
+        env:
+          LOGIX_IDE_BUILD_VERSION: ${{ env.RELEASE_TAG }}
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: npm run tauri -- build --bundles appimage,deb
+
+      - name: Collect the packages
+        run: |
+          find _repo/src-tauri/target/release/bundle -maxdepth 2
+          for ext in AppImage deb; do
+            dir=appimage; [[ $ext == deb ]] && dir=deb
+            files=(_repo/src-tauri/target/release/bundle/$dir/*.$ext)
+            if [[ ${#files[@]} -ne 1 || ! -f "${files[0]}" ]]; then
+              echo "Error: expected exactly one .$ext, found: ${files[*]}"
+              exit 1
+            fi
+            cp "${files[0]}" "logix-ide-linux-x86-64-${PACKAGE_TAG}.$ext"
+          done
+          ls -al logix-ide-linux-x86-64-*
+
+      # Checks what users get: each package holds the logix-ide program.
+      - name: Verify the packages
+        run: |
+          app="logix-ide-linux-x86-64-${PACKAGE_TAG}.AppImage"
+          chmod +x "$app"
+          (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/$app" --appimage-extract >/dev/null)
+          test -x "$RUNNER_TEMP/squashfs-root/usr/bin/logix-ide"
+          dpkg-deb --info "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb"
+          dpkg-deb --contents "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb" | grep -q "./usr/bin/logix-ide$"
+
+      - name: Export the packages as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          if-no-files-found: error
+          name: linux-x86-64-packages
+          path: logix-ide-linux-x86-64-${{ env.PACKAGE_TAG }}.*

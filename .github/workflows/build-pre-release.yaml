@@ -80,6 +80,17 @@ jobs:
     uses: ./.github/workflows/build-windows-x86-64.yaml
     secrets: inherit
 
+  # Linux while it's being ported (Milestone 4): built and tested on every
+  # pre-release, its packages kept as the run's artifacts (named
+  # linux-x86-64-packages, not logix-ide-*, so the release doesn't pick them
+  # up), not in the release, and the pre-release doesn't wait for it (the
+  # website repo's CLAUDE.md, Strict CI: a stated, temporary step). Add them
+  # to the release once Logix IDE runs on Linux.
+  build-linux-x86-64:
+    needs: prepare
+    uses: ./.github/workflows/build-linux-x86-64.yaml
+    secrets: inherit
+
   # ----- Create the pre-release with the generated files.
 
   pre-release:

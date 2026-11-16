@@ -61,13 +61,14 @@ jobs:
     # macOS version GitHub offers (all arm64), named explicitly: add a new
     # one when GitHub ships it (macos-latest isn't listed: it's one of these,
     # so it tested the same image twice). Windows x64 (Milestone 3), named
-    # explicitly too. Times each channel, so each config file's result shows
-    # on its own and one failing doesn't stop the other. Add Linux with
-    # Milestone 4.
+    # explicitly too. Linux x64 (Milestone 4): the oldest Ubuntu GitHub
+    # offers, which the Linux packages are built on, and the newest. Times
+    # each channel, so each config file's result shows on its own and one
+    # failing doesn't stop the other.
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-15, macos-26, windows-2025]
+        os: [macos-15, macos-26, windows-2025, ubuntu-22.04, ubuntu-24.04]
         channel: ${{ fromJSON(needs.channels.outputs.channels) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -87,6 +88,13 @@ jobs:
       - name: Check out the code
         uses: actions/checkout@v7
 
+      # What Tauri needs to build on Linux (its WebKitGTK web view and GTK).
+      - name: Install the Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
@@ -103,7 +111,7 @@ jobs:
 
       # For the end-to-end UI tests in scripts/test.sh.
       - name: Install the Playwright WebKit browser
-        run: npx playwright install webkit
+        run: npx playwright install --with-deps webkit
 
       # On the matrix's channel: what its config file names.
       - name: Run checks and tests
