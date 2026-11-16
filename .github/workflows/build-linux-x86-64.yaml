@@ -119,6 +119,15 @@ jobs:
           cat contents.txt
           grep -q " ./usr/bin/logix-ide$" contents.txt
 
+      # Every package a CI build makes is scanned (the website repo's
+      # CLAUDE.md, Shared CI), this one too while it's kept out of the
+      # release.
+      - name: Scan the .deb for viruses
+        uses: openlogix/.github/actions/scan-files-for-viruses@main
+        with:
+          file-patterns: |
+            logix-ide-linux-x86-64-*.deb
+
       - name: Export the .deb as an artifact
         uses: actions/upload-artifact@v7
         with:
