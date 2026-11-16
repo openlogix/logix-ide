@@ -1068,9 +1068,10 @@
   }
   /** Help > System Info…, while it's open. */
   let systemInfoOpen = $state(false);
-  // Raised when System Info's content may have changed (setup ended, an
-  // update check or a task, which may switch the engine or its packages),
-  // so the open dialog reads it again.
+  // Raised whenever there is reason to believe System Info's content may
+  // have changed (the user's rule), so the open dialog reads it again.
+  // Today: setup, Check for Updates or a task ended (the engine or its
+  // packages may have switched). Anything new that can change it raises it.
   let systemInfoRefresh = $state(0);
   let devices = $state<Devices | null>(null);
   let devicesError = $state<string | null>(null);
