@@ -1,9 +1,8 @@
 # Builds the Logix IDE Linux (x64) package: a .deb (Milestone 4; only the
 # .deb for now, the user's decision, 2026-11-16). Called by build-pre-release.yaml, which passes
-# BUILD-INFO.json as the 'build-info' artifact. While Linux is being ported
-# they're kept as the run's artifacts, not added to the release, and the
-# pre-release doesn't wait for them (a stated, temporary step: the website
-# repo's CLAUDE.md, Strict CI).
+# BUILD-INFO.json as the 'build-info' artifact. While Linux is being ported,
+# the pre-release goes out without it when it fails (a stated, temporary
+# step: the website repo's CLAUDE.md, Strict CI).
 
 name: build-linux-x86-64
 
@@ -120,8 +119,7 @@ jobs:
           grep -Eq " (\./)?usr/bin/logix-ide$" contents.txt
 
       # Every package a CI build makes is scanned (the website repo's
-      # CLAUDE.md, Shared CI), this one too while it's kept out of the
-      # release.
+      # CLAUDE.md, Virus scans).
       - name: Scan the .deb for viruses
         uses: openlogix/.github/actions/scan-files-for-viruses@main
         with:
@@ -132,5 +130,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           if-no-files-found: error
-          name: linux-x86-64-packages
+          name: logix-ide-linux-x86-64
           path: logix-ide-linux-x86-64-${{ env.PACKAGE_TAG }}.deb
