@@ -118,3 +118,15 @@ jobs:
         env:
           LOGIX_IDE_CHANNEL: ${{ matrix.channel }}
         run: scripts/test.sh
+
+      # Playwright's traces of failed end-to-end tests (the page, the DOM and
+      # each step), to see why one failed on a platform no developer has at
+      # hand. Open one with: npx playwright show-trace <trace.zip>.
+      - name: Keep the failed UI tests' traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-test-results-${{ matrix.os }}-${{ matrix.channel }}
+          path: ui/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
