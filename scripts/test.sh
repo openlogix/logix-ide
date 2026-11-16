@@ -30,11 +30,15 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 
-# Delete build files unused for 7 days: Cargo never deletes old ones, so
-# the build folder otherwise grows by gigabytes. Needs cargo-sweep
-# (cargo install cargo-sweep); skipped without it, as on CI.
+# Delete old build files: Cargo never deletes them, so the build folder
+# grows by gigabytes. First those unused for 7 days, then the oldest until
+# the folder is under 8 GB, since a busy day's rebuilds filled the disk
+# within 7 days (2026-11-16, over 20 GB per repo). The newest build, just
+# made, stays. Needs cargo-sweep (cargo install cargo-sweep); skipped
+# without it, as on CI.
 if cargo sweep --version >/dev/null 2>&1; then
   cargo sweep --time 7
+  cargo sweep --maxsize 8GB
 else
   echo "Tip: cargo install cargo-sweep, to delete old build files."
 fi
