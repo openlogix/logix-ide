@@ -6,7 +6,7 @@
 //   swift src-tauri/icons/make-dmg-background.swift src-tauri/icons/dmg-background.tiff
 //
 // The size and icon positions must match bundle.macOS.dmg in tauri.conf.json
-// (windowSize 600x360, Logix IDE at x=160, Applications at x=440, both at y=150;
+// (windowSize 600x360, Logix IDE at x=160, Applications at x=440, both at y=132;
 // Finder positions are icon centers measured from the top left).
 //
 // windowSize is the Finder window's frame, title bar included, so the bottom
@@ -17,7 +17,7 @@ import AppKit
 
 let width: CGFloat = 600
 let height: CGFloat = 360
-let iconY: CGFloat = 150
+let iconY: CGFloat = 132
 let teal = NSColor(srgbRed: 0, green: 135 / 255, blue: 143 / 255, alpha: 1)
 
 func draw() {
@@ -42,8 +42,11 @@ func draw() {
     teal.setFill()
     head.fill()
 
-    // Instructions: the title centered near the top; the two lines at the
-    // bottom start at the same x, the block centered on its longer first line.
+    // Instructions: the title centered near the top, with a small margin
+    // above it; the two lines at the bottom start at the same x, the block
+    // centered on its longer first line, with room above them under the
+    // icons' names (the user's request, 2026-11-16: less space above the
+    // title, more above the lines).
     func attrs(_ size: CGFloat, _ weight: NSFont.Weight, _ color: NSColor, _ alignment: NSTextAlignment)
         -> [NSAttributedString.Key: Any]
     {
@@ -60,7 +63,7 @@ func draw() {
         NSString(string: s).draw(
             in: NSRect(x: x, y: height - top - h, width: width - x, height: h), withAttributes: a)
     }
-    text("Install Logix IDE", attrs(22, .semibold, NSColor(white: 0.15, alpha: 1), .center), size: 22, top: 32)
+    text("Install Logix IDE", attrs(22, .semibold, NSColor(white: 0.15, alpha: 1), .center), size: 22, top: 14)
     let line1 = "Drag the Logix IDE icon onto the Applications folder."
     // Dragging only copies it, so say how to start it.
     let line2 = "Then open Logix IDE from Applications in Finder."
