@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { focusOnMount } from "./lib/focus";
   import { onMount, tick, untrack } from "svelte";
   import {
     backend,
@@ -2489,7 +2490,6 @@
         {#if project}
           {#each project.files as f (f.name)}
             {#if naming?.mode === "rename" && naming.file === f.name}
-              <!-- svelte-ignore a11y_autofocus -->
               <input
                 class="tab-input"
                 bind:value={nameInput}
@@ -2497,7 +2497,7 @@
                 onblur={onNamingBlur}
                 spellcheck="false"
                 autocomplete="off"
-                autofocus
+                use:focusOnMount
               />
             {:else}
               <button
@@ -2531,7 +2531,6 @@
             {/if}
           {/each}
           {#if naming?.mode === "new"}
-            <!-- svelte-ignore a11y_autofocus -->
             <input
               class="tab-input"
               placeholder="name.v"
@@ -2540,7 +2539,7 @@
               onblur={onNamingBlur}
               spellcheck="false"
               autocomplete="off"
-              autofocus
+              use:focusOnMount
             />
           {/if}
           <button class="tab-add" title="New file" onclick={startNewFile}

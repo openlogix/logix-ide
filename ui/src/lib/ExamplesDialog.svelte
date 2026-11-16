@@ -15,6 +15,7 @@
   Cancel, Esc and ✕ cancel the board change.
 -->
 <script lang="ts">
+  import { focusOnMount } from "./focus";
   import { onMount } from "svelte";
   import type { Board, Example } from "./backend";
   import { groupExamples, type ExampleEntry } from "./examples";
@@ -211,14 +212,13 @@
         <!-- Project options are few: no search (the user's decision). -->
         <span class="header-space"></span>
       {:else}
-        <!-- svelte-ignore a11y_autofocus -->
         <input
           type="search"
           placeholder="Search boards and examples"
           bind:value={query}
           spellcheck="false"
           autocomplete="off"
-          autofocus
+          use:focusOnMount
         />
       {/if}
       <button

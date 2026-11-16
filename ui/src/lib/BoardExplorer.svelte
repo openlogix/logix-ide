@@ -9,6 +9,7 @@
   example. The model and the words are in `explorer.ts`.
 -->
 <script lang="ts">
+  import { focusOnMount } from "./focus";
   import { untrack } from "svelte";
   import { backend, type Board, type Example, type FpgaFamily } from "./backend";
   import { expanded, expandGroup, toggleGroup } from "./expandedGroups.svelte";
@@ -125,7 +126,6 @@
   >
     <header>
       <h2>Board Explorer</h2>
-      <!-- svelte-ignore a11y_autofocus -->
       <input
         type="search"
         placeholder="Search {KINDS.find((k) => k.kind === tab)?.label.toLowerCase()}"
@@ -133,7 +133,7 @@
         bind:value={query}
         spellcheck="false"
         autocomplete="off"
-        autofocus
+        use:focusOnMount
       />
       <button class="close" title="Close" onclick={onClose}>✕</button>
     </header>
