@@ -70,6 +70,9 @@ fn install_panic_logging() {
 pub fn run() {
     // First, before any thread starts (logging.rs).
     logging::init_local_offset();
+    // Before the web view exists, and before any thread starts (it sets an
+    // environment variable).
+    let web_view_note = platform::prepare_web_view();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
@@ -84,6 +87,9 @@ pub fn run() {
                 platform::current().map_or("unknown platform".into(), |p| format!("{p:?}")),
                 remote_config::CONFIG_VERSION
             ));
+            if let Some(note) = web_view_note {
+                crate::log!("{note}");
+            }
             if let Some(home) = std::env::var_os(platform::HOME_VARIABLE).filter(|v| !v.is_empty())
             {
                 log!(

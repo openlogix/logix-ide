@@ -283,6 +283,36 @@ pub fn running_app_pids(name: &str) -> Vec<i32> {
     }
 }
 
+/// The variable that turns off WebKitGTK's DMA-BUF (GPU) renderer.
+pub const WEBKIT_DMABUF_VARIABLE: &str = "WEBKIT_DISABLE_DMABUF_RENDERER";
+
+/// Linux: turns off WebKitGTK's DMA-BUF renderer for Logix IDE's web view,
+/// unless the user set the variable themselves (their value wins). A
+/// narrow workaround for an upstream WebKitGTK bug, with the user's OK
+/// (2026-11-16): with that renderer, text whose color changed (the board
+/// list's highlighted entry) stayed drawn bold after the highlight moved on
+/// (WebKitGTK 2.50.4, Ubuntu 22.04, AMD Radeon Vega, Wayland). Reported to
+/// WebKitGTK (TODO: the bug's link, once posted); remove this when a fixed
+/// WebKitGTK reaches the Linux versions Logix IDE supports. WebKit then
+/// draws through its older path, fast enough for Logix IDE's window. Must
+/// run before the web view exists and before any thread starts. Returns
+/// what to log.
+pub fn prepare_web_view() -> Option<String> {
+    if !cfg!(target_os = "linux") {
+        return None;
+    }
+    if let Some(v) = std::env::var_os(WEBKIT_DMABUF_VARIABLE) {
+        return Some(format!(
+            "{WEBKIT_DMABUF_VARIABLE} is set to {:?} by the environment, kept",
+            v.to_string_lossy()
+        ));
+    }
+    std::env::set_var(WEBKIT_DMABUF_VARIABLE, "1");
+    Some(format!(
+        "{WEBKIT_DMABUF_VARIABLE}=1: WebKitGTK's DMA-BUF renderer is off (it left text drawn bold)"
+    ))
+}
+
 /// Brings the app with process id `pid` to the front, e.g. GTKWave after a
 /// simulation (an app started in the background by another program stays
 /// behind the IDE). Must be called on the main thread while the IDE is the
