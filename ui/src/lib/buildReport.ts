@@ -66,16 +66,16 @@ function columns(rows: string[][], right: number[]): string {
 export function reportText(title: string, rows: ReportResource[], report: BuildReport): string {
   const resources = columns(
     [
-      ["Resource", "Description", "Used", "Available", "%"],
+      ["Resource", "Used", "Available", "%", "Description"],
       ...rows.map((r) => [
         r.name,
-        r.description ?? "",
         r.used === 0 ? "" : String(r.used),
         String(r.available),
         percentText(r),
+        r.description ?? "",
       ]),
     ],
-    [2, 3, 4],
+    [1, 2, 3],
   );
   const clocks =
     report.clocks.length === 0

@@ -242,13 +242,13 @@ test("Board Utilization shows the used resources, all on request, and copies the
   await expect(rows).toHaveCount(16);
   // Unused rows have no count or share, rather than "0" and "0%".
   const ram = rows.filter({ hasText: "ICESTORM_RAM" }).locator("td");
-  await expect(ram.nth(2)).toHaveText("");
-  await expect(ram.last()).toHaveText("");
+  await expect(ram.nth(1)).toHaveText("");
+  await expect(ram.nth(3)).toHaveText("");
   await dialog.getByLabel("Filter resources").fill("block ram");
   await expect(rows).toHaveCount(1);
   await dialog.getByRole("button", { name: "Copy" }).click();
   await expect(dialog).toContainText("Copied.");
-  expect((await fake()).copiedText).toMatch(/^Board Utilization: .* · iCESugar v1.5 · .*\n\nResource +Description.*\nICESTORM_RAM +Block RAM, 4 Kbit +30\n/s);
+  expect((await fake()).copiedText).toMatch(/^Board Utilization: .* · iCESugar v1.5 · .*\n\nResource +Used +Available +% +Description\nICESTORM_RAM +30 +Block RAM, 4 Kbit\n/s);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 

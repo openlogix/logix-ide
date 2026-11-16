@@ -84,23 +84,23 @@
         <thead>
           <tr>
             <th>Resource</th>
-            <th>Description</th>
             <th class="num">Used</th>
             <th class="num">Available</th>
             <th class="num">%</th>
+            <th>Description</th>
           </tr>
         </thead>
         <tbody>
           {#each rows as r (r.name)}
             <tr>
               <td class="name">{r.name}</td>
-              <td>{r.description ?? ""}</td>
               <td class="num">{r.used === 0 ? "" : r.used.toLocaleString()}</td>
               <td class="num">{r.available.toLocaleString()}</td>
               <td class="num" class:invalid={r.percent === null}
                 title={r.percent === null ? "The tools reported numbers that don't fit" : undefined}
                 >{percentText(r)}</td
               >
+              <td class="description">{r.description ?? ""}</td>
             </tr>
           {:else}
             <tr><td colspan="5" class="muted">No resources match.</td></tr>
@@ -227,6 +227,14 @@
   }
   .clocks {
     margin-top: 16px;
+  }
+  /* The resource and its numbers as wide as their contents, side by side
+     so they're easy to match (the user's request, 2026-11-16); the
+     description takes the rest. */
+  .resources td:not(.description),
+  .resources th:not(:last-child) {
+    width: 1%;
+    padding-right: 16px;
   }
   /* Clock and Max speed as wide as their contents; Net takes the rest. */
   .clocks td:not(:last-child),
