@@ -154,12 +154,12 @@ export function durationText(ms: number): string {
 }
 
 /**
- * The log's last line when a driver change ends: how it ended, the way the
- * status line says it, and after a success how long it took (the user's
- * request, 2026-11-15).
+ * The log's last lines when a driver change ends: after a success, how long
+ * it took, then each sentence of the result on a line of its own (the
+ * user's requests, 2026-11-15); after a failure, the error.
  */
-export function driverWorkEnd(text: string, kind: "ok" | "error", ms: number): string {
-  return kind === "ok" ? `Done in ${durationText(ms)}: ${text}` : `Failed: ${text}`;
+export function driverWorkEnd(lines: string[], kind: "ok" | "error", ms: number): string[] {
+  return kind === "ok" ? [`Done in ${durationText(ms)}.`, ...lines] : [`Failed: ${lines.join(" ")}`];
 }
 
 /**

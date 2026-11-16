@@ -1139,14 +1139,21 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
   await expect(work.locator(".spinner")).toHaveCount(0);
   await work.getByRole("button", { name: /Show log/ }).click();
   await expect(work.locator(".work-output")).toContainText("$ wdi-simple.exe --vid 0x0403 --pid 0x6010");
-  expect((await work.locator(".work-output").textContent())?.trim().split("\n").at(-1)).toMatch(
-    /^Done in \d+ s: Installed the WinUSB driver for the Alhambra II\.$/,
-  );
+  const installEnd = (await work.locator(".work-output").textContent())?.trim().split("\n").slice(-2);
+  expect(installEnd?.[0]).toMatch(/^Done in \d+ s\.$/);
+  expect(installEnd?.[1]).toBe("Installed the WinUSB driver for the Alhambra II.");
   await expect(status(page)).toContainText("Installed the WinUSB driver for the Alhambra II");
   await dialog.getByRole("button", { name: "Remove Driver…" }).click();
   await page.getByRole("alertdialog", { name: "Remove the board's USB driver?" }).getByRole("button", { name: "Remove Driver" }).click();
   await expect(dialog).toContainText("it has FTDI's driver now");
   await expect(work.locator(".work-output")).toContainText("$ pnputil /delete-driver oem12.inf");
+  // One line each: how long it took, what was done, what Windows does now.
+  const removeEnd = (await work.locator(".work-output").textContent())?.trim().split("\n").slice(-3);
+  expect(removeEnd?.[0]).toMatch(/^Done in \d+ s\.$/);
+  expect(removeEnd?.slice(1)).toEqual([
+    "Removed the WinUSB driver for the Alhambra II.",
+    "Windows uses its original driver again.",
+  ]);
   // Close, at the bottom.
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expect(dialog).toHaveCount(0);

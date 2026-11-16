@@ -1131,12 +1131,15 @@
     };
   }
 
-  function endDriverWork(text: string, kind: "ok" | "error") {
+  /** `message`: the result, one sentence per item (one log line each; joined in the status line). */
+  function endDriverWork(message: string | string[], kind: "ok" | "error") {
+    const lines = typeof message === "string" ? [message] : message;
+    const text = lines.join(" ");
     if (driverWork) {
       driverWork.result = { text, kind };
       // The log ends the way the status line does, not with the engine's
       // last progress line (such as "Waiting for permission").
-      driverWork.lines = [...driverWork.lines, driverWorkEnd(text, kind, Date.now() - driverWork.started)];
+      driverWork.lines = [...driverWork.lines, ...driverWorkEnd(lines, kind, Date.now() - driverWork.started)];
     }
     status = { text, kind };
   }
@@ -1179,7 +1182,7 @@
       const removed = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id, onEvent);
       endDriverWork(
         removed > 0
-          ? `Removed the WinUSB driver for ${who}: Windows uses its original driver again.`
+          ? [`Removed the WinUSB driver for ${who}.`, "Windows uses its original driver again."]
           : `Logix IDE found no WinUSB driver it installed for ${who}.`,
         "ok",
       );

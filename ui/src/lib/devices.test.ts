@@ -97,8 +97,12 @@ describe("devices", () => {
     expect(durationText(48_400)).toBe("48 s");
     expect(durationText(60_000)).toBe("1 min");
     expect(durationText(72_300)).toBe("1 min 12 s");
-    expect(driverWorkEnd("Installed.", "ok", 72_300)).toBe("Done in 1 min 12 s: Installed.");
-    expect(driverWorkEnd("Couldn't install.", "error", 5_000)).toBe("Failed: Couldn't install.");
+    expect(driverWorkEnd(["Removed.", "Windows uses its original driver again."], "ok", 72_300)).toEqual([
+      "Done in 1 min 12 s.",
+      "Removed.",
+      "Windows uses its original driver again.",
+    ]);
+    expect(driverWorkEnd(["Couldn't install."], "error", 5_000)).toEqual(["Failed: Couldn't install."]);
   });
 
   it("copies Connected Devices as text for a problem report", () => {
