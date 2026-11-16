@@ -108,8 +108,14 @@ pre-releases are development builds.
    sudo apt install ~/Downloads/logix-ide-linux-x86-64-*.deb
    ```
 
-3. Start Logix IDE from your applications: press the Super key, type
-   `Logix IDE` and press Enter. The first time, it downloads the FPGA tools it
+   apt may end with a note starting `N: Download is performed unsandboxed as
+   root`: it's harmless, and appears whenever apt installs a file from your
+   home folder.
+
+3. Start Logix IDE. On Ubuntu, click **Show Applications** (the grid of dots
+   at the bottom of the dock, on the left of the screen), type `Logix IDE` and
+   click its icon. The Windows key on your keyboard opens the same search.
+   Other desktops have their own applications menu. The first time, it downloads the FPGA tools it
    needs, as on macOS. Most boards also need a udev rule: **Upload** offers to
    add it the first time.
 

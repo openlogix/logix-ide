@@ -70,7 +70,9 @@ There's nothing else to install: Logix IDE downloads the FPGA tools it needs.
 
 === "Linux"
 
-    Press the Super key, type `Logix IDE` and press Enter.
+    On Ubuntu, click **Show Applications** (the grid of dots at the bottom
+    of the dock, on the left of the screen), type `Logix IDE` and click its
+    icon. The Windows key on your keyboard opens the same search.
 
 The first time, Logix IDE downloads its FPGA tools, which takes a few minutes. The status bar at the
 bottom of the window shows the progress, and the output area above it shows
