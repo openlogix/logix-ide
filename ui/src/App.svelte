@@ -1150,6 +1150,17 @@
     };
   }
 
+  /**
+   * A driver change the user cancelled at its question: shown like any
+   * other, so the panel's status and log are always about the last thing
+   * the user did there (the user's report, 2026-11-16: they still showed an
+   * earlier change).
+   */
+  function cancelDriverWork(title: string, text: string) {
+    driverWork = { title, step: null, lines: [text], result: { text, kind: "info" }, started: Date.now() };
+    status = { text, kind: "info" };
+  }
+
   /** `message`: the result, one sentence per item (one log line each; joined in the status line). */
   function endDriverWork(message: string | string[], kind: "ok" | "error") {
     const lines = typeof message === "string" ? [message] : message;
@@ -1171,16 +1182,20 @@
    * Alhambra II", or the device's label).
    */
   async function installDeviceDriver(id: string, who: string, driver: Driver) {
-    if (!(await confirmInApp(driverOffer(who, driver.needed, driver.current)))) return;
     const udev = isUdevRule(driver.needed);
     const doing = udev ? `Adding a udev rule for ${who}…` : `Installing the WinUSB driver for ${who}…`;
+    const cancelled = udev ? "Cancelled: no udev rule was added." : "Cancelled: no driver was installed.";
+    if (!(await confirmInApp(driverOffer(who, driver.needed, driver.current)))) {
+      cancelDriverWork(doing, cancelled);
+      return;
+    }
     devicesBusy = true;
     try {
       let onEvent = startDriverWork(doing);
       let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false, onEvent);
       if (result.sameIds !== null) {
         if (!(await confirmInApp(sameIdsQuestion(result.sameIds)))) {
-          driverWork = null;
+          cancelDriverWork(doing, cancelled);
           return;
         }
         onEvent = startDriverWork(doing);
@@ -1199,8 +1214,14 @@
 
   /** Tools > Connected Devices > Remove Driver… (Windows) or Remove udev Rule… (Linux). `who` as for installing. */
   async function removeDeviceDriver(id: string, who: string, driver: Driver) {
-    if (!(await confirmInApp(driverRemove(who, driver.needed)))) return;
     const udev = isUdevRule(driver.needed);
+    if (!(await confirmInApp(driverRemove(who, driver.needed)))) {
+      cancelDriverWork(
+        udev ? `Removing the udev rule for ${who}…` : `Removing the WinUSB driver for ${who}…`,
+        udev ? "Cancelled: the udev rule stays." : "Cancelled: the driver stays.",
+      );
+      return;
+    }
     devicesBusy = true;
     try {
       const onEvent = startDriverWork(udev ? `Removing the udev rule for ${who}…` : `Removing the WinUSB driver for ${who}…`);

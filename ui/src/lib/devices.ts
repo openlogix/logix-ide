@@ -170,7 +170,8 @@ export interface DriverWork {
   title: string;
   step: string | null;
   lines: string[];
-  result: { text: string; kind: "ok" | "error" } | null;
+  /** How it ended: done, failed, or cancelled by the user ("info", nothing changed). */
+  result: { text: string; kind: "ok" | "error" | "info" } | null;
   /** When it started (ms since the epoch), for how long it took. */
   started: number;
 }
@@ -328,7 +329,12 @@ export function devicesReport(
   }
   if (work) {
     out.push("", `Last driver change: ${work.title}`);
-    out.push(`  ${work.result ? `${work.result.kind === "ok" ? "Done" : "Failed"}: ${work.result.text}` : `Running${work.step ? `: ${work.step}` : ""}`}`);
+    const ended = work.result
+      ? work.result.kind === "info"
+        ? work.result.text
+        : `${work.result.kind === "ok" ? "Done" : "Failed"}: ${work.result.text}`
+      : `Running${work.step ? `: ${work.step}` : ""}`;
+    out.push(`  ${ended}`);
     out.push(...work.lines.map((l) => `  | ${l}`));
   }
   return out.join("\n");
