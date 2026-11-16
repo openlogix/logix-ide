@@ -573,7 +573,8 @@ fn downloaded_packages(out: &Value) -> Vec<String> {
 }
 
 /// Turns the engine's progress into setup events: the downloading stage
-/// when the first phase starts (nothing when there's nothing to download),
+/// when the first phase starts (nothing when there's nothing to download;
+/// the status bar says it can take a few minutes, the console doesn't),
 /// the phase message (kept until the next phase starts) with its
 /// percentage, and each new phase as a console line.
 fn progress_sink<F>(emit: F) -> ProgressSink
@@ -586,10 +587,6 @@ where
             if !started.swap(true, std::sync::atomic::Ordering::Relaxed) {
                 emit(SetupEvent::Stage {
                     stage: SetupStage::DownloadingEnginePackages,
-                });
-                emit(SetupEvent::Log {
-                    line: "Downloading the FPGA tools. The first time can take a few minutes."
-                        .into(),
                 });
             }
             emit(SetupEvent::Log {
@@ -648,10 +645,6 @@ mod tests {
             vec![
                 SetupEvent::Stage {
                     stage: SetupStage::DownloadingEnginePackages
-                },
-                SetupEvent::Log {
-                    line: "Downloading the FPGA tools. The first time can take a few minutes."
-                        .into()
                 },
                 SetupEvent::Log {
                     line: "Downloading logix-core...".into()
