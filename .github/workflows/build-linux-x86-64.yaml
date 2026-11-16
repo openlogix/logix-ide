@@ -1,5 +1,5 @@
-# Builds the Logix IDE Linux (x64) packages: an AppImage and a .deb
-# (Milestone 4). Called by build-pre-release.yaml, which passes
+# Builds the Logix IDE Linux (x64) package: a .deb (Milestone 4; only the
+# .deb for now, the user's decision, 2026-11-16). Called by build-pre-release.yaml, which passes
 # BUILD-INFO.json as the 'build-info' artifact. While Linux is being ported
 # they're kept as the run's artifacts, not added to the release, and the
 # pre-release doesn't wait for them (a stated, temporary step: the website
@@ -33,12 +33,11 @@ jobs:
         with:
           platform: linux-x86-64
 
-      # What Tauri needs to build on Linux (its WebKitGTK web view and
-      # GTK), and FUSE for the AppImage tools.
+      # What Tauri needs to build on Linux (its WebKitGTK web view and GTK).
       - name: Install the Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file libfuse2
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file
 
       # Into a subdirectory, not to step on BUILD-INFO.json.
       - name: Checkout the commit to build
@@ -93,42 +92,32 @@ jobs:
           git diff --stat
           test "$(git diff --numstat | wc -l)" -eq 5
 
-      # The AppImage tools are AppImages themselves: extracting them avoids
-      # needing FUSE at build time.
-      - name: Build Logix IDE, the AppImage and the .deb
+      - name: Build Logix IDE and the .deb
         working-directory: _repo
         env:
           LOGIX_IDE_BUILD_VERSION: ${{ env.RELEASE_TAG }}
-          APPIMAGE_EXTRACT_AND_RUN: "1"
-        run: npm run tauri -- build --bundles appimage,deb
+        run: npm run tauri -- build --bundles deb
 
-      - name: Collect the packages
+      - name: Collect the .deb
         run: |
           find _repo/src-tauri/target/release/bundle -maxdepth 2
-          for ext in AppImage deb; do
-            dir=appimage; [[ $ext == deb ]] && dir=deb
-            files=(_repo/src-tauri/target/release/bundle/$dir/*.$ext)
-            if [[ ${#files[@]} -ne 1 || ! -f "${files[0]}" ]]; then
-              echo "Error: expected exactly one .$ext, found: ${files[*]}"
-              exit 1
-            fi
-            cp "${files[0]}" "logix-ide-linux-x86-64-${PACKAGE_TAG}.$ext"
-          done
-          ls -al logix-ide-linux-x86-64-*
+          debs=(_repo/src-tauri/target/release/bundle/deb/*.deb)
+          if [[ ${#debs[@]} -ne 1 || ! -f "${debs[0]}" ]]; then
+            echo "Error: expected exactly one .deb, found: ${debs[*]}"
+            exit 1
+          fi
+          cp "${debs[0]}" "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb"
+          ls -al *.deb
 
-      # Checks what users get: each package holds the logix-ide program.
-      - name: Verify the packages
+      # Checks what users get: the .deb holds the logix-ide program.
+      - name: Verify the .deb
         run: |
-          app="logix-ide-linux-x86-64-${PACKAGE_TAG}.AppImage"
-          chmod +x "$app"
-          (cd "$RUNNER_TEMP" && "$GITHUB_WORKSPACE/$app" --appimage-extract >/dev/null)
-          test -x "$RUNNER_TEMP/squashfs-root/usr/bin/logix-ide"
           dpkg-deb --info "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb"
           dpkg-deb --contents "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb" | grep -q "./usr/bin/logix-ide$"
 
-      - name: Export the packages as an artifact
+      - name: Export the .deb as an artifact
         uses: actions/upload-artifact@v7
         with:
           if-no-files-found: error
           name: linux-x86-64-packages
-          path: logix-ide-linux-x86-64-${{ env.PACKAGE_TAG }}.*
+          path: logix-ide-linux-x86-64-${{ env.PACKAGE_TAG }}.deb
