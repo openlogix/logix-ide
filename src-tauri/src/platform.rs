@@ -291,8 +291,9 @@ pub const WEBKIT_DMABUF_VARIABLE: &str = "WEBKIT_DISABLE_DMABUF_RENDERER";
 /// narrow workaround for an upstream WebKitGTK bug, with the user's OK
 /// (2026-11-16): with that renderer, text whose color changed (the board
 /// list's highlighted entry) stayed drawn bold after the highlight moved on
-/// (WebKitGTK 2.50.4, Ubuntu 22.04, AMD Radeon Vega, Wayland). Reported to
-/// WebKitGTK (TODO: the bug's link, once posted); remove this when a fixed
+/// (WebKitGTK 2.50.4, Ubuntu 22.04, AMD Radeon Vega, Wayland). Not reported
+/// upstream yet: the user's TODO for after the Linux release, with a test
+/// case that reproduces it outside Logix IDE. Remove this when a fixed
 /// WebKitGTK reaches the Linux versions Logix IDE supports. WebKit then
 /// draws through its older path, fast enough for Logix IDE's window. Must
 /// run before the web view exists and before any thread starts. Returns
