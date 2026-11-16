@@ -1246,6 +1246,9 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
     "Removed the WinUSB driver for the Alhambra II.",
     "Windows uses its original driver again.",
   ]);
+  // Refresh starts over: no status or log of the change before.
+  await dialog.getByRole("button", { name: "Refresh" }).click();
+  await expect(work.locator(".work-status")).toHaveCount(0);
   // Close, at the bottom.
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expect(dialog).toHaveCount(0);

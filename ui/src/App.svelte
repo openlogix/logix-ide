@@ -2291,7 +2291,12 @@
     busy={devicesBusy}
     board={currentBoard}
     {boardName}
-    onRefresh={refreshDevices}
+    onRefresh={() => {
+      // Refresh starts over: the panel's status and log are always about
+      // the last thing the user did there (the user's request, 2026-11-16).
+      driverWork = null;
+      refreshDevices();
+    }}
     {driverWork}
     onInstallDriver={installDeviceDriver}
     onRemoveDriver={removeDeviceDriver}
