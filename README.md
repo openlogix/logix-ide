@@ -69,12 +69,11 @@ pre-releases are development builds.
 
 1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
    `logix-ide-darwin-arm64-<date>.dmg` to your **Downloads** folder.
-2. Open **Terminal** and run this command, using the name of the file you
-   downloaded. Logix IDE isn't signed by Apple yet, and this tells your Mac it's
-   OK to open it:
+2. Open **Terminal** and run this command. Logix IDE isn't signed by Apple yet,
+   and this tells your Mac it's OK to open it:
 
    ```
-   xattr -c ~/Downloads/logix-ide-darwin-arm64-<date>.dmg
+   xattr -c ~/Downloads/logix-ide-darwin-arm64-*.dmg
    ```
 
 3. Double-click the `.dmg` file and drag **Logix IDE** into your

@@ -3,10 +3,10 @@
 ## macOS says Logix IDE can't be opened
 
 Logix IDE isn't signed with an Apple Developer ID yet. Before opening the
-downloaded `.dmg`, run in Terminal (with your file's name):
+downloaded `.dmg`, run in Terminal:
 
 ```
-xattr -c ~/Downloads/logix-ide-darwin-arm64-<date>.dmg
+xattr -c ~/Downloads/logix-ide-darwin-arm64-*.dmg
 ```
 
 Then open it and drag Logix IDE to **Applications** again. See
