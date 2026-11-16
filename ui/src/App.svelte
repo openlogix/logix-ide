@@ -1937,6 +1937,7 @@
         [...p.removed],
         board,
         variant,
+        buildKey(p),
       );
       if (!doc || !doc.dir) return false;
       // Keep the editor (and its undo history) as is.

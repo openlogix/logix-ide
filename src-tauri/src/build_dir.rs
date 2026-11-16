@@ -84,11 +84,19 @@ pub fn prepare(root: &Path, input: &BuildInput) -> Result<PathBuf> {
     std::fs::create_dir_all(root).with_context(|| format!("can't create {}", root.display()))?;
 
     // Remove everything from the previous build except the engine's output, so
-    // deleted or renamed files don't linger.
+    // deleted or renamed files don't linger. GTKWave layouts the user saved
+    // stay too: a project that has a folder got them back already
+    // (`save_back_gtkw`, before each task), but a project never saved has
+    // none, and its layout would be lost at the next Simulate (the user's
+    // report, 2026-11-16). The project's own layouts, copied below, replace
+    // them.
     for entry in std::fs::read_dir(root)? {
         let entry = entry?;
         let name = entry.file_name();
         if name == OUTPUT_DIR || name == KEY_FILE {
+            continue;
+        }
+        if is_user_gtkw(&entry.path()) {
             continue;
         }
         let path = entry.path();
@@ -125,6 +133,20 @@ pub fn prepare_single(root: &Path, file: &ProjectFile) -> Result<PathBuf> {
     std::fs::create_dir_all(root).with_context(|| format!("can't create {}", root.display()))?;
     std::fs::write(root.join(&file.name), &file.text)?;
     Ok(root.to_path_buf())
+}
+
+/// Whether `path` is a GTKWave layout (.gtkw) the user saved from GTKWave:
+/// one without the engine's generated-layout marker.
+fn is_user_gtkw(path: &Path) -> bool {
+    let is_gtkw = path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("gtkw"));
+    is_gtkw
+        && path.is_file()
+        && std::fs::read(path).is_ok_and(|text| {
+            let content = String::from_utf8_lossy(&text);
+            !GTKW_AUTO_MARKERS.iter().any(|m| content.contains(m))
+        })
 }
 
 /// Copies GTKWave layouts (.gtkw) the user saved from GTKWave in the build
@@ -225,6 +247,49 @@ mod tests {
             !root.join("_build").exists(),
             "another project starts clean"
         );
+    }
+
+    // A project never saved has no folder to keep a layout saved from
+    // GTKWave, so the build folder keeps it from run to run; generated ones
+    // go, and the project's own layout replaces it.
+    #[test]
+    fn keeps_user_gtkwave_layouts_between_runs() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().join("build");
+        let files = [file("main.v", "x")];
+        let input = |key, source_dir| BuildInput {
+            key,
+            source_dir,
+            files: &files,
+        };
+        prepare(&root, &input("untitled", None)).unwrap();
+        std::fs::write(root.join("main_tb.gtkw"), "[*] user layout\n").unwrap();
+        std::fs::write(
+            root.join("auto_tb.gtkw"),
+            format!("[*] {}\n", GTKW_AUTO_MARKERS[0]),
+        )
+        .unwrap();
+
+        prepare(&root, &input("untitled", None)).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(root.join("main_tb.gtkw")).unwrap(),
+            "[*] user layout\n"
+        );
+        assert!(!root.join("auto_tb.gtkw").exists(), "generated layouts go");
+
+        // The project's own layout wins.
+        let src = tmp.path().join("src");
+        std::fs::create_dir_all(&src).unwrap();
+        std::fs::write(src.join("main_tb.gtkw"), "[*] project layout\n").unwrap();
+        prepare(&root, &input("untitled", Some(&src))).unwrap();
+        assert_eq!(
+            std::fs::read_to_string(root.join("main_tb.gtkw")).unwrap(),
+            "[*] project layout\n"
+        );
+
+        // Another project starts clean.
+        prepare(&root, &input("other", None)).unwrap();
+        assert!(!root.join("main_tb.gtkw").exists());
     }
 
     #[test]

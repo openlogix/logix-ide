@@ -1447,6 +1447,7 @@ pub async fn save_project_as_dialog(
     removed: Vec<String>,
     board: Option<String>,
     variant: project::Variant,
+    build_key: String,
 ) -> Result<Option<ProjectDoc>, UserError> {
     let mut dialog = app.dialog().file().set_title("Save Project As");
     // Start next to the project's own folder (a project never saved, even
@@ -1489,6 +1490,16 @@ pub async fn save_project_as_dialog(
         project::load(&target)
     })
     .await??;
+    // GTKWave layouts saved from this project's simulations, kept in the
+    // build folder (a project never saved has nowhere else to keep them),
+    // become part of the new project.
+    if let Ok(dir) = platform::current_implemented().and_then(|p| p.data_dir()) {
+        let root = dir.join("_scratch").join("build");
+        let target = created.dir.clone();
+        for name in blocking(move || save_back_gtkw(&root, &build_key, &target)).await? {
+            crate::log!("{}", gtkw_saved_message(&name));
+        }
+    }
     remember_project(&app, &created.dir);
     Ok(Some(created.into()))
 }

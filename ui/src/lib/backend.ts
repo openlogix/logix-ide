@@ -760,6 +760,8 @@ export const backend = {
     removed: string[],
     board: string | null,
     variant: Variant,
+    /** The project's build key before saving: GTKWave layouts saved from its simulations are copied along. */
+    buildKey: string,
   ): Promise<ProjectDoc | null> =>
     invoke<ProjectDoc | null>("save_project_as_dialog", {
       projectDir,
@@ -767,6 +769,7 @@ export const backend = {
       suggestedName,
       files,
       removed,
+      buildKey,
       board,
       variant,
     }),
