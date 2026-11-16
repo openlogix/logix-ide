@@ -704,6 +704,10 @@ static GTKWAVE_WAIT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64
 /// while) can take over 8 seconds.
 const GTKWAVE_WAIT_SECONDS: u64 = 30;
 
+/// Linux: how long a running GTKWave may take to show an X11 window before
+/// Logix IDE stops trying to raise it (a native Wayland window has none).
+const GTKWAVE_RAISE_SECONDS: u64 = 10;
+
 /// After a simulation, GTKWave starts in the background and its
 /// window would stay behind Logix IDE. Waits for the new GTKWave (up to
 /// `GTKWAVE_WAIT_SECONDS`) and brings it to the front, then tells the UI
@@ -716,16 +720,35 @@ async fn bring_gtkwave_to_front(app: AppHandle, before: Vec<i32>, generation: u6
             let _ = app.emit("gtkwave-opened", found);
         }
     };
+    // When a new GTKWave was first seen (Linux: see below).
+    let mut seen: Option<std::time::Instant> = None;
     for _ in 0..GTKWAVE_WAIT_SECONDS * 4 {
         tokio::time::sleep(Duration::from_millis(250)).await;
         let pids = on_main_thread(&app, || platform::running_app_pids(GTKWAVE))
             .await
             .unwrap_or_default();
+        let new: Vec<i32> = pids.into_iter().filter(|p| !before.contains(p)).collect();
+        if !new.is_empty() && seen.is_none() {
+            seen = Some(std::time::Instant::now());
+        }
+        // Linux: a native Wayland window can't be raised by another
+        // program, so a GTKWave that's running without an X11 window after
+        // GTKWAVE_RAISE_SECONDS is open, where the desktop put it.
+        if cfg!(target_os = "linux")
+            && seen.is_some_and(|t| t.elapsed() >= Duration::from_secs(GTKWAVE_RAISE_SECONDS))
+        {
+            crate::log!(
+                "GTKWave is running, but has no X11 window to bring to the front (Wayland?)"
+            );
+            tell(true);
+            return;
+        }
         // Each new one (Windows' process ids aren't in start order), until
-        // one is brought to the front: on Windows, once it has a window.
-        for pid in pids.into_iter().filter(|p| !before.contains(p)) {
+        // one is brought to the front: on Windows and Linux, once it has a
+        // window.
+        for pid in new {
             let brought = on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
-            if brought != Some(true) && cfg!(windows) {
+            if brought != Some(true) && (cfg!(windows) || cfg!(target_os = "linux")) {
                 continue;
             }
             // Once more after its window has had time to appear.
