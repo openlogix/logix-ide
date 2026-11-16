@@ -311,6 +311,13 @@ test("Help > System Info shows the version tree and copies the text", async ({ p
   const text = (await fake()).copiedText ?? "";
   expect(text).toMatch(/^Logix IDE .*\n\nVersions:\nLogix IDE /s);
   expect(text).toContain("│  │  └─ OSS CAD Suite 2026-11-04");
+  // An update while it's open: it reads the report again by itself, and
+  // logix-core, opened by the user, stays open.
+  await row("logix-core").click();
+  await expect(row("logix-catalog")).toContainText("2026.11.14");
+  await menu(page, "check-for-updates");
+  await expect(row("logix-catalog")).toContainText("2026.11.30");
+  await expect(row("OSS CAD Suite")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });

@@ -400,6 +400,8 @@
       setupError = err.message;
       log(`Error: ${err.details}`);
       showOutput("error");
+    } finally {
+      systemInfoRefresh++;
     }
   }
 
@@ -877,6 +879,8 @@
       finish(changes[changes.length - 1] ?? "Everything is up to date.");
     } catch (e) {
       commandFailed(e);
+    } finally {
+      systemInfoRefresh++;
     }
   }
 
@@ -1064,6 +1068,10 @@
   }
   /** Help > System Info…, while it's open. */
   let systemInfoOpen = $state(false);
+  // Raised when System Info's content may have changed (setup ended, an
+  // update check or a task, which may switch the engine or its packages),
+  // so the open dialog reads it again.
+  let systemInfoRefresh = $state(0);
   let devices = $state<Devices | null>(null);
   let devicesError = $state<string | null>(null);
   let devicesBusy = $state(false);
@@ -1408,6 +1416,7 @@
       showOutput("error");
     } finally {
       running = null;
+      systemInfoRefresh++;
       taskStep = null;
       if (project === p) logDone();
       if (opening && project === p) {
@@ -2233,7 +2242,7 @@
 {/if}
 
 {#if systemInfoOpen}
-  <SystemInfoDialog onClose={() => (systemInfoOpen = false)} />
+  <SystemInfoDialog refresh={systemInfoRefresh} onClose={() => (systemInfoOpen = false)} />
 {/if}
 {#if buildReportOpen && buildReport}
   <BuildReportDialog

@@ -363,6 +363,9 @@ const fake = {
 };
 (window as unknown as { __fake: typeof fake }).__fake = fake;
 
+/** The engine's logix-catalog in System Info; Check for Updates moves it. */
+let catalogRelease = "2026.11.14";
+
 /** The board files in `folder`'s boards folder on the fake disk (null without it). */
 function boardsOnDisk(folder: string | null): Record<string, string> | null {
   return folder === null ? null : (fake.customBoardsOnDisk[folder] ?? null);
@@ -743,6 +746,7 @@ export const backend: typeof Real.backend = {
     // As the real one: the engine's progress in the console, then what
     // changed.
     handlers.output?.("Downloading logix-catalog 2026.11.30...");
+    catalogRelease = "2026.11.30";
     return ["Updated logix-catalog to 2026.11.30."];
   },
   systemInfo: async () => {
@@ -767,7 +771,7 @@ export const backend: typeof Real.backend = {
                   [{ label: "Uses", value: "yosys, nextpnr-ice40, openFPGALoader" }]),
               ],
             },
-            leaf("logix-catalog", "2026.11.14", "package"),
+            leaf("logix-catalog", catalogRelease, "package"),
           ],
         },
         leaf("logix-ide-examples", "2026.11.15", "package"),

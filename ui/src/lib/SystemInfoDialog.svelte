@@ -10,7 +10,9 @@
 <script lang="ts">
   import { backend, type SystemInfo, type VersionEntry } from "./backend";
 
-  let { onClose }: { onClose: () => void } = $props();
+  // `refresh` changes whenever what the report shows may have changed (setup
+  // ended, an update ran): the open dialog then reads it again by itself.
+  let { onClose, refresh = 0 }: { onClose: () => void; refresh?: number } = $props();
 
   let info = $state<SystemInfo | null>(null);
   let error = $state<string | null>(null);
@@ -19,15 +21,28 @@
   // two levels start open, the rest closed.
   let closed = $state(new Set<string>());
 
+  // Every path shown so far: on a refresh, only entries new to the tree
+  // (such as the engine's packages once it runs) start closed, and what the
+  // user opened or closed stays so.
+  let seen = new Set<string>();
+
   $effect(() => {
+    void refresh;
     backend
       .systemInfo()
       .then((i) => {
-        closed = new Set(deepPaths(i.versions, "0", 0));
+        const fresh = deepPaths(i.versions, "0", 0).filter((p) => !seen.has(p));
+        closed = new Set([...closed, ...fresh]);
+        seen = new Set([...seen, ...allPaths(i.versions, "0")]);
         info = i;
+        error = null;
       })
       .catch((e) => (error = (e as { message?: string }).message ?? String(e)));
   });
+
+  function allPaths(e: VersionEntry, path: string): string[] {
+    return [path, ...e.children.flatMap((c, i) => allPaths(c, `${path}.${i}`))];
+  }
 
   /** The paths of entries below the top two levels that have children. */
   function deepPaths(e: VersionEntry, path: string, depth: number): string[] {
