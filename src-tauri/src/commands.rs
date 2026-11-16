@@ -77,7 +77,7 @@ pub async fn system_info(
     Ok(info::build(
         crate::version::APP_VERSION,
         crate::version::APP_COMMIT,
-        &info::os_description(platform::current()),
+        &info::os_line(platform::current(), &engine_part),
         crate::logging::current_file().as_deref(),
         engine::in_use().as_ref(),
         engine_part,

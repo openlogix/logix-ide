@@ -341,6 +341,24 @@ pub fn os_description(platform: Option<Platform>) -> String {
     }
 }
 
+/// The operating system line: Logix Engine's `operating_system` when it
+/// answered (Engine first: it knows the system, and on Linux names the
+/// desktop session, such as "Ubuntu 22.04.5 LTS, GNOME on Wayland"), else
+/// Logix IDE's own `os_description`; then the platform.
+pub fn os_line(platform: Option<Platform>, engine: &EnginePart) -> String {
+    let engine_os = match engine {
+        EnginePart::Info(info) => info["operating_system"].as_str().filter(|s| !s.is_empty()),
+        EnginePart::Missing(_) => None,
+    };
+    match engine_os {
+        Some(os) => format!(
+            "{os} ({})",
+            platform.map_or("unknown platform", |p| p.engine_platform_id())
+        ),
+        None => os_description(platform),
+    }
+}
+
 /// The engine's part from the running engine, or why there's none.
 pub async fn engine_part_from(engine: Option<&Engine>) -> EnginePart {
     let Some(engine) = engine else {
@@ -359,6 +377,23 @@ pub async fn engine_part_from(engine: Option<&Engine>) -> EnginePart {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Logix Engine's operating system when it answered (on Linux with the
+    // desktop session), else Logix IDE's own.
+    #[test]
+    fn the_operating_system_comes_from_the_engine() {
+        let info =
+            EnginePart::Info(json!({"operating_system": "Ubuntu 22.04.5 LTS, GNOME on Wayland"}));
+        assert_eq!(
+            os_line(Some(Platform::LinuxX86_64), &info),
+            "Ubuntu 22.04.5 LTS, GNOME on Wayland (linux-x86-64)"
+        );
+        let missing = EnginePart::Missing("not running".into());
+        assert_eq!(
+            os_line(Some(Platform::LinuxX86_64), &missing),
+            os_description(Some(Platform::LinuxX86_64))
+        );
+    }
 
     fn in_use(engine: EngineInUse, how: &str, file: &str) -> InUse {
         InUse {
