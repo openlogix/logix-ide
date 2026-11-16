@@ -117,7 +117,7 @@ jobs:
           # the pipe under pipefail.
           dpkg-deb --contents "logix-ide-linux-x86-64-${PACKAGE_TAG}.deb" > contents.txt
           cat contents.txt
-          grep -q " ./usr/bin/logix-ide$" contents.txt
+          grep -Eq " (\./)?usr/bin/logix-ide$" contents.txt
 
       # Every package a CI build makes is scanned (the website repo's
       # CLAUDE.md, Shared CI), this one too while it's kept out of the
