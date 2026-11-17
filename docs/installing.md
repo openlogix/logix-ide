@@ -60,12 +60,13 @@ Choose your system: the steps on every page of these docs follow your choice.
        asks for your password:
 
         ```
-        sudo apt install ~/Downloads/logix-ide-linux-x86-64-*.deb
+        cp ~/Downloads/logix-ide-linux-x86-64-*.deb /tmp/logix-ide.deb
+        sudo apt install /tmp/logix-ide.deb
         ```
 
-        apt may end with a note starting `N: Download is performed unsandboxed
-        as root`: it's harmless, and appears whenever apt installs a file from
-        your home folder.
+        The copy in `/tmp` keeps apt from warning that it can't read your
+        Downloads folder. Ubuntu empties `/tmp` when it restarts. Keep only one
+        Logix IDE `.deb` in Downloads.
 
     3. Start Logix IDE. On Ubuntu, click **Show Applications** (the grid of
        dots at the bottom of the dock, on the left of the screen), type
