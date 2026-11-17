@@ -105,11 +105,11 @@ pre-releases are development builds.
    for your password:
 
    ```
-   cp ~/Downloads/logix-ide-linux-x86-64-*.deb /tmp/logix-ide.deb
+   mv ~/Downloads/logix-ide-linux-x86-64-*.deb /tmp/logix-ide.deb
    sudo apt install /tmp/logix-ide.deb
    ```
 
-   The copy in `/tmp` keeps apt from warning that it can't read your Downloads
+   Moving it to `/tmp` keeps apt from warning that it can't read your Downloads
    folder. Ubuntu empties `/tmp` when it restarts.
 
 3. Start Logix IDE. On Ubuntu, click **Show Applications** (the grid of dots

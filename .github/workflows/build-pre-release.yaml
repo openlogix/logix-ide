@@ -174,10 +174,10 @@ jobs:
           1. Download [$deb](${url}/$deb) to your **Downloads** folder.
           2. In a terminal, install it. apt also installs what Logix IDE needs, and asks for your password:
              \`\`\`
-             cp ~/Downloads/$deb /tmp/logix-ide.deb
+             mv ~/Downloads/$deb /tmp/logix-ide.deb
              sudo apt install /tmp/logix-ide.deb
              \`\`\`
-             The copy in \`/tmp\` keeps apt from warning that it can't read your Downloads folder. Ubuntu empties \`/tmp\` when it restarts.
+             Moving it to \`/tmp\` keeps apt from warning that it can't read your Downloads folder. Ubuntu empties \`/tmp\` when it restarts.
           3. Start Logix IDE. On Ubuntu, click **Show Applications** (the grid of dots at the bottom of the dock, on the left of the screen), type \`Logix IDE\` and click its icon. The Windows key on your keyboard opens the same search. On its first start, Logix IDE downloads the FPGA tools it needs. This may take a few minutes; later starts are quick.
 
           To uninstall, run \`sudo apt remove logix-ide\`. You can also delete the \`~/.logix/ide\` folder, which holds the FPGA tools Logix IDE downloaded and its settings. Your projects aren't in it.
