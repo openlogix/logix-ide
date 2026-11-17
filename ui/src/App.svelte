@@ -1257,10 +1257,11 @@
   async function offerUploadDriver(outcome: TaskOutcome) {
     const d = outcome.driverDevice;
     if (!d) return;
-    // A No ends Upload's output, which waited for the answer: what to do,
-    // then "Ready." (the user's report, 2026-11-16: only "Ready." showed).
+    // A No ends Upload's output, which waited for the answer: that nothing
+    // was installed or uploaded, in red as Upload didn't happen, then
+    // "Ready." (the user's requests, 2026-11-16 and 2026-11-17).
     const declined = (text: string) => {
-      status = { text, kind: "info" };
+      status = { text, kind: "error" };
       logDone();
     };
     if (outcome.action === "disconnect_devices") {
