@@ -176,7 +176,7 @@
         {#each tip.e.notes as note (note)}<div class="note">{note}</div>{/each}
         {#if tip.e.details.length > 0}
           <dl>
-            {#each tip.e.details as d (d.label)}<dt>{d.label}</dt><dd>{d.value}</dd>{/each}
+            {#each tip.e.details as d, i (i)}<dt>{d.label}</dt><dd>{d.value}</dd>{/each}
           </dl>
         {/if}
       </div>

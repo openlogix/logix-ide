@@ -241,7 +241,12 @@ fn engine_entry(u: &InUse, engine: &EnginePart, named_by: &str) -> VersionEntry 
     };
     match &u.engine {
         EngineInUse::Release(r) => {
-            entry.details.push(detail("Release", r));
+            // The engine reports its own release; repeating it drew a
+            // second "Release" row, and the duplicate stopped the UI's
+            // tooltip (the user's report, 2026-11-17).
+            if !entry.details.iter().any(|d| d.label == "Release") {
+                entry.details.push(detail("Release", r));
+            }
             entry.details.push(detail("Pinned in", named_by));
         }
         EngineInUse::Local(path) => {
@@ -418,7 +423,7 @@ mod tests {
             "versions": {
                 "name": "Logix Engine", "version": "2026.11.14", "kind": "program", "channel": "prod",
                 "notes": ["channel prod, commit a1b2c3d, remote config 001"],
-                "details": [{"label": "Repo", "value": "openlogix/logix-engine"}],
+                "details": [{"label": "Repo", "value": "openlogix/logix-engine"}, {"label": "Release", "value": "2026-11-14"}],
                 "children": [
                     {"name": "logix-core", "version": "2026.11.14", "kind": "package", "children": [
                         {"name": "OSS CAD Suite", "version": "2026-11-04", "kind": "third_party",
@@ -472,6 +477,16 @@ Logix IDE 2026.11.15
             .iter()
             .any(|d| d.label == "Pinned in"
                 && d.value == "Logix IDE's remote config 001, prod.jsonc"));
+        // The engine's own Release isn't repeated (a duplicate label stopped
+        // the tooltip).
+        assert_eq!(
+            engine
+                .details
+                .iter()
+                .filter(|d| d.label == "Release")
+                .count(),
+            1
+        );
     }
 
     #[test]
