@@ -1158,8 +1158,9 @@
    * earlier change).
    */
   function cancelDriverWork(title: string, text: string) {
-    driverWork = { title, step: null, lines: [text], result: { text, kind: "info" }, started: Date.now() };
-    status = { text, kind: "info" };
+    // Red, as the change didn't happen (the user's request, 2026-11-17).
+    driverWork = { title, step: null, lines: [text], result: { text, kind: "error", cancelled: true }, started: Date.now() };
+    status = { text, kind: "error" };
   }
 
   /** `message`: the result, one sentence per item (one log line each; joined in the status line). */
@@ -1185,7 +1186,7 @@
   async function installDeviceDriver(id: string, who: string, driver: Driver) {
     const udev = isUdevRule(driver.needed);
     const doing = udev ? `Adding a udev rule for ${who}…` : `Installing the WinUSB driver for ${who}…`;
-    const cancelled = udev ? "Cancelled: no udev rule was added." : "Cancelled: no driver was installed.";
+    const cancelled = udev ? "Cancelled: the udev rule wasn't added." : "Cancelled: the driver wasn't installed.";
     if (!(await confirmInApp(driverOffer(who, driver.needed, driver.current)))) {
       cancelDriverWork(doing, cancelled);
       return;
@@ -1219,7 +1220,7 @@
     if (!(await confirmInApp(driverRemove(who, driver.needed)))) {
       cancelDriverWork(
         udev ? `Removing the udev rule for ${who}…` : `Removing the WinUSB driver for ${who}…`,
-        udev ? "Cancelled: the udev rule stays." : "Cancelled: the driver stays.",
+        udev ? "Cancelled: the udev rule wasn't removed." : "Cancelled: the driver wasn't removed.",
       );
       return;
     }

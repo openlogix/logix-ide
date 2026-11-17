@@ -1234,8 +1234,8 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
   // Remove, then Cancel: the panel shows that, not the install before it.
   await dialog.getByRole("button", { name: "Remove Driver…" }).click();
   await page.getByRole("alertdialog", { name: "Remove the board's USB driver?" }).getByRole("button", { name: "Cancel" }).click();
-  await expect(work.locator(".work-status")).toHaveText("Cancelled: the driver stays.");
-  await expect(status(page)).toContainText("Cancelled: the driver stays.");
+  await expect(work.locator(".work-status.error")).toHaveText("Cancelled: the driver wasn't removed.");
+  await expect(status(page)).toContainText("Cancelled: the driver wasn't removed.");
   await dialog.getByRole("button", { name: "Remove Driver…" }).click();
   await page.getByRole("alertdialog", { name: "Remove the board's USB driver?" }).getByRole("button", { name: "Remove Driver" }).click();
   await expect(dialog).toContainText("it has FTDI's driver now");

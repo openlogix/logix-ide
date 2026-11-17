@@ -202,7 +202,7 @@
     {/if}
 
     <footer class="actions">
-      <span class="muted copy-note">{copied ?? "Copy it all for a problem report, or select any part."}</span>
+      <span class="muted copy-note">{copied ?? ""}</span>
       <span class="spacer"></span>
       <button disabled={!devices} onclick={copy}>Copy</button>
       <button onclick={onClose}>Close</button>
