@@ -113,7 +113,7 @@ Run from the repo root unless noted. On the dev Mac, Rust comes from Homebrew's 
 |---|---|
 | Install JS deps | `npm install` |
 | Clean everything | `scripts/clean.sh` (removes `ui/dist/`, `src-tauri/target/`, `src-tauri/gen/schemas/`, `node_modules/` and `~/.logix/ide/`; `scripts/run.sh` reinstalls the JS packages, as it does whenever `package-lock.json` is newer than the last install) |
-| Run the app (dev, hot reload) | `scripts/run.sh` (the standard way; sets the Rust `PATH`, then runs `npm run tauri dev`) |
+| Run the app (dev, hot reload) | `scripts/run.sh` (the standard way; sets the Rust `PATH`, then runs `npm run tauri dev`; on macOS without `LANG`, `LC_ALL` and `LC_CTYPE`, as an app started from Finder runs, so locale bugs show in development: the user's request, 2026-11-17) |
 | Run the app with a locally built engine | `scripts/run.sh --engine-repo-dir <logix-engine clone>` (see Design notes, Dev engine) |
 | **All checks and tests** | `scripts/test.sh` (UI type check, unit tests, production build and end-to-end tests, then Rust format check, lint and tests; stops at the first failure). Run before committing. CI runs the same script: `.github/workflows/test.yaml` (macos-15, macos-26 and macos-latest runners, Apple Silicon; on push, pull request, manual run, and daily at 00:00 UTC). It may later be replaced by Invoke tasks. |
 | Type-check UI (TS + Svelte) | `npm run check` |

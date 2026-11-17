@@ -5,6 +5,9 @@
 #   scripts/run.sh                                  # with the engine release the remote config names
 #   scripts/run.sh --engine-repo-dir <engine clone> # with a locally built engine
 #
+# On macOS it runs without LANG, LC_ALL and LC_CTYPE, as an app started from
+# Finder does (see the end of the script).
+#
 # --engine-repo-dir builds the engine in that local logix-engine clone
 # (cargo build, debug) and runs Logix IDE with it, through LOGIX_DEV_ENGINE_BINARY.
 # Its packages go to ~/.logix/ide/dev/engine, apart from the released engine's.
@@ -44,6 +47,15 @@ fi
 # changed since the last install (e.g. a pull that added a package).
 if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ]; then
   npm install
+fi
+
+# On macOS, run it as an app started from Finder runs, which has no
+# LANG, LC_ALL or LC_CTYPE (a terminal sets them): what every user gets.
+# A bug that showed only without them (copying "│" pasted as "‚îÇ") never
+# showed in development (the user's request, 2026-11-17). Linux desktops
+# do set LANG for apps, so it stays there.
+if [ "$(uname)" = Darwin ]; then
+  unset LANG LC_ALL LC_CTYPE
 fi
 
 npm run tauri dev
