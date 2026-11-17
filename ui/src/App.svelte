@@ -1266,7 +1266,7 @@
     if (outcome.action === "disconnect_devices") {
       if (await confirmInApp(sameIdsQuestion(outcome.sameIds ?? "")))
         runTask("upload", null, d.id, { install: true, allowSameIds: true });
-      else declined("Unplug the other devices, then choose Upload again.");
+      else declined("Cancelled: the driver wasn't installed. Unplug the other devices, then choose Upload again.");
       return;
     }
     const who = project?.board ? `the ${boardName(project.board)}` : d.label;
@@ -1275,8 +1275,8 @@
     else
       declined(
         isUdevRule(d.needed)
-          ? "Upload needs a udev rule for the board: choose Upload again to add it."
-          : "Upload needs the board's driver: choose Upload again to install it.",
+          ? "Cancelled: the udev rule wasn't added, so nothing was uploaded. Choose Upload again to add it."
+          : "Cancelled: the driver wasn't installed, so nothing was uploaded. Choose Upload again to install it.",
       );
   }
 

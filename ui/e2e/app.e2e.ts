@@ -1108,7 +1108,7 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
   await expect(ask).toContainText("What happens");
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(ask).toHaveCount(0);
-  await expect(status(page)).toContainText("Upload needs the board's driver");
+  await expect(status(page)).toContainText("Cancelled: the driver wasn't installed, so nothing was uploaded.");
   expect((await fake(page)).driverInstalls).toEqual([]);
 
   // Agreed, while another device with the same USB IDs is connected: asked
@@ -1165,10 +1165,10 @@ test("Upload offers the udev rule a board needs", async ({ page }) => {
   // The output says why Upload stopped, and waits for the answer.
   await expect(output(page)).toContainText(/The board needs a udev rule first\.\s*$/);
   await ask.getByRole("button", { name: "Cancel" }).click();
-  await expect(status(page)).toContainText("Upload needs a udev rule for the board");
+  await expect(status(page)).toContainText("Cancelled: the udev rule wasn't added, so nothing was uploaded.");
   // The answer ends the output, then Ready.
   await expect(output(page)).toContainText(
-    /The board needs a udev rule first\.\s*Upload needs a udev rule for the board: choose Upload again to add it\.\s*Ready\.\s*$/,
+    /The board needs a udev rule first\.\s*Cancelled: the udev rule wasn't added, so nothing was uploaded\. Choose Upload again to add it\.\s*Ready\.\s*$/,
   );
   expect((await fake(page)).driverInstalls).toEqual([]);
 
