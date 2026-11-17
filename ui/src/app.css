@@ -77,3 +77,21 @@ body,
   margin: 0;
   height: 100%;
 }
+
+/* One focus outline everywhere, in Logix IDE's accent color. The web view's
+   own follows the system theme: Ubuntu's orange-red on Linux, which looked
+   like an error on the Examples search field and a clicked example (the
+   user's report, 2026-11-17). Only for keyboard focus and text fields
+   (:focus-visible), as browsers do; components may draw their own. */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* Containers that take the focus only so they get the keys (dialogs, lists
+   with tabindex="-1") aren't something to act on: no outline. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
+}
