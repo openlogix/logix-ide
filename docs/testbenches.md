@@ -29,9 +29,9 @@ opens zoomed in around the first failure, so you can see what led up to it.
 
 To keep how GTKWave shows the signals, save it from GTKWave with
 **File > Write Save File**. When you go back to Logix IDE, the saved layout
-(`main_tb.gtkw` for `main_tb.v`) becomes a file of your project, with a tab
-of its own, and the next simulation uses it. Like any other change, it's
-kept when you save the project.
+(`main_tb.gtkw` for `main_tb.v`) becomes part of your project, and the next
+simulation uses it. Like any other change, it's kept when you save the
+project. It has no tab: you change it only in GTKWave.
 
 ## Writing a testbench
 

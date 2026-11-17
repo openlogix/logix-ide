@@ -194,8 +194,8 @@ test("a new project for a board builds right away", async ({ page }) => {
 });
 
 // A GTKWave layout saved in GTKWave is a project file like the sources
-// (the user's decision, 2026-11-16): back in Logix IDE, it's a new tab and
-// an unsaved change, even in a project never saved.
+// (the user's decision, 2026-11-16): back in Logix IDE, it's an unsaved
+// change, even in a project never saved, but no tab (2026-11-17).
 test("a layout saved in GTKWave becomes an unsaved project file", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
@@ -204,7 +204,8 @@ test("a layout saved in GTKWave becomes an unsaved project file", async ({ page 
     f.gtkwaveLayouts = [{ name: "main_tb.gtkw", text: "[*] my layout\n" }];
   });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(tab(page, "main_tb.gtkw")).toBeVisible();
+  await expect(output(page)).toContainText("main_tb.gtkw");
+  await expect(tab(page, "main_tb.gtkw")).toHaveCount(0);
   // The project is unsaved now (the window's document state).
   const documentState = () =>
     page.evaluate(

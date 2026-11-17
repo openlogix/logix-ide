@@ -115,6 +115,20 @@ export function mainFile(p: WorkingProject): string {
   return p.files[0]?.name ?? MAIN_FILE;
 }
 
+/**
+ * Whether a project file is a GTKWave layout (`.gtkw`): held and saved with
+ * the project like the sources, but not shown as a tab (the user's
+ * decision, 2026-11-17).
+ */
+export function isLayout(name: string): boolean {
+  return /\.gtkw$/i.test(name);
+}
+
+/** The files shown as tabs (and in the editor): all but the GTKWave layouts. */
+export function tabFiles<F extends { name: string }>(files: F[]): F[] {
+  return files.filter((f) => !isLayout(f.name));
+}
+
 export function findFile(p: WorkingProject, name: string): OpenFile | undefined {
   return p.files.find((f) => f.name === name);
 }
@@ -136,8 +150,7 @@ export type FileRole =
   | "include"
   | "testbench"
   | "pins"
-  | "otherPins"
-  | "layout";
+  | "otherPins";
 
 /**
  * The project's own boards: a folder in the project, a board file each in
@@ -170,7 +183,6 @@ export function fileRole(
   pinExtension: string | null = null,
 ): FileRole {
   if (name === main) return "main";
-  if (/\.gtkw$/i.test(name)) return "layout";
   if (isTestbench(name)) return "testbench";
   if (PIN_FILE.test(name)) {
     const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
@@ -196,7 +208,6 @@ export function roleTooltip(role: FileRole, pinExtension: string | null = null):
     otherPins: `Pin file for another kind of board: not used with this board${
       pinExtension ? `, whose pin file is a .${pinExtension} file` : ""
     }`,
-    layout: "GTKWave layout: the signals Simulate shows for its testbench, saved from GTKWave",
   };
   return role === "main"
     ? `${what.main}.`

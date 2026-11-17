@@ -85,6 +85,7 @@
     roleTooltip,
     filesForSave,
     findFile,
+    tabFiles,
     moduleAt,
     fromDoc,
     isHdlSource,
@@ -1671,7 +1672,7 @@
     clearProblems();
     fileError = null;
     cancelNaming();
-    editor?.reset(doc.files, main);
+    editor?.reset(tabFiles(doc.files), main);
     editor?.focus();
   }
 
@@ -1912,13 +1913,9 @@
     for (const l of layouts) {
       const f = findFile(p, l.name);
       if (f?.text === l.text) continue;
-      if (f) {
-        f.text = l.text;
-        editor?.replaceText(l.name, l.text);
-      } else {
-        addFile(p, l.name, l.text);
-        editor?.add(l.name, l.text);
-      }
+      // Not a tab: only the project in memory changes.
+      if (f) f.text = l.text;
+      else addFile(p, l.name, l.text);
       if (announce) log(`Took the layout saved in GTKWave into ${l.name} (not saved yet).`);
     }
   }
@@ -2572,7 +2569,7 @@
       {/if}
       <div class="tabs" style:display={welcome ? "none" : null}>
         {#if project}
-          {#each project.files as f (f.name)}
+          {#each tabFiles(project.files) as f (f.name)}
             {#if naming?.mode === "rename" && naming.file === f.name}
               <input
                 class="tab-input"
@@ -2603,8 +2600,6 @@
                     class="tab-icon"><Icon name="test" size={12} /></span
                   >{:else if fileRole(f.name, mainFile(project), pinExtension) === "pins"}<span
                     class="tab-icon"><Icon name="chip" size={12} /></span
-                  >{:else if fileRole(f.name, mainFile(project), pinExtension) === "layout"}<span
-                    class="tab-icon"><Icon name="simulate" size={12} /></span
                   >{/if}{f.name}{#if fileProblems.get(f.name) === "error"}<span
                     class="problem-icon error"><Icon name="error" size={12} /></span
                   >{:else if fileProblems.get(f.name) === "warning"}<span
