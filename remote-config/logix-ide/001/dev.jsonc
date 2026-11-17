@@ -20,9 +20,12 @@
   // 2026-11-16: the first with a Linux package (Milestone 4), and "Pinned
   // in" and the shorter log names (engine.log) that Logix IDE 2026-11-16
   // goes with.
+  // 2026-11-17: the release to promote with Logix IDE 2026-11-17 after
+  // 00:00 UTC 2026-11-18 (the same program as 2026-11-16, with the clean
+  // release text), so test round 3 runs with it.
   "logix-engine": {
     "repo": "openlogix/logix-engine",
-    "release": "2026-11-16",
+    "release": "2026-11-17",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
   },
 
