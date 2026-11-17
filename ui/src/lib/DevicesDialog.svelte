@@ -464,11 +464,14 @@
     margin-top: 14px;
   }
   /* A device's driver (Windows): its state, then its button. */
+  /* The driver's or rule's state, then its button on a line of its own,
+     on every platform and for every device (the user's request,
+     2026-11-17: as the long Windows text happened to wrap). */
   .driver {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     padding-left: 18px;
   }
   .driver button {
