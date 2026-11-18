@@ -65,59 +65,16 @@ PCs (x64)** and on **Linux PCs (x64)**: Ubuntu 22.04 or newer, Debian, or a
 system based on them. Always install the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest): newer
 pre-releases are development builds.
 
-### macOS
-
-1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
-   `logix-ide-darwin-arm64-<date>.dmg` to your **Downloads** folder.
-2. Open **Terminal** and run this command. Logix IDE isn't signed by Apple yet,
-   and this tells your Mac it's OK to open it:
-
-   ```
-   xattr -c ~/Downloads/logix-ide-darwin-arm64-*.dmg
-   ```
-
-3. Double-click the `.dmg` file and drag **Logix IDE** into your
-   **Applications** folder. Dragging only copies it: nothing opens, and that's
-   expected.
-4. Start Logix IDE: open **Finder**, click **Applications** in the sidebar and
-   double-click **Logix IDE** (or press Command-Space, type `Logix IDE` and
-   press Return). The first time, it downloads the FPGA tools it needs. This
+1. Open the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest).
+2. Follow the steps for your system on that page: macOS, Windows or Linux.
+   They say exactly what that release needs, such as a step for files that
+   aren't signed yet.
+3. Start Logix IDE. The first time, it downloads the FPGA tools it needs. This
    takes a few minutes and needs an internet connection. After that, Logix IDE
    starts quickly and works offline too.
 
-### Windows
-
-1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
-   `logix-ide-windows-x86-64-<date>.msi`.
-2. Double-click it. If Windows says **Windows protected your PC**, click
-   **More info**, then **Run anyway**: Logix IDE isn't signed yet.
-3. Follow the installer, and choose **Yes** when Windows asks whether it may
-   make changes to your device.
-4. Start Logix IDE from the **Start** menu. The first time, it downloads the
-   FPGA tools it needs, as on macOS. Many boards also need the WinUSB driver:
-   **Upload** offers to install it the first time.
-
-### Linux
-
-1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
-   `logix-ide-linux-x86-64-<date>.deb` to your **Downloads** folder.
-2. In a terminal, install it. apt also installs what Logix IDE needs, and asks
-   for your password:
-
-   ```
-   mv ~/Downloads/logix-ide-linux-x86-64-*.deb /tmp/logix-ide.deb
-   sudo apt install /tmp/logix-ide.deb
-   ```
-
-   Moving it to `/tmp` keeps apt from warning that it can't read your Downloads
-   folder. Ubuntu empties `/tmp` when it restarts.
-
-3. Start Logix IDE. On Ubuntu, click **Show Applications** (the grid of dots
-   at the bottom of the dock, on the left of the screen), type `Logix IDE` and
-   click its icon. The Windows key on your keyboard opens the same search.
-   Other desktops have their own applications menu. The first time, it downloads the FPGA tools it
-   needs, as on macOS. Most boards also need a udev rule: **Upload** offers to
-   add it the first time.
+On Windows, many boards also need the WinUSB driver, and on Linux, most boards
+need a udev rule: **Upload** offers it the first time.
 
 That's it: nothing else to install.
 
@@ -144,11 +101,11 @@ earns your trust:
   whose tools and examples Logix IDE builds on, with one goal: making FPGAs
   accessible and fun for everyone.
 
-**Why the Terminal step, then?** Apple asks app makers to pay for a yearly
-developer account to "sign" their apps. Logix IDE isn't signed that way yet, so
-macOS is cautious with it by default. The `xattr -c` command only tells your
-Mac that you chose to open this file you downloaded. It doesn't change any
-security setting on your Mac.
+**Why the extra step on macOS and Windows, then?** Apple and Microsoft ask app
+makers to pay to "sign" their apps. Logix IDE isn't signed that way yet, so
+macOS and Windows are cautious with it by default. The release's extra step
+only tells your computer that you chose to open this file you downloaded. It
+doesn't change any security setting.
 
 ## Your first blinking LED
 

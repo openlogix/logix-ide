@@ -39,20 +39,9 @@ There's nothing else to install: Logix IDE downloads the FPGA tools it needs.
 
 ## 1. Install Logix IDE
 
-=== "macOS"
-
-    Install Logix IDE as [Installing](installing.md) describes: download it,
-    allow it to open, and drag it into the **Applications** folder.
-
-=== "Windows"
-
-    Install Logix IDE as [Installing](installing.md) describes: download the
-    `.msi` installer, allow it to run, and follow its steps.
-
-=== "Linux"
-
-    Install Logix IDE as [Installing](installing.md) describes: download the
-    `.deb` package and install it with apt.
+Open the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest)
+and follow the steps for your system on that page. [Installing](installing.md)
+says more.
 
 ## 2. Start Logix IDE
 
@@ -299,8 +288,7 @@ The settings are:
 
 | Problem | What to do |
 | :--- | :--- |
-| macOS says Logix IDE can't be opened | Run the `xattr -c` command from [Installing](installing.md) again, then install it again. |
-| Windows says "Windows protected your PC" | Click **More info**, then **Run anyway**: Logix IDE isn't signed yet. |
+| macOS or Windows won't open Logix IDE | Follow the steps for your system on the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest) again: they include the step that allows a release that isn't signed yet. |
 | On Windows, Upload says the board needs a driver | Click **Install Driver**, then **Yes** in Windows' prompt. See [Drivers on Windows](using-logix.md#drivers-on-windows). |
 | The FPGA tools don't download | A red bar shows the problem. Check your internet connection and click **Retry**. |
 | Upload can't find the board | Check that **Connected** shows next to the board list, and try another USB cable: some cables only charge. |

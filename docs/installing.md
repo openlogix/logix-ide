@@ -13,64 +13,24 @@ development builds.
 
 ## Download and install
 
-Choose your system: the steps on every page of these docs follow your choice.
+1. Open the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest).
+2. Follow the steps for your system on that page: macOS, Windows or Linux.
+   They say exactly what that release needs, such as a step for files that
+   aren't signed yet, and how to uninstall.
+
+Then, by system (the tabs on every page of these docs follow your choice):
 
 === "macOS"
 
-    1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
-       `logix-ide-darwin-arm64-<date>.dmg` to your **Downloads** folder.
-    2. Open **Terminal** and run this command. Logix IDE isn't signed with an
-       Apple Developer ID yet, and this tells macOS to allow it:
-
-        ```
-        xattr -c ~/Downloads/logix-ide-darwin-arm64-*.dmg
-        ```
-
-    3. Double-click the `.dmg` file and drag **Logix IDE** into the
-       **Applications** folder. Dragging only copies it: nothing opens, and
-       that's expected.
-    4. Start Logix IDE: open **Finder**, click **Applications** in the sidebar
-       and double-click **Logix IDE** (or press Command-Space, type
-       `Logix IDE` and press Return). You can then eject the **Logix IDE**
-       disk in Finder's sidebar.
+    Nothing else: no drivers are needed.
 
 === "Windows"
-
-    1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
-       `logix-ide-windows-x86-64-<date>.msi`.
-    2. Double-click it. If Windows says **Windows protected your PC**, click
-       **More info**, then **Run anyway**: Logix IDE isn't signed yet.
-    3. Follow the installer. When Windows asks whether the installer may make
-       changes to your device, choose **Yes**. If your PC doesn't have
-       Microsoft Edge WebView2 yet, the installer downloads it.
-    4. Start Logix IDE from the **Start** menu.
 
     Many boards need the WinUSB driver before Logix IDE can program them on
     Windows. You don't need to install it beforehand: **Upload** offers it
     the first time. See [Drivers on Windows](using-logix.md#drivers-on-windows).
 
 === "Linux"
-
-    Logix IDE comes as a `.deb` package, for Ubuntu, Debian and the systems
-    based on them.
-
-    1. From the [**Latest** release](https://github.com/openlogix/logix-ide/releases/latest), download
-       `logix-ide-linux-x86-64-<date>.deb` to your **Downloads** folder.
-    2. In a terminal, install it. apt also installs what Logix IDE needs, and
-       asks for your password:
-
-        ```
-        mv ~/Downloads/logix-ide-linux-x86-64-*.deb /tmp/logix-ide.deb
-        sudo apt install /tmp/logix-ide.deb
-        ```
-
-        Moving it to `/tmp` keeps apt from warning that it can't read your
-        Downloads folder. Ubuntu empties `/tmp` when it restarts.
-
-    3. Start Logix IDE. On Ubuntu, click **Show Applications** (the grid of
-       dots at the bottom of the dock, on the left of the screen), type
-       `Logix IDE` and click its icon. The Windows key on your keyboard opens
-       the same search. Other desktops have their own applications menu.
 
     Most boards need a udev rule before Logix IDE can program them on Linux.
     You don't need to add it beforehand: **Upload** offers it the first
@@ -116,10 +76,14 @@ You can choose another projects folder in **Settings**.
 
 ## Uninstalling
 
+The steps for your system on the
+[**Latest** release](https://github.com/openlogix/logix-ide/releases/latest)
+say how to uninstall Logix IDE, and how to also remove its FPGA tools,
+settings and logs.
+
 === "macOS"
 
-    Drag Logix IDE from **Applications** to the Trash. To also remove the FPGA
-    tools, settings and logs, delete the `~/.logix/ide` folder.
+    Nothing to do first.
 
 === "Windows"
 
@@ -127,13 +91,10 @@ You can choose another projects folder in **Settings**.
     board maker's tools to use the board again, first remove the driver in
     **Tools > Connected Devices…** (**Remove Driver…**).
 
-    Then open **Settings**, then **Apps** > **Installed apps**, and uninstall
-    **Logix IDE**. To also remove the FPGA tools, settings and logs, delete the
-    `.logix\ide` folder in your user folder.
-
 === "Linux"
 
-    In a terminal, run `sudo apt remove logix-ide`. To also remove the FPGA
-    tools, settings and logs, delete the `~/.logix/ide` folder.
+    If Logix IDE added a udev rule for a board, uninstalling leaves it in
+    place. To remove it, first use **Tools > Connected Devices…**
+    (**Remove udev Rule…**).
 
 Your projects stay where they are.
