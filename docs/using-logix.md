@@ -276,8 +276,8 @@ Logix IDE says so: unplug it, or continue for all.
 
 ### udev rules on Linux
 
-On Linux, only the administrator can use most USB devices, so a board needs
-a udev rule before Logix IDE can program it. Logix IDE adds one for you,
+On Linux, a board needs a udev rule that lets your user account use it
+before Logix IDE can program it. Logix IDE adds one for you,
 for that board only.
 
 - **Upload** offers to add it when the board needs it. Click **Add Rule**,
@@ -287,7 +287,7 @@ for that board only.
   programmed, with **Add udev Rule…**, or **Remove udev Rule…** for a rule
   Logix IDE added. A board without its rule is listed as **no udev rule
   yet**, since Logix IDE can't read its name until then. Removing the rule
-  takes effect once the board is plugged in again.
+  takes effect at once.
 
 The rule is for the board's USB IDs, so other boards of the same kind can
 be programmed too, and nothing else on your computer changes. If Linux

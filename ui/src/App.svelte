@@ -1231,7 +1231,7 @@
       endDriverWork(
         udev
           ? removed > 0
-            ? [`Removed the udev rule for ${who}.`, "It takes effect once the board is plugged in again."]
+            ? [`Removed the udev rule for ${who}.`, "Your user account can't program it now, unless another rule allows it."]
             : `Logix IDE found no udev rule it added for ${who}.`
           : removed > 0
             ? [`Removed the WinUSB driver for ${who}.`, "Windows uses its original driver again."]

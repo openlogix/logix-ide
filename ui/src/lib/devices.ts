@@ -99,7 +99,7 @@ export function driverOffer(board: string, needed: string, current: string | nul
   if (isUdevRule(needed))
     return {
       title: "Let Logix IDE program the board?",
-      lead: `To program ${board}, Linux needs a udev rule that lets you use it. Without one, only administrators can.`,
+      lead: `To program ${board}, Linux needs a udev rule that lets your user account use it.`,
       steps: [
         "Linux asks for your password. Enter it to allow the change.",
         "The rule is only for this kind of board (its USB IDs): other connected boards of the same kind can be programmed too.",
@@ -142,7 +142,7 @@ export function driverRemove(board: string, needed: string): ConfirmContent {
       lead: `This removes the udev rule Logix IDE added for ${board}.`,
       steps: [
         "Linux asks for your password. Enter it to allow the change.",
-        "Once the board is plugged in again, only administrators can program it, unless another rule allows it.",
+        "Then your user account can't program it, unless another rule allows it.",
         "To program the board again, click Upload: Logix IDE offers to add the rule again.",
       ],
       note: null,
