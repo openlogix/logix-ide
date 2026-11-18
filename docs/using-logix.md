@@ -387,6 +387,7 @@ opens this run's folder of logs, to attach to a report (see
 | Auto Format | ++cmd+t++ | ++ctrl+t++ |
 | Toggle Output | ++cmd+j++ | ++ctrl+j++ |
 | Comment/Uncomment lines | ++cmd+slash++ | ++ctrl+slash++ |
+| Indent / Un-indent lines (to leave the editor: ++escape++, then ++tab++) | ++tab++ / ++shift+tab++ | ++tab++ / ++shift+tab++ |
 | Select All (editor or output) | ++cmd+a++ | ++ctrl+a++ |
 | Go to Definition | ++f12++ (on a Mac keyboard, ++fn+f12++) | ++f12++ |
 | Settings | ++cmd+comma++ | ++ctrl+comma++ |
