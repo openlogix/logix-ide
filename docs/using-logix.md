@@ -280,7 +280,7 @@ On Linux, a board needs a udev rule that lets your user account use it
 before Logix IDE can program it. Logix IDE adds one for you,
 for that board only.
 
-- **Upload** offers to add it when the board needs it. Click **Add Rule**,
+- **Upload** offers to add it when the board needs it. Click **Add udev Rule**,
   then enter your password when Linux asks for it. The status bar says
   "Adding the board's udev rule…" meanwhile, and then the upload goes on.
 - **Tools > Connected Devices…** says whether each board can be

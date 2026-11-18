@@ -886,14 +886,16 @@ pub async fn scan_devices(
     state: State<'_, AppState>,
     folder: Option<String>,
     saved: bool,
+    board: Option<String>,
 ) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
+    let board = board.as_deref();
     // A custom boards file with problems: the devices without its boards
     // (the board list shows its problems).
-    let list = match engine::list_devices(&engine, file.as_ref()).await {
+    let list = match engine::list_devices(&engine, file.as_ref(), board).await {
         Ok(list) => Ok(list),
-        Err(_) if file.is_some() => engine::list_devices(&engine, None).await,
+        Err(_) if file.is_some() => engine::list_devices(&engine, None, board).await,
         Err(e) => Err(e),
     }
     .context("Couldn't list the connected devices.")?;
@@ -909,10 +911,12 @@ pub async fn scan_devices(
 pub struct DriverInstalled {
     /// False when the driver was ready already.
     installed: bool,
+    /// What was done, for people (Logix Engine's `summary`).
+    summary: Vec<String>,
     /// Set when Logix Engine refused because other connected devices have
-    /// the same USB IDs: its message, naming them. Retry with
+    /// the same USB IDs: its question, naming them. Retry with
     /// `allow_same_ids` only if the user agrees they get WinUSB too.
-    same_ids: Option<String>,
+    same_ids: Option<engine::Consent>,
 }
 
 /// Installs the WinUSB driver (Windows; Tools > Connected Devices > Install
@@ -927,6 +931,7 @@ pub async fn install_device_driver(
     saved: bool,
     device: String,
     allow_same_ids: bool,
+    board: Option<String>,
     on_event: Channel<outcome::TaskEvent>,
 ) -> Result<DriverInstalled, UserError> {
     let engine = ready_engine(&state).await?;
@@ -946,18 +951,23 @@ pub async fn install_device_driver(
         file.as_ref(),
         None,
         allow_same_ids,
+        board.as_deref(),
         options,
     )
     .await?;
     crate::log!("install_driver: {result:?}");
     Ok(match result {
-        engine::DriverInstall::Done { installed, .. } => DriverInstalled {
+        engine::DriverInstall::Done {
+            installed, summary, ..
+        } => DriverInstalled {
             installed,
+            summary,
             same_ids: None,
         },
-        engine::DriverInstall::SameIds(message) => DriverInstalled {
+        engine::DriverInstall::SameIds(consent) => DriverInstalled {
             installed: false,
-            same_ids: Some(message),
+            summary: Vec::new(),
+            same_ids: Some(consent),
         },
     })
 }
@@ -965,15 +975,17 @@ pub async fn install_device_driver(
 /// Removes the WinUSB driver (Windows; Tools > Connected Devices > Remove
 /// Driver…), so Windows gives back its own, or the udev rule (Linux; Remove
 /// udev Rule…) Logix Engine added for a device's board, for every device
-/// with the same USB IDs. Returns how many things were removed.
+/// with the same USB IDs. Returns what was done, for people (Logix Engine's
+/// `summary`).
 #[tauri::command]
 pub async fn uninstall_device_driver(
     state: State<'_, AppState>,
     folder: Option<String>,
     saved: bool,
     device: String,
+    board: Option<String>,
     on_event: Channel<outcome::TaskEvent>,
-) -> Result<usize, UserError> {
+) -> Result<Vec<String>, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
     crate::log!("Removing the driver or udev rule for {device}");
@@ -983,9 +995,11 @@ pub async fn uninstall_device_driver(
         },
         None,
     );
-    let removed = engine::uninstall_driver(&engine, &device, file.as_ref(), options).await?;
-    crate::log!("uninstall_driver removed: {removed:?}");
-    Ok(removed.len())
+    let summary =
+        engine::uninstall_driver(&engine, &device, file.as_ref(), board.as_deref(), options)
+            .await?;
+    crate::log!("uninstall_driver: {summary:?}");
+    Ok(summary)
 }
 
 /// The connected USB devices that fit catalog boards, each with the boards
@@ -1007,7 +1021,7 @@ pub async fn connected_devices(
         .and_then(Result::ok)
         .is_some();
     let file = if usable { file } else { None };
-    let list = engine::list_devices(&engine, file.as_ref())
+    let list = engine::list_devices(&engine, file.as_ref(), None)
         .await
         .context("Couldn't list the connected devices.")?;
     let found = engine::connected_devices(&list.devices);

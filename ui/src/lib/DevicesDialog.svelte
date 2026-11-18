@@ -16,12 +16,11 @@
   import { backend, type Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
   import { arrowNav } from "./arrowNav";
-  import { isUdevRule, type Driver, type UnreachableDevice, type UsbDevice } from "./backend";
+  import { type Driver, type UnreachableDevice, type UsbDevice } from "./backend";
   import {
     deviceBoardGroups,
     lockedTag,
     devicesReport,
-    driverStateText,
     orderedDevices,
     unreachableNote,
     type DriverWork,
@@ -54,12 +53,11 @@
     onRefresh: () => void;
     /**
      * Install Driver… (Windows: WinUSB) or Add udev Rule… (Linux) for the
-     * device's board. `who` names the board for people ("the Alhambra II",
-     * else the device's label).
+     * device's board, with Logix Engine's question (`driver.add`).
      */
-    onInstallDriver: (id: string, who: string, driver: Driver) => void;
+    onInstallDriver: (id: string, driver: Driver) => void;
     /** Remove Driver… (Windows: Windows' own driver back) or Remove udev Rule… (Linux). */
-    onRemoveDriver: (id: string, who: string, driver: Driver) => void;
+    onRemoveDriver: (id: string, driver: Driver) => void;
     /** A board name was clicked: select that board. */
     onPick: (board: string) => void;
     onClose: () => void;
@@ -85,13 +83,6 @@
       matches,
       others: [...others].sort((a, b) => boardName(a).localeCompare(boardName(b))),
     };
-  }
-
-  /** The board a device's driver is for, for people. */
-  function whoOf(label: string, boards: string[], likely: string[]): string {
-    if (board !== null && boards.includes(board)) return `the ${boardName(board)}`;
-    if (likely.length === 1) return `the ${boardName(likely[0])}`;
-    return label;
   }
 
   /** Whether the driver change's log is shown: collapsed by default. */
@@ -224,7 +215,7 @@
          2026-11-14 and 2026-11-15: a long one wrapped to the left edge). -->
     {#if d.serialNumber}<div class="muted serial">Serial: {d.serialNumber}</div>{/if}
     {#if d.driver}
-      {@render driverLine(d.id, whoOf(d.label, d.boards.map((b) => b.board), d.likelyBoards), d.driver)}
+      {@render driverLine(d.id, d.driver)}
     {/if}
     {#if open}
       <div class="groups">
@@ -251,7 +242,7 @@
       >{@render chevron(open)}<span class="name">{u.label}</span>{" "}<span class="muted">· {lockedTag(u)}</span></button
     >
     {#if u.driver}
-      {@render driverLine(u.id, whoOf(u.label, ids, []), u.driver)}
+      {@render driverLine(u.id, u.driver)}
     {/if}
     {#if open}
       <div class="groups">
@@ -282,19 +273,16 @@
   {/if}
 {/snippet}
 
-{#snippet driverLine(id: string, who: string, driver: Driver)}
+<!-- Logix Engine's state text and, when they apply (its can_add,
+     can_remove), its Add or Remove, labeled with its question's button
+     ("Add udev Rule", "Install Driver"). -->
+{#snippet driverLine(id: string, driver: Driver)}
   <div class="driver">
-    <span class="muted">{driverStateText(driver)}</span>
-    {#if isUdevRule(driver.needed)}
-      {#if !driver.ready}
-        <button disabled={busy} onclick={() => onInstallDriver(id, who, driver)}>Add udev Rule…</button>
-      {:else if driver.current}
-        <button disabled={busy} onclick={() => onRemoveDriver(id, who, driver)}>Remove udev Rule…</button>
-      {/if}
-    {:else if driver.ready}
-      <button disabled={busy} onclick={() => onRemoveDriver(id, who, driver)}>Remove Driver…</button>
-    {:else}
-      <button disabled={busy} onclick={() => onInstallDriver(id, who, driver)}>Install Driver…</button>
+    <span class="muted">{driver.state}</span>
+    {#if driver.canAdd && driver.add}
+      <button disabled={busy} onclick={() => onInstallDriver(id, driver)}>{driver.add.confirm}…</button>
+    {:else if driver.canRemove && driver.remove}
+      <button disabled={busy} onclick={() => onRemoveDriver(id, driver)}>{driver.remove.confirm}…</button>
     {/if}
   </div>
 {/snippet}

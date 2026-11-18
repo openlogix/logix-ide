@@ -1,4 +1,4 @@
-import { isUdevRule, type Devices, type Driver, type MatchLevel, type TaskOutcome, type UnreachableDevice, type UsbDevice } from "./backend";
+import { type Consent, type Devices, type MatchLevel, type TaskOutcome, type UnreachableDevice, type UsbDevice } from "./backend";
 
 /** True if Upload failed because the board wasn't found on USB. */
 export function isBoardNotFound(outcome: TaskOutcome): boolean {
@@ -10,16 +10,19 @@ export function needsDeviceChoice(outcome: TaskOutcome): boolean {
   return outcome.action === "select_device" && outcome.devices.length > 1;
 }
 
+/** Logix Engine's action code when other devices have the same USB IDs and would get the driver too. */
+export const CONFIRM_SAME_IDS = "confirm_same_ids";
+
 /**
  * True if Upload stopped because the board needs a driver (Windows) or a
  * udev rule (Linux) first:
  * the user agrees to install it ("install_drivers"), or to install it while
- * other devices with the same USB IDs are connected ("disconnect_devices").
+ * other devices with the same USB IDs are connected ("confirm_same_ids").
  */
 export function needsDriver(outcome: TaskOutcome): boolean {
   return (
     outcome.driverDevice !== null &&
-    (outcome.action === "install_drivers" || outcome.action === "disconnect_devices")
+    (outcome.action === "install_drivers" || outcome.action === CONFIRM_SAME_IDS)
   );
 }
 
@@ -52,29 +55,6 @@ export function deviceBoardGroups(
   return { matches, others };
 }
 
-/** Console lines listing what's connected, with tips when nothing is. */
-/** What the driver (Windows) or udev rule (Linux) a device's board needs looks like now, for Connected Devices. */
-export function driverStateText(d: Driver): string {
-  if (isUdevRule(d.needed)) {
-    if (!d.ready) return "Access: Linux needs a udev rule before you can program the board.";
-    return d.current
-      ? `Access: ready to program the board, with the udev rule Logix IDE added (${d.current}).`
-      : "Access: ready to program the board.";
-  }
-  if (d.ready) return `Driver: ${driverName(d.current ?? d.needed)}, ready to program the board.`;
-  const now = d.current ? `it has ${driverName(d.current)} now` : "it has no driver now";
-  return `Driver: needs WinUSB on USB interface ${d.interface ?? 0} to program the board (${now}).`;
-}
-
-/** A driver's Windows service name for people. */
-function driverName(service: string): string {
-  return (
-    { winusb: "WinUSB", libusbk: "libusbK", libusb0: "libusb0", ftdibus: "FTDI's driver", usbser: "the serial port driver" }[
-      service
-    ] ?? service
-  );
-}
-
 /**
  * A question shown in Logix IDE's own confirmation dialog (`ConfirmDialog`):
  * a title, a lead sentence, what happens as a short list, an optional note,
@@ -88,77 +68,19 @@ export interface ConfirmContent {
   okLabel: string;
 }
 
+/** Where to undo a driver or udev rule change in Logix IDE, after Logix Engine's own note. */
+export const UNDO_WHERE = "It's in Tools > Connected Devices.";
+
 /**
- * The question before installing WinUSB (Windows) or adding a udev rule
- * (Linux) for a board (Upload or Connected Devices), by `needed`. `board`
- * names it for people: the board's name when known, such as "the Alhambra
- * II", else the device's label. Plain words, the user's request
- * (2026-11-14): what it's for, what happens, and how to undo it.
+ * One of Logix Engine's questions (a driver's `add` or `remove`, or the
+ * same-USB-IDs refusal's `consent`), as Logix IDE's dialog shows it: the
+ * engine's words (the same in every frontend, naming none, moved there
+ * from Logix IDE, 2026-11-18), with `where` after its note, such as where
+ * to undo it.
  */
-export function driverOffer(board: string, needed: string, current: string | null): ConfirmContent {
-  if (isUdevRule(needed))
-    return {
-      title: "Let Logix IDE program the board?",
-      lead: `To program ${board}, Linux needs a udev rule that lets your user account use it.`,
-      steps: [
-        "Linux asks for your password. Enter it to allow the change.",
-        "The rule is only for this kind of board (its USB IDs): other connected boards of the same kind can be programmed too.",
-        "Nothing else on your computer changes.",
-      ],
-      note: "You can undo it any time in Tools > Connected Devices.",
-      okLabel: "Add Rule",
-    };
-  const now = current ? ` Right now Windows uses ${driverName(current)} for it.` : "";
-  return {
-    title: "Install the board's USB driver?",
-    lead: `To program ${board}, Logix IDE needs Windows to use the WinUSB driver for it.${now}`,
-    steps: [
-      "Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
-      "It takes a minute or two.",
-      "Only the part of the board that programs the FPGA changes. Its other parts, such as a serial port, keep working as before.",
-      "Other connected boards of the same kind get the driver too.",
-    ],
-    note: "You can undo it any time in Tools > Connected Devices.",
-    okLabel: "Install Driver",
-  };
-}
-
-/** The question when other connected devices have the same USB IDs (Logix Engine's message names them). */
-export function sameIdsQuestion(engineMessage: string): ConfirmContent {
-  return {
-    title: "Other devices of the same kind are connected",
-    lead: engineMessage,
-    steps: [],
-    note: "Unplug them and try again, or continue: they get the same driver too.",
-    okLabel: "Continue for All",
-  };
-}
-
-/** The question before removing WinUSB (Windows) or the udev rule (Linux) from a board. `board` as for `driverOffer`. */
-export function driverRemove(board: string, needed: string): ConfirmContent {
-  if (isUdevRule(needed))
-    return {
-      title: "Remove the board's udev rule?",
-      lead: `This removes the udev rule Logix IDE added for ${board}.`,
-      steps: [
-        "Linux asks for your password. Enter it to allow the change.",
-        "Then your user account can't program it, unless another rule allows it.",
-        "To program the board again, click Upload: Logix IDE offers to add the rule again.",
-      ],
-      note: null,
-      okLabel: "Remove Rule",
-    };
-  return {
-    title: "Remove the board's USB driver?",
-    lead: `This restores the original Windows driver for ${board} (such as FTDI's), if it had one, so the board maker's own tools can use it again.`,
-    steps: [
-      "Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
-      "Other connected boards of the same kind get their original driver back too.",
-      "To program the board again, click Upload: Logix IDE offers to install WinUSB again.",
-    ],
-    note: null,
-    okLabel: "Remove Driver",
-  };
+export function confirmContent(c: Consent, where?: string): ConfirmContent {
+  const note = [c.note, c.note ? where : undefined].filter(Boolean).join(" ");
+  return { title: c.title, lead: c.lead, steps: c.steps, note: note || null, okLabel: c.confirm };
 }
 
 /**
@@ -243,11 +165,7 @@ export function unreachableNote(
   boardName: (id: string) => string,
 ): string {
   const boards = u.boards.map((b) => b.board);
-  const fix = u.driver && !u.driver.ready
-    ? isUdevRule(u.driver.needed)
-      ? "Add a udev rule for it so Logix IDE can read its name and program it."
-      : "Install its driver so Logix IDE can read its name and program it."
-    : u.actionDescription;
+  const fix = u.fix;
   if (selected !== null && boards.includes(selected))
     return `This may be your ${boardName(selected)} (the board selected in the toolbar): it has the same USB IDs. ${fix}`;
   if (boards.length === 1)
@@ -255,21 +173,14 @@ export function unreachableNote(
   return `This may be an FPGA board: ${boards.length} boards have its USB IDs. ${fix}`;
 }
 
-/** What a device that can't be opened lacks, after its name: a udev rule (Linux) or, by default, a driver. */
+/** What a device that can't be opened lacks, after its name: Logix Engine's tag ("no udev rule yet", "no driver yet"). */
 export function lockedTag(u: UnreachableDevice): string {
-  return u.driver && isUdevRule(u.driver.needed) ? "no udev rule yet" : "no driver yet";
+  return u.driver?.tag ?? "can't be opened";
 }
 
-/** What to do about a device that can't be opened, in Logix IDE's words when it needs a driver or a udev rule. */
-function lockedFix(u: UnreachableDevice): string {
-  if (!u.driver || u.driver.ready) return u.actionDescription;
-  return isUdevRule(u.driver.needed)
-    ? "It needs a udev rule first: choose Upload, or Tools > Connected Devices, to add it."
-    : "It needs its driver first: choose Upload, or Tools > Connected Devices, to install it.";
-}
-
+/** Console lines listing what's connected, with tips when nothing is. */
 export function deviceSummaryLines(devices: Devices): string[] {
-  const locked = devices.unreachable.map((u) => `  • ${u.label} can't be opened. ${lockedFix(u)}`);
+  const locked = devices.unreachable.map((u) => `  • ${u.label} can't be opened. ${u.fix}`);
   if (devices.usb.length === 0) {
     return [
       "No USB devices are connected.",
@@ -315,14 +226,14 @@ export function devicesReport(
     out.push(item.kind === "usb" ? d.label : `${d.label}, ${lockedTag(item.device)}`);
     out.push(`  ID: ${d.id}`);
     if (item.kind === "usb" && item.device.serialNumber) out.push(`  Serial: ${item.device.serialNumber}`);
-    if (d.driver) out.push(`  ${driverStateText(d.driver)}`);
+    if (d.driver) out.push(`  ${d.driver.state}`);
     if (item.kind === "usb") {
       const { matches, others } = deviceBoardGroups(item.device, selected);
       if (matches.length > 0) out.push(`  Matching boards: ${names(matches)}`);
       if (others.length > 0) out.push(`  Other possible boards: ${names(others)}`);
       if (matches.length + others.length === 0) out.push("  Not a board Logix IDE knows.");
     } else {
-      out.push(`  ${item.device.actionDescription}`);
+      out.push(`  ${item.device.fix}`);
       const ids = item.device.boards.map((b) => b.board);
       if (ids.length > 0) out.push(`  Boards with these USB IDs (${ids.length}): ${names(ids)}`);
     }

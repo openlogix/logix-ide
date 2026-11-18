@@ -317,7 +317,7 @@ const fake = {
    * Windows: the driver Upload's device has (`driver` in list_devices); a
    * driver that isn't ready makes Upload ask to install WinUSB first.
    */
-  uploadDriver: null as Real.Driver | null,
+  uploadDriver: null as RawDriver | null,
   /** GTKWave layouts the user saved, as `readGtkwaveLayouts` returns them (and the next run, as `layouts`). */
   gtkwaveLayouts: [] as Real.ProjectFile[],
   /**
@@ -329,7 +329,7 @@ const fake = {
   /** An engine error the next driver change fails with (`{message, details}`). */
   driverError: null as { message: string; details: string } | null,
   /** Devices that can't be opened yet (`list_devices` `unreachable`). */
-  unreachable: [] as Real.UnreachableDevice[],
+  unreachable: [] as (Omit<Real.UnreachableDevice, "driver" | "who" | "fix"> & { driver: RawDriver | null; who?: string; fix?: string })[],
   /** While set, Install Driver waits for it, as for Windows' prompt. */
   driverHold: null as Promise<void> | null,
   /** The status texts Upload sent while installing a driver. */
@@ -375,6 +375,139 @@ function boardsOnDisk(folder: string | null): Record<string, string> | null {
   return folder === null ? null : (fake.customBoardsOnDisk[folder] ?? null);
 }
 
+
+// ---- Logix Engine's driver texts --------------------------------------
+// What Logix Engine adds to a device and its driver for people (its
+// src/driver_texts.rs, who in list_devices): the fake's copy, so tests can
+// set up devices with the driver's raw fields, as captured from real
+// boards, and see what the engine sends.
+
+/** A driver's raw fields, as tests set them up. */
+type RawDriver = { needed: string; interface: number | null; current: string | null; ready: boolean };
+
+function windowsName(service: string): string {
+  return (
+    { winusb: "WinUSB", libusbk: "libusbK", libusb0: "libusb0", ftdibus: "FTDI's driver", usbser: "the serial port driver" } as Record<string, string>
+  )[service] ?? service;
+}
+
+/** A device's name for people, as Logix Engine's who. */
+function engineWho(label: string, boards: string[], chosen: string | null): string {
+  const name = (id: string) => BOARDS.find((b) => b.id === id)?.description ?? id;
+  if (chosen !== null && boards.includes(chosen)) return `the ${name(chosen)}`;
+  return boards.length === 1 ? `the ${name(boards[0])}` : label;
+}
+
+/** A driver with Logix Engine's texts and questions, for the device `who`. */
+function engineDriver(d: RawDriver, who: string): Real.Driver {
+  const udev = d.needed === "udev-rule";
+  const currentName = !udev && d.current ? windowsName(d.current) : null;
+  const canAdd = !d.ready;
+  const canRemove = udev ? d.current !== null : d.ready;
+  const state = udev
+    ? !d.ready
+      ? "Access: Linux needs a udev rule before the board can be programmed."
+      : d.current
+        ? `Access: ready to program the board, with Logix Engine's udev rule (${d.current}).`
+        : "Access: ready to program the board."
+    : d.ready
+      ? `Driver: ${currentName ?? windowsName(d.needed)}, ready to program the board.`
+      : `Driver: needs WinUSB on USB interface ${d.interface ?? 0} to program the board (${currentName ? `it has ${currentName} now` : "it has no driver now"}).`;
+  const add: Real.Consent = udev
+    ? {
+        title: "Let your user account program the board?",
+        lead: `To program ${who}, Linux needs a udev rule that lets your user account use it.`,
+        steps: [
+          "Linux asks for your password. Enter it to allow the change.",
+          "The rule is only for this kind of board (its USB IDs): other connected boards of the same kind can be programmed too.",
+          "Nothing else on your computer changes.",
+        ],
+        note: "You can remove the rule later.",
+        confirm: "Add udev Rule",
+        busy: "Adding the board's udev rule…",
+        cancelled: "Cancelled: the udev rule wasn't added.",
+      }
+    : {
+        title: "Install the board's USB driver?",
+        lead: `To program ${who}, Windows needs to use the WinUSB driver for it.${currentName ? ` Right now Windows uses ${currentName} for it.` : ""}`,
+        steps: [
+          "Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
+          "It takes a minute or two.",
+          "Only the part of the board that programs the FPGA changes. Its other parts, such as a serial port, keep working as before.",
+          "Other connected boards of the same kind get the driver too.",
+        ],
+        note: "You can remove the driver later.",
+        confirm: "Install Driver",
+        busy: "Installing the board's driver…",
+        cancelled: "Cancelled: the driver wasn't installed.",
+      };
+  const remove: Real.Consent = udev
+    ? {
+        title: "Remove the board's udev rule?",
+        lead: `This removes Logix Engine's udev rule for ${who}.`,
+        steps: [
+          "Linux asks for your password. Enter it to allow the change.",
+          "Then your user account can't program it, unless another rule allows it.",
+          "To program the board again, add the rule again.",
+        ],
+        note: null,
+        confirm: "Remove udev Rule",
+        busy: "Removing the board's udev rule…",
+        cancelled: "Cancelled: the udev rule wasn't removed.",
+      }
+    : {
+        title: "Remove the board's USB driver?",
+        lead: `This restores the original Windows driver for ${who}, if it had one, so the board maker's own tools can use it again.`,
+        steps: [
+          "Windows asks whether Logix Engine may make changes to your device. Choose Yes.",
+          "Other connected boards of the same kind get their original driver back too.",
+          "To program the board again, install WinUSB again.",
+        ],
+        note: null,
+        confirm: "Remove Driver",
+        busy: "Removing the board's driver…",
+        cancelled: "Cancelled: the driver wasn't removed.",
+      };
+  return {
+    needed: d.needed, interface: d.interface, current: d.current, ready: d.ready,
+    label: udev ? "a udev rule" : "the WinUSB driver",
+    state,
+    tag: d.ready ? null : udev ? "no udev rule yet" : "no driver yet",
+    canAdd, canRemove,
+    add: canAdd ? add : null,
+    remove: canRemove ? remove : null,
+  };
+}
+
+/** A device as Logix Engine lists it: its who, and its driver's texts. */
+function engineDevice<T extends { label: string; boards: { board: string }[]; driver: RawDriver | null }>(
+  d: T,
+  chosen: string | null,
+): Omit<T, "driver"> & { who: string; driver: Real.Driver | null } {
+  const who = engineWho(d.label, d.boards.map((b) => b.board), chosen);
+  return { ...d, who, driver: d.driver ? engineDriver(d.driver, who) : null };
+}
+
+/** Logix Engine's question when other devices have the same USB IDs (its data.consent). */
+function sameIdsConsent(lead: string): Real.Consent {
+  return {
+    title: "Other devices of the same kind are connected",
+    lead,
+    steps: [],
+    note: "Unplug them and try again, or continue: they get the same driver too.",
+    confirm: "Continue for All",
+    busy: "Installing the board's driver…",
+    cancelled: "Cancelled: the driver wasn't installed.",
+  };
+}
+
+/** The fix for people Logix Engine gives an unreachable device, on the platform its driver says. */
+function engineFix(driver: RawDriver | null): string {
+  return driver?.needed === "winusb"
+    ? "It needs its driver first, so it can be programmed."
+    : "Add a udev rule for it, so it can be programmed and its name read.";
+}
+
 /** An iCESugar v1.5, as Logix Engine lists it: its USB IDs from the
  * catalog. Its product and manufacturer names aren't captured from a real
  * board yet, so it has none (the canonical board TODO). */
@@ -388,7 +521,7 @@ const icesugarDevice: Real.UsbDevice = {
   serialNumber: "0700000001",
   boards: [{ board: "icesugar-1-5", level: "possible" }],
   likelyBoards: ["icesugar-1-5"],
-  buildMatch: "possible", driver: null,
+  buildMatch: "possible", driver: null, who: "the iCESugar v1.5",
 };
 
 
@@ -407,7 +540,7 @@ const alhambraDevice: Real.UsbDevice = {
     { board: "alchitry-au", level: "weak" },
   ],
   likelyBoards: ["alhambra-ii"],
-  buildMatch: "strong", driver: null,
+  buildMatch: "strong", driver: null, who: "USB device (0403:6010)",
 };
 
 const unlisten = async () => () => {};
@@ -641,22 +774,25 @@ export const backend: typeof Real.backend = {
     let uploadId = device ?? fits[0].id;
     const needsDriver = fake.uploadDriver && !fake.uploadDriver.ready ? fake.uploadDriver : null;
     if (phases && task === "upload" && outcome.ok && needsDriver) {
-      const label = fits.find((d) => d.id === uploadId)?.label ?? fits[0].label;
-      const driverDevice = { id: uploadId, label, needed: needsDriver.needed, interface: needsDriver.interface, current: needsDriver.current };
+      const picked = fits.find((d) => d.id === uploadId) ?? fits[0];
+      const label = picked.label;
+      const who = engineWho(label, picked.boards.map((b) => b.board), board);
+      const driverDevice = { id: uploadId, label, who, driver: engineDriver(needsDriver, who) };
       if (!driver.install) {
         return { ...outcome, ok: false, report: null, action: "install_drivers", driverDevice };
       }
       if (fake.sameIdsMessage && !driver.allowSameIds) {
         return {
-          ...outcome, ok: false, report: null, action: "disconnect_devices", driverDevice,
-          sameIds: fake.sameIdsMessage,
+          ...outcome, ok: false, report: null, action: "confirm_same_ids", driverDevice,
+          sameIds: sameIdsConsent(fake.sameIdsMessage),
         };
       }
-      // As the backend says it (engine/task.rs): a udev rule on Linux.
+      // As the backend says it (engine/task.rs): the engine's busy line,
+      // then its summary.
       const udev = needsDriver.needed === "udev-rule";
-      const statusText = udev ? "Adding the board's udev rule…" : "Installing the board's driver…";
+      const statusText = driverDevice.driver.add?.busy ?? "";
       onEvent({ kind: "status", text: statusText });
-      onLine(udev ? `Adding a udev rule for ${label}…` : `Installing the WinUSB driver for ${label}…`);
+      onLine(statusText);
       fake.driverStatuses.push(statusText);
       fake.driverInstalls.push({ device: uploadId, allowSameIds: driver.allowSameIds });
       fake.uploadDriver = udev
@@ -664,7 +800,7 @@ export const backend: typeof Real.backend = {
         : { ...needsDriver, current: "winusb", ready: true };
       // The engine reads the serial number once the driver lets it.
       uploadId = `${uploadId}FT1`;
-      onLine(udev ? `Added a udev rule for ${label}.` : `Installed the WinUSB driver for ${label}.`);
+      onLine(udev ? `Added a udev rule for ${who}.` : `Installed the WinUSB driver for ${who}.`);
       onEvent({ kind: "status", text: null });
     }
     if (phases && task === "upload" && outcome.ok) {
@@ -851,9 +987,17 @@ export const backend: typeof Real.backend = {
   },
   chooseFolderDialog: async () => "/Users/you/fpga",
 
-  scanDevices: async () => ({ usb: fake.usb ?? [icesugarDevice], unreachable: fake.unreachable }),
-  installDeviceDriver: async (_folder, _saved, device, allowSameIds, onEvent) => {
-    if (fake.sameIdsMessage && !allowSameIds) return { installed: false, sameIds: fake.sameIdsMessage };
+  scanDevices: async (_folder, _saved, board) => ({
+    usb: (fake.usb ?? [icesugarDevice]).map((d) => engineDevice(d as typeof d & { driver: RawDriver | null }, board)),
+    unreachable: fake.unreachable.map((u) => ({
+      ...engineDevice(u as typeof u & { driver: RawDriver | null }, board),
+      fix: u.fix || engineFix(u.driver),
+    })),
+  }),
+  installDeviceDriver: async (_folder, _saved, device, allowSameIds, board, onEvent) => {
+    const listed = [...(fake.usb ?? []), ...fake.unreachable].find((d) => d.id === device);
+    const who = listed ? engineWho(listed.label, listed.boards.map((b) => b.board), board) : device;
+    if (fake.sameIdsMessage && !allowSameIds) return { installed: false, summary: [], sameIds: sameIdsConsent(fake.sameIdsMessage) };
     if (fake.driverError) throw fake.driverError;
     // Logix Engine's phases and output, as install_driver sends them.
     onEvent({ kind: "progress", message: "Waiting for permission", percent: null });
@@ -867,16 +1011,18 @@ export const backend: typeof Real.backend = {
       d.id === device && d.driver ? { ...d, driver: { ...d.driver, current: "winusb", ready: true } } : d,
     );
     fake.unreachable = fake.unreachable.filter((u) => u.id !== device);
-    return { installed: true, sameIds: null };
+    return { installed: true, summary: [`Installed the WinUSB driver for ${who}.`], sameIds: null };
   },
-  uninstallDeviceDriver: async (_folder, _saved, device, onEvent) => {
+  uninstallDeviceDriver: async (_folder, _saved, device, board, onEvent) => {
+    const listed = (fake.usb ?? []).find((d) => d.id === device);
+    const who = listed ? engineWho(listed.label, listed.boards.map((b) => b.board), board) : device;
     onEvent({ kind: "progress", message: "Removing driver", percent: null });
     onEvent({ kind: "line", line: "\x1b[2m$ pnputil /delete-driver oem12.inf /uninstall /force\x1b[0m" });
     fake.driverRemovals.push(device);
     fake.usb = (fake.usb ?? []).map((d) =>
       d.id === device && d.driver ? { ...d, driver: { ...d.driver, current: "ftdibus", ready: false } } : d,
     );
-    return 1;
+    return [`Removed the WinUSB driver for ${who}.`, "Windows uses its original driver again."];
   },
   onOpenRecent: unlisten,
 

@@ -26,14 +26,9 @@ const TOP_MODULE: &str = "main";
 /// Shown when the project has no pin file.
 pub const NO_CONSTRAINT_FILE: &str = "The project has no pin file (e.g. pinout.pcf) for the board. Start a new project with the board selected, or open one of the board's examples.";
 
-/// The status while Upload installs the board's driver first (Windows).
-pub const INSTALLING_DRIVER: &str = "Installing the board's driver…";
-
 /// The engine's `driver.needed` on Linux: a udev rule, not a driver.
-pub const UDEV_RULE: &str = "udev-rule";
-
-/// The status line while Upload adds a board's udev rule (Linux).
-pub const ADDING_RULE: &str = "Adding the board's udev rule…";
+#[cfg(test)]
+const UDEV_RULE: &str = "udev-rule";
 
 /// Upload's outcome action when several devices fit the board.
 pub const SELECT_DEVICE: &str = "select_device";
@@ -59,7 +54,7 @@ fn pick_device(
             let error = match list.unreachable.first() {
                 Some(u) => json!({
                     "category": "setup",
-                    "message": format!("The board was found but can't be opened. {}", u.action_description),
+                    "message": format!("The board was found but can't be opened. {}", u.fix),
                     "action": {"code": u.action},
                 }),
                 None => json!({
@@ -84,24 +79,23 @@ fn pick_device(
 /// The device Upload uses, when its board's programmer needs a driver it
 /// doesn't have yet (Windows: the engine's `driver` isn't ready).
 fn driver_needed(list: &super::DeviceList, id: &str) -> Option<crate::outcome::DriverDevice> {
-    let (label, driver) = list
+    let (label, who, driver) = list
         .devices
         .iter()
         .find(|d| d.id == id)
-        .map(|d| (&d.label, &d.driver))
+        .map(|d| (&d.label, &d.who, &d.driver))
         .or_else(|| {
             list.unreachable
                 .iter()
                 .find(|u| u.id == id)
-                .map(|u| (&u.label, &u.driver))
+                .map(|u| (&u.label, &u.who, &u.driver))
         })?;
     let driver = driver.as_ref().filter(|d| !d.ready)?;
     Some(crate::outcome::DriverDevice {
         id: id.to_string(),
         label: label.clone(),
-        needed: driver.needed.clone(),
-        interface: driver.interface,
-        current: driver.current.clone(),
+        who: who.clone(),
+        driver: driver.clone(),
     })
 }
 
@@ -254,6 +248,7 @@ where
         display_paths: super::boards_fields(input.custom_boards).1,
         folder: input.source_folder.to_string_lossy().into_owned(),
         build_folder: build_folder(input.source_folder),
+        board: input.board.to_string(),
     };
     let mut outcome = new_outcome();
     let finished = match task {
@@ -299,6 +294,8 @@ struct Runner<'a, F> {
     custom_boards_folder: Value,
     display_paths: Value,
     build_folder: PathBuf,
+    /// The project's board, which the engine names devices by.
+    board: String,
 }
 
 impl<F> Runner<'_, F>
@@ -400,50 +397,44 @@ where
                     outcome.driver_device = Some(needs);
                     return Ok(true);
                 }
-                (self.on_event)(TaskEvent::Status {
-                    text: Some(
-                        if needs.needed == UDEV_RULE {
-                            ADDING_RULE
-                        } else {
-                            INSTALLING_DRIVER
-                        }
-                        .into(),
-                    ),
-                });
-                let udev = needs.needed == UDEV_RULE;
-                self.line(if udev {
-                    format!("Adding a udev rule for {}…", needs.label)
-                } else {
-                    format!("Installing the WinUSB driver for {}…", needs.label)
-                });
+                // The engine's status line while it runs ("Adding the
+                // board's udev rule…"), then what it did ("Added a udev
+                // rule for the Alhambra II.").
+                let busy = needs.driver.add.as_ref().map(|q| q.busy.clone());
+                (self.on_event)(TaskEvent::Status { text: busy.clone() });
+                if let Some(busy) = busy {
+                    self.line(busy);
+                }
                 let args = json!({
                     "device": device,
                     "build_folder": self.build_folder(),
                     "allow_same_ids": input.allow_same_ids,
+                    "board": self.board,
                     "custom_boards_folder": self.custom_boards_folder,
                     "display_paths": self.display_paths,
                 });
                 match self.call("install_driver", args).await? {
                     Ok(r) => {
-                        if let super::DriverInstall::Done { device: id, .. } =
-                            super::devices::install_result(&r, &device)
+                        if let super::DriverInstall::Done {
+                            device: id,
+                            summary,
+                            ..
+                        } = super::devices::install_result(&r, &device)
                         {
                             device = id;
+                            for line in summary {
+                                self.line(line);
+                            }
                         }
-                        self.line(if udev {
-                            format!("Added a udev rule for {}.", needs.label)
-                        } else {
-                            format!("Installed the WinUSB driver for {}.", needs.label)
-                        });
                         (self.on_event)(TaskEvent::Status { text: None });
                     }
                     Err(e) if is_cancelled(&e) => return Ok(false),
                     Err(e) => match super::devices::same_ids(&e) {
-                        Some(message) => {
+                        Some(consent) => {
                             outcome.ok = false;
-                            outcome.action = Some(super::devices::DISCONNECT_DEVICES.into());
+                            outcome.action = Some(super::devices::CONFIRM_SAME_IDS.into());
                             outcome.driver_device = Some(needs);
-                            outcome.same_ids = Some(message);
+                            outcome.same_ids = Some(consent);
                             return Ok(true);
                         }
                         None => {
@@ -495,6 +486,7 @@ where
                 "list_devices",
                 json!({
                     "build_folder": self.build_folder(),
+                    "board": self.board,
                     "custom_boards_folder": self.custom_boards_folder,
                     "display_paths": self.display_paths,
                 }),
@@ -724,9 +716,14 @@ fn failed(outcome: &mut TaskOutcome, error: &Value, line: &impl Fn(String)) {
     if error["category"] != "design" && !closing_line {
         line(red(&message(error)));
     }
-    // A setup error's details are for the user, such as the commands to
-    // run in a terminal when Linux can't ask for the password; other
-    // errors' details are the tools' output, already in the console.
+    // The commands to run in a terminal when Linux can't ask for the
+    // password, a line each.
+    for command in super::client::terminal_commands(error) {
+        line(command);
+    }
+    // A setup error's details are for the user, such as a download's
+    // reason; other errors' details are the tools' output, already in the
+    // console.
     if error["category"] == "setup" {
         if let Some(details) = error["details"].as_str().filter(|d| !d.trim().is_empty()) {
             for l in details.trim().lines() {
@@ -901,7 +898,8 @@ mod tests {
         assert!(candidates.is_empty());
 
         let locked = super::super::devices::parse_devices(&json!({"devices": [], "unreachable": [
-            {"vid": "0403", "pid": "6010", "action": {"code": "fix_device_permissions", "description": "Allow it."}}
+            {"vid": "0403", "pid": "6010", "action": {"code": "fix_device_permissions", "description": "For agents."},
+             "fix": "Allow it."}
         ]})).unwrap();
         let (err, _) = pick_device(&locked).unwrap_err();
         assert_eq!(err["action"]["code"], "fix_device_permissions");
@@ -915,12 +913,21 @@ mod tests {
         let locked = super::super::devices::parse_devices(&json!({"devices": [], "unreachable": [
             {"id": "usb:1-2:1d50:602b:", "label": "USB device (1d50:602b)", "vid": "1d50", "pid": "602b",
              "action": {"code": "fix_device_permissions", "description": "Add a udev rule."},
-             "driver": {"needed": "udev-rule", "ready": false}}
+             "who": "the iCESugar v1.5",
+             "driver": {"needed": "udev-rule", "ready": false, "can_add": true,
+                        "add": {"title": "T", "lead": "L", "steps": [], "confirm": "Add Rule",
+                                "busy": "Adding the board's udev rule…", "cancelled": "C"}}}
         ]})).unwrap();
         let id = pick_device(&locked).unwrap();
         let needs = driver_needed(&locked, &id).unwrap();
-        assert_eq!(needs.needed, UDEV_RULE);
-        assert_eq!((needs.interface, needs.current), (None, None));
+        assert_eq!(needs.driver.needed, UDEV_RULE);
+        assert_eq!((needs.driver.interface, needs.driver.current), (None, None));
+        // The engine's name and question, as it gave them.
+        assert_eq!(needs.who, "the iCESugar v1.5");
+        assert_eq!(
+            needs.driver.add.unwrap().busy,
+            "Adding the board's udev rule…"
+        );
     }
 
     // Windows: a board whose interface has another driver (such as FTDI's)
@@ -936,8 +943,8 @@ mod tests {
         let id = pick_device(&unreachable).unwrap();
         assert_eq!(id, "usb:1-2:0403:6010:");
         let needs = driver_needed(&unreachable, &id).unwrap();
-        assert_eq!(needs.interface, Some(0));
-        assert_eq!(needs.current.as_deref(), Some("ftdibus"));
+        assert_eq!(needs.driver.interface, Some(0));
+        assert_eq!(needs.driver.current.as_deref(), Some("ftdibus"));
         assert_eq!(needs.label, "USB device (0403:6010)");
 
         // An open device whose driver is ready, or that has none (macOS, or a
@@ -953,27 +960,37 @@ mod tests {
         );
         assert_eq!(driver_needed(&open(serde_json::Value::Null), "a"), None);
         let needs = driver_needed(&open(driver(None, false)), "a").unwrap();
-        assert_eq!((needs.label.as_str(), needs.current), ("Alhambra II", None));
+        assert_eq!(
+            (needs.label.as_str(), needs.driver.current),
+            ("Alhambra II", None)
+        );
     }
 
     #[test]
     fn same_ids_refusals_are_told_apart() {
         let refused = json!({"category": "request", "message": "Another device (0403:6010) is connected.",
-            "action": {"code": "disconnect_devices"}});
+            "action": {"code": "confirm_same_ids"},
+            "data": {"consent": {"title": "Other devices of the same kind are connected",
+                "lead": "Other connected devices have the same USB IDs.", "steps": [],
+                "note": "Unplug them.", "confirm": "Continue for All", "busy": "B", "cancelled": "C"}}});
         assert_eq!(
-            super::super::devices::same_ids(&refused).as_deref(),
-            Some("Another device (0403:6010) is connected.")
+            super::super::devices::same_ids(&refused).unwrap().confirm,
+            "Continue for All"
         );
+        // program_board's own disconnect_devices isn't this refusal.
+        let program = json!({"category": "setup", "message": "Unplug the others.", "action": {"code": "disconnect_devices"}});
+        assert_eq!(super::super::devices::same_ids(&program), None);
         let other = json!({"category": "setup", "message": "No permission.", "action": {"code": "install_drivers"}});
         assert_eq!(super::super::devices::same_ids(&other), None);
         assert_eq!(
             super::super::devices::install_result(
-                &json!({"device": "new", "installed": true}),
+                &json!({"device": "new", "installed": true, "summary": ["Added a udev rule for the Alhambra II."]}),
                 "old"
             ),
             super::super::DriverInstall::Done {
                 device: "new".into(),
-                installed: true
+                installed: true,
+                summary: vec!["Added a udev rule for the Alhambra II.".into()],
             }
         );
     }
@@ -1106,8 +1123,8 @@ mod tests {
         let lines = Mutex::new(Vec::new());
         let e = json!({
             "category": "setup",
-            "message": "Linux can't ask for your password here (no password dialog). Run the commands in the details in a terminal instead.",
-            "details": "sudo tee /etc/udev/rules.d/70-logix-engine-0403-6010.rules\nsudo udevadm control --reload-rules\n",
+            "message": "Linux can't ask for your password here (no password dialog). Run these commands in a terminal instead: sudo asks for your password.",
+            "data": {"terminal_commands": ["sudo tee /etc/udev/rules.d/70-logix-engine-0403-6010.rules", "sudo udevadm control --reload-rules"]},
             "action": {"code": "fix_device_permissions", "description": "Run the commands."}
         });
         failed(&mut outcome.clone(), &e, &|l| lines.lock().unwrap().push(l));

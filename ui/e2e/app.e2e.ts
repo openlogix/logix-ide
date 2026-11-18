@@ -1141,11 +1141,11 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
   // Upload says why it stopped.
   await menu(page, "upload");
   const ask = page.getByRole("alertdialog", { name: "Install the board's USB driver?" });
-  await expect(ask).toContainText("To program the Alhambra II, Logix IDE needs Windows to use the WinUSB driver for it.");
+  await expect(ask).toContainText("To program the Alhambra II, Windows needs to use the WinUSB driver for it.");
   await expect(ask).toContainText("What happens");
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(ask).toHaveCount(0);
-  await expect(status(page)).toContainText("Cancelled: the driver wasn't installed, so nothing was uploaded.");
+  await expect(status(page)).toContainText("Cancelled: the driver wasn't installed. Nothing was uploaded");
   expect((await fake(page)).driverInstalls).toEqual([]);
 
   // Agreed, while another device with the same USB IDs is connected: asked
@@ -1159,7 +1159,7 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
   const same = page.getByRole("alertdialog", { name: "Other devices of the same kind are connected" });
   await expect(same).toContainText("Dual RS232-HS");
   await same.getByRole("button", { name: "Continue for All" }).click();
-  await expect(output(page)).toContainText("Installed the WinUSB driver for USB device (0403:6010).");
+  await expect(output(page)).toContainText("Installed the WinUSB driver for the Alhambra II.");
   await expect(output(page)).toContainText("Programmed the flash of the Alhambra II");
   const f = await fake(page);
   expect(f.driverInstalls).toEqual([{ device: "usb:1-2:0403:6010:", allowSameIds: true }]);
@@ -1196,25 +1196,25 @@ test("Upload offers the udev rule a board needs", async ({ page }) => {
     f.uploadDriver = { needed: "udev-rule", interface: null, current: null, ready: false };
   });
   await menu(page, "upload");
-  const ask = page.getByRole("alertdialog", { name: "Let Logix IDE program the board?" });
+  const ask = page.getByRole("alertdialog", { name: "Let your user account program the board?" });
   await expect(ask).toContainText("To program the Alhambra II, Linux needs a udev rule that lets your user account use it.");
   await expect(ask).toContainText("Linux asks for your password.");
   // The output says why Upload stopped, and waits for the answer.
   // No "Ready." right after it (a background notice may still follow).
   await expect(output(page)).toContainText(/The board needs a udev rule first\.(?!\s*Ready\.)/);
   await ask.getByRole("button", { name: "Cancel" }).click();
-  await expect(status(page)).toContainText("Cancelled: the udev rule wasn't added, so nothing was uploaded.");
+  await expect(status(page)).toContainText("Cancelled: the udev rule wasn't added. Nothing was uploaded");
   // The answer ends the output, then Ready. A background notice (such as
   // the language server timing out on a slow runner) may come before or
   // after it, but no "Ready." while Upload waits for the answer.
   await expect(output(page)).toContainText(
-    /The board needs a udev rule first\.(?:(?!Ready\.)[\s\S])*Cancelled: the udev rule wasn't added, so nothing was uploaded\. Choose Upload again to add it\.\s*Ready\./,
+    /The board needs a udev rule first\.(?:(?!Ready\.)[\s\S])*Cancelled: the udev rule wasn't added\. Nothing was uploaded: choose Upload again when you're ready\.\s*Ready\./,
   );
   expect((await fake(page)).driverInstalls).toEqual([]);
 
   await menu(page, "upload");
-  await page.getByRole("alertdialog", { name: "Let Logix IDE program the board?" }).getByRole("button", { name: "Add Rule" }).click();
-  await expect(output(page)).toContainText("Added a udev rule for USB device (0403:6010).");
+  await page.getByRole("alertdialog", { name: "Let your user account program the board?" }).getByRole("button", { name: "Add udev Rule" }).click();
+  await expect(output(page)).toContainText("Added a udev rule for the Alhambra II.");
   await expect(output(page)).toContainText("Programmed the flash of the Alhambra II");
   const f = await fake(page);
   expect(f.driverInstalls).toEqual([{ device: "usb:1-2:0403:6010:", allowSameIds: false }]);
@@ -1242,7 +1242,7 @@ test("Connected Devices shows why a driver change failed", async ({ page }) => {
   });
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
   await dialog.getByRole("button", { name: "Add udev Rule…" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Add Rule" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Add udev Rule" }).click();
   const work = dialog.locator("section.work");
   await expect(work.locator(".work-status.error")).toContainText("Linux can't ask for your password here");
   await work.getByRole("button", { name: /Show log/ }).click();
@@ -1285,7 +1285,7 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
   await expect(ask).toContainText("Right now Windows uses FTDI's driver for it.");
   await ask.getByRole("button", { name: "Install Driver" }).click();
   const work = dialog.locator("section.work");
-  await expect(work).toContainText("Installing the WinUSB driver for the Alhambra II…");
+  await expect(work).toContainText("Installing the board's driver…");
   await expect(work).toContainText("Waiting for permission");
   await expect(work.locator(".spinner")).toBeVisible();
   // The log is collapsed by default.
@@ -1356,7 +1356,7 @@ test("Connected Devices lists a board with no driver first, and says what it may
     "USB Receiver (Logitech, 046d:c52b)",
   ]);
   await expect(dialog).toContainText(
-    "This may be your Alhambra II (the board selected in the toolbar): it has the same USB IDs. Install its driver so Logix IDE can read its name and program it.",
+    "This may be your Alhambra II (the board selected in the toolbar): it has the same USB IDs. It needs its driver first, so it can be programmed.",
   );
   await expect(dialog.getByRole("button", { name: /^Boards with these USB IDs\s*2$/ })).toBeVisible();
   await dialog.getByRole("button", { name: "Install Driver…" }).click();

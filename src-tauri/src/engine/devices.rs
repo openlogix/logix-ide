@@ -6,7 +6,7 @@
 //! device groups and Upload's choice of device.
 
 use anyhow::{Context, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use super::catalog::{selector, Variant};
@@ -34,6 +34,9 @@ pub struct UsbDevice {
     /// With a build folder: how well it matches the build's board in the
     /// build's variant.
     pub build_match: Option<MatchLevel>,
+    /// The engine's name for it in a sentence, such as "the Alhambra II"
+    /// (the selected board when it may be that one), for messages.
+    pub who: String,
     /// What it needs for its board's programmer and what it has (the
     /// engine's `driver`): on Windows, for a board whose programmer needs
     /// one, a driver (WinUSB); on Linux, for every board, a udev rule.
@@ -59,6 +62,41 @@ pub struct Driver {
     pub current: Option<String>,
     /// Whether the programmer can use it as it is; false: install_driver.
     pub ready: bool,
+    /// The engine's texts for people (the same for every frontend, naming
+    /// none): what it needs ("the WinUSB driver", "a udev rule"), its
+    /// state, and a short tag while it isn't ready.
+    pub label: String,
+    pub state: String,
+    pub tag: Option<String>,
+    /// Whether Install/Add (`install_driver`) and Remove
+    /// (`uninstall_driver`) apply, by the engine.
+    pub can_add: bool,
+    pub can_remove: bool,
+    /// The engine's questions before each, with their status and cancel
+    /// lines.
+    pub add: Option<Consent>,
+    pub remove: Option<Consent>,
+}
+
+/// One of the engine's questions to ask before a driver or udev rule
+/// change (its `add`, `remove`, or the same-USB-IDs refusal's `consent`),
+/// shown in Logix IDE's own dialog, with its status and cancel lines.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Consent {
+    pub title: String,
+    pub lead: String,
+    pub steps: Vec<String>,
+    #[serde(default)]
+    pub note: Option<String>,
+    pub confirm: String,
+    pub busy: String,
+    pub cancelled: String,
+}
+
+/// An engine question, if `v` is one.
+fn parse_consent(v: &Value) -> Option<Consent> {
+    serde_json::from_value(v.clone()).ok()
 }
 
 /// The engine's `driver` field, if any.
@@ -72,6 +110,13 @@ fn parse_driver(v: &Value) -> Option<Driver> {
             .and_then(|i| i.try_into().ok()),
         current: d.get("current").and_then(Value::as_str).map(String::from),
         ready: d.get("ready")?.as_bool()?,
+        label: v["label"].as_str().unwrap_or("").to_string(),
+        state: v["state"].as_str().unwrap_or("").to_string(),
+        tag: v["tag"].as_str().map(String::from),
+        can_add: v["can_add"].as_bool().unwrap_or(false),
+        can_remove: v["can_remove"].as_bool().unwrap_or(false),
+        add: parse_consent(&v["add"]),
+        remove: parse_consent(&v["remove"]),
     })
 }
 
@@ -127,8 +172,10 @@ pub struct UnreachableDevice {
     pub pid: String,
     /// The engine's suggested fix, e.g. `fix_device_permissions`.
     pub action: String,
-    /// The fix in words.
-    pub action_description: String,
+    /// The engine's name for it in a sentence, as for `UsbDevice`.
+    pub who: String,
+    /// What to do, for people, by the engine.
+    pub fix: String,
     /// As for `UsbDevice`: on Windows, the driver it needs and has.
     pub driver: Option<Driver>,
     /// The boards whose USB IDs it has (all weak: its names can't be read
@@ -148,14 +195,20 @@ pub struct DeviceList {
 pub async fn list_devices(
     engine: &Engine,
     boards_file: Option<&super::BoardsFolder>,
+    board: Option<&str>,
 ) -> Result<DeviceList> {
-    let args = match boards_file {
+    let mut args = match boards_file {
         Some(file) => json!({
             "custom_boards_folder": file.path,
             "display_paths": file.display_paths(),
         }),
         None => json!({}),
     };
+    // The selected board: the engine names devices by it and lists its
+    // devices first.
+    if let Some(board) = board {
+        args["board"] = json!(board);
+    }
     let result = engine
         .call("list_devices", args, None)
         .await?
@@ -192,6 +245,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                 })
                 .unwrap_or_default(),
             build_match: MatchLevel::parse(&d["build_match"]),
+            who: text(d, "who"),
             driver: parse_driver(&d["driver"]),
         })
         .collect();
@@ -205,10 +259,8 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                     vid: text(d, "vid"),
                     pid: text(d, "pid"),
                     action: d["action"]["code"].as_str().unwrap_or("").to_string(),
-                    action_description: d["action"]["description"]
-                        .as_str()
-                        .unwrap_or("")
-                        .to_string(),
+                    who: text(d, "who"),
+                    fix: text(d, "fix"),
                     driver: parse_driver(&d["driver"]),
                     boards: d["boards"]
                         .as_array()
@@ -229,17 +281,22 @@ pub const INSTALL_DRIVERS: &str = "install_drivers";
 
 /// The engine's action code when `install_driver` refuses because other
 /// connected devices have the same USB IDs (they'd get WinUSB too).
-pub const DISCONNECT_DEVICES: &str = "disconnect_devices";
+pub const CONFIRM_SAME_IDS: &str = "confirm_same_ids";
 
 /// What `install_driver` did.
 #[derive(Debug, Clone, PartialEq)]
 pub enum DriverInstall {
-    /// Installed (or ready already): the device's ID now.
-    Done { device: String, installed: bool },
+    /// Installed (or ready already): the device's ID now, and what was done
+    /// for people (the engine's `summary`, a sentence each).
+    Done {
+        device: String,
+        installed: bool,
+        summary: Vec<String>,
+    },
     /// Refused: other connected devices have the same USB IDs. The engine's
-    /// message names them; retry with `allow_same_ids` only if the user
+    /// question names them; retry with `allow_same_ids` only if the user
     /// agrees they get WinUSB too.
-    SameIds(String),
+    SameIds(Consent),
 }
 
 /// Installs WinUSB on a device's interface (Windows) or adds its udev rule
@@ -252,9 +309,13 @@ pub async fn install_driver(
     boards_file: Option<&super::BoardsFolder>,
     build_folder: Option<&std::path::Path>,
     allow_same_ids: bool,
+    board: Option<&str>,
     options: super::client::CallOptions,
 ) -> Result<DriverInstall> {
     let mut args = json!({ "device": device, "allow_same_ids": allow_same_ids });
+    if let Some(board) = board {
+        args["board"] = json!(board);
+    }
     if let Some(file) = boards_file {
         args["custom_boards_folder"] = json!(file.path);
         args["display_paths"] = file.display_paths();
@@ -265,7 +326,7 @@ pub async fn install_driver(
     match engine.call_with("install_driver", args, options).await? {
         Ok(r) => Ok(install_result(&r, device)),
         Err(e) => match same_ids(&e) {
-            Some(message) => Ok(DriverInstall::SameIds(message)),
+            Some(consent) => Ok(DriverInstall::SameIds(consent)),
             None => Err(ToolFailure::from_value(&e).into()),
         },
     }
@@ -277,26 +338,45 @@ pub(super) fn install_result(r: &Value, device: &str) -> DriverInstall {
     DriverInstall::Done {
         device: r["device"].as_str().unwrap_or(device).to_string(),
         installed: r["installed"].as_bool().unwrap_or(true),
+        summary: strings(&r["summary"]),
     }
 }
 
-/// The engine's message when its error is the same-USB-IDs refusal.
-pub(super) fn same_ids(error: &Value) -> Option<String> {
-    (error["action"]["code"] == DISCONNECT_DEVICES)
-        .then(|| error["message"].as_str().unwrap_or("").to_string())
+/// A list of texts, such as the engine's `summary`.
+fn strings(v: &Value) -> Vec<String> {
+    v.as_array()
+        .map(|l| {
+            l.iter()
+                .filter_map(|s| s.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The engine's question when its error is the same-USB-IDs refusal.
+pub(super) fn same_ids(error: &Value) -> Option<Consent> {
+    if error["action"]["code"] != CONFIRM_SAME_IDS {
+        return None;
+    }
+    parse_consent(&error["data"]["consent"])
 }
 
 /// Removes the WinUSB driver libwdi installed for a device's interface
 /// (Windows), so Windows restores its original driver, or Logix Engine's
 /// udev rule (Linux), for every device with the same USB IDs: the engine's
-/// `uninstall_driver`. Returns what was removed (none: nothing to do).
+/// `uninstall_driver`. Returns what was done, for people (the engine's
+/// `summary`, a sentence each).
 pub async fn uninstall_driver(
     engine: &Engine,
     device: &str,
     boards_file: Option<&super::BoardsFolder>,
+    board: Option<&str>,
     options: super::client::CallOptions,
 ) -> Result<Vec<String>> {
     let mut args = json!({ "device": device });
+    if let Some(board) = board {
+        args["board"] = json!(board);
+    }
     if let Some(file) = boards_file {
         args["custom_boards_folder"] = json!(file.path);
         args["display_paths"] = file.display_paths();
@@ -305,14 +385,7 @@ pub async fn uninstall_driver(
         .call_with("uninstall_driver", args, options)
         .await?
         .map_err(|e| anyhow::Error::from(ToolFailure::from_value(&e)))?;
-    Ok(r["removed"]
-        .as_array()
-        .map(|l| {
-            l.iter()
-                .filter_map(|p| p.as_str().map(String::from))
-                .collect()
-        })
-        .unwrap_or_default())
+    Ok(strings(&r["summary"]))
 }
 
 fn parse_board(b: &Value) -> DeviceBoard {
