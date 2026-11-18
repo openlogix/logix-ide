@@ -326,20 +326,27 @@ test("Help > System Info shows the version tree and copies the text", async ({ p
   await start(page);
   await menu(page, "system-info");
   const dialog = page.getByRole("dialog", { name: "System Info" });
-  // Logix IDE's facts, then the tree: the top two levels open.
+  // Logix IDE's facts, then the tree, always fully open.
   await expect(dialog).toContainText("Operating system: macOS 26.5 (darwin-arm64)");
   const row = (name: string) => dialog.locator(".row", { hasText: name });
   await expect(row("Logix Engine")).toContainText("2026.11.14");
   await expect(row("logix-core")).toBeVisible();
-  // logix-core starts closed; a click opens it and another closes it again.
-  await expect(row("OSS CAD Suite")).toHaveCount(0);
-  await row("logix-core").click();
   await expect(row("OSS CAD Suite")).toBeVisible();
-  await row("logix-core").click();
-  await expect(row("OSS CAD Suite")).toHaveCount(0);
-  // Details on hover.
+  // Details on click, under the entry; a second click hides them, and
+  // hovering shows nothing.
+  const details = (name: string) => dialog.getByRole("region", { name: `${name} details` });
   await row("Logix Engine").hover();
-  await expect(dialog.getByRole("tooltip")).toContainText("Logix IDE's remote config 001, prod.jsonc");
+  await expect(details("Logix Engine")).toHaveCount(0);
+  await row("Logix Engine").click();
+  await expect(details("Logix Engine")).toContainText("Logix IDE's remote config 001, prod.jsonc");
+  await expect(row("Logix Engine")).toHaveAttribute("aria-expanded", "true");
+  await row("Logix Engine").click();
+  await expect(details("Logix Engine")).toHaveCount(0);
+  // One entry's details at a time.
+  await row("Logix Engine").click();
+  await row("logix-core").click();
+  await expect(details("Logix Engine")).toHaveCount(0);
+  await expect(details("logix-core")).toBeVisible();
   // No developer settings for users.
   await expect(dialog).not.toContainText("Developer settings");
   // Copy gives the text, with the whole tree.
@@ -349,12 +356,11 @@ test("Help > System Info shows the version tree and copies the text", async ({ p
   expect(text).toMatch(/^Logix IDE .*\n\nVersions:\nLogix IDE /s);
   expect(text).toContain("│  │  └─ OSS CAD Suite 2026-11-04");
   // An update while it's open: it reads the report again by itself, and
-  // logix-core, opened by the user, stays open.
-  await row("logix-core").click();
+  // the details shown stay shown.
   await expect(row("logix-catalog")).toContainText("2026.11.14");
   await menu(page, "check-for-updates");
   await expect(row("logix-catalog")).toContainText("2026.11.30");
-  await expect(row("OSS CAD Suite")).toBeVisible();
+  await expect(details("logix-core")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });
