@@ -186,6 +186,13 @@ const CLEAR_RECENT: &str = "clear-recent";
 const SHOW_LOGS: &str = "show-logs";
 /// Help > System Info…: the UI asks for the report (`system_info`).
 const SYSTEM_INFO: &str = "system-info";
+/// No keyboard shortcut. Simulate (Ctrl+Alt+T), Stop (Ctrl+.), Show
+/// Project Folder (Ctrl+Alt+K) and Examples (Ctrl+Shift+E) had ones that
+/// clash or may clash: Ubuntu opens a terminal on Ctrl+Alt+T, Ctrl+Alt is
+/// AltGr on many Windows keyboards, IBus's emoji picker uses Ctrl+. (and
+/// Ctrl+Shift+E in older versions). Dropped until better keys are chosen
+/// (the user's decision, 2026-11-18).
+const NO_KEY: &str = "";
 /// Help > Check for Updates: the UI runs `check_for_updates`.
 const CHECK_UPDATES: &str = "check-for-updates";
 const CLOSE: &str = "close";
@@ -287,11 +294,15 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .try_state::<crate::AppState>()
         .map(|s| s.menu_state.lock().unwrap().clone())
         .unwrap_or_default();
+    // `accel` "" for none (NO_KEY).
     let item = |id: &str, text: &str, accel: &str| {
-        MenuItemBuilder::with_id(id, text)
-            .accelerator(accel)
-            .enabled(is_enabled(id, &state))
-            .build(app)
+        let b = MenuItemBuilder::with_id(id, text);
+        let b = if accel.is_empty() {
+            b
+        } else {
+            b.accelerator(accel)
+        };
+        b.enabled(is_enabled(id, &state)).build(app)
     };
     let quit = item(QUIT, "Quit Logix IDE", "CmdOrCtrl+Q")?;
     let settings_item = item(SETTINGS, "Settings…", "CmdOrCtrl+,")?;
@@ -310,7 +321,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     // File > Examples.
     let mut file = SubmenuBuilder::new(app, "File")
         .item(&item(NEW, "New Project", "CmdOrCtrl+N")?)
-        .item(&item(EXAMPLES, "Examples…", "CmdOrCtrl+Shift+E")?)
+        .item(&item(EXAMPLES, "Examples…", NO_KEY)?)
         .item(&item(OPEN, "Open Project…", "CmdOrCtrl+O")?)
         .item(&recent)
         .item(&item(CLOSE_PROJECT, "Close Project", "CmdOrCtrl+W")?)
@@ -356,7 +367,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(UPLOAD, "Upload", "CmdOrCtrl+U")?)
         .separator()
         .item(&item(RUN_TESTS, "Run Tests", "CmdOrCtrl+Shift+T")?)
-        .item(&item(SIMULATE, "Simulate", "CmdOrCtrl+Alt+T")?)
+        .item(&item(SIMULATE, "Simulate", NO_KEY)?)
         .separator()
         .item(&item(SHOW_DIAGRAM, "Show Diagram", "CmdOrCtrl+Shift+D")?)
         .item(
@@ -365,14 +376,10 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
                 .build(app)?,
         )
         .separator()
-        .item(&item(STOP, "Stop", "CmdOrCtrl+.")?)
+        .item(&item(STOP, "Stop", NO_KEY)?)
         .separator()
         // As in the Arduino IDE (Sketch > Show Sketch Folder).
-        .item(&item(
-            SHOW_FOLDER,
-            "Show Project Folder",
-            "CmdOrCtrl+Alt+K",
-        )?)
+        .item(&item(SHOW_FOLDER, "Show Project Folder", NO_KEY)?)
         .item(
             &MenuItemBuilder::with_id(COPY_PATH, "Copy Project Folder Path")
                 .enabled(is_enabled(COPY_PATH, &state))

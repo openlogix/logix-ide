@@ -372,7 +372,6 @@ opens this run's folder of logs, to attach to a report (see
 | Action | macOS | Windows |
 | :--- | :--- | :--- |
 | New project | ++cmd+n++ | ++ctrl+n++ |
-| Examples | ++shift+cmd+e++ | ++ctrl+shift+e++ |
 | Open project | ++cmd+o++ | ++ctrl+o++ |
 | Close project | ++cmd+w++ | ++ctrl+w++ |
 | New file | ++shift+cmd+n++ | ++ctrl+shift+n++ |
@@ -380,10 +379,7 @@ opens this run's folder of logs, to attach to a report (see
 | Verify | ++cmd+r++ | ++ctrl+r++ |
 | Upload | ++cmd+u++ | ++ctrl+u++ |
 | Run Tests | ++shift+cmd+t++ | ++ctrl+shift+t++ |
-| Simulate | ++option+cmd+t++ | ++ctrl+alt+t++ |
-| Stop | ++cmd+period++ | ++ctrl+period++ |
 | Show Diagram | ++shift+cmd+d++ | ++ctrl+shift+d++ |
-| Show Project Folder | ++option+cmd+k++ | ++ctrl+alt+k++ |
 | Auto Format | ++cmd+t++ | ++ctrl+t++ |
 | Toggle Output | ++cmd+j++ | ++ctrl+j++ |
 | Comment/Uncomment lines | ++cmd+slash++ | ++ctrl+slash++ |
