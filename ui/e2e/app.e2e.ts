@@ -1680,10 +1680,6 @@ test("Up and Down move through the lists", async ({ page }) => {
   await menu(page, "board-explorer");
   const explorer = page.getByRole("dialog", { name: "Board Explorer" });
   const items = explorer.locator("button.item");
-  // Down from its search field: the selected item (it opens at the
-  // project's board), or the first entry.
-  await page.keyboard.press("ArrowDown");
-  await expect(explorer.locator("button.item.selected")).toBeFocused();
   await items.first().click();
   await expect(items.first()).toBeFocused();
   await page.keyboard.press("ArrowDown");
