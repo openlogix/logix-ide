@@ -342,6 +342,12 @@ test("Help > System Info shows the version tree and copies the text", async ({ p
   await expect(row("Logix Engine")).toHaveAttribute("aria-expanded", "true");
   await row("Logix Engine").click();
   await expect(details("Logix Engine")).toHaveCount(0);
+  // Up and Down move between the entries; Enter shows the details.
+  await expect(row("Logix Engine")).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(row("logix-core")).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(row("Logix Engine")).toBeFocused();
   // One entry's details at a time.
   await row("Logix Engine").click();
   await row("logix-core").click();
