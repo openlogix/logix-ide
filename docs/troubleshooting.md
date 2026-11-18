@@ -1,15 +1,11 @@
 # Troubleshooting
 
-## macOS says Logix IDE can't be opened
+## macOS or Windows won't open Logix IDE
 
-Logix IDE isn't signed with an Apple Developer ID yet. Before opening the
-downloaded `.dmg`, run in Terminal:
-
-```
-xattr -c ~/Downloads/logix-ide-darwin-arm64-*.dmg
-```
-
-Then open it and drag Logix IDE to **Applications** again. See
+Follow the steps for your system on the
+[**Latest** release](https://github.com/openlogix/logix-ide/releases/latest)
+again, from the download. While Logix IDE isn't signed yet, they include a
+step that tells your computer you chose to open it. See
 [Installing](installing.md).
 
 ## The FPGA tools don't download

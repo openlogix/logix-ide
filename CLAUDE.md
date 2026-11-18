@@ -332,7 +332,8 @@ Things deliberately postponed. Revisit them when the related feature is worked o
 
 - The Logix IDE home page (marketing, not docs) is **https://www.openlogix.org/ide/**. It lives in the org site repo `openlogix/openlogix.github.io` (`docs/ide/index.html`), not here, so every Open Logix product page shares one stylesheet and look; that repo's `CLAUDE.md` owns its design and template. Why `/ide/` and not `/logix-ide/`: the org site's custom domain also serves every repo's Pages site, so `www.openlogix.org/logix-ide/` is these docs (and `openlogix.github.io/logix-ide/` redirects there).
 - It shows docs screenshots straight from the published docs (`www.openlogix.org/logix-ide/images/main.png`, `examples.png`, `error.png`, `tests.png`, `gtkwave.png`, `diagram.png`) and links to `installing/` and `tour/`. Don't rename those without updating the product page.
-- It links to the product page from: README (top), Help > Logix IDE Website (`HELP_LINKS`), the release notes, and the docs header logo and footer. Downloads link to the repo's Releases page, not `/releases/latest` (GitHub's "latest" skips pre-releases).
+- It links to the product page from: README (top), Help > Logix IDE Website (`HELP_LINKS`), the release notes, and the docs header logo and footer. Downloads link to the Latest release, `/releases/latest` (the website repo's `CLAUDE.md`, Template).
+- **Install steps live in the release text** (the website repo's `CLAUDE.md` owns the rule, 2026-11-18): `build-pre-release.yaml` writes each platform's install and uninstall steps into the release text, as that release's files need them (unsigned today: `xattr -c`, "Windows protected your PC"). README, `installing.md`, `tutorial.md` and `troubleshooting.md` send people to the Latest release's steps and keep only what comes after installing (requirements, the first start, drivers, udev rules, where files are, removing a driver or udev rule before uninstalling).
 
 ## Repository notes
 
