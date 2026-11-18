@@ -1163,12 +1163,15 @@ test("Upload offers the udev rule a board needs", async ({ page }) => {
   await expect(ask).toContainText("To program the Alhambra II, Linux needs a udev rule that lets you use it.");
   await expect(ask).toContainText("Linux asks for your password.");
   // The output says why Upload stopped, and waits for the answer.
-  await expect(output(page)).toContainText(/The board needs a udev rule first\.\s*$/);
+  // No "Ready." right after it (a background notice may still follow).
+  await expect(output(page)).toContainText(/The board needs a udev rule first\.(?!\s*Ready\.)/);
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(status(page)).toContainText("Cancelled: the udev rule wasn't added, so nothing was uploaded.");
   // The answer ends the output, then Ready.
   await expect(output(page)).toContainText(
-    /The board needs a udev rule first\.\s*Cancelled: the udev rule wasn't added, so nothing was uploaded\. Choose Upload again to add it\.\s*Ready\.\s*$/,
+    // Not anchored at the end: a background notice (such as the language
+    // server timing out on a slow runner) may follow it.
+    /The board needs a udev rule first\.\s*Cancelled: the udev rule wasn't added, so nothing was uploaded\. Choose Upload again to add it\.\s*Ready\./,
   );
   expect((await fake(page)).driverInstalls).toEqual([]);
 
