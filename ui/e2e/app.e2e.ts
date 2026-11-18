@@ -1160,7 +1160,7 @@ test("Upload offers the udev rule a board needs", async ({ page }) => {
   });
   await menu(page, "upload");
   const ask = page.getByRole("alertdialog", { name: "Let Logix IDE program the board?" });
-  await expect(ask).toContainText("To program the Alhambra II, Linux needs a udev rule that lets you use it.");
+  await expect(ask).toContainText("To program the Alhambra II, Linux needs a udev rule that lets your user account use it.");
   await expect(ask).toContainText("Linux asks for your password.");
   // The output says why Upload stopped, and waits for the answer.
   // No "Ready." right after it (a background notice may still follow).
