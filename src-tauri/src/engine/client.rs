@@ -379,6 +379,40 @@ impl Engine {
     }
 }
 
+/// An engine error for people: its message, and its details apart (such as
+/// the commands to run in a terminal when Linux can't ask for the
+/// password), so the UI can show the message as the status and the details
+/// in the log. The driver tools' errors (Tools > Connected Devices).
+#[derive(Debug)]
+pub struct ToolFailure {
+    pub message: String,
+    pub details: String,
+}
+
+impl ToolFailure {
+    pub fn from_value(error: &Value) -> Self {
+        ToolFailure {
+            message: error["message"]
+                .as_str()
+                .unwrap_or("Unknown error.")
+                .to_string(),
+            details: error["details"].as_str().unwrap_or("").trim().to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for ToolFailure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.details.is_empty() {
+            write!(f, "{}", self.message)
+        } else {
+            write!(f, "{}\n{}", self.message, self.details)
+        }
+    }
+}
+
+impl std::error::Error for ToolFailure {}
+
 /// An engine error object as an error with its message, then the details
 /// (such as tool output), for the console.
 pub fn tool_error(name: &str, error: &Value) -> anyhow::Error {
@@ -519,6 +553,20 @@ mod tests {
         let mut passed = String::new();
         rmcp_in.read_to_string(&mut passed).await.unwrap();
         assert_eq!(passed, engine_out);
+    }
+
+    #[test]
+    fn tool_failures_keep_message_and_details_apart() {
+        let f = ToolFailure::from_value(&serde_json::json!({
+            "message": "Linux can't ask for your password here.",
+            "details": "sudo udevadm trigger\n"
+        }));
+        assert_eq!(f.message, "Linux can't ask for your password here.");
+        assert_eq!(f.details, "sudo udevadm trigger");
+        assert_eq!(
+            f.to_string(),
+            "Linux can't ask for your password here.\nsudo udevadm trigger"
+        );
     }
 
     #[test]

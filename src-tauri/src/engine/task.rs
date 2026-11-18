@@ -724,6 +724,16 @@ fn failed(outcome: &mut TaskOutcome, error: &Value, line: &impl Fn(String)) {
     if error["category"] != "design" && !closing_line {
         line(red(&message(error)));
     }
+    // A setup error's details are for the user, such as the commands to
+    // run in a terminal when Linux can't ask for the password; other
+    // errors' details are the tools' output, already in the console.
+    if error["category"] == "setup" {
+        if let Some(details) = error["details"].as_str().filter(|d| !d.trim().is_empty()) {
+            for l in details.trim().lines() {
+                line(l.to_string());
+            }
+        }
+    }
 }
 
 fn error(message: &str) -> Diagnostic {
@@ -1091,6 +1101,31 @@ mod tests {
         failed(&mut outcome2, &e, &|_| {});
         assert_eq!(outcome2.diagnostics.len(), 1);
         assert_eq!(outcome2.diagnostics[0].file.as_deref(), Some("main.v"));
+        // A setup error's details are shown: such as the commands to run
+        // when Linux can't ask for the password.
+        let lines = Mutex::new(Vec::new());
+        let e = json!({
+            "category": "setup",
+            "message": "Linux can't ask for your password here (no password dialog). Run the commands in the details in a terminal instead.",
+            "details": "sudo tee /etc/udev/rules.d/70-logix-engine-0403-6010.rules\nsudo udevadm control --reload-rules\n",
+            "action": {"code": "fix_device_permissions", "description": "Run the commands."}
+        });
+        failed(&mut outcome.clone(), &e, &|l| lines.lock().unwrap().push(l));
+        let lines = lines.into_inner().unwrap();
+        assert!(lines.ends_with(&[
+            "sudo tee /etc/udev/rules.d/70-logix-engine-0403-6010.rules".to_string(),
+            "sudo udevadm control --reload-rules".to_string(),
+        ]));
+        // Other errors' details are the tools' output, already shown.
+        let lines = Mutex::new(Vec::new());
+        let e =
+            json!({"category": "tool", "message": "icepack failed.", "details": "icepack: oops"});
+        failed(&mut outcome.clone(), &e, &|l| lines.lock().unwrap().push(l));
+        assert!(!lines
+            .into_inner()
+            .unwrap()
+            .iter()
+            .any(|l| l.contains("oops")));
     }
 
     fn out(tool: &str, kind: OutputKind, level: OutputLevel, text: &str) -> OutputLine {

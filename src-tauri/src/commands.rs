@@ -31,6 +31,14 @@ impl From<anyhow::Error> for UserError {
     fn from(e: anyhow::Error) -> Self {
         // Every error the user sees is in the log too, with its details.
         crate::log!("Error: {e:#}");
+        // An engine error for people (the driver tools): its own message
+        // and details, which the UI shows apart.
+        if let Some(f) = e.downcast_ref::<engine::ToolFailure>() {
+            return UserError {
+                message: f.message.clone(),
+                details: f.details.clone(),
+            };
+        }
         UserError {
             message: e.to_string(),
             details: format!("{e:#}"),
@@ -940,8 +948,7 @@ pub async fn install_device_driver(
         allow_same_ids,
         options,
     )
-    .await
-    .context("Couldn't install the driver.")?;
+    .await?;
     crate::log!("install_driver: {result:?}");
     Ok(match result {
         engine::DriverInstall::Done { installed, .. } => DriverInstalled {
@@ -976,9 +983,7 @@ pub async fn uninstall_device_driver(
         },
         None,
     );
-    let removed = engine::uninstall_driver(&engine, &device, file.as_ref(), options)
-        .await
-        .context("Couldn't remove the driver.")?;
+    let removed = engine::uninstall_driver(&engine, &device, file.as_ref(), options).await?;
     crate::log!("uninstall_driver removed: {removed:?}");
     Ok(removed.len())
 }

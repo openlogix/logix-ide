@@ -10,7 +10,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use super::catalog::{selector, Variant};
-use super::client::{tool_error, Engine};
+use super::client::{tool_error, Engine, ToolFailure};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -266,7 +266,7 @@ pub async fn install_driver(
         Ok(r) => Ok(install_result(&r, device)),
         Err(e) => match same_ids(&e) {
             Some(message) => Ok(DriverInstall::SameIds(message)),
-            None => Err(tool_error("install_driver", &e)),
+            None => Err(ToolFailure::from_value(&e).into()),
         },
     }
 }
@@ -304,7 +304,7 @@ pub async fn uninstall_driver(
     let r = engine
         .call_with("uninstall_driver", args, options)
         .await?
-        .map_err(|e| tool_error("uninstall_driver", &e))?;
+        .map_err(|e| anyhow::Error::from(ToolFailure::from_value(&e)))?;
     Ok(r["removed"]
         .as_array()
         .map(|l| {
