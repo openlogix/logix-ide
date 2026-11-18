@@ -326,6 +326,8 @@ const fake = {
    * are connected).
    */
   sameIdsMessage: null as string | null,
+  /** An engine error the next driver change fails with (`{message, details}`). */
+  driverError: null as { message: string; details: string } | null,
   /** Devices that can't be opened yet (`list_devices` `unreachable`). */
   unreachable: [] as Real.UnreachableDevice[],
   /** While set, Install Driver waits for it, as for Windows' prompt. */
@@ -852,6 +854,7 @@ export const backend: typeof Real.backend = {
   scanDevices: async () => ({ usb: fake.usb ?? [icesugarDevice], unreachable: fake.unreachable }),
   installDeviceDriver: async (_folder, _saved, device, allowSameIds, onEvent) => {
     if (fake.sameIdsMessage && !allowSameIds) return { installed: false, sameIds: fake.sameIdsMessage };
+    if (fake.driverError) throw fake.driverError;
     // Logix Engine's phases and output, as install_driver sends them.
     onEvent({ kind: "progress", message: "Waiting for permission", percent: null });
     onEvent({ kind: "line", line: "Installing WinUSB for the Alhambra II (USB interface 0)." });

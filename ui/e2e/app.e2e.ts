@@ -1203,6 +1203,36 @@ test("Upload offers the udev rule a board needs", async ({ page }) => {
   expect(f.driverStatuses).toEqual(["Adding the board's udev rule…"]);
 });
 
+// A failed driver change shows the engine's reason, and its details in the
+// log: such as the commands to run when Linux can't ask for the password.
+test("Connected Devices shows why a driver change failed", async ({ page }) => {
+  type Fake = { usb: unknown[]; driverError: { message: string; details: string } | null; menu: (id: string) => void };
+  await start(page);
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.usb = [{
+      id: "usb:1-4:0403:6010:", label: "Alhambra II v1.0A (AlhambraBits, 0403:6010)", likelyBoards: ["alhambra-ii"],
+      vid: "0403", pid: "6010", manufacturer: "AlhambraBits", product: "Alhambra II v1.0A", serialNumber: "",
+      boards: [{ board: "alhambra-ii", level: "strong" }], buildMatch: null,
+      driver: { needed: "udev-rule", interface: null, current: null, ready: false },
+    }];
+    f.driverError = {
+      message: "Linux can't ask for your password here (no password dialog). Run the commands in the details in a terminal instead.",
+      details: "sudo udevadm control --reload-rules\nsudo udevadm trigger",
+    };
+    f.menu("devices");
+  });
+  const dialog = page.getByRole("dialog", { name: "Connected Devices" });
+  await dialog.getByRole("button", { name: "Add udev Rule…" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Add Rule" }).click();
+  const work = dialog.locator("section.work");
+  await expect(work.locator(".work-status.error")).toContainText("Linux can't ask for your password here");
+  await work.getByRole("button", { name: /Show log/ }).click();
+  await expect(work.locator(".work-output")).toContainText("Failed: Linux can't ask for your password here");
+  await expect(work.locator(".work-output")).toContainText("sudo udevadm control --reload-rules");
+  await expect(work.locator(".work-output")).toContainText("sudo udevadm trigger");
+});
+
 test("Connected Devices installs and removes a board's driver", async ({ page }) => {
   type Fake = {
     usb: unknown[];

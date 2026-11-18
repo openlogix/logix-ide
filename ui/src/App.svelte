@@ -1167,14 +1167,21 @@
   }
 
   /** `message`: the result, one sentence per item (one log line each; joined in the status line). */
-  function endDriverWork(message: string | string[], kind: "ok" | "error") {
+  function endDriverWork(message: string | string[], kind: "ok" | "error", details = "") {
     const lines = typeof message === "string" ? [message] : message;
     const text = lines.join(" ");
     if (driverWork) {
       driverWork.result = { text, kind };
       // The log ends the way the status line does, not with the engine's
-      // last progress line (such as "Waiting for permission").
-      driverWork.lines = [...driverWork.lines, ...driverWorkEnd(lines, kind, Date.now() - driverWork.started)];
+      // last progress line (such as "Waiting for permission"), then the
+      // error's details when they add something: such as the commands to
+      // run in a terminal when Linux can't ask for the password.
+      const extra = details.trim() && !details.startsWith(text) ? details.trim().split("\n") : [];
+      driverWork.lines = [
+        ...driverWork.lines,
+        ...driverWorkEnd(lines, kind, Date.now() - driverWork.started),
+        ...extra,
+      ];
     }
     status = { text, kind };
   }
@@ -1210,7 +1217,8 @@
       const already = udev ? `${capitalize(who)} can be programmed already.` : `${capitalize(who)} has its driver already.`;
       endDriverWork(result.installed ? done : already, "ok");
     } catch (e) {
-      endDriverWork(toUserError(e).message, "error");
+      const err = toUserError(e);
+      endDriverWork(err.message, "error", err.details);
     } finally {
       devicesBusy = false;
     }
@@ -1242,7 +1250,8 @@
         "ok",
       );
     } catch (e) {
-      endDriverWork(toUserError(e).message, "error");
+      const err = toUserError(e);
+      endDriverWork(err.message, "error", err.details);
     } finally {
       devicesBusy = false;
     }

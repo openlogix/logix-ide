@@ -20,7 +20,7 @@ pub use catalog::{
     boards_fields, catalog, compare_boards, project_boards, Board, BoardComparison, BoardsFolder,
     BoardsProblem, Catalog, FpgaFamily, Variant,
 };
-pub use client::Engine;
+pub use client::{Engine, ToolFailure};
 pub use devices::{
     connected_devices, install_driver, list_devices, uninstall_driver, ConnectedDevice, DeviceList,
     DriverInstall, UnreachableDevice, UsbDevice,
