@@ -314,7 +314,8 @@
     color: var(--error-mark);
   }
   .details {
-    margin: 2px 0 6px 6px;
+    /* Indented as the entry's children are (the tree's ul: 14 + 6 px). */
+    margin: 2px 0 6px 20px;
     padding: 8px 12px;
     border: 1px solid var(--border);
     border-radius: 6px;
