@@ -14,9 +14,13 @@
   // 2026-11-16, the Windows promotion (Milestone 3): Windows, its drivers
   // (list_devices' driver, install_driver, uninstall_driver) and
   // get_engine_info's version tree, which Logix IDE 2026-11-15 goes with.
+  // 2026-11-18, the Linux promotion (Milestone 4): Linux, its udev rules
+  // (install_driver and uninstall_driver), the Linux session in
+  // operating_system, and the shorter log names Logix IDE 2026-11-17 goes
+  // with.
   "logix-engine": {
     "repo": "openlogix/logix-engine",
-    "release": "2026-11-15",
+    "release": "2026-11-17",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
   },
 
