@@ -3,9 +3,10 @@
   every Open Logix product uses (the website repo's `CLAUDE.md`, System info
   and the version tree): Logix IDE's facts, the developer settings when any
   is set, then the version tree, with the engine's own tree under Logix IDE
-  (built in `system_info.rs`). Click an entry to open or close it; hover it
-  (or reach it with the keyboard) for its details. Copy gives the text
-  form, always the whole tree.
+  (built in `system_info.rs`). The tree is always fully open; click an
+  entry (or press Enter or Space on it) to show its details under it, and
+  again to hide them (the user's request, 2026-11-17: the hover popup was
+  hard to read). Copy gives the text form, always the whole tree.
 -->
 <script lang="ts">
   import { backend, type SystemInfo, type VersionEntry } from "./backend";
@@ -17,60 +18,20 @@
   let info = $state<SystemInfo | null>(null);
   let error = $state<string | null>(null);
   let copied = $state(false);
-  // Closed entries, by their path in the tree ("0", "0.1", ...). The top
-  // two levels start open, the rest closed.
-  let closed = $state(new Set<string>());
-
-  // Every path shown so far: on a refresh, only entries new to the tree
-  // (such as the engine's packages once it runs) start closed, and what the
-  // user opened or closed stays so.
-  let seen = new Set<string>();
+  // The entry whose details are shown, by its path of names ("Logix IDE/
+  // Logix Engine"), so a refresh that adds entries keeps the same one.
+  let selected = $state<string | null>(null);
 
   $effect(() => {
     void refresh;
     backend
       .systemInfo()
       .then((i) => {
-        const fresh = deepPaths(i.versions, "0", 0).filter((p) => !seen.has(p));
-        closed = new Set([...closed, ...fresh]);
-        seen = new Set([...seen, ...allPaths(i.versions, "0")]);
         info = i;
         error = null;
       })
       .catch((e) => (error = (e as { message?: string }).message ?? String(e)));
   });
-
-  function allPaths(e: VersionEntry, path: string): string[] {
-    return [path, ...e.children.flatMap((c, i) => allPaths(c, `${path}.${i}`))];
-  }
-
-  /** The paths of entries below the top two levels that have children. */
-  function deepPaths(e: VersionEntry, path: string, depth: number): string[] {
-    const own = depth >= 2 && e.children.length > 0 ? [path] : [];
-    return own.concat(e.children.flatMap((c, i) => deepPaths(c, `${path}.${i}`, depth + 1)));
-  }
-
-  function toggle(path: string) {
-    const next = new Set(closed);
-    if (next.has(path)) next.delete(path);
-    else next.add(path);
-    closed = next;
-  }
-
-  // The details popup of the entry under the mouse or keyboard focus,
-  // placed against the window (so the scrolling body doesn't cut it off):
-  // below the row, or above it when there's no room below.
-  let tip = $state<{ e: VersionEntry; left: number; top?: number; bottom?: number } | null>(
-    null,
-  );
-  function showTip(e: VersionEntry, target: HTMLElement) {
-    const r = target.getBoundingClientRect();
-    const left = r.left + 22;
-    tip =
-      window.innerHeight - r.bottom > 240
-        ? { e, left, top: r.bottom + 2 }
-        : { e, left, bottom: window.innerHeight - r.top + 2 };
-  }
 
   const kindLabel: Record<VersionEntry["kind"], string> = {
     program: "Open Logix program",
@@ -98,29 +59,36 @@
 
 <svelte:window onkeydown={onKey} />
 
-{#snippet entry(e: VersionEntry, path: string)}
-  {@const open = e.children.length > 0 && !closed.has(path)}
+{#snippet entry(e: VersionEntry, parent: string)}
+  {@const path = parent === "" ? e.name : `${parent}/${e.name}`}
+  {@const shown = selected === path}
   <li>
     <button
       class="row"
-      class:leaf={e.children.length === 0}
-      aria-expanded={e.children.length > 0 ? open : undefined}
-      onclick={() => e.children.length > 0 && toggle(path)}
-      onmouseenter={(ev) => showTip(e, ev.currentTarget)}
-      onmouseleave={() => (tip = null)}
-      onfocus={(ev) => showTip(e, ev.currentTarget)}
-      onblur={() => (tip = null)}
+      class:selected={shown}
+      aria-expanded={shown}
+      onclick={() => (selected = shown ? null : path)}
     >
-      <span class="twisty">{e.children.length > 0 ? (open ? "▼" : "▶") : ""}</span>
       <span class="name">{e.name}</span>
       <span class="version">{e.version}</span>
       {#if e.channel}<span class="channel">· {e.channel}</span>{/if}
       {#if e.overriddenBy}<span class="override">dev override</span>{/if}
       {#if e.problem}<span class="problem">{e.problem}</span>{/if}
     </button>
-    {#if open}
+    {#if shown}
+      <div class="details" role="region" aria-label="{e.name} details">
+        <div class="kind">{kindLabel[e.kind]}</div>
+        {#each e.notes as note (note)}<div class="note">{note}</div>{/each}
+        {#if e.details.length > 0}
+          <dl>
+            {#each e.details as d, i (i)}<dt>{d.label}</dt><dd>{d.value}</dd>{/each}
+          </dl>
+        {/if}
+      </div>
+    {/if}
+    {#if e.children.length > 0}
       <ul>
-        {#each e.children as child, i (i)}{@render entry(child, `${path}.${i}`)}{/each}
+        {#each e.children as child, i (i)}{@render entry(child, path)}{/each}
       </ul>
     {/if}
   </li>
@@ -161,26 +129,9 @@
           </dl>
         {/if}
         <h3>Versions</h3>
-        <ul class="tree">{@render entry(info.versions, "0")}</ul>
+        <ul class="tree">{@render entry(info.versions, "")}</ul>
       {/if}
     </div>
-    {#if tip}
-      <div
-        class="details"
-        role="tooltip"
-        style:left="{tip.left}px"
-        style:top={tip.top === undefined ? null : `${tip.top}px`}
-        style:bottom={tip.bottom === undefined ? null : `${tip.bottom}px`}
-      >
-        <div class="kind">{kindLabel[tip.e.kind]}</div>
-        {#each tip.e.notes as note (note)}<div class="note">{note}</div>{/each}
-        {#if tip.e.details.length > 0}
-          <dl>
-            {#each tip.e.details as d, i (i)}<dt>{d.label}</dt><dd>{d.value}</dd>{/each}
-          </dl>
-        {/if}
-      </div>
-    {/if}
     <footer>
       <span class="muted">{copied ? "Copied." : "Paste it into a bug report."}</span>
       <span class="spacer"></span>
@@ -337,17 +288,9 @@
     text-align: left;
     white-space: nowrap;
   }
-  .row:hover {
+  .row:hover,
+  .row.selected {
     background: var(--tabs-bg);
-  }
-  .row.leaf {
-    cursor: default;
-  }
-  .twisty {
-    width: 10px;
-    flex: none;
-    font-size: 9px;
-    color: var(--muted);
   }
   .name {
     font-weight: 600;
@@ -371,16 +314,11 @@
     color: var(--error-mark);
   }
   .details {
-    position: fixed;
-    z-index: 30;
-    width: max-content;
-    max-width: min(480px, 80vw);
+    /* Indented as the entry's children are (the tree's ul: 14 + 6 px). */
+    margin: 2px 0 6px 20px;
     padding: 8px 12px;
-    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    pointer-events: none;
     white-space: normal;
   }
   .kind {
