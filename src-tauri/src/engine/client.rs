@@ -391,12 +391,19 @@ pub struct ToolFailure {
 
 impl ToolFailure {
     pub fn from_value(error: &Value) -> Self {
+        // The commands to run in a terminal (Linux without a password
+        // dialog) come first, a line each, then any other details.
+        let mut lines = terminal_commands(error);
+        let details = error["details"].as_str().unwrap_or("").trim();
+        if !details.is_empty() {
+            lines.push(details.to_string());
+        }
         ToolFailure {
             message: error["message"]
                 .as_str()
                 .unwrap_or("Unknown error.")
                 .to_string(),
-            details: error["details"].as_str().unwrap_or("").trim().to_string(),
+            details: lines.join("\n"),
         }
     }
 }
@@ -412,6 +419,20 @@ impl std::fmt::Display for ToolFailure {
 }
 
 impl std::error::Error for ToolFailure {}
+
+/// The commands an engine error says to run in a terminal (its
+/// `data.terminal_commands`, such as `sudo` commands when Linux can't ask
+/// for the password), a line each.
+pub fn terminal_commands(error: &Value) -> Vec<String> {
+    error["data"]["terminal_commands"]
+        .as_array()
+        .map(|l| {
+            l.iter()
+                .filter_map(|c| c.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default()
+}
 
 /// An engine error object as an error with its message, then the details
 /// (such as tool output), for the console.
@@ -559,14 +580,21 @@ mod tests {
     fn tool_failures_keep_message_and_details_apart() {
         let f = ToolFailure::from_value(&serde_json::json!({
             "message": "Linux can't ask for your password here.",
-            "details": "sudo udevadm trigger\n"
+            "data": {"terminal_commands": ["sudo udevadm control --reload-rules", "sudo udevadm trigger"]}
         }));
         assert_eq!(f.message, "Linux can't ask for your password here.");
-        assert_eq!(f.details, "sudo udevadm trigger");
+        assert_eq!(
+            f.details,
+            "sudo udevadm control --reload-rules\nsudo udevadm trigger"
+        );
         assert_eq!(
             f.to_string(),
-            "Linux can't ask for your password here.\nsudo udevadm trigger"
+            "Linux can't ask for your password here.\nsudo udevadm control --reload-rules\nsudo udevadm trigger"
         );
+        let f = ToolFailure::from_value(
+            &serde_json::json!({"message": "Failed.", "details": "exit 1\n"}),
+        );
+        assert_eq!(f.details, "exit 1");
     }
 
     #[test]

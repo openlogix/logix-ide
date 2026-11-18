@@ -324,11 +324,11 @@ export interface TaskOutcome {
   /**
    * For Upload's "install_drivers": the device that needs the WinUSB driver
    * (Windows) or a udev rule (Linux) first, for the user to agree; also
-   * for "disconnect_devices", when Logix Engine refused because other
-   * connected devices have the same USB IDs (its message in `sameIds`).
+   * for "confirm_same_ids", when Logix Engine refused because other
+   * connected devices have the same USB IDs (its question in `sameIds`).
    */
   driverDevice: DriverDevice | null;
-  sameIds: string | null;
+  sameIds: Consent | null;
   /**
    * GTKWave layouts the user saved from GTKWave, which this run used: the
    * UI takes them into the project, as edits. Absent when none.
@@ -350,12 +350,10 @@ export interface DriverDevice {
   id: string;
   /** The engine's name for people. */
   label: string;
-  /** What it needs: "winusb" (Windows) or "udev-rule" (Linux). */
-  needed: string;
-  /** The USB interface that needs WinUSB (Windows); null on Linux. */
-  interface: number | null;
-  /** The driver Windows has on it now (e.g. "ftdibus"), if any; on Linux, Logix Engine's rule file, if any. */
-  current: string | null;
+  /** Logix Engine's name for it in a sentence, such as "the Alhambra II". */
+  who: string;
+  /** Logix Engine's `driver` for it, with its texts and the question to ask. */
+  driver: Driver;
 }
 
 /**
@@ -371,22 +369,49 @@ export interface Driver {
   interface: number | null;
   current: string | null;
   ready: boolean;
+  /**
+   * Logix Engine's texts for people, the same in every frontend and naming
+   * none (moved from Logix IDE, 2026-11-18): what it needs ("a udev rule",
+   * "the WinUSB driver"), its state, and a short tag while not ready.
+   */
+  label: string;
+  state: string;
+  tag: string | null;
+  /** Whether Install/Add and Remove apply, by the engine. */
+  canAdd: boolean;
+  canRemove: boolean;
+  /** The engine's questions before each. */
+  add: Consent | null;
+  remove: Consent | null;
 }
 
-/** Whether what a device needs is a udev rule (Linux), not a driver (Windows). */
-export function isUdevRule(needed: string): boolean {
-  return needed === "udev-rule";
+/**
+ * One of Logix Engine's questions before a driver or udev rule change, with
+ * its status line while it runs (`busy`) and the line when the user
+ * declines (`cancelled`).
+ */
+export interface Consent {
+  title: string;
+  lead: string;
+  steps: string[];
+  note: string | null;
+  /** The agreeing button's label, such as "Install Driver". */
+  confirm: string;
+  busy: string;
+  cancelled: string;
 }
 
 /** What Install Driver did (Tools > Connected Devices). */
 export interface DriverInstalled {
   /** False when the driver was ready already. */
   installed: boolean;
+  /** What was done, for people (Logix Engine's `summary`, a sentence each). */
+  summary: string[];
   /**
    * Set when Logix Engine refused because other connected devices have the
-   * same USB IDs: its message, naming them.
+   * same USB IDs: its question, naming them.
    */
-  sameIds: string | null;
+  sameIds: Consent | null;
 }
 
 /** Streamed while a task runs: console lines, and the current phase. */
@@ -431,7 +456,9 @@ export interface UsbDevice {
   likelyBoards: string[];
   /** For Upload's candidates: how well it matches the build's board. */
   buildMatch: MatchLevel | null;
-  /** On Windows, the driver its board needs and has; null elsewhere. */
+  /** Logix Engine's name for it in a sentence, such as "the Alhambra II". */
+  who: string;
+  /** On Windows and Linux, the driver or udev rule its board needs and has; null elsewhere. */
   driver: Driver | null;
 }
 
@@ -453,7 +480,10 @@ export interface UnreachableDevice {
   pid: string;
   /** The suggested fix, e.g. "fix_device_permissions". */
   action: string;
-  actionDescription: string;
+  /** Logix Engine's name for it in a sentence. */
+  who: string;
+  /** What to do, for people, by Logix Engine. */
+  fix: string;
   /** On Windows, the driver its board needs and has. */
   driver: Driver | null;
   /** The boards whose USB IDs it has (all weak: its names can't be read yet). */
@@ -856,8 +886,8 @@ export const backend = {
    * null for none). `saved`: whether the project is saved, which decides
    * how messages name the file (its full path, or `boards folder`).
    */
-  scanDevices: (folder: string | null, saved: boolean): Promise<Devices> =>
-    invoke<Devices>("scan_devices", { folder, saved }),
+  scanDevices: (folder: string | null, saved: boolean, board: string | null): Promise<Devices> =>
+    invoke<Devices>("scan_devices", { folder, saved, board }),
 
   /**
    * Installs the WinUSB driver a device's board needs (Windows), after the
@@ -870,27 +900,30 @@ export const backend = {
     saved: boolean,
     device: string,
     allowSameIds: boolean,
+    board: string | null,
     onEvent: (event: TaskEvent) => void,
   ): Promise<DriverInstalled> => {
     const channel = new Channel<TaskEvent>();
     channel.onmessage = onEvent;
-    return invoke<DriverInstalled>("install_device_driver", { folder, saved, device, allowSameIds, onEvent: channel });
+    return invoke<DriverInstalled>("install_device_driver", { folder, saved, device, allowSameIds, board, onEvent: channel });
   },
 
   /**
    * Removes the WinUSB driver Logix Engine installed for a device's board
    * (Windows), so Windows restores its original driver, for every device with the
-   * same USB IDs. Resolves with how many driver packages were removed.
+   * same USB IDs. Resolves with what was done, for people (Logix Engine's
+   * `summary`).
    */
   uninstallDeviceDriver: (
     folder: string | null,
     saved: boolean,
     device: string,
+    board: string | null,
     onEvent: (event: TaskEvent) => void,
-  ): Promise<number> => {
+  ): Promise<string[]> => {
     const channel = new Channel<TaskEvent>();
     channel.onmessage = onEvent;
-    return invoke<number>("uninstall_device_driver", { folder, saved, device, onEvent: channel });
+    return invoke<string[]>("uninstall_device_driver", { folder, saved, device, board, onEvent: channel });
   },
 
   /**

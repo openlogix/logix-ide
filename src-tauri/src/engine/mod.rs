@@ -22,8 +22,8 @@ pub use catalog::{
 };
 pub use client::{Engine, ToolFailure};
 pub use devices::{
-    connected_devices, install_driver, list_devices, uninstall_driver, ConnectedDevice, DeviceList,
-    DriverInstall, UnreachableDevice, UsbDevice,
+    connected_devices, install_driver, list_devices, uninstall_driver, ConnectedDevice, Consent,
+    DeviceList, Driver, DriverInstall, UnreachableDevice, UsbDevice,
 };
 pub use format::format_file;
 pub use info::program_path;

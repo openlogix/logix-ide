@@ -16,7 +16,6 @@
     type TaskEvent,
     type UploadDriver,
     type Driver,
-    isUdevRule,
     NO_DRIVER,
     type Diagnostic,
     type Preferences,
@@ -65,15 +64,15 @@
   import ConfirmDialog from "./lib/ConfirmDialog.svelte";
   import {
     type ConfirmContent,
+    CONFIRM_SAME_IDS,
+    confirmContent,
     deviceSummaryLines,
-    driverOffer,
-    driverRemove,
     type DriverWork,
     driverWorkEnd,
     isBoardNotFound,
     needsDeviceChoice,
     needsDriver,
-    sameIdsQuestion,
+    UNDO_WHERE,
   } from "./lib/devices";
   import Icon from "./lib/Icon.svelte";
   import { pinCommentToken } from "./lib/pinFiles";
@@ -1094,7 +1093,7 @@
   async function refreshDevices() {
     devicesBusy = true;
     try {
-      devices = await backend.scanDevices(boardsFolder, boardsSaved);
+      devices = await backend.scanDevices(boardsFolder, boardsSaved, namingBoard());
       devicesError = null;
     } catch (e) {
       devicesError = toUserError(e).message;
@@ -1186,36 +1185,40 @@
     status = { text, kind };
   }
 
+  /** The board devices are named by: the project's (Logix Engine's `board`). */
+  function namingBoard(): string | null {
+    return project?.board ?? null;
+  }
+
   /**
    * Tools > Connected Devices > Install Driver… (Windows: WinUSB) or Add
    * udev Rule… (Linux) for a device's board, after the user agrees; asks
    * again when other devices with the same USB IDs are connected (on
-   * Windows they'd get it too). `who` names the board for people ("the
-   * Alhambra II", or the device's label).
+   * Windows they'd get it too). The question, status, cancel and result
+   * texts are Logix Engine's (`driver.add`, `summary`): Logix IDE only says
+   * where to undo it.
    */
-  async function installDeviceDriver(id: string, who: string, driver: Driver) {
-    const udev = isUdevRule(driver.needed);
-    const doing = udev ? `Adding a udev rule for ${who}…` : `Installing the WinUSB driver for ${who}…`;
-    const cancelled = udev ? "Cancelled: the udev rule wasn't added." : "Cancelled: the driver wasn't installed.";
-    if (!(await confirmInApp(driverOffer(who, driver.needed, driver.current)))) {
-      cancelDriverWork(doing, cancelled);
+  async function installDeviceDriver(id: string, driver: Driver) {
+    const ask = driver.add;
+    if (!ask) return;
+    if (!(await confirmInApp(confirmContent(ask, UNDO_WHERE)))) {
+      cancelDriverWork(ask.busy, ask.cancelled);
       return;
     }
     devicesBusy = true;
     try {
-      let onEvent = startDriverWork(doing);
-      let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false, onEvent);
+      let onEvent = startDriverWork(ask.busy);
+      let result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, false, namingBoard(), onEvent);
       if (result.sameIds !== null) {
-        if (!(await confirmInApp(sameIdsQuestion(result.sameIds)))) {
-          cancelDriverWork(doing, cancelled);
+        const same = result.sameIds;
+        if (!(await confirmInApp(confirmContent(same)))) {
+          cancelDriverWork(ask.busy, same.cancelled);
           return;
         }
-        onEvent = startDriverWork(doing);
-        result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, true, onEvent);
+        onEvent = startDriverWork(ask.busy);
+        result = await backend.installDeviceDriver(boardsFolder, boardsSaved, id, true, namingBoard(), onEvent);
       }
-      const done = udev ? `Added a udev rule for ${who}.` : `Installed the WinUSB driver for ${who}.`;
-      const already = udev ? `${capitalize(who)} can be programmed already.` : `${capitalize(who)} has its driver already.`;
-      endDriverWork(result.installed ? done : already, "ok");
+      endDriverWork(result.summary, "ok");
     } catch (e) {
       const err = toUserError(e);
       endDriverWork(err.message, "error", err.details);
@@ -1225,30 +1228,19 @@
     await refreshDevices();
   }
 
-  /** Tools > Connected Devices > Remove Driver… (Windows) or Remove udev Rule… (Linux). `who` as for installing. */
-  async function removeDeviceDriver(id: string, who: string, driver: Driver) {
-    const udev = isUdevRule(driver.needed);
-    if (!(await confirmInApp(driverRemove(who, driver.needed)))) {
-      cancelDriverWork(
-        udev ? `Removing the udev rule for ${who}…` : `Removing the WinUSB driver for ${who}…`,
-        udev ? "Cancelled: the udev rule wasn't removed." : "Cancelled: the driver wasn't removed.",
-      );
+  /** Tools > Connected Devices > Remove Driver… (Windows) or Remove udev Rule… (Linux), with Logix Engine's texts (`driver.remove`). */
+  async function removeDeviceDriver(id: string, driver: Driver) {
+    const ask = driver.remove;
+    if (!ask) return;
+    if (!(await confirmInApp(confirmContent(ask)))) {
+      cancelDriverWork(ask.busy, ask.cancelled);
       return;
     }
     devicesBusy = true;
     try {
-      const onEvent = startDriverWork(udev ? `Removing the udev rule for ${who}…` : `Removing the WinUSB driver for ${who}…`);
-      const removed = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id, onEvent);
-      endDriverWork(
-        udev
-          ? removed > 0
-            ? [`Removed the udev rule for ${who}.`, "Your user account can't program it now, unless another rule allows it."]
-            : `Logix IDE found no udev rule it added for ${who}.`
-          : removed > 0
-            ? [`Removed the WinUSB driver for ${who}.`, "Windows uses its original driver again."]
-            : `Logix IDE found no WinUSB driver it installed for ${who}.`,
-        "ok",
-      );
+      const onEvent = startDriverWork(ask.busy);
+      const summary = await backend.uninstallDeviceDriver(boardsFolder, boardsSaved, id, namingBoard(), onEvent);
+      endDriverWork(summary, "ok");
     } catch (e) {
       const err = toUserError(e);
       endDriverWork(err.message, "error", err.details);
@@ -1256,11 +1248,6 @@
       devicesBusy = false;
     }
     await refreshDevices();
-  }
-
-  /** "the Alhambra II" -> "The Alhambra II", at the start of a sentence. */
-  function capitalize(text: string): string {
-    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
   /**
@@ -1282,34 +1269,32 @@
   async function askUploadDriver(outcome: TaskOutcome) {
     const d = outcome.driverDevice;
     if (!d) return;
-    // A No ends Upload's output, which waited for the answer: that nothing
-    // was installed or uploaded, in red as Upload didn't happen, then
-    // "Ready." (the user's requests, 2026-11-16 and 2026-11-17).
+    // A No ends Upload's output, which waited for the answer: Logix
+    // Engine's cancel line and that nothing was uploaded, in red as Upload
+    // didn't happen, then "Ready." (the user's requests, 2026-11-16 and
+    // 2026-11-17).
     const declined = (text: string) => {
       status = { text, kind: "error" };
       logDone();
     };
-    if (outcome.action === "disconnect_devices") {
-      if (await confirmInApp(sameIdsQuestion(outcome.sameIds ?? "")))
+    if (outcome.action === CONFIRM_SAME_IDS && outcome.sameIds) {
+      const same = outcome.sameIds;
+      if (await confirmInApp(confirmContent(same)))
         runTask("upload", null, d.id, { install: true, allowSameIds: true });
-      else declined("Cancelled: the driver wasn't installed. Unplug the other devices, then choose Upload again.");
+      else declined(`${same.cancelled} Unplug the other devices, then choose Upload again.`);
       return;
     }
-    const who = project?.board ? `the ${boardName(project.board)}` : d.label;
-    if (await confirmInApp(driverOffer(who, d.needed, d.current)))
+    const ask = d.driver.add;
+    if (!ask) return;
+    if (await confirmInApp(confirmContent(ask, UNDO_WHERE)))
       runTask("upload", null, d.id, { install: true, allowSameIds: false });
-    else
-      declined(
-        isUdevRule(d.needed)
-          ? "Cancelled: the udev rule wasn't added, so nothing was uploaded. Choose Upload again to add it."
-          : "Cancelled: the driver wasn't installed, so nothing was uploaded. Choose Upload again to install it.",
-      );
+    else declined(`${ask.cancelled} Nothing was uploaded: choose Upload again when you're ready.`);
   }
 
   /** After Upload couldn't find the board: say what is connected. */
   async function logConnectedDevices() {
     try {
-      log("", ...deviceSummaryLines(await backend.scanDevices(boardsFolder, boardsSaved)));
+      log("", ...deviceSummaryLines(await backend.scanDevices(boardsFolder, boardsSaved, namingBoard())));
     } catch {
       // Only a hint; the upload error is already shown.
     }
@@ -1463,11 +1448,10 @@
         // or udev rule (asked once this run is over, so Upload can run
         // again). The answer ends the output (offerUploadDriver), so no
         // "Ready." before it.
-        const udev = outcome.driverDevice !== null && isUdevRule(outcome.driverDevice.needed);
-        status = {
-          text: udev ? "The board needs a udev rule first." : "The board needs a driver first.",
-          kind: "info",
-        };
+        // What it needs, in Logix Engine's words ("a udev rule", "the
+        // WinUSB driver").
+        const needs = outcome.driverDevice?.driver.label || "a driver";
+        status = { text: `The board needs ${needs} first.`, kind: "info" };
         askingDriver = true;
         uploadAsking = true;
         setTimeout(() => offerUploadDriver(outcome), 0);

@@ -57,12 +57,12 @@ pub struct TaskOutcome {
     pub devices: Vec<crate::engine::UsbDevice>,
     /// For Upload with `install_drivers`: the device that needs a driver
     /// (Windows: WinUSB) or a udev rule (Linux) first, for the user to agree;
-    /// also with `disconnect_devices`, when the engine refused because other
+    /// also with `confirm_same_ids`, when the engine refused because other
     /// connected devices have the same USB IDs.
     pub driver_device: Option<DriverDevice>,
-    /// For Upload with `disconnect_devices`: the engine's message, naming
+    /// For Upload with `confirm_same_ids`: the engine's question, naming
     /// the other devices with the same USB IDs (they'd get WinUSB too).
-    pub same_ids: Option<String>,
+    pub same_ids: Option<crate::engine::Consent>,
     /// GTKWave layouts the user saved from GTKWave since the UI last read
     /// them, which this run used: the UI takes them into the project, as
     /// edits (`read_gtkwave_layouts`). Omitted when none.
@@ -78,12 +78,11 @@ pub struct DriverDevice {
     pub id: String,
     /// The engine's name for people.
     pub label: String,
-    /// What it needs: "winusb" (Windows) or "udev-rule" (Linux).
-    pub needed: String,
-    /// The USB interface that needs WinUSB (Windows); None on Linux.
-    pub interface: Option<u8>,
-    /// The driver Windows has on it now (e.g. "ftdibus"), if any.
-    pub current: Option<String>,
+    /// The engine's name for it in a sentence, such as "the Alhambra II".
+    pub who: String,
+    /// The engine's `driver` for it: what it needs and has, with the texts
+    /// and the question to ask before adding it.
+    pub driver: crate::engine::Driver,
 }
 
 /// Streamed to the UI while a task runs.

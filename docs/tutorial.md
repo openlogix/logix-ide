@@ -214,7 +214,7 @@ blinks green.
 
     On Linux, a board needs a udev rule that lets your user account use it
     before Logix IDE can program it. The first time,
-    Upload asks to add it: click **Add Rule**, then enter your password when
+    Upload asks to add it: click **Add udev Rule**, then enter your password when
     Linux asks for it, and the upload goes on. See
     [udev rules on Linux](using-logix.md#udev-rules-on-linux).
 
