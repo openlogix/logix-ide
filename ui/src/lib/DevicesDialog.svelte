@@ -15,6 +15,7 @@
 <script lang="ts">
   import { backend, type Devices } from "./backend";
   import { SvelteSet } from "svelte/reactivity";
+  import { arrowNav } from "./arrowNav";
   import { isUdevRule, type Driver, type UnreachableDevice, type UsbDevice } from "./backend";
   import {
     deviceBoardGroups,
@@ -160,7 +161,7 @@
             another cable (some USB cables only charge and don't carry data).
           </p>
         {:else}
-          <ul class="devices">
+          <ul class="devices" use:arrowNav={{ items: "button" }}>
             {#each listed as item (item.device.id)}
               {#if item.kind === "usb"}
                 {@render usbDevice(item.device)}

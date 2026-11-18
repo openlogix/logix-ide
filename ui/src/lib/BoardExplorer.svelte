@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import { focusOnMount } from "./focus";
+  import { arrowNav } from "./arrowNav";
   import { untrack } from "svelte";
   import { backend, type Board, type Example, type FpgaFamily } from "./backend";
   import { expanded, expandGroup, toggleGroup } from "./expandedGroups.svelte";
@@ -147,7 +148,11 @@
             >
           {/each}
         </div>
-        <ul class="list" aria-label={KINDS.find((k) => k.kind === tab)?.label}>
+        <ul
+          class="list"
+          aria-label={KINDS.find((k) => k.kind === tab)?.label}
+          use:arrowNav={{ items: "button.group-toggle, button.item", select: "button.item" }}
+        >
           {#if error}
             <li class="empty error">{error}</li>
           {:else if families === null}

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { focusOnMount } from "./lib/focus";
+  import { focusFirstItem, focusOnMount } from "./lib/focus";
+  import { arrowNav } from "./lib/arrowNav";
   import { onMount, tick, untrack } from "svelte";
   import {
     backend,
@@ -2388,6 +2389,15 @@
   <div
     class="context-menu"
     role="menu"
+    tabindex="-1"
+    use:arrowNav={{ items: "[role=menuitem]" }}
+    use:focusFirstItem
+    onkeydown={(e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        tabMenu = null;
+      }
+    }}
     style:left="{tabMenu.x}px"
     style:top="{tabMenu.y}px"
   >
