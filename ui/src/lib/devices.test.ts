@@ -103,7 +103,7 @@ describe("devices", () => {
     const offer = driverOffer("the iCESugar v1.5", "udev-rule", null);
     const offerText = [offer.title, offer.lead, ...offer.steps, offer.note].join("\n");
     expect(offer.lead).toBe(
-      "To program the iCESugar v1.5, Linux needs a udev rule that lets you use it. Without one, only administrators can.",
+      "To program the iCESugar v1.5, Linux needs a udev rule that lets your user account use it.",
     );
     expect(offer.steps[0]).toBe("Linux asks for your password. Enter it to allow the change.");
     expect(offerText).not.toMatch(/Windows|WinUSB|driver/);
