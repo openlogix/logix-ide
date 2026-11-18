@@ -9,11 +9,3 @@
 export function focusOnMount(node: HTMLElement) {
   node.focus();
 }
-
-/**
- * Focuses a menu's first enabled item when it opens, so Up and Down move
- * through it at once (`arrowNav`).
- */
-export function focusFirstItem(node: HTMLElement) {
-  node.querySelector<HTMLElement>("[role=menuitem]:not(:disabled)")?.focus();
-}

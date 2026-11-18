@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { focusFirstItem, focusOnMount } from "./lib/focus";
+  import { focusOnMount } from "./lib/focus";
   import { arrowNav } from "./lib/arrowNav";
   import { onMount, tick, untrack } from "svelte";
   import {
@@ -2402,7 +2402,10 @@
     role="menu"
     tabindex="-1"
     use:arrowNav={{ items: "[role=menuitem]", whileOpen: true }}
-    use:focusFirstItem
+    onpointermove={(e) => {
+      const item = (e.target as Element).closest<HTMLElement>("[role=menuitem]:not(:disabled)");
+      if (item && document.activeElement !== item) item.focus();
+    }}
     style:left="{tabMenu.x}px"
     style:top="{tabMenu.y}px"
   >
@@ -2998,9 +3001,14 @@
     text-align: left;
     cursor: pointer;
   }
-  .context-menu button:hover:not(:disabled) {
+  /* One highlight, as in a native menu: the focused item, which the mouse
+     moves too (macOS's web view doesn't show :focus-visible for a menu
+     opened by a right-click, found by the user, 2026-11-18). */
+  .context-menu button:hover:not(:disabled),
+  .context-menu button:focus:not(:disabled) {
     background: var(--accent);
     color: #fff;
+    outline: none;
   }
   .context-menu hr {
     margin: 4px 0;

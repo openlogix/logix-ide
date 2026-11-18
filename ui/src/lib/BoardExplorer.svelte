@@ -10,7 +10,7 @@
 -->
 <script lang="ts">
   import { focusOnMount } from "./focus";
-  import { arrowNav } from "./arrowNav";
+  import { arrowNav, moveTo, navItems } from "./arrowNav";
   import { untrack } from "svelte";
   import { backend, type Board, type Example, type FpgaFamily } from "./backend";
   import { expanded, expandGroup, toggleGroup } from "./expandedGroups.svelte";
@@ -110,6 +110,18 @@
       },
     };
   }
+
+  // Down from the search field: the selected item, or the first entry
+  // (Up and Down in the list itself: `arrowNav`).
+  let listEl = $state<HTMLElement | null>(null);
+  function onSearchKey(e: KeyboardEvent) {
+    if (e.key !== "ArrowDown" || listEl === null) return;
+    const items = navItems(listEl, "button.group-toggle, button.item");
+    const target = items.find((b) => b.classList.contains("selected")) ?? items[0];
+    if (!target) return;
+    e.preventDefault();
+    moveTo(target, "button.item");
+  }
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -135,6 +147,7 @@
         spellcheck="false"
         autocomplete="off"
         use:focusOnMount
+        onkeydown={onSearchKey}
       />
       <button class="close" title="Close" onclick={onClose}>✕</button>
     </header>
@@ -149,6 +162,7 @@
           {/each}
         </div>
         <ul
+          bind:this={listEl}
           class="list"
           aria-label={KINDS.find((k) => k.kind === tab)?.label}
           use:arrowNav={{ items: "button.group-toggle, button.item", select: "button.item" }}

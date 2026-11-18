@@ -1653,10 +1653,13 @@ test("Up and Down move through the lists", async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
 
-  // The file tab menu: its first item takes the focus, Down moves, Escape closes.
+  // The file tab menu, as a native one: nothing highlighted when it opens,
+  // Down goes to its first item, then the next; Escape closes.
   await tab(page, "pinout.pcf").click({ button: "right" });
   const menuItems = page.getByRole("menu").getByRole("menuitem");
   const enabled = menuItems.and(page.locator(":enabled"));
+  await expect(enabled.first()).not.toBeFocused();
+  await page.keyboard.press("ArrowDown");
   await expect(enabled.first()).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(enabled.nth(1)).toBeFocused();
@@ -1677,6 +1680,10 @@ test("Up and Down move through the lists", async ({ page }) => {
   await menu(page, "board-explorer");
   const explorer = page.getByRole("dialog", { name: "Board Explorer" });
   const items = explorer.locator("button.item");
+  // Down from its search field: the selected item (it opens at the
+  // project's board), or the first entry.
+  await page.keyboard.press("ArrowDown");
+  await expect(explorer.locator("button.item.selected")).toBeFocused();
   await items.first().click();
   await expect(items.first()).toBeFocused();
   await page.keyboard.press("ArrowDown");
