@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { UsbDevice } from "./backend";
   import { matchLabel } from "./devices";
+  import { arrowNav } from "./arrowNav";
 
   let {
     boardName,
@@ -48,7 +49,7 @@
         {devices.length} connected devices could be the {boardName}. Choose
         the one to upload to.
       </p>
-      <ul>
+      <ul use:arrowNav={{ items: "button" }}>
         {#each devices as d (d.id)}
           <li>
             <div class="text">

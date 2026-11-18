@@ -10,6 +10,7 @@
 -->
 <script lang="ts">
   import { backend, type SystemInfo, type VersionEntry } from "./backend";
+  import { arrowNav } from "./arrowNav";
 
   // `refresh` changes whenever what the report shows may have changed (setup
   // ended, an update ran): the open dialog then reads it again by itself.
@@ -129,7 +130,7 @@
           </dl>
         {/if}
         <h3>Versions</h3>
-        <ul class="tree">{@render entry(info.versions, "")}</ul>
+        <ul class="tree" use:arrowNav={{ items: "button.row" }}>{@render entry(info.versions, "")}</ul>
       {/if}
     </div>
     <footer>

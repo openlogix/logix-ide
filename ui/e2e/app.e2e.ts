@@ -342,6 +342,12 @@ test("Help > System Info shows the version tree and copies the text", async ({ p
   await expect(row("Logix Engine")).toHaveAttribute("aria-expanded", "true");
   await row("Logix Engine").click();
   await expect(details("Logix Engine")).toHaveCount(0);
+  // Up and Down move between the entries; Enter shows the details.
+  await expect(row("Logix Engine")).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(row("logix-core")).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(row("Logix Engine")).toBeFocused();
   // One entry's details at a time.
   await row("Logix Engine").click();
   await row("logix-core").click();
@@ -1071,6 +1077,13 @@ test("Upload asks which device when several fit the board", async ({ page }) => 
   await expect(picker).toContainText("2 connected devices could be the Alhambra II");
   await expect(picker).toContainText("serial B2 · Strong match");
   await expect(status(page)).toContainText("Choose the device to upload to.");
+  // Up and Down move between the devices' Upload buttons.
+  const uploads = picker.getByRole("button", { name: "Upload" });
+  await uploads.first().focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(uploads.nth(1)).toBeFocused();
+  await page.keyboard.press("ArrowUp");
+  await expect(uploads.first()).toBeFocused();
   await picker.getByRole("listitem").filter({ hasText: "serial B2" }).getByRole("button", { name: "Upload" }).click();
   await expect(picker).toBeHidden();
   await expect(output(page)).toContainText("Programmed the flash of the Alhambra II");
@@ -1606,6 +1619,79 @@ test("the Board Explorer links families, FPGAs, boards and examples", async ({ p
   await explorer.getByRole("button", { name: "Open Example" }).click();
   await expect(explorer).toBeHidden();
   await expect(status(page)).toHaveText("Opened example icebreaker/blinky.");
+});
+
+// Up and Down move through lists (the user's request, 2026-11-18: Up and
+// Down only, no Left and Right); Tab goes from list to list.
+test("Up and Down move through the lists", async ({ page }) => {
+  await page.goto("/");
+  await expect(output(page)).toContainText("Ready.");
+  await page.getByRole("button", { name: "Examples…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Examples" });
+  const boards = dialog.getByRole("list", { name: "Boards" });
+  const examples = dialog.getByRole("list", { name: "Examples" });
+  const focused = page.locator(":focus");
+  // Down from the search field: the selected board.
+  const first = await boards.locator("button.selected").textContent();
+  await page.keyboard.press("ArrowDown");
+  await expect(boards.locator("button.selected")).toBeFocused();
+  // Down to the next entry: a board is selected as a click would; a
+  // family's toggle only takes the focus. Up comes back.
+  await page.keyboard.press("ArrowDown");
+  await expect(focused).not.toHaveText(first ?? "");
+  if (!(await focused.evaluate((el) => el.classList.contains("family-toggle")))) {
+    await expect(focused).toHaveClass(/selected/);
+  }
+  await page.keyboard.press("ArrowUp");
+  await expect(boards.locator("button.selected")).toHaveText(first ?? "");
+  await expect(boards.locator("button.selected")).toBeFocused();
+  // Tab: on to the examples list, one stop; Down selects the next example.
+  await page.keyboard.press("Tab");
+  const ex = examples.getByRole("button");
+  await expect(ex.first()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(ex.nth(1)).toBeFocused();
+  await expect(ex.nth(1)).toHaveClass(/selected/);
+  await page.keyboard.press("ArrowUp");
+  await expect(ex.first()).toHaveClass(/selected/);
+  // Enter opens it.
+  await page.keyboard.press("Enter");
+  await expect(dialog).toBeHidden();
+  await expect(tab(page, "pinout.pcf")).toBeVisible();
+
+  // The file tab menu, as a native one: nothing highlighted when it opens,
+  // Down goes to its first item, then the next; Escape closes.
+  await tab(page, "pinout.pcf").click({ button: "right" });
+  const menuItems = page.getByRole("menu").getByRole("menuitem");
+  const enabled = menuItems.and(page.locator(":enabled"));
+  await expect(enabled.first()).not.toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(enabled.first()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(enabled.nth(1)).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  // Its keys work while it's open even when something else, such as the
+  // editor, has the focus: Down goes to its first item.
+  await tab(page, "pinout.pcf").click({ button: "right" });
+  await page.locator(".cm-content").focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(enabled.first()).toBeFocused();
+  await page.locator(".cm-content").focus();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  // The Board Explorer: after a click on an item (which macOS doesn't
+  // focus by itself), Down shows the next one.
+  await menu(page, "board-explorer");
+  const explorer = page.getByRole("dialog", { name: "Board Explorer" });
+  const items = explorer.locator("button.item");
+  await items.first().click();
+  await expect(items.first()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(items.nth(1)).toBeFocused();
+  await expect(items.nth(1)).toHaveClass(/selected/);
+  await page.keyboard.press("Escape");
 });
 
 test("examples show their summary and notes, selected or not", async ({ page }) => {

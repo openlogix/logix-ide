@@ -1,5 +1,6 @@
 <script lang="ts">
   import { focusOnMount } from "./lib/focus";
+  import { arrowNav } from "./lib/arrowNav";
   import { onMount, tick, untrack } from "svelte";
   import {
     backend,
@@ -2287,7 +2288,18 @@
   };
 </script>
 
-<svelte:window onclick={() => (tabMenu = null)} />
+<!-- The tab menu closes on any click, and on Escape wherever the focus is
+     (something may take it from the menu right after it opens). -->
+<svelte:window
+  onclick={() => (tabMenu = null)}
+  onkeydowncapture={(e) => {
+    if (tabMenu && e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      tabMenu = null;
+    }
+  }}
+/>
 
 {#if settingsOpen && prefs}
   <PreferencesDialog
@@ -2388,6 +2400,12 @@
   <div
     class="context-menu"
     role="menu"
+    tabindex="-1"
+    use:arrowNav={{ items: "[role=menuitem]", whileOpen: true }}
+    onpointermove={(e) => {
+      const item = (e.target as Element).closest<HTMLElement>("[role=menuitem]:not(:disabled)");
+      if (item && document.activeElement !== item) item.focus();
+    }}
     style:left="{tabMenu.x}px"
     style:top="{tabMenu.y}px"
   >
@@ -2983,9 +3001,14 @@
     text-align: left;
     cursor: pointer;
   }
-  .context-menu button:hover:not(:disabled) {
+  /* One highlight, as in a native menu: the focused item, which the mouse
+     moves too (macOS's web view doesn't show :focus-visible for a menu
+     opened by a right-click, found by the user, 2026-11-18). */
+  .context-menu button:hover:not(:disabled),
+  .context-menu button:focus:not(:disabled) {
     background: var(--accent);
     color: #fff;
+    outline: none;
   }
   .context-menu hr {
     margin: 4px 0;

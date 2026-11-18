@@ -16,6 +16,7 @@
 -->
 <script lang="ts">
   import { focusOnMount } from "./focus";
+  import { arrowNav, moveTo, navItems } from "./arrowNav";
   import { onMount } from "svelte";
   import type { Board, Example } from "./backend";
   import { groupExamples, type ExampleEntry } from "./examples";
@@ -175,9 +176,26 @@
       e.preventDefault();
       onClose();
     } else if (e.key === "Enter" && canOpen) {
+      // Not from a family's open/close toggle, Cancel or ✕: their own
+      // click is what Enter means there.
+      const t = e.target as HTMLElement | null;
+      if (t?.closest(".family-toggle, footer, .close")) return;
       e.preventDefault();
       open();
     }
+  }
+
+  // Up and Down: through each list (`arrowNav`), and Down from the search
+  // field to the selected board, or the first one.
+  const BOARD_SELECT = "button:not(.family-toggle)";
+  let boardsList = $state<HTMLElement | null>(null);
+  function onSearchKey(e: KeyboardEvent) {
+    if (e.key !== "ArrowDown" || boardsList === null) return;
+    const items = navItems(boardsList, "button");
+    const target = items.find((b) => b.classList.contains("selected")) ?? items[0];
+    if (!target) return;
+    e.preventDefault();
+    moveTo(target, BOARD_SELECT);
   }
 
   // Scroll the initially selected board into view.
@@ -219,6 +237,7 @@
           spellcheck="false"
           autocomplete="off"
           use:focusOnMount
+          onkeydown={onSearchKey}
         />
       {/if}
       <button
@@ -231,12 +250,20 @@
 
     <div class="body" class:single={onlyBoard}>
       {#if !onlyBoard}
-      <ul class="boards" aria-label="Boards">
+      <ul
+        class="boards"
+        aria-label="Boards"
+        bind:this={boardsList}
+        use:arrowNav={{ items: "button", select: BOARD_SELECT }}
+      >
         {#each familyGroups as ag (ag.label)}
           {@const shown = searching || expanded.has(ag.label)}
           <li class="family">
+            <!-- One Tab stop per list, its selected entry; Up and Down move
+                 within it (the user's request, 2026-11-18). -->
             <button
               class="family-toggle"
+              tabindex="-1"
               aria-expanded={shown}
               onclick={() => toggleGroup(ag.label)}
               ><svg class="chevron" class:open={shown} viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"
@@ -250,6 +277,7 @@
             <li>
               <button
                 class:selected={g.board.id === group?.board.id}
+                tabindex={g.board.id === group?.board.id ? 0 : -1}
                 onclick={() => selectBoard(g.board.id)}
                 use:scrollIntoViewIfSelected={g.board.id === initialBoard}
               >
@@ -264,7 +292,11 @@
       </ul>
       {/if}
 
-      <ul class="examples" aria-label={onlyBoard ? "Project options" : "Examples"}>
+      <ul
+        class="examples"
+        aria-label={onlyBoard ? "Project options" : "Examples"}
+        use:arrowNav={{ items: "button", select: "button" }}
+      >
         {#if onlyBoard && currentProject}
           <li class="section">Current project</li>
           <li>
@@ -311,11 +343,12 @@
             they're defined in this project's boards folder.
           </li>
         {:else if group}
-          {#each group.examples as ex (ex.name)}
+          {#each group.examples as ex, i (ex.name)}
+            {@const isSel = selectedExample !== null && key(ex) === key(selectedExample)}
             <li>
               <button
-                class:selected={selectedExample !== null &&
-                  key(ex) === key(selectedExample)}
+                class:selected={isSel}
+                tabindex={isSel || (selectedExample === null && i === 0) ? 0 : -1}
                 onclick={() => selectExample(key(ex))}
                 ondblclick={() => onOpen(ex)}
               >

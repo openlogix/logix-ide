@@ -391,3 +391,8 @@ opens this run's folder of logs, to attach to a report (see
 | Go to Definition | ++f12++ (on a Mac keyboard, ++fn+f12++) | ++f12++ |
 | Settings | ++cmd+comma++ | ++ctrl+comma++ |
 | Close Window | ++shift+cmd+w++ | ++ctrl+shift+w++ |
+
+In lists, ++arrow-up++ and ++arrow-down++ move from entry to entry: the
+boards and the examples in **Examples…**, the **Board Explorer**, **Connected
+Devices**, **System Info**, Upload's choice of device and a file tab's menu. ++tab++ goes on
+to the next list, ++enter++ opens or chooses, and ++escape++ closes.
