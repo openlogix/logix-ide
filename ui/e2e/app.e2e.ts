@@ -816,6 +816,24 @@ test("the editor's right-click menu comments lines", async ({ page }) => {
   await expect(first).toHaveText(before);
 });
 
+// Tab indents and Shift+Tab un-indents, as in most code editors (the
+// user's choice, 2026-11-18); Escape, then Tab, leaves the editor.
+test("Tab indents in the editor", async ({ page }) => {
+  await start(page);
+  const first = page.locator(".cm-line", { hasText: "module main" });
+  const before = (await first.textContent()) ?? "";
+  await first.click();
+  await page.keyboard.press("Tab");
+  await expect(first).toHaveText(`  ${before}`);
+  await expect(page.locator(".cm-content")).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(first).toHaveText(before);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Tab");
+  await expect(page.locator(".cm-content")).not.toBeFocused();
+  await expect(first).toHaveText(before);
+});
+
 test("file commands are enabled only where they work", async ({ page }) => {
   await start(page);
   type Fake = { menuState: Record<string, boolean> | null };

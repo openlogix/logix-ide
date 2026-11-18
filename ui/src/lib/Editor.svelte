@@ -6,7 +6,8 @@
   import { onMount } from "svelte";
   import { basicSetup } from "codemirror";
   import { Compartment, EditorState } from "@codemirror/state";
-  import { EditorView } from "@codemirror/view";
+  import { EditorView, keymap } from "@codemirror/view";
+  import { indentWithTab } from "@codemirror/commands";
   import { indentUnit, StreamLanguage } from "@codemirror/language";
   import { verilog } from "@codemirror/legacy-modes/mode/verilog";
   import { oneDark } from "@codemirror/theme-one-dark";
@@ -102,6 +103,10 @@
         lintGutter(),
         isVerilog(file) ? verilogLanguage : (pinLanguage(file) ?? []),
         indentUnit.of("  "),
+        // Tab indents the line (or the selected lines) and Shift+Tab
+        // un-indents, as in most code editors (the user's choice,
+        // 2026-11-18). Escape, then Tab, still leaves the editor.
+        keymap.of([indentWithTab]),
         themeSlot.of(currentTheme()),
         lspSlot.of(lspExtension(file)),
         EditorView.theme({
