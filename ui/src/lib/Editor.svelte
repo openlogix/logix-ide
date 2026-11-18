@@ -106,6 +106,10 @@
         lspSlot.of(lspExtension(file)),
         EditorView.theme({
           "&": { height: "100%" },
+          // No focus outline around the editor: CodeMirror's dotted one
+          // showed as a line under the file tabs, and the caret already
+          // shows where the keys go (the user's request, 2026-11-17).
+          "&.cm-focused": { outline: "none" },
           ".cm-scroller": {
             fontFamily: "ui-monospace, Menlo, Consolas, monospace",
             // Settings > Editor font size (see app.css).
