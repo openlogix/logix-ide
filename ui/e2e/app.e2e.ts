@@ -1662,6 +1662,27 @@ test("Up and Down move through the lists", async ({ page }) => {
   await expect(enabled.nth(1)).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menu")).toHaveCount(0);
+  // Its keys work while it's open even when something else, such as the
+  // editor, has the focus: Down goes to its first item.
+  await tab(page, "pinout.pcf").click({ button: "right" });
+  await page.locator(".cm-content").focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(enabled.first()).toBeFocused();
+  await page.locator(".cm-content").focus();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  // The Board Explorer: after a click on an item (which macOS doesn't
+  // focus by itself), Down shows the next one.
+  await menu(page, "board-explorer");
+  const explorer = page.getByRole("dialog", { name: "Board Explorer" });
+  const items = explorer.locator("button.item");
+  await items.first().click();
+  await expect(items.first()).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(items.nth(1)).toBeFocused();
+  await expect(items.nth(1)).toHaveClass(/selected/);
+  await page.keyboard.press("Escape");
 });
 
 test("examples show their summary and notes, selected or not", async ({ page }) => {

@@ -2288,7 +2288,18 @@
   };
 </script>
 
-<svelte:window onclick={() => (tabMenu = null)} />
+<!-- The tab menu closes on any click, and on Escape wherever the focus is
+     (something may take it from the menu right after it opens). -->
+<svelte:window
+  onclick={() => (tabMenu = null)}
+  onkeydowncapture={(e) => {
+    if (tabMenu && e.key === "Escape") {
+      e.preventDefault();
+      e.stopPropagation();
+      tabMenu = null;
+    }
+  }}
+/>
 
 {#if settingsOpen && prefs}
   <PreferencesDialog
@@ -2390,14 +2401,8 @@
     class="context-menu"
     role="menu"
     tabindex="-1"
-    use:arrowNav={{ items: "[role=menuitem]" }}
+    use:arrowNav={{ items: "[role=menuitem]", whileOpen: true }}
     use:focusFirstItem
-    onkeydown={(e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        tabMenu = null;
-      }
-    }}
     style:left="{tabMenu.x}px"
     style:top="{tabMenu.y}px"
   >
