@@ -294,11 +294,13 @@
    * Lines from a background check, not from a command the user ran (such
    * as boards folder changing on disk). The user waits for "Ready."
    * before going on, so when nothing runs it comes again after them: it's
-   * always the last line while Logix IDE is idle.
+   * always the last line while Logix IDE is idle. Not while Upload waits
+   * for the user's answer (a driver or udev rule, or a device): Upload
+   * isn't over, and its answer ends the output with "Ready.".
    */
   function notice(...lines: string[]) {
     log(...lines);
-    if (startedUp && !running && !activity) log("Ready.");
+    if (startedUp && !running && !activity && !uploadAsking && !devicePicker) log("Ready.");
   }
 
   /** A tool's line, which may replace its redraw line (progress). */
@@ -1255,7 +1257,19 @@
    * Upload stopped because the board needs WinUSB (Windows) or a udev rule
    * (Linux) first: asks the user, then runs Upload again, adding it first.
    */
+  /** Set while Upload waits for the answer to its driver or udev rule
+   * offer, from the moment it stops until the answer is taken. */
+  let uploadAsking = false;
+
   async function offerUploadDriver(outcome: TaskOutcome) {
+    try {
+      await askUploadDriver(outcome);
+    } finally {
+      uploadAsking = false;
+    }
+  }
+
+  async function askUploadDriver(outcome: TaskOutcome) {
     const d = outcome.driverDevice;
     if (!d) return;
     // A No ends Upload's output, which waited for the answer: that nothing
@@ -1445,6 +1459,7 @@
           kind: "info",
         };
         askingDriver = true;
+        uploadAsking = true;
         setTimeout(() => offerUploadDriver(outcome), 0);
         return;
       }

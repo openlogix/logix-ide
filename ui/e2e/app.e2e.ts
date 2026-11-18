@@ -1167,11 +1167,11 @@ test("Upload offers the udev rule a board needs", async ({ page }) => {
   await expect(output(page)).toContainText(/The board needs a udev rule first\.(?!\s*Ready\.)/);
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(status(page)).toContainText("Cancelled: the udev rule wasn't added, so nothing was uploaded.");
-  // The answer ends the output, then Ready.
+  // The answer ends the output, then Ready. A background notice (such as
+  // the language server timing out on a slow runner) may come before or
+  // after it, but no "Ready." while Upload waits for the answer.
   await expect(output(page)).toContainText(
-    // Not anchored at the end: a background notice (such as the language
-    // server timing out on a slow runner) may follow it.
-    /The board needs a udev rule first\.\s*Cancelled: the udev rule wasn't added, so nothing was uploaded\. Choose Upload again to add it\.\s*Ready\./,
+    /The board needs a udev rule first\.(?:(?!Ready\.)[\s\S])*Cancelled: the udev rule wasn't added, so nothing was uploaded\. Choose Upload again to add it\.\s*Ready\./,
   );
   expect((await fake(page)).driverInstalls).toEqual([]);
 
