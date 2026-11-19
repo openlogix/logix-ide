@@ -173,7 +173,7 @@ describe("detailsOf", () => {
 });
 
 describe("resources", () => {
-  it("words each type, its pins and notes", () => {
+  it("words each type, its pins and notes, in the engine's order", () => {
     const rows = resourceRows({
       resources: {
         clk: { type: "clock", pin: "35", mhz: 12, requires: [{ type: "setup", text: "Close J1." }] },
@@ -188,18 +188,18 @@ describe("resources", () => {
     });
     expect(rows.map((r) => [r.name, r.type, r.pins, r.notes])).toEqual([
       ["clk", "Clock", "35", "12 MHz. Needs: Close J1."],
-      ["j1", "Header", "1, –, 3", ""],
       ["led", "LED", "11", "active low"],
       ["leds", "LEDs", "11, 37", "active low. LVCMOS33"],
-      ["m", "LED matrix", "a, b; R r, B b", "Seven LEDs."],
-      ["odd", "newtype", "7", ""],
       ["rgb", "RGB LED", "R 41, G 39, B 40", "active low"],
       ["uart", "UART", "TX 9, RX 6", ""],
+      ["j1", "Header", "1, –, 3", ""],
+      ["m", "LED matrix", "a, b; R r, B b", "Seven LEDs."],
+      ["odd", "newtype", "7", ""],
     ]);
     expect(resourceRows({})).toEqual([]);
   });
 
-  it("lists AI hints, the board's own first, then each resource's by name", () => {
+  it("lists AI hints, the board's own first, then each resource's in the engine's order", () => {
     expect(
       aiHintLines({
         aiHints: ["Board hint."],
@@ -209,7 +209,7 @@ describe("resources", () => {
           led: { type: "leds" },
         },
       }),
-    ).toEqual(["Board hint.", "clk: Clock hint.", "rgb_led: Use the driver.", "rgb_led: 1 turns it on."]);
+    ).toEqual(["Board hint.", "rgb_led: Use the driver.", "rgb_led: 1 turns it on.", "clk: Clock hint."]);
     expect(aiHintLines({})).toEqual([]);
   });
 
