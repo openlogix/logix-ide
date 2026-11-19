@@ -11,12 +11,13 @@
 
   // Logix Engine, which builds, tests and programs the board, and downloads
   // its own FPGA tools and board catalog (its own remote config).
-  // 2026-11-18: Remove udev Rule takes effect at once, without unplugging the
-  // board (the engine reconnects it in software), as Logix IDE's texts now
-  // say. Otherwise the same as prod's 2026-11-17.
+  // 2026-11-19: a board's resources by type, clocks first (Board
+  // Explorer); the Windows driver's busy line says it may take a minute or
+  // two; and since 2026-11-18, the driver and udev texts Logix IDE shows,
+  // and Remove udev Rule taking effect at once.
   "logix-engine": {
     "repo": "openlogix/logix-engine",
-    "release": "2026-11-18",
+    "release": "2026-11-19",
     "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
   },
 
