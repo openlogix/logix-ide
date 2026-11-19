@@ -10,25 +10,9 @@ export interface Segment {
   link?: { file: string; line: number };
 }
 
-/** The 16 basic colors, chosen to read well on the dark console. */
-const BASIC = [
-  "#666666", // black (lifted so it's visible on the dark background)
-  "#f14c4c", // red
-  "#23d18b", // green
-  "#e5c07b", // yellow
-  "#3b8eea", // blue
-  "#d670d6", // magenta
-  "#29b8db", // cyan
-  "#d4d4d4", // white
-  "#8a8a8a", // bright black
-  "#ff6b6b", // bright red
-  "#5af78e", // bright green
-  "#f5f543", // bright yellow
-  "#6cb6ff", // bright blue
-  "#ff77ff", // bright magenta
-  "#5ce1e6", // bright cyan
-  "#ffffff", // bright white
-];
+/** The 16 basic colors: theme tokens (app.css, `--ansi-0` to `--ansi-15`),
+ * so each reads well on the console in the light and the dark theme. */
+const BASIC = Array.from({ length: 16 }, (_, i) => `var(--ansi-${i})`);
 
 /** One of the 256 extended colors. */
 function color256(n: number): string {

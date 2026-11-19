@@ -10,14 +10,14 @@ describe("parseAnsi", () => {
   it("colors text and resets", () => {
     expect(parseAnsi("[\x1b[32mSUCCESS\x1b[0m] Took 1 s")).toEqual([
       { text: "[", style: "" },
-      { text: "SUCCESS", style: "color:#23d18b" },
+      { text: "SUCCESS", style: "color:var(--ansi-2)" },
       { text: "] Took 1 s", style: "" },
     ]);
   });
 
   it("handles bold, bright, 256 and true colors", () => {
     expect(parseAnsi("\x1b[1;91mx")[0].style).toBe(
-      "color:#ff6b6b;font-weight:bold",
+      "color:var(--ansi-9);font-weight:bold",
     );
     expect(parseAnsi("\x1b[38;5;196mx")[0].style).toBe("color:rgb(255,0,0)");
     expect(parseAnsi("\x1b[38;2;1;2;3mx")[0].style).toBe("color:rgb(1,2,3)");
@@ -37,7 +37,7 @@ describe("parseAnsi", () => {
 
   it("merges neighbors with the same style", () => {
     expect(parseAnsi("\x1b[33ma\x1b[33mb")).toEqual([
-      { text: "ab", style: "color:#e5c07b" },
+      { text: "ab", style: "color:var(--ansi-3)" },
     ]);
   });
 });
@@ -68,7 +68,7 @@ describe("addLinks", () => {
     expect(segs.map((s) => s.text).join("")).toBe("main.v:7: bad");
     expect(segs[0]).toEqual({
       text: "main.v:7",
-      style: "color:#f14c4c",
+      style: "color:var(--ansi-1)",
       link: { file: "main.v", line: 7 },
     });
   });
