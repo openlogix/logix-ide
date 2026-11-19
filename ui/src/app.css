@@ -9,8 +9,29 @@
   --fg: #1f2328;
   --muted: #6b7280;
   --border: #d0d7de;
-  --console-bg: #1e1e1e;
-  --console-fg: #d4d4d4;
+  /* The console (the bottom pane, and later the Serial Monitor): a faint
+     teal, from the banner's color family, so it stands apart from the
+     editor (the user's choice, 2026-11-19; it was black in both themes). */
+  --console-bg: #f3f8f8;
+  --console-fg: #1f2328;
+  /* The 16 terminal colors tools print in (lib/ansi.ts), deep enough to
+     read on the light console. "White" is a mid gray, so it shows. */
+  --ansi-0: #24292f; /* black */
+  --ansi-1: #c62828; /* red */
+  --ansi-2: #1a7f37; /* green */
+  --ansi-3: #8a5a00; /* yellow */
+  --ansi-4: #0969da; /* blue */
+  --ansi-5: #8250df; /* magenta */
+  --ansi-6: #0a6e75; /* cyan */
+  --ansi-7: #6e7781; /* white */
+  --ansi-8: #57606a; /* bright black */
+  --ansi-9: #b71c1c; /* bright red */
+  --ansi-10: #116329; /* bright green */
+  --ansi-11: #7a4d00; /* bright yellow */
+  --ansi-12: #0550ae; /* bright blue */
+  --ansi-13: #6639ba; /* bright magenta */
+  --ansi-14: #075f66; /* bright cyan */
+  --ansi-15: #424a53; /* bright white */
   --banner-bg: #e6f4f5;
   --tabs-bg: #f3f4f6;
   /* Group headings in board lists: distinct from the entries. */
@@ -42,6 +63,23 @@
   --muted: #9aa4ae;
   --border: #30363d;
   --console-bg: #101316;
+  --console-fg: #d4d4d4;
+  --ansi-0: #666666;
+  --ansi-1: #f14c4c;
+  --ansi-2: #23d18b;
+  --ansi-3: #e5c07b;
+  --ansi-4: #3b8eea;
+  --ansi-5: #d670d6;
+  --ansi-6: #29b8db;
+  --ansi-7: #d4d4d4;
+  --ansi-8: #8a8a8a;
+  --ansi-9: #ff6b6b;
+  --ansi-10: #5af78e;
+  --ansi-11: #f5f543;
+  --ansi-12: #6cb6ff;
+  --ansi-13: #ff77ff;
+  --ansi-14: #5ce1e6;
+  --ansi-15: #ffffff;
   --banner-bg: #16323a;
   --tabs-bg: #15181b;
   --group-bg: #2b3036;
@@ -61,6 +99,23 @@
     --muted: #9aa4ae;
     --border: #30363d;
     --console-bg: #101316;
+    --console-fg: #d4d4d4;
+    --ansi-0: #666666;
+    --ansi-1: #f14c4c;
+    --ansi-2: #23d18b;
+    --ansi-3: #e5c07b;
+    --ansi-4: #3b8eea;
+    --ansi-5: #d670d6;
+    --ansi-6: #29b8db;
+    --ansi-7: #d4d4d4;
+    --ansi-8: #8a8a8a;
+    --ansi-9: #ff6b6b;
+    --ansi-10: #5af78e;
+    --ansi-11: #f5f543;
+    --ansi-12: #6cb6ff;
+    --ansi-13: #ff77ff;
+    --ansi-14: #5ce1e6;
+    --ansi-15: #ffffff;
     --banner-bg: #16323a;
     --tabs-bg: #15181b;
     --group-bg: #2b3036;
