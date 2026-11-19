@@ -1142,6 +1142,7 @@ pub async fn serial_open(
     *current = Some((session.clone(), stop.clone()));
     let id = session.clone();
     tauri::async_runtime::spawn(async move {
+        let mut decoder = engine::serial::Utf8Decoder::default();
         loop {
             // A long poll: the engine answers as soon as something arrives.
             let read = tokio::select! {
@@ -1149,8 +1150,9 @@ pub async fn serial_open(
                 r = engine::serial::read(&engine, &id, 1000) => r,
             };
             match read {
-                Ok(r) if r.text.is_empty() && r.events.is_empty() => {}
-                Ok(r) => {
+                Ok(r) if r.bytes.is_empty() && r.events.is_empty() => {}
+                Ok(mut r) => {
+                    r.text = decoder.decode(&r.bytes);
                     let _ = app.emit("serial", SerialEvent::Read(r));
                 }
                 Err(e) => {
