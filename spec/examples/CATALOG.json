@@ -1,7 +1,6 @@
 {
   "catalog": {
-    "version": "2026-11-10",
-    "commit": "898c63c"
+    "version": "2026.11.19"
   },
   "boards": {
     "alchitry-au": {
@@ -344,6 +343,16 @@
               "37"
             ],
             "active": "high"
+          },
+          "uart": {
+            "type": "uart",
+            "tx": "61",
+            "rx": "62",
+            "source": {
+              "kind": "maker",
+              "ref": "github.com/FPGAwars/Alhambra-II-FPGA examples/picorv32/picosoc/demo.pcf"
+            },
+            "user_notes": "The FTDI chip's second channel, USB interface 1, over the board's USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board)."
           }
         }
       },
@@ -691,6 +700,17 @@
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-A7-35-Master.xdc"
             }
+          },
+          "uart": {
+            "type": "uart",
+            "tx": "D10",
+            "rx": "A9",
+            "io_standard": "LVCMOS33",
+            "source": {
+              "kind": "maker",
+              "ref": "github.com/Digilent/digilent-xdc Arty-A7-35-Master.xdc"
+            },
+            "user_notes": "The FTDI chip's second channel, USB interface 1, over the micro-USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board)."
           }
         }
       },
@@ -4012,6 +4032,17 @@
             ],
             "active": "low",
             "io_standard": "LVCMOS33"
+          },
+          "uart": {
+            "type": "uart",
+            "tx": "B9",
+            "rx": "A9",
+            "io_standard": "LVCMOS33",
+            "source": {
+              "kind": "maker",
+              "ref": "github.com/wuxx/icesugar-pro src/uart_tx/top.lpf"
+            },
+            "user_notes": "The on-board iCELink's USB serial port, over the USB-C cable."
           }
         }
       },
@@ -5585,6 +5616,17 @@
               "10"
             ],
             "active": "low"
+          },
+          "uart": {
+            "type": "uart",
+            "tx": "17",
+            "rx": "18",
+            "io_standard": "LVCMOS33",
+            "source": {
+              "kind": "maker",
+              "ref": "github.com/sipeed/TangNano-9K-example uart/src/top.cst"
+            },
+            "user_notes": "The on-board BL702's USB serial port, over the USB-C cable."
           }
         }
       },
@@ -5949,7 +5991,7 @@
             "mhz": 12.0,
             "source": {
               "kind": "maker",
-              "ref": "The maker's reply to the Logix project, 2026-11-08: 12 MHz external clock on pin 35."
+              "ref": "The maker's reply to the Open Logix project, 2026-11-08: 12 MHz external clock on pin 35."
             }
           },
           "rgb_led": {
@@ -5960,7 +6002,7 @@
             "active": "low",
             "source": {
               "kind": "maker",
-              "ref": "The maker's replies to the Logix project, 2026-11-08: RGB LED red on 39, green on 40, blue on 41, active low (as pins 39-41, the iCE40 UltraPlus's open-drain RGB outputs, require)."
+              "ref": "The maker's replies to the Open Logix project, 2026-11-08: RGB LED red on 39, green on 40, blue on 41, active low (as pins 39-41, the iCE40 UltraPlus's open-drain RGB outputs, require)."
             },
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB0, green RGB1, blue RGB2.",

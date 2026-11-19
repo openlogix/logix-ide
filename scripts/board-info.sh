@@ -44,25 +44,45 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 mkdir "$tmp/logix-engine"
 
-printf '%s\n' \
-  '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"board-info","version":"1"}}}' \
-  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_engine_info","arguments":{}}}' \
-  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"get_catalog","arguments":{"boards":{"fetch":true},"fpgas":{"fetch":true},"families":{"fetch":true}}}}' |
-  "$LOGIX_DEV_ENGINE_BINARY" --engine-folder "$tmp/logix-engine" --log-level warn > "$tmp/out.jsonl" 2> "$tmp/err.txt" ||
-  { cat "$tmp/err.txt" >&2; exit 1; }
+# One request at a time: the engine answers requests side by side, and the
+# catalog's version is known only once get_catalog has downloaded it.
+python3 -I - "$LOGIX_DEV_ENGINE_BINARY" "$tmp" "${args[@]}" <<'EOF'
+import json, subprocess, sys
 
-python3 -I - "$tmp/out.jsonl" "${args[@]}" <<'EOF'
-import json, sys
+engine, tmp, ids = sys.argv[1], sys.argv[2], sys.argv[3:]
+err = open(f"{tmp}/err.txt", "w")
+proc = subprocess.Popen(
+    [engine, "--engine-folder", f"{tmp}/logix-engine", "--log-level", "warn"],
+    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=err, text=True,
+)
 
-results = {}
-for line in open(sys.argv[1]):
-    m = json.loads(line)
-    if m.get("id") in (2, 3):
-        r = m["result"]
-        results[m["id"]] = r.get("structuredContent") or json.loads(r["content"][0]["text"])
-info, catalog = results[2], results[3]
-ids = sys.argv[2:]
+def send(message):
+    proc.stdin.write(json.dumps(message) + "\n")
+    proc.stdin.flush()
+
+def call(request_id, method, params):
+    send({"jsonrpc": "2.0", "id": request_id, "method": method, "params": params})
+    for line in proc.stdout:
+        m = json.loads(line)
+        if m.get("id") == request_id:
+            if "error" in m:
+                sys.exit(f"{method}: {m['error']}")
+            return m["result"]
+    sys.exit(open(f"{tmp}/err.txt").read() or "The engine stopped.")
+
+def tool(request_id, name, arguments):
+    r = call(request_id, "tools/call", {"name": name, "arguments": arguments})
+    return r.get("structuredContent") or json.loads(r["content"][0]["text"])
+
+call(1, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
+                       "clientInfo": {"name": "board-info", "version": "1"}})
+send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+catalog = tool(2, "get_catalog", {"boards": {"fetch": True}, "fpgas": {"fetch": True},
+                                  "families": {"fetch": True}})
+info = tool(3, "get_engine_info", {})
+proc.stdin.close()
+proc.wait()
+
 if ids == ["--list"]:
     print("\n".join(sorted(catalog["boards"])))
     sys.exit(0)
