@@ -1859,6 +1859,8 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   expect((await fake()).serialOpened).toEqual([
     { port: "/dev/cu.usbmodem0700000001", baud: 115200, device: "usb:1-1:1d50:602b:0700000001" },
   ]);
+  // Said to be the board's, from its data.
+  await expect(page.locator(".monitor .port")).toContainText("The iCESugar v1.5's serial port");
   // Text from the board, in pieces, becomes lines.
   await page.evaluate(() => {
     const f = (window as unknown as { __fake: Fake }).__fake;
