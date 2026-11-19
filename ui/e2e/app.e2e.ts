@@ -1164,7 +1164,7 @@ test("Upload offers the WinUSB driver a board needs", async ({ page }) => {
   const f = await fake(page);
   expect(f.driverInstalls).toEqual([{ device: "usb:1-2:0403:6010:", allowSameIds: true }]);
   // The status said so while the driver was installed, not "Uploading…".
-  expect(f.driverStatuses).toEqual(["Installing the board's driver…"]);
+  expect(f.driverStatuses).toEqual(["Installing the board's driver, which may take a minute or two…"]);
   // Programmed with the device's ID after the driver (its serial number now read).
   expect(f.uploadedDevice).toBe("usb:1-2:0403:6010:FT1");
 
@@ -1285,7 +1285,7 @@ test("Connected Devices installs and removes a board's driver", async ({ page })
   await expect(ask).toContainText("Right now Windows uses FTDI's driver for it.");
   await ask.getByRole("button", { name: "Install Driver" }).click();
   const work = dialog.locator("section.work");
-  await expect(work).toContainText("Installing the board's driver…");
+  await expect(work).toContainText("Installing the board's driver, which may take a minute or two…");
   await expect(work).toContainText("Waiting for permission");
   await expect(work.locator(".spinner")).toBeVisible();
   // The log is collapsed by default.
