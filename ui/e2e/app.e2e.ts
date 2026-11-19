@@ -1865,13 +1865,15 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
     f.serialReceive("Hello from ");
     f.serialReceive("your FPGA board\r\n");
   });
-  await expect(monitor.locator(".line").last()).toHaveText("Hello from your FPGA board");
+  await expect(monitor.locator(".line").nth(-2)).toHaveText("Hello from your FPGA board");
   // A typed line goes out with the chosen ending, and the board echoes it.
   const input = page.getByRole("textbox", { name: "Message to send" });
   await input.fill("AB");
   await input.press("Enter");
   await expect.poll(async () => (await fake()).serialSent).toEqual(["AB\n"]);
-  await expect(monitor.locator(".line").last()).toHaveText("AB");
+  await expect(monitor.locator(".line").nth(-2)).toHaveText("AB");
+  // The line feed started the next line at once, empty, as in a terminal.
+  await expect(monitor.locator(".line").last()).toHaveText("");
   // The engine's notes, such as a pause for Upload, show in the output.
   await page.evaluate(() =>
     (window as unknown as { __fake: Fake }).__fake.serialReceive("", [

@@ -21,10 +21,13 @@ function clock(d: Date): string {
 }
 
 /**
- * Adds `text` from the board (its line feeds end lines; a carriage return
- * without a line feed is dropped, as it would only move a terminal's
- * cursor), or a `note` on a line of its own. `now` timestamps each new
- * line (null: no timestamps). Returns the new list.
+ * Adds `text` from the board, or a `note` on a line of its own. A line feed
+ * ends the line and starts the next at once, empty, as a terminal moves its
+ * cursor down (so after Enter the new line shows before anything is typed
+ * on it; the user's report, 2026-11-19). A carriage return without a line
+ * feed is dropped, as it would only move a terminal's cursor to the line's
+ * start. `now` timestamps each line when its first text arrives (null: no
+ * timestamps). Returns the new list.
  */
 export function serialLines(
   lines: SerialLine[],
@@ -34,18 +37,26 @@ export function serialLines(
 ): SerialLine[] {
   const out = lines.slice();
   if (note !== undefined) {
-    out.push({ kind: "note", text: note, time: null, done: true });
+    const entry: SerialLine = { kind: "note", text: note, time: null, done: true };
+    // Before the empty line a line feed started, which stays last.
+    const last = out[out.length - 1];
+    if (last && last.kind === "rx" && !last.done && last.text === "") out.splice(out.length - 1, 0, entry);
+    else out.push(entry);
   } else if (text) {
     const parts = text.replace(/\r\n/g, "\n").replace(/\r/g, "").split("\n");
     parts.forEach((part, i) => {
       const last = out[out.length - 1];
       if (last && last.kind === "rx" && !last.done) {
-        out[out.length - 1] = { ...last, text: last.text + part };
+        const time = last.time ?? (part !== "" && now ? clock(now) : null);
+        out[out.length - 1] = { ...last, text: last.text + part, time };
       } else if (part !== "" || i < parts.length - 1) {
-        out.push({ kind: "rx", text: part, time: now ? clock(now) : null, done: false });
+        out.push({ kind: "rx", text: part, time: part !== "" && now ? clock(now) : null, done: false });
       }
-      // Every part but the last ended with a line feed.
-      if (i < parts.length - 1) out[out.length - 1] = { ...out[out.length - 1], done: true };
+      // A line feed: the line ends, and the next starts, empty.
+      if (i < parts.length - 1) {
+        out[out.length - 1] = { ...out[out.length - 1], done: true };
+        out.push({ kind: "rx", text: "", time: null, done: false });
+      }
     });
   }
   return out.length > MAX_LINES ? out.slice(out.length - MAX_LINES) : out;

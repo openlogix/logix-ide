@@ -142,7 +142,7 @@ test("serial monitor", async ({ page }) => {
     const f = (window as unknown as { __fake: { serialReceive: (t: string) => void } }).__fake;
     f.serialReceive("Hello from your FPGA board\r\nHello from your FPGA board\r\nhi\r\nHello from your FPGA board\r\n");
   });
-  await expect(monitor.locator(".line").last()).toHaveText("Hello from your FPGA board");
+  await expect(monitor.locator(".line").nth(-2)).toHaveText("Hello from your FPGA board");
   await page.getByRole("textbox", { name: "Message to send" }).fill("hello");
   await shot(page, "serial-monitor");
 });

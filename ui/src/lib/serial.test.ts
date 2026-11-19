@@ -11,12 +11,19 @@ describe("serial lines", () => {
     expect(l[0].done).toBe(true);
     expect(l[1].done).toBe(false);
     l = serialLines(l, "B\n", null);
-    expect(texts(l)).toEqual(["rx:Hello from your FPGA board", "rx:AB"]);
+    // The line feed starts the next line at once, empty.
+    expect(texts(l)).toEqual(["rx:Hello from your FPGA board", "rx:AB", "rx:"]);
   });
 
   it("drops a lone carriage return, and keeps blank lines", () => {
     const l = serialLines([], "a\rb\n\nc", null);
     expect(texts(l)).toEqual(["rx:ab", "rx:", "rx:c"]);
+    // Typed one key at a time: a, Enter (a line feed), b.
+    let k = serialLines([], "a", null);
+    k = serialLines(k, "\n", null);
+    expect(texts(k)).toEqual(["rx:a", "rx:"]);
+    k = serialLines(k, "b", null);
+    expect(texts(k)).toEqual(["rx:a", "rx:b"]);
   });
 
   it("puts notes on lines of their own", () => {
@@ -24,11 +31,20 @@ describe("serial lines", () => {
     l = serialLines(l, null, null, "Opened COM5.");
     l = serialLines(l, "d", null);
     expect(texts(l)).toEqual(["rx:abc", "note:Opened COM5.", "rx:d"]);
+    // After a line feed, a note goes before the empty line it started.
+    let m = serialLines([], "x\n", null);
+    m = serialLines(m, null, null, "Paused.");
+    expect(texts(m)).toEqual(["rx:x", "note:Paused.", "rx:"]);
   });
 
   it("timestamps each new line", () => {
     const l = serialLines([], "x\ny", new Date(2026, 10, 19, 9, 5, 7, 42));
     expect(l.map((x) => x.time)).toEqual(["09:05:07.042", "09:05:07.042"]);
+    // An empty line gets its time with its first text.
+    let e = serialLines([], "x\n", new Date(2026, 10, 19, 9, 5, 7, 42));
+    expect(e[1].time).toBeNull();
+    e = serialLines(e, "y", new Date(2026, 10, 19, 9, 5, 8, 0));
+    expect(e[1].time).toBe("09:05:08.000");
   });
 
   it("keeps the newest lines", () => {
