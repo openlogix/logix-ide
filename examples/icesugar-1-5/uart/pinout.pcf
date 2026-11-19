@@ -1,0 +1,8 @@
+# Pins of iCESugar v1.5 used by main.v.
+
+# sys_clk: 12 MHz clock.
+set_io sys_clk 35
+
+# uart: the USB serial port.
+set_io uart_tx 6
+set_io uart_rx 4

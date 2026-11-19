@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "icesugar-1-5"
+summary = "Echoes what you type over the USB serial port, and greets you after 5 seconds of quiet."
