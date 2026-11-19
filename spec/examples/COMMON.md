@@ -80,6 +80,13 @@ Inputs):
 
 ## Code
 
+Examples are for people, often FPGA beginners, who learn from them (the
+IDE's `CLAUDE.md`, Examples are for people): straightforward, very readable
+code with useful comments. Plain, simple code over clever or compact code;
+clear names; comments that say what each part does and why, in plain words,
+without repeating the code. When readability and brevity conflict,
+readability wins.
+
 - Verilog-2005, two-space indents, lines of at most 100 characters.
 - `main.v` starts with a comment: what the design does, on which board, in
   plain words. Each block has a short comment saying what it does and why.
