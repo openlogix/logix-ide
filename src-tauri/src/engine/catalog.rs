@@ -43,7 +43,8 @@ pub struct Board {
     pub fpga: Option<Fpga>,
     /// What the board wires to FPGA pins, by port name, as the engine gives
     /// it (each with its `type` and that type's fields), for the Board
-    /// Explorer. Empty when none are known.
+    /// Explorer, in the engine's order (by type, clocks first), which
+    /// serde_json's `preserve_order` keeps. Empty when none are known.
     pub resources: serde_json::Map<String, Value>,
     /// What every design for the board must do (drives and setups), as the
     /// engine gives it. Empty when nothing.
@@ -449,7 +450,7 @@ mod tests {
             "boards": {
                 "icezum": {"name": "Icezum Alhambra", "fpga_id": "ice40hx1k-tq144"},
                 "alhambra-ii": {"name": "Alhambra II", "fpga_id": "ice40hx4k-tq144-8k",
-                    "resources": {"clk": {"type": "clock", "pin": "49", "mhz": 12}},
+                    "resources": {"clk": {"type": "clock", "pin": "49", "mhz": 12}, "btn": {"type": "buttons", "pins": ["1"]}},
                     "requires": [{"type": "setup", "text": "Set the jumper."}],
                     "ai_hints": ["A hint."]},
                 "odd": {"fpga_id": "unknown"}
@@ -470,6 +471,9 @@ mod tests {
         assert!(boards[0].dimensions.is_empty());
         // Resources and requirements as the engine gives them.
         assert_eq!(boards[0].resources["clk"]["mhz"], 12);
+        // The engine's order, not by name.
+        let names: Vec<&str> = boards[0].resources.keys().map(String::as_str).collect();
+        assert_eq!(names, ["clk", "btn"]);
         assert_eq!(boards[0].requires[0]["type"], "setup");
         assert!(boards[1].resources.is_empty() && boards[1].requires.is_empty());
         assert_eq!(boards[0].ai_hints, ["A hint."]);

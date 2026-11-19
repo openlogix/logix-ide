@@ -426,19 +426,19 @@ export function requirementText(q: Json): string {
 }
 
 /**
- * A board's `ai_hints`, the board's own first, then each resource's by port
- * name ("rgb_led: …"): text for AI agents writing designs, shown as is.
+ * A board's `ai_hints`, the board's own first, then each resource's in the
+ * engine's order ("rgb_led: …"): text for AI agents writing designs, shown
+ * as is.
  */
 export function aiHintLines(b: Pick<Board, "aiHints" | "resources">): string[] {
   const own = b.aiHints ?? [];
-  const per = Object.entries(b.resources ?? {})
-    .sort(([a], [z]) => a.localeCompare(z))
-    .flatMap(([name, r]) => (Array.isArray(r.ai_hints) ? r.ai_hints.map((h) => `${name}: ${str(h)}`) : []));
+  const per = Object.entries(b.resources ?? {}).flatMap(([name, r]) => (Array.isArray(r.ai_hints) ? r.ai_hints.map((h) => `${name}: ${str(h)}`) : []));
   return [...own, ...per];
 }
 
 /**
- * A board's resources as rows, by port name: the type in words, the pins
+ * A board's resources as rows, in the engine's order (by type, clocks
+ * first; Logix Engine's docs/tool-api.md): the type in words, the pins
  * (labeled where a type has several kinds, such as a UART's TX and RX),
  * and notes (frequency, active level, I/O standard, requirements, notes).
  */
@@ -473,6 +473,5 @@ export function resourceRows(b: Pick<Board, "resources">): ResourceRow[] {
         str(r.user_notes),
       ].filter(Boolean);
       return { name, type, pins, notes: notes.join(". ") };
-    })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    });
 }
