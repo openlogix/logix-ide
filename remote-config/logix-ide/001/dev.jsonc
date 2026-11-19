@@ -11,10 +11,12 @@
 
   // Logix Engine, which builds, tests and programs the board, and downloads
   // its own FPGA tools and board catalog (its own remote config).
-  // 2026-11-19: a board's resources by type, clocks first (Board
-  // Explorer); the Windows driver's busy line says it may take a minute or
-  // two; and since 2026-11-18, the driver and udev texts Logix IDE shows,
-  // and Remove udev Rule taking effect at once.
+  // 2026-11-19: the serial tools, for the Serial Monitor (open_serial,
+  // read_serial, write_serial, close_serial; the udev rule covers serial
+  // ports); a board's resources by type, clocks first (Board Explorer);
+  // the Windows driver's busy line says it may take a minute or two; and
+  // since 2026-11-18, the driver and udev texts Logix IDE shows, and Remove
+  // udev Rule taking effect at once.
   "logix-engine": {
     "repo": "openlogix/logix-engine",
     "release": "2026-11-19",
@@ -23,10 +25,11 @@
 
   // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
   // packed by this repo's pre-release workflow (scripts/pack-examples.py).
-  // Pinned at the first promotion, 2026-11-13.
+  // 2026-11-19: the uart examples (Alhambra II, iCESugar v1.5, iCESugar
+  // Pro, Tang Nano 9K, Arty A7-35T), for the Serial Monitor.
   "logix-ide-examples": {
     "repo": "openlogix/logix-ide",
-    "release": "2026-11-12",
+    "release": "2026-11-19",
     "file": "logix-ide-examples-${YYYYMMDD}.tgz"
   }
 }
