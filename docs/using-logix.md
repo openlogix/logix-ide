@@ -303,7 +303,7 @@ Rule…** and then **Add udev Rule…** in **Tools > Connected Devices…**.
 
 Many boards have a serial port to the computer over their USB cable: the
 design sends text to it, and you can type back, as with Arduino's Serial
-Monitor. Try it with the **uart** example of a board that has one (in
+Monitor. Try it with the **serial** example of a board that has one (in
 **Examples…**).
 
 **Tools > Serial Monitor** (or the **Serial Monitor** tab of the bottom

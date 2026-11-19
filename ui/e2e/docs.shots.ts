@@ -137,7 +137,7 @@ test("serial monitor", async ({ page }) => {
   await menu(page, "serial-monitor");
   const monitor = page.getByRole("log", { name: "Serial Monitor output" });
   await expect(monitor).toContainText("Opened");
-  // What the uart example sends, and an echo of what was typed.
+  // What the serial example sends, and an echo of what was typed.
   await page.evaluate(() => {
     const f = (window as unknown as { __fake: { serialReceive: (t: string) => void } }).__fake;
     f.serialReceive("Hello from your FPGA board\r\nHello from your FPGA board\r\nhi\r\nHello from your FPGA board\r\n");
