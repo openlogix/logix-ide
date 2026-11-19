@@ -219,10 +219,16 @@
     <span class="port" title={open ? "Open" : "Closed"}>
       <span class="dot" class:on={open}></span>
       {#if choices.length > 1 || (!chosen && choices.length)}
-        <select aria-label="Serial port" value={chosen?.port ?? ""} onchange={choose}>
+        <!-- Just the port names; the device and interface on hover. -->
+        <select
+          aria-label="Serial port"
+          title={chosen ? label(chosen) : "Choose the board's serial port"}
+          value={chosen?.port ?? ""}
+          onchange={choose}
+        >
           {#if !chosen}<option value="" disabled>Choose a port…</option>{/if}
           {#each choices as c (c.port)}
-            <option value={c.port}>{label(c)}</option>
+            <option value={c.port} title={label(c)}>{c.port}</option>
           {/each}
         </select>
       {:else}
