@@ -777,7 +777,16 @@
    * status, which is the output's last result. The files' problem marks
    * stay: they go when the file is edited or a command runs again.
    */
+  /** The Serial Monitor, once shown, for Clear. */
+  let serialMonitor = $state<{ clear: () => void } | undefined>();
+
+  /** Clear (the status bar's, and Edit's): empties the tab shown, the output
+   * (and the status) or the Serial Monitor. */
   function clearOutput() {
+    if (bottomTab === "serial" && serialMonitor) {
+      serialMonitor.clear();
+      return;
+    }
     clearConsole();
     status = null;
   }
@@ -2749,6 +2758,7 @@
           style:display={consoleVisible && !collapsing && bottomTab === "serial" ? null : "none"}
         >
           <SerialMonitor
+            bind:this={serialMonitor}
             board={currentBoard}
             {boardsFolder}
             {boardsSaved}
@@ -2821,7 +2831,9 @@
           <progress value={downloadFraction ?? undefined} max="1"></progress>
         {/if}
         {#if consoleVisible}
-          <button title="Clear the output and the status" onclick={clearOutput}
+          <button
+            title={bottomTab === "serial" ? "Clear the Serial Monitor" : "Clear the output and the status"}
+            onclick={clearOutput}
             >Clear</button
           >
         {/if}

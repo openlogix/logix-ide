@@ -86,6 +86,11 @@
     scrollDown();
   }
 
+  /** Empties the monitor: the status bar's Clear, while this tab is shown. */
+  export function clear() {
+    lines = [];
+  }
+
   function label(c: SerialChoice): string {
     const where = c.interface != null ? `, interface ${c.interface}` : "";
     return `${c.port} (${c.who}${where})`;
@@ -261,7 +266,6 @@
     </label>
     <label class="check"><input type="checkbox" bind:checked={liveKeys} /> Send each key</label>
     <label class="check"><input type="checkbox" bind:checked={timestamps} /> Timestamps</label>
-    <button onclick={() => (lines = [])} title="Clear the Serial Monitor">Clear</button>
   </div>
   {#if note}
     <div class="note" class:warn={note.warn} role="status">{note.text}</div>
