@@ -1892,3 +1892,25 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   await menu(page, "save-as");
   await expect.poll(async () => (await fake()).savedBaud).toBe(9600);
 });
+
+test("the Serial Monitor asks for the port when it can't tell, once", async ({ page }) => {
+  type Fake = { useAlhambra: () => void; serialOpened: { port: string }[] };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await start(page);
+  // The Alhambra II's two ports, while the toolbar's board is the iCESugar
+  // v1.5: neither is the board's UART, so none opens by itself.
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.useAlhambra());
+  await menu(page, "serial-monitor");
+  const pick = page.getByRole("combobox", { name: "Serial port" });
+  await expect(pick).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Choose the board's serial port." })).toBeVisible();
+  // The port shows once: the menu, no name beside it.
+  await expect(page.locator(".monitor .port")).not.toContainText("/dev/cu.usbserial-FTATANKC1No port");
+  expect((await fake()).serialOpened).toEqual([]);
+  // Choosing one opens it.
+  await pick.selectOption("/dev/cu.usbserial-FTATANKC1");
+  await expect(page.getByRole("log", { name: "Serial Monitor output" })).toContainText(
+    "Opened /dev/cu.usbserial-FTATANKC1",
+  );
+  expect((await fake()).serialOpened.map((o) => o.port)).toEqual(["/dev/cu.usbserial-FTATANKC1"]);
+});
