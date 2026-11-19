@@ -6,7 +6,7 @@
   only opens the port, shows what arrives and sends what the user types.
 -->
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
   import { backend, type SerialChoice, type SerialEvent } from "./backend";
   import { serialLines, type SerialLine } from "./serial";
 
@@ -67,8 +67,10 @@
   let outEl: HTMLDivElement | undefined = $state();
   /** What the user closed: nothing reopens it by itself until Connect. */
   let userClosed = $state(false);
-  /** The board and speed the open port was chosen for. */
-  let openedFor: { board: string | null; baud: number } | null = null;
+  /** The board and speed the last try to open a port was for: tried once
+   * each, so a board whose port can't be chosen by itself isn't tried again
+   * and again (only Connect or a choice tries again). */
+  let triedFor: string | null = null;
 
   function scrollDown() {
     queueMicrotask(() => {
@@ -116,7 +118,6 @@
       await backend.serialOpen(pick.port, baud, pick.device);
       chosen = pick;
       open = true;
-      openedFor = { board, baud };
       note = null;
       addNote(`Opened ${label(pick)} at ${baud} baud.`);
     } catch (e) {
@@ -196,14 +197,13 @@
   });
 
   // Opens when the tab is first shown, and again for another board or
-  // speed.
+  // speed: once each (triedFor).
   $effect(() => {
-    const want = { board, baud };
-    if (!active || userClosed || connecting) return;
-    if (!openedFor || openedFor.board !== want.board || openedFor.baud !== want.baud || !chosen) {
-      const keep = openedFor && openedFor.board === want.board ? (chosen ?? undefined) : undefined;
-      connect(keep);
-    }
+    const key = `${board}|${baud}`;
+    if (!active || userClosed || key === triedFor) return;
+    const sameBoard = triedFor?.startsWith(`${board}|`) ?? false;
+    triedFor = key;
+    untrack(() => connect(sameBoard ? (chosen ?? undefined) : undefined));
   });
 
   function choose(e: Event) {
@@ -215,21 +215,26 @@
 
 <div class="monitor">
   <div class="bar">
-    <span class="port" title={chosen ? label(chosen) : "No port open"}>
+    <!-- The port once: a menu when there's a choice, else its name. -->
+    <span class="port" title={open ? "Open" : "Closed"}>
       <span class="dot" class:on={open}></span>
-      {#if chosen}{chosen.port}{:else}No port{/if}
-    </span>
-    {#if choices.length > 1 || (!chosen && choices.length)}
-      <label class="field"
-        >Port
-        <select aria-label="Serial port" value={chosen?.port ?? ""} onchange={choose}>
-          {#if !chosen}<option value="" disabled>Choose…</option>{/if}
+      {#if choices.length > 1 || (!chosen && choices.length)}
+        <!-- Just the port names; the device and interface on hover. -->
+        <select
+          aria-label="Serial port"
+          title={chosen ? label(chosen) : "Choose the board's serial port"}
+          value={chosen?.port ?? ""}
+          onchange={choose}
+        >
+          {#if !chosen}<option value="" disabled>Choose a port…</option>{/if}
           {#each choices as c (c.port)}
-            <option value={c.port}>{label(c)}</option>
+            <option value={c.port} title={label(c)}>{c.port}</option>
           {/each}
         </select>
-      </label>
-    {/if}
+      {:else}
+        <span title={chosen ? label(chosen) : undefined}>{chosen ? chosen.port : "No port"}</span>
+      {/if}
+    </span>
     {#if open}
       <button onclick={disconnect} title="Close the port, so other programs can open it">Disconnect</button>
     {:else}
