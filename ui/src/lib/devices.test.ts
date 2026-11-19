@@ -38,6 +38,8 @@ const alhambra: UsbDevice = {
     { board: "alhambra-ii", level: "strong" as const },
     { board: "alchitry-au", level: "weak" as const },
   ],
+  serialPorts: [],
+  serialPort: null,
   likelyBoards: ["alhambra-ii"],
   buildMatch: null,
   who: "the Alhambra II",

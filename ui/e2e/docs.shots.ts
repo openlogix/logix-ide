@@ -132,6 +132,21 @@ test("connected devices", async ({ page }) => {
   await shot(page, "devices");
 });
 
+test("serial monitor", async ({ page }) => {
+  await startWithBoard(page);
+  await menu(page, "serial-monitor");
+  const monitor = page.getByRole("log", { name: "Serial Monitor output" });
+  await expect(monitor).toContainText("Opened");
+  // What the uart example sends, and an echo of what was typed.
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: { serialReceive: (t: string) => void } }).__fake;
+    f.serialReceive("Hello from your FPGA board\r\nHello from your FPGA board\r\nhi\r\nHello from your FPGA board\r\n");
+  });
+  await expect(monitor.locator(".line").last()).toHaveText("Hello from your FPGA board");
+  await page.getByRole("textbox", { name: "Message to send" }).fill("hello");
+  await shot(page, "serial-monitor");
+});
+
 test("project options after a board change", async ({ page }) => {
   await startWithBoard(page);
   await page.locator(".board-button").click();

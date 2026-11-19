@@ -1842,3 +1842,51 @@ test("a tab's right-click menu has the commands for its file", async ({ page }) 
   const shown = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.diagramShown);
   expect(shown?.module).toBeNull();
 });
+
+test("the Serial Monitor opens the board's serial port, shows what arrives and sends what's typed", async ({ page }) => {
+  type Fake = {
+    serialOpened: { port: string; baud: number; device: string | null }[];
+    serialSent: string[];
+    serialReceive: (text: string, events?: string[]) => void;
+    savedBaud: number | null | undefined;
+  };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await start(page);
+  await menu(page, "serial-monitor");
+  const monitor = page.getByRole("log", { name: "Serial Monitor output" });
+  // Opened by itself: the board's UART, as Logix Engine marks it, with the device.
+  await expect(monitor).toContainText("Opened /dev/cu.usbmodem0700000001 (the iCESugar v1.5, interface 1) at 115200 baud.");
+  expect((await fake()).serialOpened).toEqual([
+    { port: "/dev/cu.usbmodem0700000001", baud: 115200, device: "usb:1-1:1d50:602b:0700000001" },
+  ]);
+  // Text from the board, in pieces, becomes lines.
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    f.serialReceive("Hello from ");
+    f.serialReceive("your FPGA board\r\n");
+  });
+  await expect(monitor.locator(".line").last()).toHaveText("Hello from your FPGA board");
+  // A typed line goes out with the chosen ending, and the board echoes it.
+  const input = page.getByRole("textbox", { name: "Message to send" });
+  await input.fill("AB");
+  await input.press("Enter");
+  await expect.poll(async () => (await fake()).serialSent).toEqual(["AB\n"]);
+  await expect(monitor.locator(".line").last()).toHaveText("AB");
+  // The engine's notes, such as a pause for Upload, show in the output.
+  await page.evaluate(() =>
+    (window as unknown as { __fake: Fake }).__fake.serialReceive("", [
+      "The serial port was closed while the board is programmed.",
+    ]),
+  );
+  await expect(monitor).toContainText("The serial port was closed while the board is programmed.");
+  // The Output tab and back: the monitor kept its lines.
+  await page.getByRole("tab", { name: "Output" }).click();
+  await expect(output(page)).toBeVisible();
+  await page.getByRole("tab", { name: "Serial Monitor" }).click();
+  await expect(monitor).toContainText("Hello from your FPGA board");
+  // Another speed reopens the port at it, and is saved with the project.
+  await page.getByRole("combobox", { name: "Baud rate" }).selectOption("9600");
+  await expect.poll(async () => (await fake()).serialOpened.at(-1)?.baud).toBe(9600);
+  await menu(page, "save-as");
+  await expect.poll(async () => (await fake()).savedBaud).toBe(9600);
+});

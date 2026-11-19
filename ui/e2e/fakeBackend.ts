@@ -226,6 +226,7 @@ function blinkyDoc(board: string): ProjectDoc {
         ],
     board,
     variant: {},
+    serialBaud: null,
   };
 }
 
@@ -247,6 +248,7 @@ function bareDoc(board: string): ProjectDoc {
           ],
     board,
     variant: {},
+    serialBaud: null,
   };
 }
 
@@ -267,11 +269,22 @@ const handlers: {
   finishSetup?: () => void;
   gtkwaveOpened?: (found: boolean) => void;
   diagramOpenSource?: (at: { key: string; file: string; line: number }) => void;
+  serial?: (event: Real.SerialEvent) => void;
 } = {};
 
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
 const fake = {
   menu: (id: MenuId) => handlers.menu?.(id),
+  /** The Serial Monitor: the ports opened (with their speed) and what was sent. */
+  serialOpened: [] as { port: string; baud: number; device: string | null }[],
+  serialSent: [] as string[],
+  /** Text from the board, as Logix Engine's read_serial would return it. */
+  serialReceive: (text: string, events: string[] = []) =>
+    handlers.serial?.({ kind: "read", text, events, open: events.length === 0, port: fake.serialOpened.at(-1)?.port ?? "" }),
+  /** The engine's session ended (such as an engine restart). */
+  serialEnd: (message: string) => handlers.serial?.({ kind: "ended", message }),
+  /** The speed Save wrote (`saveProject`). */
+  savedBaud: undefined as number | null | undefined,
   /** Connects a real Alhambra II, with its captured USB names, in place of
    * the default iCESugar v1.5 (whose names aren't captured yet). */
   useAlhambra: () => {
@@ -522,6 +535,9 @@ const icesugarDevice: Real.UsbDevice = {
   boards: [{ board: "icesugar-1-5", level: "possible" }],
   likelyBoards: ["icesugar-1-5"],
   buildMatch: "possible", driver: null, who: "the iCESugar v1.5",
+  // The iCELink's one serial port.
+  serialPorts: [{ port: "/dev/cu.usbmodem0700000001", interface: 1 }],
+  serialPort: "/dev/cu.usbmodem0700000001",
 };
 
 
@@ -541,6 +557,12 @@ const alhambraDevice: Real.UsbDevice = {
   ],
   likelyBoards: ["alhambra-ii"],
   buildMatch: "strong", driver: null, who: "USB device (0403:6010)",
+  // The FTDI chip's two channels: programming, then the UART.
+  serialPorts: [
+    { port: "/dev/cu.usbserial-FTATANKC0", interface: 0 },
+    { port: "/dev/cu.usbserial-FTATANKC1", interface: 1 },
+  ],
+  serialPort: "/dev/cu.usbserial-FTATANKC1",
 };
 
 const unlisten = async () => () => {};
@@ -856,13 +878,15 @@ export const backend: typeof Real.backend = {
   recentBoards: async () => fake.recentBoards,
   closeProject: async () => {},
   openProjectDialog: async () => null,
-  saveProject: async (_dir, _files, _removed, board, variant) => {
+  saveProject: async (_dir, _files, _removed, board, variant, serialBaud) => {
     fake.saved = { board, variant };
+    fake.savedBaud = serialBaud;
   },
 
-  saveProjectAsDialog: async (_dir, _source, suggestedName, files, _removed, board, variant) => {
+  saveProjectAsDialog: async (_dir, _source, suggestedName, files, _removed, board, variant, serialBaud) => {
     if (fake.saveAsError) throw fake.saveAsError;
     fake.saved = { board, variant };
+    fake.savedBaud = serialBaud;
     return {
       dir: `/fake/projects/${suggestedName}`,
       templateDir: null,
@@ -870,7 +894,34 @@ export const backend: typeof Real.backend = {
       files,
       board,
       variant,
+      serialBaud,
     };
+  },
+
+  // The Serial Monitor: the connected devices' ports, the selected board's
+  // UART first, as Logix Engine marks it; the board echoes what's sent.
+  serialPorts: async (_folder, _saved, board) =>
+    (fake.usb ?? [icesugarDevice]).flatMap((d) =>
+      d.serialPorts.map((p) => ({
+        device: d.id,
+        who: d.who,
+        port: p.port,
+        interface: p.interface,
+        boardUart: !!board && d.boards.some((b) => b.board === board) && d.serialPort === p.port,
+      })),
+    ).sort((a, b) => Number(b.boardUart) - Number(a.boardUart)),
+  serialOpen: async (port, baud, device) => {
+    fake.serialOpened.push({ port, baud, device });
+    return `serial-${fake.serialOpened.length}`;
+  },
+  serialWrite: async (text) => {
+    fake.serialSent.push(text);
+    setTimeout(() => fake.serialReceive(text), 10);
+  },
+  serialClose: async () => {},
+  onSerial: async (handler) => {
+    handlers.serial = handler;
+    return () => {};
   },
 
   // A saved project for the UPduino v3.1 (any folder), so tests can check that

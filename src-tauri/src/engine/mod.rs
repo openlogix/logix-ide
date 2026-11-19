@@ -2,14 +2,15 @@
 //! about its releases and file layout. The engine is an MCP server that the
 //! IDE launches as a child process and talks to over stdin/stdout.
 //! Every FPGA operation goes through it: the board list, Verify, Upload,
-//! Run Tests, Simulate, Show Diagram, Auto Format, the connected devices
-//! and the language server's executable.
+//! Run Tests, Simulate, Show Diagram, Auto Format, the connected devices,
+//! the Serial Monitor and the language server's executable.
 
 mod catalog;
 mod client;
 mod devices;
 mod format;
 mod info;
+pub mod serial;
 mod setup;
 mod task;
 
