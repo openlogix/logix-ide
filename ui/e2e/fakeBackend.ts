@@ -438,7 +438,7 @@ function engineDriver(d: RawDriver, who: string): Real.Driver {
         ],
         note: "You can remove the driver later.",
         confirm: "Install Driver",
-        busy: "Installing the board's driver…",
+        busy: "Installing the board's driver, which may take a minute or two…",
         cancelled: "Cancelled: the driver wasn't installed.",
       };
   const remove: Real.Consent = udev
@@ -496,7 +496,7 @@ function sameIdsConsent(lead: string): Real.Consent {
     steps: [],
     note: "Unplug them and try again, or continue: they get the same driver too.",
     confirm: "Continue for All",
-    busy: "Installing the board's driver…",
+    busy: "Installing the board's driver, which may take a minute or two…",
     cancelled: "Cancelled: the driver wasn't installed.",
   };
 }
