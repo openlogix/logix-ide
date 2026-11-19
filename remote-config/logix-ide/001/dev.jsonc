@@ -25,7 +25,7 @@
 
   // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
   // packed by this repo's pre-release workflow (scripts/pack-examples.py).
-  // 2026-11-19: the uart examples (Alhambra II, iCESugar v1.5, iCESugar
+  // 2026-11-19: the serial examples (Alhambra II, iCESugar v1.5, iCESugar
   // Pro, Tang Nano 9K, Arty A7-35T), for the Serial Monitor.
   "logix-ide-examples": {
     "repo": "openlogix/logix-ide",
