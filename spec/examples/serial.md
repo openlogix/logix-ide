@@ -1,4 +1,4 @@
-# uart
+# serial
 
 The board's USB serial port, both ways: the board echoes what you type,
 shows the last character's code on its LEDs, and greets you after 5 seconds
@@ -8,7 +8,7 @@ into their own designs.
 ## Applies to
 
 Boards with a `uart` resource and a clock (a `clock` resource), both
-working as shipped. Other boards get no `uart`.
+working as shipped. Other boards get no `serial`.
 
 ## Choices
 
@@ -22,13 +22,13 @@ working as shipped. Other boards get no `uart`.
 ## Files
 
 Besides COMMON.md's files, four files, the same on every board, copied
-unchanged from [`uart/`](uart/) next to this file: `uart_tx.v`,
+unchanged from [`serial/`](serial/) next to this file: `uart_tx.v`,
 `uart_rx.v`, `uart_tx_tb.v` and `uart_rx_tb.v`. They're the reusable parts:
 users copy them into their own projects. Never edit them for one board;
-a change goes into `uart/` and then into every board's example.
+a change goes into `serial/` and then into every board's example.
 
 `main.v` and `main_tb.v` follow the reference in
-[`uart/reference/`](uart/reference/), the Alhambra II's: the same text,
+[`serial/reference/`](serial/reference/), the Alhambra II's: the same text,
 names, sections and comments on every board, changed only where Per board,
 below, says. So every board's example reads the same, and a change to the
 example is made in the reference first. The reference is the spec's, not
@@ -45,7 +45,7 @@ signal), the LED resource if there is one, and the drives. Nothing else.
 `main.v` uses `uart_tx` (instance `sender`) and `uart_rx` (instance
 `receiver`), with `CLK_HZ` the clock's frequency in Hz and `BAUD` a
 parameter of `main`, 115200 by default. Its parts, each in a section with
-a heading comment (`// ---- ... ----` style, as the files in `uart/`):
+a heading comment (`// ---- ... ----` style, as the files in `serial/`):
 
 - **Echo:** each received character waits in `echo_char` (`echo_waiting`
   set) until the transmitter takes it; one received while another still
@@ -170,7 +170,7 @@ in parentheses):
 2. **Logix Engine:** a catalog release with it, named by the engine's dev
    config (`remote-config/logix-engine/<NNN>/dev.jsonc`, a pull request),
    or tried first with `LOGIX_ENGINE_DEV_REMOTE_CONFIG`.
-3. **Here:** run the prompt (README.md) for `uart` and the board, then the
+3. **Here:** run the prompt (README.md) for `serial` and the board, then the
    checks. If the board doesn't fit Per board (such as a clock that isn't a
    whole number of MHz), say what's missing and fix this spec first.
 

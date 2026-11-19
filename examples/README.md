@@ -8,7 +8,7 @@ installed Logix IDEs without a new Logix IDE release. Each
 folder `<board>/<name>/` is a Logix IDE project: its files and a `logix-ide.toml`
 with the board and a one-line description.
 
-Every board's `blinky`, `bare-minimum` and `uart` are standard examples, written
+Every board's `blinky`, `bare-minimum` and `serial` are standard examples, written
 by an AI from the spec in [`spec/examples/`](../spec/examples/README.md) and
 the board's file in [Logix Catalog](https://github.com/openlogix/logix-catalog),
 which Logix Engine serves: change the spec or the board's file, not these
