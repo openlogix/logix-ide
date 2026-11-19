@@ -119,6 +119,19 @@ pub struct Project {
     /// The board's variant, e.g. `{"memory": "ram"}`: the `[variant]`
     /// table. Empty means the board's default.
     pub variant: Variant,
+    /// The Serial Monitor's speed for this project, bits per second: the
+    /// `[serial]` table's `baud`. None means the default, 115200.
+    pub serial_baud: Option<u32>,
+}
+
+/// The Serial Monitor's speed in the project settings (`[serial] baud`).
+fn read_serial_baud(settings: &toml_edit::DocumentMut) -> Option<u32> {
+    let baud = settings
+        .get("serial")?
+        .as_table_like()?
+        .get("baud")?
+        .as_integer()?;
+    u32::try_from(baud).ok().filter(|b| *b > 0)
 }
 
 /// A board's variant: values of its dimensions, by dimension id.
@@ -263,6 +276,7 @@ pub fn load(dir: &Path) -> Result<Project> {
             .and_then(|b| b.as_str())
             .map(String::from),
         variant: read_variant(&settings),
+        serial_baud: read_serial_baud(&settings),
     })
 }
 
@@ -275,6 +289,7 @@ pub fn save(
     removed: &[String],
     board: Option<&str>,
     variant: &Variant,
+    serial_baud: Option<u32>,
 ) -> Result<()> {
     if !dir.is_dir() {
         bail!("The project folder {} no longer exists.", dir.display());
@@ -314,6 +329,16 @@ pub fn save(
         }
         settings["variant"] = toml_edit::Item::Table(table);
     }
+    match serial_baud {
+        Some(baud) => {
+            let mut table = toml_edit::Table::new();
+            table["baud"] = toml_edit::value(i64::from(baud));
+            settings["serial"] = toml_edit::Item::Table(table);
+        }
+        None => {
+            settings.remove("serial");
+        }
+    }
     let mut text = settings.to_string();
     if is_new {
         text.insert_str(0, SETTINGS_HEADER);
@@ -331,6 +356,7 @@ pub fn create(
     removed: &[String],
     board: Option<&str>,
     variant: &Variant,
+    serial_baud: Option<u32>,
 ) -> Result<()> {
     if target.exists() {
         bail!(
@@ -363,7 +389,7 @@ pub fn create(
             .collect();
         copy_project_contents(source, target, &skip, CopyMode::All)?;
     }
-    save(target, files, &[], board, variant)
+    save(target, files, &[], board, variant, serial_baud)
 }
 
 /// Save As into `target`: the project's own folder (`source`) is saved in
@@ -373,6 +399,8 @@ pub fn create(
 /// asked to replace, is checked (`check_replace`) and moved away with
 /// `trash` first; then the project is created there with `source`'s other
 /// files.
+// The project's files and each of its settings, one argument each, as save's.
+#[allow(clippy::too_many_arguments)]
 pub fn save_as(
     target: &Path,
     source: Option<&Path>,
@@ -380,17 +408,20 @@ pub fn save_as(
     removed: &[String],
     board: Option<&str>,
     variant: &Variant,
+    serial_baud: Option<u32>,
     trash: impl FnOnce(&Path) -> Result<()>,
 ) -> Result<()> {
     let real = |p: &Path| p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
     if target.exists() && source.is_some_and(|source| real(target) == real(source)) {
-        return save(target, files, removed, board, variant).context("Couldn't save the project.");
+        return save(target, files, removed, board, variant, serial_baud)
+            .context("Couldn't save the project.");
     }
     if target.exists() {
         check_replace(target, source)?;
         trash(target)?;
     }
-    create(target, source, files, removed, board, variant).context("Couldn't save the project.")
+    create(target, source, files, removed, board, variant, serial_baud)
+        .context("Couldn't save the project.")
 }
 
 /// Checks that Save As may replace the existing `target`, which the user
@@ -658,14 +689,31 @@ mod tests {
             file("main.v", "module main; endmodule\n"),
             file("pinout.pcf", "pins"),
         ];
-        create(&dir, None, &files, &[], Some("alhambra-ii"), NO_VARIANT).unwrap();
+        create(
+            &dir,
+            None,
+            &files,
+            &[],
+            Some("alhambra-ii"),
+            NO_VARIANT,
+            None,
+        )
+        .unwrap();
 
         let p = load(&dir).unwrap();
         assert_eq!(p.name, "my blinky");
         assert_eq!(p.files, files);
         assert_eq!(p.board.as_deref(), Some("alhambra-ii"));
 
-        save(&dir, &[file("main.v", "changed\n")], &[], None, NO_VARIANT).unwrap();
+        save(
+            &dir,
+            &[file("main.v", "changed\n")],
+            &[],
+            None,
+            NO_VARIANT,
+            None,
+        )
+        .unwrap();
         let p = load(&dir).unwrap();
         assert_eq!(p.files[0].text, "changed\n");
         assert_eq!(p.board, None);
@@ -708,7 +756,15 @@ mod tests {
             .map(|f| f.name)
             .collect();
         assert_eq!(names, ["main.sv", "util.sv"]);
-        assert!(save(tmp.path(), &[file("main.sv", "y")], &[], None, NO_VARIANT).is_ok());
+        assert!(save(
+            tmp.path(),
+            &[file("main.sv", "y")],
+            &[],
+            None,
+            NO_VARIANT,
+            None
+        )
+        .is_ok());
     }
 
     #[test]
@@ -741,6 +797,7 @@ mod tests {
             &["old.v".into(), "gone.pcf".into()],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap();
         assert!(!dir.join("old.v").exists());
@@ -760,6 +817,7 @@ mod tests {
             &["Foo.v".into()],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap();
         let names: Vec<_> = load(tmp.path())
@@ -781,6 +839,7 @@ mod tests {
             &[],
             None,
             NO_VARIANT,
+            None,
         );
         assert!(err.is_err());
         let err = save(
@@ -789,9 +848,18 @@ mod tests {
             &["../../etc".into()],
             None,
             NO_VARIANT,
+            None,
         );
         assert!(err.is_err());
-        assert!(save(tmp.path(), &[file("other.v", "x")], &[], None, NO_VARIANT).is_err());
+        assert!(save(
+            tmp.path(),
+            &[file("other.v", "x")],
+            &[],
+            None,
+            NO_VARIANT,
+            None
+        )
+        .is_err());
     }
 
     #[test]
@@ -806,12 +874,29 @@ mod tests {
             &[],
             Some("b"),
             NO_VARIANT,
+            None,
         )
         .unwrap();
         let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
         assert!(saved.starts_with("# My notes.\nboard = \"b\""), "{saved}");
         assert!(saved.contains("[future]\nx = 1"), "{saved}");
         assert_eq!(load(tmp.path()).unwrap().board.as_deref(), Some("b"));
+    }
+
+    #[test]
+    fn saves_and_loads_the_serial_baud() {
+        let tmp = tempfile::tempdir().unwrap();
+        write(tmp.path(), MAIN_FILE, "x");
+        let files = [file("main.v", "y")];
+        save(tmp.path(), &files, &[], None, NO_VARIANT, Some(9600)).unwrap();
+        let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
+        assert!(saved.contains("[serial]\nbaud = 9600\n"), "{saved}");
+        assert_eq!(load(tmp.path()).unwrap().serial_baud, Some(9600));
+        // The default: no [serial] table.
+        save(tmp.path(), &files, &[], None, NO_VARIANT, None).unwrap();
+        let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
+        assert!(!saved.contains("serial"), "{saved}");
+        assert_eq!(load(tmp.path()).unwrap().serial_baud, None);
     }
 
     #[test]
@@ -825,6 +910,7 @@ mod tests {
             &[],
             Some("icesugar-pro"),
             &ram,
+            None,
         )
         .unwrap();
         let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
@@ -840,6 +926,7 @@ mod tests {
             &[],
             Some("icesugar-pro"),
             NO_VARIANT,
+            None,
         )
         .unwrap();
         let saved = std::fs::read_to_string(tmp.path().join(SETTINGS_FILE)).unwrap();
@@ -857,6 +944,7 @@ mod tests {
             &[],
             Some("alhambra-ii"),
             NO_VARIANT,
+            None,
         )
         .unwrap();
         assert_eq!(
@@ -870,7 +958,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let project = tmp.path().join("blinky");
         let files = [file("main.v", "module main; endmodule")];
-        create(&project, None, &files, &[], Some("b"), NO_VARIANT).unwrap();
+        create(&project, None, &files, &[], Some("b"), NO_VARIANT, None).unwrap();
         assert!(check_replace(&project, None).is_ok());
         let empty = tmp.path().join("empty");
         std::fs::create_dir(&empty).unwrap();
@@ -885,7 +973,7 @@ mod tests {
         // Never the project being saved, or a folder that holds it.
         assert!(check_replace(&project, Some(&project)).is_err());
         let parent = tmp.path().join("work");
-        create(&parent, None, &files, &[], None, NO_VARIANT).unwrap();
+        create(&parent, None, &files, &[], None, NO_VARIANT, None).unwrap();
         let inner = parent.join("data");
         std::fs::create_dir(&inner).unwrap();
         assert!(check_replace(&parent, Some(&inner)).is_err());
@@ -896,7 +984,16 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let root = tmp.path().join("Logix");
         let files = [file("main.v", "m")];
-        create(&root.join("untitled"), None, &files, &[], None, NO_VARIANT).unwrap();
+        create(
+            &root.join("untitled"),
+            None,
+            &files,
+            &[],
+            None,
+            NO_VARIANT,
+            None,
+        )
+        .unwrap();
         create(
             &root.join("untitled copy"),
             None,
@@ -904,6 +1001,7 @@ mod tests {
             &[],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap();
 
@@ -915,13 +1013,13 @@ mod tests {
 
         // A saved project: next to it.
         let work = tmp.path().join("work");
-        create(&work.join("pll"), None, &files, &[], None, NO_VARIANT).unwrap();
+        create(&work.join("pll"), None, &files, &[], None, NO_VARIANT, None).unwrap();
         assert_eq!(save_as_start(Some(&work.join("pll")), &root), work);
 
         // Never inside a project: a project folder in another project's
         // folder (a projects folder set inside a project) steps out.
         let outer = tmp.path().join("outer");
-        create(&outer, None, &files, &[], None, NO_VARIANT).unwrap();
+        create(&outer, None, &files, &[], None, NO_VARIANT, None).unwrap();
         let inner = outer.join("sub");
         std::fs::create_dir(&inner).unwrap();
         assert_eq!(save_as_start(None, &inner), tmp.path());
@@ -933,7 +1031,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let project = tmp.path().join("untitled copy");
         let files = [file("main.v", "old"), file("old.v", "x")];
-        create(&project, None, &files, &[], Some("b"), NO_VARIANT).unwrap();
+        create(&project, None, &files, &[], Some("b"), NO_VARIANT, None).unwrap();
         write(&project, "data.hex", "00");
         std::fs::create_dir(project.join("docs")).unwrap();
         write(&project.join("docs"), "notes.md", "hi");
@@ -947,6 +1045,7 @@ mod tests {
             &["old.v".to_string()],
             Some("b"),
             NO_VARIANT,
+            None,
             |_| panic!("the project's own folder must not be trashed"),
         )
         .unwrap();
@@ -968,6 +1067,7 @@ mod tests {
             &[],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap();
         let mut trashed = None;
@@ -978,6 +1078,7 @@ mod tests {
             &[],
             Some("b"),
             NO_VARIANT,
+            None,
             |old| {
                 trashed = Some(old.to_path_buf());
                 std::fs::remove_dir_all(old)?;
@@ -1000,6 +1101,7 @@ mod tests {
             &[],
             None,
             NO_VARIANT,
+            None,
             |_| Ok(())
         )
         .is_err());
@@ -1010,7 +1112,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let outer = tmp.path().join("blinky");
         let files = [file("main.v", "module main; endmodule")];
-        create(&outer, None, &files, &[], None, NO_VARIANT).unwrap();
+        create(&outer, None, &files, &[], None, NO_VARIANT, None).unwrap();
 
         // Inside the project being saved, or inside any other project.
         let err = create(
@@ -1020,6 +1122,7 @@ mod tests {
             &[],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap_err();
         assert!(
@@ -1028,7 +1131,7 @@ mod tests {
             "{err}"
         );
         let deep = outer.join("sub").join("copy");
-        assert!(create(&deep, None, &files, &[], None, NO_VARIANT).is_err());
+        assert!(create(&deep, None, &files, &[], None, NO_VARIANT, None).is_err());
         assert!(!outer.join("blinky").exists());
 
         // Next to it is fine.
@@ -1039,6 +1142,7 @@ mod tests {
             &[],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap();
     }
@@ -1068,6 +1172,7 @@ mod tests {
             &["removed.v".into()],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap();
 
@@ -1098,6 +1203,7 @@ mod tests {
             &[],
             None,
             NO_VARIANT,
+            None,
         )
         .unwrap_err();
         assert!(err.to_string().contains("already exists"));
@@ -1204,7 +1310,17 @@ mod tests {
         std::fs::create_dir(from.join("boards")).unwrap();
         std::fs::write(from.join("boards").join("mine.json"), "{}").unwrap();
         let files = load(&from).unwrap().files;
-        save_as(&to, Some(&from), &files, &[], None, NO_VARIANT, |_| Ok(())).unwrap();
+        save_as(
+            &to,
+            Some(&from),
+            &files,
+            &[],
+            None,
+            NO_VARIANT,
+            None,
+            |_| Ok(()),
+        )
+        .unwrap();
         assert_eq!(
             std::fs::read_to_string(to.join("boards").join("mine.json")).unwrap(),
             "{}"

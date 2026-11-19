@@ -25,6 +25,7 @@ const savedDoc: ProjectDoc = {
   name: "blinky",
   board: null,
   variant: {},
+  serialBaud: null,
   files: [
     { name: "main.v", text: "m" },
     { name: "pinout.pcf", text: "p" },

@@ -30,6 +30,11 @@ export interface WorkingProject {
    * or RAM isn't a change to the design).
    */
   variant: Variant;
+  /**
+   * The Serial Monitor's speed (null: 115200). Saved with the project, and,
+   * like the variant, changing it doesn't mark the project unsaved.
+   */
+  serialBaud: number | null;
   /** The main file (main.v or main.sv) first. */
   files: OpenFile[];
   /** Files in the folder that were deleted or renamed since the last save. */
@@ -46,6 +51,7 @@ export function fromDoc(doc: ProjectDoc): WorkingProject {
     board: doc.board,
     savedBoard: doc.board,
     variant: { ...doc.variant },
+    serialBaud: doc.serialBaud ?? null,
     files: doc.files.map((f) => ({
       name: f.name,
       text: f.text,

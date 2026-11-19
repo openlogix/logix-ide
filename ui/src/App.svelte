@@ -104,6 +104,7 @@
   import { Redraws } from "./lib/redraw";
   import { addLinks, parseAnsi, type Segment } from "./lib/ansi";
   import { BARE_MINIMUM, examplesSummary, type ExampleEntry } from "./lib/examples";
+  import SerialMonitor from "./lib/SerialMonitor.svelte";
   import {
     byFile,
     firstLocated,
@@ -1606,6 +1607,26 @@
   let homeVariant = $state<Variant>({});
   /** The board in the toolbar: the project's, or else `homeBoard`. */
   const currentBoard = $derived(project ? project.board : homeBoard);
+
+  // ---- Serial Monitor (the bottom pane's second tab) ----
+
+  /** The bottom pane's tab: the output, or the Serial Monitor. */
+  let bottomTab = $state<"output" | "serial">("output");
+  /** Whether the Serial Monitor was ever shown: it stays open from then on. */
+  let serialStarted = $state(false);
+  /** The speed with no project (a project saves its own). */
+  let homeBaud = $state(115200);
+  const serialBaud = $derived(project ? (project.serialBaud ?? 115200) : homeBaud);
+  function setSerialBaud(baud: number) {
+    // Like the variant: saved with the project, not a change to the design.
+    if (project) project.serialBaud = baud === 115200 ? null : baud;
+    else homeBaud = baud;
+  }
+  function showSerialMonitor() {
+    if (!consoleVisible) setConsoleVisible(true);
+    bottomTab = "serial";
+    serialStarted = true;
+  }
   /** The toolbar board's catalog entry (null if the engine doesn't list it). */
   const currentBoardInfo = $derived(boards.find((b) => b.id === currentBoard) ?? null);
   /** The toolbar board's variant, as stored ({} for its default). */
@@ -1978,7 +1999,7 @@
     const variant = { ...p.variant };
     try {
       await during("Saving…", () =>
-        backend.saveProject(dir, files, [...p.removed], board, variant),
+        backend.saveProject(dir, files, [...p.removed], board, variant, p.serialBaud),
       );
       markSaved(p, dir, p.name, files, board);
       fileError = null;
@@ -2006,6 +2027,7 @@
         [...p.removed],
         board,
         variant,
+        p.serialBaud,
       );
       if (!doc || !doc.dir) return false;
       // Keep the editor (and its undo history) as is.
@@ -2069,6 +2091,10 @@
     }
     if (id === "copy-path") {
       showProjectFolder(true);
+      return;
+    }
+    if (id === "serial-monitor") {
+      showSerialMonitor();
       return;
     }
     if (id === "devices") {
@@ -2142,6 +2168,7 @@
         | "build-report"
         | "show-diagram"
         | "devices"
+        | "serial-monitor"
         | "board-explorer"
         | "system-info"
         | "check-for-updates"
@@ -2699,13 +2726,46 @@
       style:height={consoleVisible && !collapsing ? `${consoleHeight}px` : undefined}
     >
       {#if consoleVisible}
+      <div class="pane-tabs" role="tablist" aria-label="Bottom pane">
+        <button
+          role="tab"
+          aria-selected={bottomTab === "output"}
+          class:current={bottomTab === "output"}
+          onclick={() => (bottomTab = "output")}>Output</button
+        >
+        <button
+          role="tab"
+          aria-selected={bottomTab === "serial"}
+          class:current={bottomTab === "serial"}
+          title="Serial Monitor (Tools > Serial Monitor)"
+          onclick={showSerialMonitor}>Serial Monitor</button
+        >
+      </div>
+      {/if}
+      {#if serialStarted}
+        <!-- Kept open while the output is shown, so nothing is missed. -->
+        <div
+          class="serial-pane"
+          style:display={consoleVisible && !collapsing && bottomTab === "serial" ? null : "none"}
+        >
+          <SerialMonitor
+            board={currentBoard}
+            {boardsFolder}
+            {boardsSaved}
+            baud={serialBaud}
+            onBaud={setSerialBaud}
+            active={consoleVisible && bottomTab === "serial"}
+          />
+        </div>
+      {/if}
+      {#if consoleVisible}
       <!-- Focusable, so Select All and Copy can act on the output (and the
            keyboard can scroll it). -->
       <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="console"
-        style:display={collapsing ? "none" : null}
+        style:display={collapsing || bottomTab !== "output" ? "none" : null}
         bind:this={consoleEl}
         tabindex="0"
         role="log"
@@ -3170,6 +3230,31 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+  .pane-tabs {
+    display: flex;
+    background: var(--tabs-bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .pane-tabs button {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: none;
+    padding: 4px 12px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .pane-tabs button.current {
+    color: var(--fg);
+    border-bottom-color: var(--accent);
+  }
+  .serial-pane {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
   .status-bar {
     display: flex;

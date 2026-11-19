@@ -35,6 +35,9 @@ pub const SHOW_DIAGRAM: &str = "show-diagram";
 /// date), then shows the report (`BuildReport.svelte`).
 pub const BUILD_REPORT: &str = "build-report";
 pub const DEVICES: &str = "devices";
+/// Tools > Serial Monitor: the bottom pane's Serial Monitor tab, open on
+/// the board's serial port (as Arduino IDE's, and its key).
+pub const SERIAL_MONITOR: &str = "serial-monitor";
 /// Tools > Board Explorer…: the FPGA families, FPGAs, boards and examples
 /// Logix IDE knows, and how they relate, opened at the toolbar's board.
 pub const BOARD_EXPLORER: &str = "board-explorer";
@@ -396,6 +399,11 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let tools = tools
         .item(&MenuItemBuilder::with_id(BOARD_EXPLORER, "Board Explorer…").build(app)?)
         .item(&MenuItemBuilder::with_id(DEVICES, "Connected Devices…").build(app)?)
+        .item(&item(
+            SERIAL_MONITOR,
+            "Serial Monitor",
+            "CmdOrCtrl+Shift+M",
+        )?)
         .build()?;
 
     let mut menu = MenuBuilder::new(app);
@@ -453,9 +461,10 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         }
         NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
-        | SHOW_DIAGRAM | DEVICES | SETTINGS | GO_TO_DEFINITION | TOGGLE_COMMENT | SELECT_ALL
-        | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST
-        | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER | SYSTEM_INFO | CHECK_UPDATES | BUILD_REPORT => {
+        | SHOW_DIAGRAM | DEVICES | SERIAL_MONITOR | SETTINGS | GO_TO_DEFINITION
+        | TOGGLE_COMMENT | SELECT_ALL | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST
+        | SIMULATE_THIS_TEST | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER | SYSTEM_INFO
+        | CHECK_UPDATES | BUILD_REPORT => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {

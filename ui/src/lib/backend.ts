@@ -131,6 +131,8 @@ export interface ProjectDoc {
   board: string | null;
   /** The board's variant (`[variant]` in logix-ide.toml); {} for its default. */
   variant: Variant;
+  /** The Serial Monitor's speed (`[serial] baud`); null for the default, 115200. */
+  serialBaud: number | null;
 }
 
 /**
@@ -460,7 +462,29 @@ export interface UsbDevice {
   who: string;
   /** On Windows and Linux, the driver or udev rule its board needs and has; null elsewhere. */
   driver: Driver | null;
+  /** Its serial ports, each with its USB interface when known. */
+  serialPorts: { port: string; interface: number | null }[];
+  /** Its board's UART port, by the engine; null when it can't tell. */
+  serialPort: string | null;
 }
+
+/** A serial port the Serial Monitor can open. */
+export interface SerialChoice {
+  /** The device it's on (Logix Engine's id). */
+  device: string;
+  /** The device for people, such as "the Alhambra II". */
+  who: string;
+  /** Such as COM5, /dev/cu.usbserial-A10 or /dev/ttyUSB1. */
+  port: string;
+  interface: number | null;
+  /** The selected board's UART, by the engine: the port to open by itself. */
+  boardUart: boolean;
+}
+
+/** What the Serial Monitor's read loop sends. */
+export type SerialEvent =
+  | { kind: "read"; text: string; events: string[]; open: boolean; port: string }
+  | { kind: "ended"; message: string };
 
 /**
  * Logix Engine's match level: what a match means for the user, never its
@@ -598,6 +622,7 @@ export type MenuId =
   | "show-diagram"
   | "build-report"
   | "devices"
+  | "serial-monitor"
   | "board-explorer"
   | "settings"
   | "go-to-definition"
@@ -778,8 +803,9 @@ export const backend = {
     removed: string[],
     board: string | null,
     variant: Variant,
+    serialBaud: number | null,
   ): Promise<void> =>
-    invoke<void>("save_project", { dir, files, removed, board, variant }),
+    invoke<void>("save_project", { dir, files, removed, board, variant, serialBaud }),
 
   /**
    * Asks for a name and location, then creates the project there (copying
@@ -795,6 +821,7 @@ export const backend = {
     removed: string[],
     board: string | null,
     variant: Variant,
+    serialBaud: number | null,
   ): Promise<ProjectDoc | null> =>
     invoke<ProjectDoc | null>("save_project_as_dialog", {
       projectDir,
@@ -804,6 +831,7 @@ export const backend = {
       removed,
       board,
       variant,
+      serialBaud,
     }),
 
   /** Opens the project in `dir` (File > Open Recent). */
@@ -853,6 +881,25 @@ export const backend = {
   /** Sends one LSP message (JSON text) to the language server. */
   lspSend: (message: string): Promise<void> =>
     invoke<void>("lsp_send", { message }),
+
+  /**
+   * The connected devices' serial ports, the selected board's UART first
+   * (Logix Engine finds it from the board's data).
+   */
+  serialPorts: (folder: string | null, saved: boolean, board: string | null): Promise<SerialChoice[]> =>
+    invoke<SerialChoice[]>("serial_ports", { folder, saved, board }),
+  /**
+   * Opens the Serial Monitor's port (closing one already open); what arrives
+   * comes through `onSerial`. `device` lets Logix Engine pause it during
+   * Upload and reopen it after an unplug.
+   */
+  serialOpen: (port: string, baud: number, device: string | null): Promise<string> =>
+    invoke<string>("serial_open", { port, baud, device }),
+  /** Sends text as it is (add the line ending). */
+  serialWrite: (text: string): Promise<void> => invoke<void>("serial_write", { text }),
+  serialClose: (): Promise<void> => invoke<void>("serial_close"),
+  onSerial: (handler: (event: SerialEvent) => void): Promise<UnlistenFn> =>
+    listen<SerialEvent>("serial", (e) => handler(e.payload)),
 
   /** Messages (JSON text) from the language server. */
   onLspMessage: (handler: (message: string) => void): Promise<UnlistenFn> =>

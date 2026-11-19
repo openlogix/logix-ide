@@ -41,6 +41,20 @@ pub struct UsbDevice {
     /// engine's `driver`): on Windows, for a board whose programmer needs
     /// one, a driver (WinUSB); on Linux, for every board, a udev rule.
     pub driver: Option<Driver>,
+    /// Its serial ports (the engine's `serial_ports`), for the Serial
+    /// Monitor's Change… list.
+    pub serial_ports: Vec<DevicePort>,
+    /// The port of its board's UART, the one the Serial Monitor opens (the
+    /// engine's `serial_port`); None when the engine can't tell.
+    pub serial_port: Option<String>,
+}
+
+/// One serial port of a device: its name, and its USB interface when known.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DevicePort {
+    pub port: String,
+    pub interface: Option<u8>,
 }
 
 /// The engine's `driver` for a device (Windows and Linux): what the board's
@@ -247,6 +261,23 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
             build_match: MatchLevel::parse(&d["build_match"]),
             who: text(d, "who"),
             driver: parse_driver(&d["driver"]),
+            serial_ports: d["serial_ports"]
+                .as_array()
+                .map(|ports| {
+                    ports
+                        .iter()
+                        .filter_map(|p| {
+                            Some(DevicePort {
+                                port: p["port"].as_str()?.to_string(),
+                                interface: p["interface"]
+                                    .as_u64()
+                                    .and_then(|i| u8::try_from(i).ok()),
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+            serial_port: d["serial_port"].as_str().map(String::from),
         })
         .collect();
     let unreachable = result["unreachable"]

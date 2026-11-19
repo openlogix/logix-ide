@@ -241,6 +241,8 @@ pub struct ProjectDoc {
     board: Option<String>,
     /// The board's variant (empty: the board's default).
     variant: project::Variant,
+    /// The Serial Monitor's speed (None: the default, 115200).
+    serial_baud: Option<u32>,
 }
 
 impl From<project::Project> for ProjectDoc {
@@ -252,6 +254,7 @@ impl From<project::Project> for ProjectDoc {
             files: p.files,
             board: p.board,
             variant: p.variant,
+            serial_baud: p.serial_baud,
         }
     }
 }
@@ -486,6 +489,8 @@ async fn example_doc(
         files: loaded.files,
         board: Some(board),
         variant: project::Variant::new(),
+        // An example may name its own speed.
+        serial_baud: loaded.serial_baud,
     })
 }
 
@@ -1043,6 +1048,155 @@ pub async fn connected_devices(
     Ok(found)
 }
 
+// ---------------------------------------------------------------------------
+// Serial Monitor (Logix Engine's serial tools; engine/serial.rs)
+// ---------------------------------------------------------------------------
+
+/// A serial port the Serial Monitor can open.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SerialChoice {
+    /// The device it's on (the engine's id), so the engine pauses it during
+    /// Upload and finds it again after an unplug.
+    pub device: String,
+    /// The device for people, such as "the Alhambra II".
+    pub who: String,
+    pub port: String,
+    pub interface: Option<u8>,
+    /// Whether it's the board's UART (the engine's `serial_port`) on a
+    /// device that may be the selected board: the one to open by itself.
+    pub board_uart: bool,
+}
+
+/// The connected devices' serial ports, the selected board's UART first
+/// (by the engine: `list_devices` with the board).
+#[tauri::command]
+pub async fn serial_ports(
+    state: State<'_, AppState>,
+    folder: Option<String>,
+    saved: bool,
+    board: Option<String>,
+) -> Result<Vec<SerialChoice>, UserError> {
+    let engine = ready_engine(&state).await?;
+    let file = boards_file(folder.as_deref(), saved);
+    let usable = engine::project_boards(&engine, file.as_ref())
+        .await
+        .ok()
+        .and_then(Result::ok)
+        .is_some();
+    let file = if usable { file } else { None };
+    let list = engine::list_devices(&engine, file.as_ref(), board.as_deref())
+        .await
+        .context("Couldn't list the serial ports.")?;
+    let mut choices: Vec<SerialChoice> = list
+        .devices
+        .iter()
+        .flat_map(|d| {
+            let is_board = board
+                .as_deref()
+                .is_some_and(|b| d.boards.iter().any(|m| m.board == b));
+            d.serial_ports.iter().map(move |p| SerialChoice {
+                device: d.id.clone(),
+                who: d.who.clone(),
+                port: p.port.clone(),
+                interface: p.interface,
+                board_uart: is_board && d.serial_port.as_deref() == Some(p.port.as_str()),
+            })
+        })
+        .collect();
+    // The board's UART first (stable: the engine's order otherwise).
+    choices.sort_by_key(|c| !c.board_uart);
+    Ok(choices)
+}
+
+/// What the Serial Monitor's read loop sends the UI ("serial" events).
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase", tag = "kind")]
+pub enum SerialEvent {
+    /// What arrived, and what happened to the port meanwhile.
+    Read(engine::serial::SerialRead),
+    /// The session ended on its own (such as the engine restarting for an
+    /// update): the message, and the monitor reopens it.
+    Ended { message: String },
+}
+
+/// Opens the Serial Monitor's port (closing one already open) and reads it
+/// in a loop, sending what arrives as "serial" events. Returns the session.
+#[tauri::command]
+pub async fn serial_open(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    port: String,
+    baud: u32,
+    device: Option<String>,
+) -> Result<String, UserError> {
+    let engine = ready_engine(&state).await?;
+    let mut current = state.serial.lock().await;
+    if let Some((old, stop)) = current.take() {
+        stop.cancel();
+        let _ = engine::serial::close(&engine, &old).await;
+    }
+    let session = engine::serial::open(&engine, &port, baud, device.as_deref()).await?;
+    crate::log!("Serial Monitor: opened {port} at {baud} baud ({session})");
+    let stop = tokio_util::sync::CancellationToken::new();
+    *current = Some((session.clone(), stop.clone()));
+    let id = session.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            // A long poll: the engine answers as soon as something arrives.
+            let read = tokio::select! {
+                () = stop.cancelled() => break,
+                r = engine::serial::read(&engine, &id, 1000) => r,
+            };
+            match read {
+                Ok(r) if r.text.is_empty() && r.events.is_empty() => {}
+                Ok(r) => {
+                    let _ = app.emit("serial", SerialEvent::Read(r));
+                }
+                Err(e) => {
+                    if !stop.is_cancelled() {
+                        crate::log!("Serial Monitor: {id} ended: {e:#}");
+                        let _ = app.emit(
+                            "serial",
+                            SerialEvent::Ended {
+                                message: format!("{e:#}"),
+                            },
+                        );
+                    }
+                    break;
+                }
+            }
+        }
+    });
+    Ok(session)
+}
+
+/// Sends text to the Serial Monitor's port, as it is (the UI adds the
+/// line ending).
+#[tauri::command]
+pub async fn serial_write(state: State<'_, AppState>, text: String) -> Result<(), UserError> {
+    let engine = ready_engine(&state).await?;
+    let Some(session) = state.serial.lock().await.as_ref().map(|(s, _)| s.clone()) else {
+        return Err(anyhow!("The Serial Monitor isn't open.").into());
+    };
+    engine::serial::write(&engine, &session, &text).await?;
+    Ok(())
+}
+
+/// Closes the Serial Monitor's port, so other programs can open it.
+#[tauri::command]
+pub async fn serial_close(state: State<'_, AppState>) -> Result<(), UserError> {
+    let Some((session, stop)) = state.serial.lock().await.take() else {
+        return Ok(());
+    };
+    stop.cancel();
+    if let Ok(engine) = ready_engine(&state).await {
+        let _ = engine::serial::close(&engine, &session).await;
+    }
+    crate::log!("Serial Monitor: closed {session}");
+    Ok(())
+}
+
 /// The GTKWave layouts the user saved from GTKWave for the project `key`
 /// (`build_dir::user_layouts`): the UI takes those that differ into the
 /// project, as edits, saved with it like any other file. The UI calls this
@@ -1291,6 +1445,7 @@ fn no_pins_doc(board: String) -> ProjectDoc {
         }],
         board: Some(board),
         variant: project::Variant::new(),
+        serial_baud: None,
     }
 }
 
@@ -1386,6 +1541,7 @@ pub async fn save_project(
     removed: Vec<String>,
     board: Option<String>,
     variant: project::Variant,
+    serial_baud: Option<u32>,
 ) -> Result<(), UserError> {
     let saved_dir = std::path::PathBuf::from(&dir);
     blocking(move || {
@@ -1395,6 +1551,7 @@ pub async fn save_project(
             &removed,
             board.as_deref(),
             &variant,
+            serial_baud,
         )
         .context("Couldn't save the project.")
     })
@@ -1468,6 +1625,7 @@ pub async fn save_project_as_dialog(
     removed: Vec<String>,
     board: Option<String>,
     variant: project::Variant,
+    serial_baud: Option<u32>,
 ) -> Result<Option<ProjectDoc>, UserError> {
     let mut dialog = app.dialog().file().set_title("Save Project As");
     // Start next to the project's own folder (a project never saved, even
@@ -1497,6 +1655,7 @@ pub async fn save_project_as_dialog(
             &removed,
             board.as_deref(),
             &variant,
+            serial_baud,
             |old| {
                 platform::move_to_trash(old).context("Couldn't replace the old project.")?;
                 crate::log!(

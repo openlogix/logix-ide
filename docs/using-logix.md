@@ -294,6 +294,41 @@ be programmed too, and nothing else on your computer changes. If Linux
 can't ask for your password (for example, when you're connected over SSH),
 Logix IDE shows the commands to run in a terminal instead.
 
+The rule also lets the [Serial Monitor](#serial-monitor) open the board's
+serial port. A rule added before Logix IDE had the Serial Monitor doesn't
+cover it: if the Serial Monitor can't open the port, choose **Remove udev
+Rule…** and then **Add udev Rule…** in **Tools > Connected Devices…**.
+
+## Serial Monitor
+
+Many boards have a serial port to the computer over their USB cable: the
+design sends text to it, and you can type back, as with Arduino's Serial
+Monitor. Try it with the **uart** example of a board that has one (in
+**Examples…**).
+
+**Tools > Serial Monitor** (or the **Serial Monitor** tab of the bottom
+pane) opens the board's serial port by itself: Logix IDE knows from the
+board's data which port it is, even when the computer lists several for
+the board (such as the two channels of an FTDI chip). What the board sends
+shows as it arrives.
+
+- **Type** a message and press ++enter++ to send it. **Enter sends** says
+  what's added at the end (a newline by default). With **Send each key**,
+  each key goes to the board as you press it, as in a terminal.
+- **Baud** is the speed, 115200 by default. It's saved with the project.
+  It must match the design's, or the text looks garbled.
+- **Upload** needs nothing from you: the Serial Monitor closes the port
+  while the board is programmed, and opens it again after.
+- **Unplugging** the board closes the port; it opens again when the
+  board is back.
+- **Port** chooses another serial port, for a board whose port Logix IDE
+  doesn't know. **Disconnect** frees the port for another program.
+- **Timestamps** shows when each line arrived; **Clear** empties the
+  monitor.
+
+The Serial Monitor stays open while you look at the **Output** tab, so
+nothing the board sends is missed.
+
 ## Your own boards
 
 A board that isn't in Logix IDE's board list can be added to a project. Add a
@@ -382,6 +417,7 @@ opens this run's folder of logs, to attach to a report (see
 | Show Diagram | ++shift+cmd+d++ | ++ctrl+shift+d++ |
 | Auto Format | ++cmd+t++ | ++ctrl+t++ |
 | Toggle Output | ++cmd+j++ | ++ctrl+j++ |
+| Serial Monitor | ++shift+cmd+m++ | ++ctrl+shift+m++ |
 | Comment/Uncomment lines | ++cmd+slash++ | ++ctrl+slash++ |
 | Indent / Un-indent lines (to leave the editor: ++escape++, then ++tab++) | ++tab++ / ++shift+tab++ | ++tab++ / ++shift+tab++ |
 | Select All (editor or output) | ++cmd+a++ | ++ctrl+a++ |

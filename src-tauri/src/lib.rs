@@ -49,6 +49,9 @@ pub struct AppState {
     /// Set when the UI has already dealt with unsaved changes, so the next
     /// close request goes through.
     force_close: AtomicBool,
+    /// The Serial Monitor's engine session, while open, and what stops its
+    /// read loop (commands.rs, `serial_open`). One at a time.
+    serial: tokio::sync::Mutex<Option<(String, tokio_util::sync::CancellationToken)>>,
 }
 
 #[derive(Clone)]
@@ -149,6 +152,10 @@ pub fn run() {
             commands::install_device_driver,
             commands::uninstall_device_driver,
             commands::connected_devices,
+            commands::serial_ports,
+            commands::serial_open,
+            commands::serial_write,
+            commands::serial_close,
             commands::lsp_start,
             commands::lsp_send,
             commands::lsp_stop,
