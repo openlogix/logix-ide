@@ -15,9 +15,13 @@ describe("serial lines", () => {
     expect(texts(l)).toEqual(["rx:Hello from your FPGA board", "rx:AB", "rx:"]);
   });
 
-  it("goes back to the line's start on a carriage return, and keeps blank lines", () => {
+  it("replaces the line with what follows a carriage return, and keeps blank lines", () => {
     const l = serialLines([], "abc\rX\n\nc", null);
-    expect(texts(l)).toEqual(["rx:Xbc", "rx:", "rx:c"]);
+    expect(texts(l)).toEqual(["rx:X", "rx:", "rx:c"]);
+    // Opened mid-line: the end of a line, then whole lines, leave nothing behind.
+    let mid = serialLines([], "0x0020006\r", null);
+    mid = serialLines(mid, "count: 0x0021\r", null);
+    expect(texts(mid)).toEqual(["rx:count: 0x0021"]);
     // Typed one key at a time: a, Enter (a line feed), b.
     let k = serialLines([], "a", null);
     k = serialLines(k, "\n", null);
