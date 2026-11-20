@@ -66,6 +66,8 @@ export interface ConfirmContent {
   steps: string[];
   note: string | null;
   okLabel: string;
+  /** The other button's label: Cancel when not given. */
+  cancelLabel?: string;
 }
 
 /** Where to undo a driver or udev rule change in Logix IDE, after Logix Engine's own note. */

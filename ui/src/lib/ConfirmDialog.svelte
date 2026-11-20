@@ -58,7 +58,7 @@
       </div>
     </div>
     <footer>
-      <button onclick={() => onAnswer(false)}>Cancel</button>
+      <button onclick={() => onAnswer(false)}>{content.cancelLabel ?? "Cancel"}</button>
       <button class="primary" bind:this={okButton} onclick={() => onAnswer(true)}>{content.okLabel}</button>
     </footer>
   </div>

@@ -1984,3 +1984,36 @@ test("many files: the tabs scroll by themselves, and All files and Go to File li
   await page.keyboard.press("Enter");
   await expect(tab(page, "main.v").first()).toHaveClass(/active/);
 });
+
+test("renaming a design file offers to rename its testbench too", async ({ page }) => {
+  await start(page);
+  for (const name of ["adder.v", "adder_tb.v", "shift.v", "shift_tb.v"]) {
+    await page.getByTitle(/^New file/).click();
+    await page.locator(".tab-input").fill(name);
+    await page.keyboard.press("Enter");
+  }
+  // Rename Both.
+  await tab(page, "adder.v").dblclick();
+  await page.locator(".tab-input").fill("add.v");
+  await page.keyboard.press("Enter");
+  let dialog = page.getByRole("alertdialog", { name: "Rename its testbench too?" });
+  await expect(dialog).toContainText("adder_tb.v tests adder.v");
+  await dialog.getByRole("button", { name: "Rename Both" }).click();
+  await expect(tab(page, "add.v")).toBeVisible();
+  await expect(tab(page, "add_tb.v")).toBeVisible();
+  await expect(tab(page, "adder_tb.v")).toHaveCount(0);
+  // Just This File.
+  await tab(page, "shift.v").dblclick();
+  await page.locator(".tab-input").fill("shifter.v");
+  await page.keyboard.press("Enter");
+  dialog = page.getByRole("alertdialog", { name: "Rename its testbench too?" });
+  await dialog.getByRole("button", { name: "Just This File" }).click();
+  await expect(tab(page, "shifter.v")).toBeVisible();
+  await expect(tab(page, "shift_tb.v")).toBeVisible();
+  // A file without a testbench is renamed without a question.
+  await tab(page, "shifter.v").dblclick();
+  await page.locator(".tab-input").fill("sh.v");
+  await page.keyboard.press("Enter");
+  await expect(tab(page, "sh.v")).toBeVisible();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+});
