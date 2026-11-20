@@ -92,7 +92,7 @@
   }
   function addNote(text: string) {
     const wasAtEnd = atEnd();
-    lines = serialLines(lines, null, null, text);
+    lines = serialLines(lines, null, new Date(), text);
     follow(wasAtEnd);
   }
 
@@ -101,10 +101,21 @@
     lines = [];
   }
 
-  /** "The Alhambra II's serial port": `who` is the board's name in a sentence. */
-  function uartCaption(c: SerialChoice): string {
+  /**
+   * A port's hover text, a line each: what it is ("The Alhambra II's serial
+   * port" when it's the selected board's UART, by the board's data through
+   * Logix Engine), its name, its device and its USB interface.
+   */
+  function portTip(c: SerialChoice): string {
     const who = c.who.charAt(0).toUpperCase() + c.who.slice(1);
-    return `${who}'s serial port`;
+    return [
+      c.boardUart ? `${who}'s serial port` : `A serial port of ${c.who}`,
+      c.port,
+      `Device: ${c.label}`,
+      c.interface != null ? `USB interface ${c.interface}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
   function label(c: SerialChoice): string {
@@ -243,21 +254,17 @@
         <!-- Just the port names; the device and interface on hover. -->
         <select
           aria-label="Serial port"
-          title={chosen ? label(chosen) : "Choose the board's serial port"}
+          title={chosen ? portTip(chosen) : "Choose the board's serial port"}
           value={chosen?.port ?? ""}
           onchange={choose}
         >
           {#if !chosen}<option value="" disabled>Choose a port…</option>{/if}
           {#each choices as c (c.port)}
-            <option value={c.port} title={label(c)}>{c.port}</option>
+            <option value={c.port} title={portTip(c)}>{c.port}</option>
           {/each}
         </select>
       {:else}
-        <span title={chosen ? label(chosen) : undefined}>{chosen ? chosen.port : "No port"}</span>
-      {/if}
-      {#if chosen?.boardUart}
-        <!-- The board's UART, by its data (Logix Catalog, through Logix Engine). -->
-        <span class="what">{uartCaption(chosen)}</span>
+        <span title={chosen ? portTip(chosen) : undefined}>{chosen ? chosen.port : "No port"}</span>
       {/if}
     </span>
     {#if open}
@@ -347,10 +354,6 @@
     align-items: center;
     gap: 6px;
     font-weight: 600;
-  }
-  .what {
-    font-weight: normal;
-    color: var(--muted);
   }
   .dot {
     width: 8px;

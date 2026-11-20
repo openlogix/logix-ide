@@ -44,7 +44,8 @@ export function serialLines(
 ): SerialLine[] {
   const out = lines.slice();
   if (note !== undefined) {
-    const entry: SerialLine = { kind: "note", text: note, time: null, done: true, column: 0 };
+    // A note gets its time too, so it lines up with the text around it.
+    const entry: SerialLine = { kind: "note", text: note, time: now ? clock(now) : null, done: true, column: 0 };
     // Before the empty line a line feed started, which stays last.
     const last = out[out.length - 1];
     if (last && last.kind === "rx" && !last.done && last.text === "") out.splice(out.length - 1, 0, entry);

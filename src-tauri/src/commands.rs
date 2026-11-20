@@ -1061,6 +1061,9 @@ pub struct SerialChoice {
     pub device: String,
     /// The device for people, such as "the Alhambra II".
     pub who: String,
+    /// The device's full name, such as "Alhambra II v1.0A (AlhambraBits,
+    /// 0403:6010)", for the port's hover text.
+    pub label: String,
     pub port: String,
     pub interface: Option<u8>,
     /// Whether it's the board's UART (the engine's `serial_port`) on a
@@ -1098,6 +1101,7 @@ pub async fn serial_ports(
             d.serial_ports.iter().map(move |p| SerialChoice {
                 device: d.id.clone(),
                 who: d.who.clone(),
+                label: d.label.clone(),
                 port: p.port.clone(),
                 interface: p.interface,
                 board_uart: is_board && d.serial_port.as_deref() == Some(p.port.as_str()),

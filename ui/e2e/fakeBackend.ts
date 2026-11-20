@@ -905,6 +905,7 @@ export const backend: typeof Real.backend = {
       d.serialPorts.map((p) => ({
         device: d.id,
         who: d.who,
+        label: d.label,
         port: p.port,
         interface: p.interface,
         boardUart: !!board && d.boards.some((b) => b.board === board) && d.serialPort === p.port,
