@@ -319,6 +319,8 @@ const fake = {
   confirms: [] as { title: string; okLabel: string; kind: string }[],
   /** What the user answers in confirmation dialogs (`askConfirm`). */
   confirmAnswer: true,
+  /** When set, a Save into the project's folder fails with this error (`saveProject`). */
+  saveError: null as Real.UserError | null,
   /** When set, Save As fails with this error (`saveProjectAsDialog`). */
   saveAsError: null as Real.UserError | null,
   /** Devices reported as plugged in, with their boards (`connectedDevices`). */
@@ -903,6 +905,7 @@ export const backend: typeof Real.backend = {
   closeProject: async () => {},
   openProjectDialog: async () => null,
   saveProject: async (_dir, files, removed, board, variant, serialBaud) => {
+    if (fake.saveError) throw fake.saveError;
     fake.saves.push({ files: files.map((f) => f.name), removed });
     fake.saved = { board, variant };
     fake.savedBaud = serialBaud;

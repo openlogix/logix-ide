@@ -2048,6 +2048,38 @@ test("auto save: a saved project's changes are saved after typing stops and on l
   await expect.poll(async () => (await saves()).at(-1)).toEqual({ files: ["add.v"], removed: ["adder.v"] });
 });
 
+test("with auto save, the unsaved mark shows only when a save failed", async ({ page }) => {
+  type Fake = { saves: unknown[]; saveError: unknown };
+  const setSaveError = (error: unknown) =>
+    page.evaluate((error) => {
+      (window as unknown as { __fake: Fake }).__fake.saveError = error;
+    }, error);
+  const saves = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.saves.length);
+  const dot = tab(page, "main.v").first().locator(".dot");
+  await start(page);
+  // A project not saved yet shows it at once.
+  await typeAtStart(page, "// a\n");
+  await expect(dot).toBeVisible();
+  await menu(page, "save-as");
+  await expect(status(page)).toContainText("Saved");
+  // Saved: typing shows no mark, before and after the auto save.
+  await typeAtStart(page, "// b\n");
+  await expect(dot).toHaveCount(0);
+  await expect.poll(saves).toBe(1);
+  await expect(dot).toHaveCount(0);
+  // The save fails: the mark shows, with the reason.
+  await setSaveError({ message: "Couldn't save the project.", details: "Couldn't save the project.: disk full" });
+  await typeAtStart(page, "// c\n");
+  await expect(dot).toHaveCount(0);
+  await expect(page.getByRole("alert")).toContainText("Disk full");
+  await expect(dot).toBeVisible();
+  // The next save works: the mark goes.
+  await setSaveError(null);
+  await typeAtStart(page, "// d\n");
+  await expect.poll(saves).toBe(2);
+  await expect(dot).toHaveCount(0);
+});
+
 test("changes other programs make in the project folder show up, without asking", async ({ page }) => {
   type Change = { name: string; text: string | null };
   type Fake = {
