@@ -643,7 +643,6 @@ export type MenuId =
   | "settings"
   | "go-to-definition"
   | "go-to-file"
-  | "add-agent-guide"
   | "toggle-comment"
   | "select-all"
   | "output-select-all"
@@ -931,7 +930,6 @@ export const backend = {
     listen<boolean>("gtkwave-opened", (e) => handler(e.payload)),
 
   /** Tools > Add AI Agent Guide: writes AGENTS.md and CLAUDE.md unless they exist; the files written. */
-  addAgentGuide: (dir: string): Promise<string[]> => invoke<string[]>("add_agent_guide", { dir }),
 
   /** Watches the open project's folder for changes other programs make (null: stops). */
   watchProject: (dir: string | null): Promise<void> => invoke("watch_project", { dir }),

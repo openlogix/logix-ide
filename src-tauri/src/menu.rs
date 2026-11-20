@@ -46,9 +46,6 @@ pub const GO_TO_DEFINITION: &str = "go-to-definition";
 /// Edit > Go to File…: the list of the project's files, recent ones first
 /// (the UI's FileList), as the tab bar's ▾ opens it.
 pub const GO_TO_FILE: &str = "go-to-file";
-/// Tools > Add AI Agent Guide…: a small file in the project for AI agents
-/// (`agent_guide.rs`).
-pub const AGENT_GUIDE: &str = "add-agent-guide";
 pub const TOGGLE_COMMENT: &str = "toggle-comment";
 /// Edit > Select All: the UI selects all of what has the focus (editor,
 /// output pane, or a text field), not the whole window.
@@ -103,7 +100,6 @@ pub const NEEDS_PROJECT: &[&str] = &[
     TOGGLE_COMMENT,
     GO_TO_DEFINITION,
     GO_TO_FILE,
-    AGENT_GUIDE,
     VERIFY,
     UPLOAD,
     RUN_TESTS,
@@ -413,8 +409,6 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             "Serial Monitor",
             "CmdOrCtrl+Shift+M",
         )?)
-        .separator()
-        .item(&item(AGENT_GUIDE, "Add AI Agent Guide", NO_KEY)?)
         .build()?;
 
     let mut menu = MenuBuilder::new(app);
@@ -473,9 +467,9 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
         | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH | STOP
         | SHOW_DIAGRAM | DEVICES | SERIAL_MONITOR | SETTINGS | GO_TO_DEFINITION | GO_TO_FILE
-        | AGENT_GUIDE | TOGGLE_COMMENT | SELECT_ALL | OUTPUT_SELECT_ALL | CLEAR_OUTPUT
-        | RUN_THIS_TEST | SIMULATE_THIS_TEST | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER
-        | SYSTEM_INFO | CHECK_UPDATES | BUILD_REPORT => {
+        | TOGGLE_COMMENT | SELECT_ALL | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST
+        | SIMULATE_THIS_TEST | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER | SYSTEM_INFO
+        | CHECK_UPDATES | BUILD_REPORT => {
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {

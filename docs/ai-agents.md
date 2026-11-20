@@ -25,22 +25,34 @@ them.
 
 ## Setting up the agent
 
-The agent needs its own Logix Engine, which gives it the FPGA tools:
-follow [Logix Engine's tutorial](https://www.openlogix.org/logix-engine/tutorial-claude-code/)
-to set it up for Claude Code. Then start the agent in the project folder.
+The agent needs its own Logix Engine, which gives it the FPGA tools. Once
+per computer, start Claude Code in your project folder and ask it to
+install the engine:
+
+```text
+Install Logix Engine for me. Follow "Install the engine yourself" at
+https://www.openlogix.org/logix-engine/tutorial-claude-code/
+```
+
+Claude downloads the engine, checks that it runs and connects it to Claude
+Code; then restart Claude Code (`/exit`, then `claude`). Steps 1 and 2 of
+[Logix Engine's tutorial](https://www.openlogix.org/logix-engine/tutorial-claude-code/)
+show it in detail.
 
 ## Telling the agent about the project
 
-Choose **Tools > Add AI Agent Guide** with the project open. It adds two
-small files to the project folder:
+Every project Logix IDE creates has two small files for AI agents, added
+when you first save it:
 
 - **`AGENTS.md`**, read by many agents: it says the folder is a Logix IDE
   project, gives the main rules below in a few lines, and links to this
   page, as it was for your version of Logix IDE.
 - **`CLAUDE.md`**, read by Claude Code: one line that includes `AGENTS.md`.
 
-Files that already exist are left as they are. You can add your own rules
-to them.
+Logix IDE doesn't show them as tabs, and never changes them after that: you
+can add your own rules. A project made before Logix IDE added them has
+none; an agent still works, and you can copy the two files from a new
+project.
 
 ## The project model, for AI agents
 

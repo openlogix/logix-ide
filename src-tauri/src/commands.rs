@@ -1234,19 +1234,6 @@ pub async fn read_project_changes(
     Ok(blocking(move || project::read_changes(Path::new(&dir), &names)).await??)
 }
 
-/// Tools > Add AI Agent Guide: writes `AGENTS.md` and `CLAUDE.md` into the
-/// project folder `dir`, unless they exist (`agent_guide.rs`). Returns the
-/// files written.
-#[tauri::command]
-pub async fn add_agent_guide(dir: String) -> Result<Vec<String>, UserError> {
-    let written = blocking(move || {
-        crate::agent_guide::add(Path::new(&dir), crate::version::APP_COMMIT)
-            .context("Couldn't add the AI agent guide.")
-    })
-    .await??;
-    Ok(written.into_iter().map(String::from).collect())
-}
-
 /// Closes the Serial Monitor's port, so other programs can open it.
 #[tauri::command]
 pub async fn serial_close(state: State<'_, AppState>) -> Result<(), UserError> {

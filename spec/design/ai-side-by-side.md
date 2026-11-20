@@ -150,6 +150,12 @@ learns the right model.
      lines. (b) later, with 2c. And ask Logix Engine to say, in its
      instructions, that an agent working in a frontend's project follows
      that frontend's model, not the default one.
+   - **Revised** (the user's decision, 2026-11-20): no menu command; every
+     new project gets the guide when Logix IDE creates its folder (first
+     Save or Save As), only if missing. The examples don't carry it.
+     And (b) is dropped with 2c: the agent installs its own Logix Engine
+     (Logix Engine's tutorial, one prompt), so Logix IDE doesn't serve an
+     MCP server.
 
 4. **Conflicts: is "the disk wins, ⌘Z brings your text back" right?** The
    alternative is "Logix IDE wins" (its next save overwrites the agent's

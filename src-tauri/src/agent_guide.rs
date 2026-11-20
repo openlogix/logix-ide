@@ -1,10 +1,11 @@
-//! Tools > Add AI Agent Guide: a small file in the project folder that
-//! tells an AI agent working beside Logix IDE (such as Claude Code) that
+//! The AI agent guide: small files in every new project's folder that
+//! tell an AI agent working beside Logix IDE (such as Claude Code) that
 //! this is a Logix IDE project, the model's main rules in a few lines, and
-//! where the full model is (the user's decision, 2026-11-20;
+//! where the full model is (the user's decisions, 2026-11-20;
 //! `spec/design/ai-side-by-side.md`, question 3). `AGENTS.md`, which many
-//! agents read, and `CLAUDE.md`, which Claude Code reads, importing it. A
-//! command, not written by itself, so beginners' projects stay clean.
+//! agents read, and `CLAUDE.md`, which Claude Code reads, importing it.
+//! Written when Logix IDE creates a project's folder (`project::create`),
+//! only if missing; the examples don't carry them.
 //!
 //! The full model is `docs/ai-agents.md`, linked at the commit this Logix
 //! IDE was built from: commits on `main` stay, while pre-release tags are
