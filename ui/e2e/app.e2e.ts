@@ -1884,10 +1884,10 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   // The engine's notes, such as a pause for Upload, show in the output.
   await page.evaluate(() =>
     (window as unknown as { __fake: Fake }).__fake.serialReceive("", [
-      "The serial port was closed while the board is programmed.",
+      "Closing the serial port while the board is programmed.",
     ]),
   );
-  await expect(monitor).toContainText("The serial port was closed while the board is programmed.");
+  await expect(monitor).toContainText("Closing the serial port while the board is programmed.");
   // Clear empties the tab shown: the Serial Monitor here, not the output.
   await page.getByRole("button", { name: "Clear", exact: true }).click();
   await expect(monitor.locator(".line")).toHaveCount(0);
