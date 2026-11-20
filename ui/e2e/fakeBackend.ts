@@ -536,7 +536,9 @@ const icesugarDevice: Real.UsbDevice = {
   likelyBoards: ["icesugar-1-5"],
   buildMatch: "possible", driver: null, who: "the iCESugar v1.5",
   // The iCELink's one serial port.
-  serialPorts: [{ port: "/dev/cu.usbmodem0700000001", interface: 1 }],
+  serialPorts: [
+    { port: "/dev/cu.usbmodem0700000001", interface: 1, role: "uart", description: "The iCESugar v1.5's serial port" },
+  ],
   serialPort: "/dev/cu.usbmodem0700000001",
 };
 
@@ -559,8 +561,8 @@ const alhambraDevice: Real.UsbDevice = {
   buildMatch: "strong", driver: null, who: "USB device (0403:6010)",
   // The FTDI chip's two channels: programming, then the UART.
   serialPorts: [
-    { port: "/dev/cu.usbserial-FTATANKC0", interface: 0 },
-    { port: "/dev/cu.usbserial-FTATANKC1", interface: 1 },
+    { port: "/dev/cu.usbserial-FTATANKC0", interface: 0, role: "programmer", description: "USB device (0403:6010)'s programming port" },
+    { port: "/dev/cu.usbserial-FTATANKC1", interface: 1, role: "uart", description: "USB device (0403:6010)'s serial port" },
   ],
   serialPort: "/dev/cu.usbserial-FTATANKC1",
 };
@@ -909,8 +911,14 @@ export const backend: typeof Real.backend = {
         port: p.port,
         interface: p.interface,
         boardUart: !!board && d.boards.some((b) => b.board === board) && d.serialPort === p.port,
+        role: p.role,
+        description: p.description,
       })),
-    ).sort((a, b) => Number(b.boardUart) - Number(a.boardUart)),
+    ).sort(
+      (a, b) =>
+        Number(b.boardUart) - Number(a.boardUart) ||
+        Number(a.role === "programmer") - Number(b.role === "programmer"),
+    ),
   serialOpen: async (port, baud, device) => {
     fake.serialOpened.push({ port, baud, device });
     return `serial-${fake.serialOpened.length}`;

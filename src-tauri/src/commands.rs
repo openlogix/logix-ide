@@ -1069,6 +1069,11 @@ pub struct SerialChoice {
     /// Whether it's the board's UART (the engine's `serial_port`) on a
     /// device that may be the selected board: the one to open by itself.
     pub board_uart: bool,
+    /// What it's for, by the engine: "uart", "programmer" or None.
+    pub role: Option<String>,
+    /// The engine's phrase for people, such as "The Alhambra II's serial
+    /// port", for the hover text.
+    pub description: String,
 }
 
 /// The connected devices' serial ports, the selected board's UART first
@@ -1105,11 +1110,14 @@ pub async fn serial_ports(
                 port: p.port.clone(),
                 interface: p.interface,
                 board_uart: is_board && d.serial_port.as_deref() == Some(p.port.as_str()),
+                role: p.role.clone(),
+                description: p.description.clone(),
             })
         })
         .collect();
-    // The board's UART first (stable: the engine's order otherwise).
-    choices.sort_by_key(|c| !c.board_uart);
+    // The board's UART first, programming ports last (stable: the
+    // engine's order otherwise).
+    choices.sort_by_key(|c| (!c.board_uart, c.role.as_deref() == Some("programmer")));
     Ok(choices)
 }
 
