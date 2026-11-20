@@ -338,7 +338,7 @@ test("Help > System Info shows the version tree and copies the text", async ({ p
   await row("Logix Engine").hover();
   await expect(details("Logix Engine")).toHaveCount(0);
   await row("Logix Engine").click();
-  await expect(details("Logix Engine")).toContainText("Logix IDE's remote config 001, prod.jsonc");
+  await expect(details("Logix Engine")).toContainText("Logix IDE's remote config 001, prod-channel.jsonc");
   await expect(row("Logix Engine")).toHaveAttribute("aria-expanded", "true");
   await row("Logix Engine").click();
   await expect(details("Logix Engine")).toHaveCount(0);

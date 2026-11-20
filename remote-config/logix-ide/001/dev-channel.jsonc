@@ -1,0 +1,38 @@
+// What Logix IDE on config 001 uses on the dev channel (Remote updates, in the
+// website repo's CLAUDE.md): every Logix IDE release that isn't promoted, and
+// local builds, while this file exists; without it they use
+// prod-channel.jsonc. Every such Logix IDE reads this file from main, so a
+// change here reaches them without a Logix IDE release, and never reaches
+// prod. Change it only by pull request, saying why in a comment; the tests run
+// with what it names. It may name pre-releases: a release a config names is
+// kept. Delete it once a promotion has caught prod-channel.jsonc up.
+{
+  "$schema": "https://www.openlogix.org/schemas/logix-remote-config-v1.json",
+  "dependencies": {
+    // Logix Engine, which builds, tests and programs the board, and downloads
+    // its own FPGA tools and board catalog (its own remote config).
+    // 2026-11-20: the serial tools pass bytes only, as hex (the user's
+    // decision; Logix IDE decodes them since logix-ide#31).
+    // 2026-11-19: the serial tools, for the Serial Monitor (open_serial,
+    // read_serial, write_serial, close_serial; the udev rule covers serial
+    // ports); a board's resources by type, clocks first (Board Explorer);
+    // the Windows driver's busy line says it may take a minute or two; and
+    // since 2026-11-18, the driver and udev texts Logix IDE shows, and Remove
+    // udev Rule taking effect at once.
+    "logix-engine": {
+      "repo": "openlogix/logix-engine",
+      "release": "2026-11-20",
+      "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+    },
+
+    // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
+    // packed by this repo's pre-release workflow (scripts/pack-examples.py).
+    // 2026-11-20: the serial-debug examples (a simple debugger over the
+    // serial port), and the serial examples' uart.v in one file.
+    "logix-ide-examples": {
+      "repo": "openlogix/logix-ide",
+      "release": "2026-11-20",
+      "file": "logix-ide-examples-${YYYYMMDD}.tgz"
+    }
+  }
+}

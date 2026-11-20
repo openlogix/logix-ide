@@ -440,7 +440,7 @@ mod tests {
         let u = in_use(
             EngineInUse::Release("2026-11-14".into()),
             "listed",
-            "prod.jsonc",
+            "prod-channel.jsonc",
         );
         let info = build(
             "2026.11.15",
@@ -472,11 +472,8 @@ Logix IDE 2026.11.15
         );
         // Which config named the engine, on hover only.
         let engine = &info.versions.children[0];
-        assert!(engine
-            .details
-            .iter()
-            .any(|d| d.label == "Pinned in"
-                && d.value == "Logix IDE's remote config 001, prod.jsonc"));
+        assert!(engine.details.iter().any(|d| d.label == "Pinned in"
+            && d.value == "Logix IDE's remote config 001, prod-channel.jsonc"));
         // The engine's own Release isn't repeated (a duplicate label stopped
         // the tooltip).
         assert_eq!(
@@ -494,7 +491,7 @@ Logix IDE 2026.11.15
         let u = in_use(
             EngineInUse::Local("/w/logix-engine".into()),
             "LOGIX_IDE_CHANNEL",
-            "prod.jsonc",
+            "prod-channel.jsonc",
         );
         let mut engine = engine_info();
         engine["developer_settings"] = json!([{"name": "LOGIX_ENGINE_CHANNEL", "value": "dev"}]);
@@ -538,7 +535,7 @@ Logix IDE 2026.11.15
         let u = in_use(
             EngineInUse::Release("2026-11-14".into()),
             "listed",
-            "prod.jsonc",
+            "prod-channel.jsonc",
         );
         let info = build(
             "2026.11.15",

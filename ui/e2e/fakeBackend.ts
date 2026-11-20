@@ -990,7 +990,7 @@ export const backend: typeof Real.backend = {
       children: [
         {
           ...leaf("Logix Engine", "2026.11.14", "program", ["channel prod, commit a1b2c3d, remote config 001"],
-            [{ label: "Pinned in", value: "Logix IDE's remote config 001, prod.jsonc" }]),
+            [{ label: "Pinned in", value: "Logix IDE's remote config 001, prod-channel.jsonc" }]),
           channel: "prod",
           children: [
             {
