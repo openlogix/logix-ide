@@ -1946,3 +1946,41 @@ test("the Serial Monitor asks for the port when it can't tell, once", async ({ p
   );
   expect((await fake()).serialOpened.map((o) => o.port)).toEqual(["/dev/cu.usbserial-FTATANKC1"]);
 });
+
+test("many files: the tabs scroll by themselves, and All files and Go to File list them, recent first", async ({ page }) => {
+  await start(page);
+  // A small project: no All files button, as before.
+  await expect(page.getByRole("button", { name: "All files" })).toHaveCount(0);
+  // Many files.
+  for (let i = 1; i <= 24; i++) {
+    await page.getByTitle(/^New file/).click();
+    await page.locator(".tab-input").fill(`stage_${String(i).padStart(2, "0")}.v`);
+    await page.keyboard.press("Enter");
+  }
+  // The window doesn't widen: nothing scrolls sideways but the tabs.
+  const wide = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(wide).toBe(false);
+  const all = page.getByRole("button", { name: "All files" });
+  await expect(all).toBeVisible();
+  // The last file added is shown, so its tab scrolled into view.
+  await expect(tab(page, "stage_24.v")).toBeInViewport();
+  // Switch to two files, then open the list: they're under Recent.
+  await all.click();
+  let list = page.getByRole("listbox", { name: "Files" });
+  await page.getByLabel("Search files").fill("stage_03");
+  await page.keyboard.press("Enter");
+  await expect(tab(page, "stage_03.v")).toBeInViewport();
+  await expect(list).toHaveCount(0);
+  await all.click();
+  list = page.getByRole("listbox", { name: "Files" });
+  const options = list.getByRole("option");
+  await expect(options.first()).toHaveText("stage_24.v");
+  await page.keyboard.press("Escape");
+  await expect(list).toHaveCount(0);
+  // Go to File (the menu, ⌘P): the same list; Up, Down and Enter.
+  await menu(page, "go-to-file");
+  await expect(page.getByLabel("Search files")).toBeFocused();
+  await page.keyboard.type("main");
+  await page.keyboard.press("Enter");
+  await expect(tab(page, "main.v").first()).toHaveClass(/active/);
+});

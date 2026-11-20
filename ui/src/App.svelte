@@ -105,6 +105,8 @@
   import { addLinks, parseAnsi, type Segment } from "./lib/ansi";
   import { BARE_MINIMUM, examplesSummary, type ExampleEntry } from "./lib/examples";
   import SerialMonitor from "./lib/SerialMonitor.svelte";
+  import FileList from "./lib/FileList.svelte";
+  import { loadHistory, renamed, saveHistory, shortcutLabel, visit } from "./lib/fileList";
   import {
     byFile,
     firstLocated,
@@ -1736,6 +1738,97 @@
     editor?.focus();
   }
 
+  // ---- Many files: the tab bar scrolls by itself, and the All files list
+  // (▾, only when the tabs don't fit, so a small project looks as before)
+  // and Go to File (⌘P / Ctrl+P) list every file, the recent ones first
+  // (the user's decisions, 2026-11-20; lib/fileList.ts). Before, the tabs
+  // widened the whole window, which then scrolled sideways.
+
+  let tabStrip = $state<HTMLElement>();
+  let tabsOverflow = $state(false);
+  let allFilesButton = $state<HTMLElement>();
+  /** The list, when open: under the ▾ (`right`) or centered (Go to File). */
+  let fileList = $state<{ top: number; right: number | null } | null>(null);
+
+  function checkTabsOverflow() {
+    if (tabStrip) tabsOverflow = tabStrip.scrollWidth > tabStrip.clientWidth + 1;
+  }
+  $effect(() => {
+    const strip = tabStrip;
+    if (!strip) return;
+    const observer = new ResizeObserver(checkTabsOverflow);
+    observer.observe(strip);
+    return () => observer.disconnect();
+  });
+  // Tabs come and go with the project's files and the name box.
+  $effect(() => {
+    void project?.files.length;
+    void naming;
+    tick().then(checkTabsOverflow);
+  });
+  // The shown file's tab scrolls into view.
+  $effect(() => {
+    void activeFile;
+    void tabsOverflow;
+    tick().then(() =>
+      tabStrip
+        ?.querySelector(".tab.active")
+        ?.scrollIntoView({ block: "nearest", inline: "nearest" }),
+    );
+  });
+
+  /** A mouse wheel's up and down scroll the tabs sideways. */
+  function onTabsWheel(e: WheelEvent) {
+    if (!tabStrip || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    e.preventDefault();
+    tabStrip.scrollLeft += e.deltaY;
+  }
+
+  function toggleAllFiles() {
+    if (fileList) {
+      fileList = null;
+      return;
+    }
+    const r = allFilesButton?.getBoundingClientRect();
+    if (r) fileList = { top: r.bottom + 2, right: window.innerWidth - r.right };
+  }
+
+  function goToFile() {
+    if (!project || welcome) return;
+    const r = tabStrip?.getBoundingClientRect();
+    fileList = { top: (r?.top ?? 80) + 4, right: null };
+  }
+
+  function pickFromList(file: string) {
+    fileList = null;
+    selectFile(file);
+  }
+
+  // Each project's history of shown files, newest first, kept per user
+  // (fileList.ts). A project not saved yet keeps it in memory, and takes it
+  // along when first saved.
+  let fileHistory = $state<string[]>([]);
+  let historyDir: string | null = null;
+  let historyProject: unknown = null;
+  $effect(() => {
+    const dir = project?.dir ?? null;
+    const file = activeFile;
+    untrack(() => {
+      if (project !== historyProject || dir !== historyDir) {
+        // The same project saved for the first time keeps its history;
+        // another project gets its own.
+        const firstSave = project === historyProject && historyDir === null;
+        if (!firstSave) fileHistory = dir ? loadHistory(dir) : [];
+        historyProject = project;
+        historyDir = dir;
+      }
+      if (project && findFile(project, file)) {
+        fileHistory = visit(fileHistory, file);
+        if (dir) saveHistory(dir, fileHistory);
+      }
+    });
+  });
+
   // ---- New file / rename: an inline name box in the tab bar ----
 
   type Naming = { mode: "new" } | { mode: "rename"; file: string };
@@ -1800,6 +1893,7 @@
       selectFile(name);
     } else {
       renameFile(project, current.file, name);
+      fileHistory = renamed(fileHistory, current.file, name);
       editor?.rename(current.file, name);
       forgetProblems(current.file);
       if (activeFile === current.file) activeFile = name;
@@ -1827,6 +1921,7 @@
     );
     if (!ok || !project) return;
     deleteFile(project, file);
+    fileHistory = renamed(fileHistory, file, null);
     editor?.remove(file);
     forgetProblems(file);
     if (activeFile === file) selectFile(mainFile(project));
@@ -2132,6 +2227,10 @@
       editor?.goToDefinition();
       return;
     }
+    if (id === "go-to-file") {
+      goToFile();
+      return;
+    }
     if (id === "toggle-comment") {
       editor?.toggleComment();
       return;
@@ -2185,6 +2284,7 @@
         | "check-for-updates"
         | "settings"
         | "go-to-definition"
+        | "go-to-file"
         | "toggle-comment"
         | "select-all"
         | "output-select-all"
@@ -2635,6 +2735,8 @@
       {/if}
       <div class="tabs" style:display={welcome ? "none" : null}>
         {#if project}
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="tab-strip" bind:this={tabStrip} onwheel={onTabsWheel}>
           {#each tabFiles(project.files) as f (f.name)}
             {#if naming?.mode === "rename" && naming.file === f.name}
               <input
@@ -2689,11 +2791,36 @@
               use:focusOnMount
             />
           {/if}
+          </div>
           <button class="tab-add" title="New file" onclick={startNewFile}
             >+</button
           >
+          {#if tabsOverflow}
+            <button
+              class="tab-all"
+              bind:this={allFilesButton}
+              title="All files ({shortcutLabel()})"
+              aria-label="All files"
+              aria-expanded={fileList !== null}
+              onmousedown={(e) => e.preventDefault()}
+              onclick={toggleAllFiles}>▾</button
+            >
+          {/if}
         {/if}
       </div>
+      {#if project && fileList}
+        <FileList
+          files={tabFiles(project.files).map((f) => f.name)}
+          history={fileHistory}
+          current={activeFile}
+          main={mainFile(project)}
+          {pinExtension}
+          top={fileList.top}
+          right={fileList.right}
+          onPick={pickFromList}
+          onClose={() => (fileList = null)}
+        />
+      {/if}
       {#if nameError}
         <!-- Focusable, so selecting it to copy doesn't end the naming. -->
         <div
@@ -2982,15 +3109,45 @@
   .editor {
     flex: 1;
     min-height: 0;
+    min-width: 0;
     display: flex;
     flex-direction: column;
   }
   .tabs {
     display: flex;
+    min-width: 0;
     border-bottom: 1px solid var(--border);
     background: var(--tabs-bg);
   }
+  /* The tabs scroll by themselves when they don't fit (wheel, trackpad);
+     the + and ▾ stay at its right end. As wide as its tabs otherwise, so a
+     small project's + sits right after them, as before. */
+  .tab-strip {
+    display: flex;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tab-strip::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-all {
+    margin-left: auto;
+    padding: 4px 12px;
+    border: none;
+    border-left: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .tab-all:hover,
+  .tab-all[aria-expanded="true"] {
+    color: var(--fg);
+  }
   .tab {
+    flex: none;
     padding: 6px 14px;
     border: none;
     border-right: 1px solid var(--border);

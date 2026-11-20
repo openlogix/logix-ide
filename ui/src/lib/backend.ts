@@ -632,6 +632,7 @@ export type MenuId =
   | "board-explorer"
   | "settings"
   | "go-to-definition"
+  | "go-to-file"
   | "toggle-comment"
   | "select-all"
   | "output-select-all"

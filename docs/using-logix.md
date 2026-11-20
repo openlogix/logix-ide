@@ -8,7 +8,12 @@
 - **Tabs**: one per file of the project. A dot marks unsaved changes. A
   flask marks testbenches, a chip marks the board's pin file (a pin file
   for another kind of board has no chip, since this board doesn't use it);
-  hover over a tab to see what its file is for.
+  hover over a tab to see what its file is for. When a project has more
+  tabs than fit, scroll them with the mouse wheel or the trackpad, and
+  **▾** at their right end lists all the files, the ones you looked at
+  most recently first; type part of a name to find one. **Edit > Go to
+  File…** (++cmd+p++, or ++ctrl+p++ on Windows and Linux) opens the same
+  list in any project.
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
   Other problems, such as a name that isn't declared, are found by Verify
@@ -428,6 +433,7 @@ opens this run's folder of logs, to attach to a report (see
 | Indent / Un-indent lines (to leave the editor: ++escape++, then ++tab++) | ++tab++ / ++shift+tab++ | ++tab++ / ++shift+tab++ |
 | Select All (editor or output) | ++cmd+a++ | ++ctrl+a++ |
 | Go to Definition | ++f12++ (on a Mac keyboard, ++fn+f12++) | ++f12++ |
+| Go to File | ++cmd+p++ | ++ctrl+p++ |
 | Settings | ++cmd+comma++ | ++ctrl+comma++ |
 | Close Window | ++shift+cmd+w++ | ++ctrl+shift+w++ |
 
