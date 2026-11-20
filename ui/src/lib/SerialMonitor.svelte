@@ -102,14 +102,13 @@
   }
 
   /**
-   * A port's hover text, a line each: what it is ("The Alhambra II's serial
-   * port" when it's the selected board's UART, by the board's data through
-   * Logix Engine), its name, its device and its USB interface.
+   * A port's hover text, a line each: what it is (Logix Engine's
+   * description, such as "The Alhambra II's serial port" or "The Alhambra
+   * II's programming port"), its name, its device and its USB interface.
    */
   function portTip(c: SerialChoice): string {
-    const who = c.who.charAt(0).toUpperCase() + c.who.slice(1);
     return [
-      c.boardUart ? `${who}'s serial port` : `A serial port of ${c.who}`,
+      c.description || `A serial port of ${c.who}`,
       c.port,
       `Device: ${c.label}`,
       c.interface != null ? `USB interface ${c.interface}` : null,

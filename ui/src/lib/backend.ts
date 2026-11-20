@@ -462,8 +462,8 @@ export interface UsbDevice {
   who: string;
   /** On Windows and Linux, the driver or udev rule its board needs and has; null elsewhere. */
   driver: Driver | null;
-  /** Its serial ports, each with its USB interface when known. */
-  serialPorts: { port: string; interface: number | null }[];
+  /** Its serial ports, each with its USB interface when known, and what it's for, by the engine. */
+  serialPorts: { port: string; interface: number | null; role: "uart" | "programmer" | null; description: string }[];
   /** Its board's UART port, by the engine; null when it can't tell. */
   serialPort: string | null;
 }
@@ -481,6 +481,10 @@ export interface SerialChoice {
   interface: number | null;
   /** The selected board's UART, by the engine: the port to open by itself. */
   boardUart: boolean;
+  /** What it's for, by the engine: the board's UART, its programmer's interface, or not known. */
+  role: "uart" | "programmer" | null;
+  /** The engine's phrase for people, such as "The Alhambra II's programming port". */
+  description: string;
 }
 
 /** What the Serial Monitor's read loop sends. */

@@ -49,12 +49,19 @@ pub struct UsbDevice {
     pub serial_port: Option<String>,
 }
 
-/// One serial port of a device: its name, and its USB interface when known.
+/// One serial port of a device: its name, its USB interface when known,
+/// and what it's for, by the engine.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DevicePort {
     pub port: String,
     pub interface: Option<u8>,
+    /// "uart" (the board's serial port), "programmer" (its programmer's
+    /// interface), or None when the engine can't tell.
+    pub role: Option<String>,
+    /// The engine's phrase for people, such as "The Alhambra II's
+    /// programming port".
+    pub description: String,
 }
 
 /// The engine's `driver` for a device (Windows and Linux): what the board's
@@ -268,6 +275,11 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                         .iter()
                         .filter_map(|p| {
                             Some(DevicePort {
+                                role: p["role"].as_str().map(String::from),
+                                description: p["description"]
+                                    .as_str()
+                                    .unwrap_or_default()
+                                    .to_string(),
                                 port: p["port"].as_str()?.to_string(),
                                 interface: p["interface"]
                                     .as_u64()
