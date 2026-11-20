@@ -474,6 +474,8 @@ export interface SerialChoice {
   device: string;
   /** The device for people, such as "the Alhambra II". */
   who: string;
+  /** The device's full name, such as "Alhambra II v1.0A (AlhambraBits, 0403:6010)". */
+  label: string;
   /** Such as COM5, /dev/cu.usbserial-A10 or /dev/ttyUSB1. */
   port: string;
   interface: number | null;

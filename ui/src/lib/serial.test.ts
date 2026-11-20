@@ -46,6 +46,9 @@ describe("serial lines", () => {
     let m = serialLines([], "x\n", null);
     m = serialLines(m, null, null, "Paused.");
     expect(texts(m)).toEqual(["rx:x", "note:Paused.", "rx:"]);
+    // A note gets its time too, to line up with the board's lines.
+    const n = serialLines([], null, new Date(2026, 10, 20, 9, 5, 7, 42), "Opened COM5.");
+    expect(n[0].time).toBe("09:05:07.042");
   });
 
   it("timestamps each new line", () => {
