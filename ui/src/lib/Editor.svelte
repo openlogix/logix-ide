@@ -4,15 +4,40 @@
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import { basicSetup } from "codemirror";
   import { Compartment, EditorState } from "@codemirror/state";
-  import { EditorView, keymap } from "@codemirror/view";
-  import { indentWithTab } from "@codemirror/commands";
-  import { indentUnit, StreamLanguage } from "@codemirror/language";
+  import {
+    crosshairCursor,
+    drawSelection,
+    dropCursor,
+    EditorView,
+    highlightActiveLine,
+    highlightActiveLineGutter,
+    highlightSpecialChars,
+    keymap,
+    lineNumbers,
+    rectangularSelection,
+  } from "@codemirror/view";
+  import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
+  import {
+    bracketMatching,
+    defaultHighlightStyle,
+    indentOnInput,
+    indentUnit,
+    StreamLanguage,
+    syntaxHighlighting,
+  } from "@codemirror/language";
+  import {
+    autocompletion,
+    closeBrackets,
+    closeBracketsKeymap,
+    completionKeymap,
+  } from "@codemirror/autocomplete";
+  import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
   import { verilog } from "@codemirror/legacy-modes/mode/verilog";
   import { oneDark } from "@codemirror/theme-one-dark";
   import {
     lintGutter,
+    lintKeymap,
     setDiagnostics as setLintDiagnostics,
     type Diagnostic as LintDiagnostic,
   } from "@codemirror/lint";
@@ -95,11 +120,41 @@
     return /\.(s?v|s?vh)$/i.test(file);
   }
 
+  // CodeMirror's basicSetup without its fold gutter: the Verilog mode has
+  // no folding, so that column was always empty, space right of the line
+  // numbers (the user's report, 2026-11-20).
+  const setup = [
+    lineNumbers(),
+    highlightActiveLineGutter(),
+    highlightSpecialChars(),
+    history(),
+    drawSelection(),
+    dropCursor(),
+    EditorState.allowMultipleSelections.of(true),
+    indentOnInput(),
+    syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+    bracketMatching(),
+    closeBrackets(),
+    autocompletion(),
+    rectangularSelection(),
+    crosshairCursor(),
+    highlightActiveLine(),
+    highlightSelectionMatches(),
+    keymap.of([
+      ...closeBracketsKeymap,
+      ...defaultKeymap,
+      ...searchKeymap,
+      ...historyKeymap,
+      ...completionKeymap,
+      ...lintKeymap,
+    ]),
+  ];
+
   function makeState(file: string, text: string): EditorState {
     return EditorState.create({
       doc: text,
       extensions: [
-        basicSetup,
+        setup,
         lintGutter(),
         isVerilog(file) ? verilogLanguage : (pinLanguage(file) ?? []),
         indentUnit.of("  "),
@@ -120,6 +175,10 @@
             // Settings > Editor font size (see app.css).
             fontSize: "var(--editor-font-size, 13px)",
           },
+          // The problem markers' column, narrower than CodeMirror's 1.4em.
+          ".cm-gutter-lint": { width: "1em" },
+          ".cm-gutter-lint .cm-gutterElement": { padding: "0 1px" },
+          ".cm-lint-marker": { width: "0.85em", height: "0.85em" },
         }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChange(file, update.state.doc.toString());

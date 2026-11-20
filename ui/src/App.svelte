@@ -3165,6 +3165,18 @@
     margin-right: 5px;
     opacity: 0.8;
   }
+  /* The shown file's tab never scrolls out of view: scrolling the tabs
+     leaves it at the bar's left or right edge, so you always see which
+     file you're editing (the user's report, 2026-11-20). */
+  .tab-strip .tab.active {
+    position: sticky;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    /* Its left edge over other tabs when it sticks at the right (a shadow,
+       not a border, so it doesn't double the next tab's border). */
+    box-shadow: -1px 0 0 var(--border);
+  }
   .tab.active {
     background: var(--bg);
     color: var(--fg);
