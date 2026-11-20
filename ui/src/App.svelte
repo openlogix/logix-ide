@@ -97,6 +97,7 @@
     BOARDS_FOLDER_NAME,
     markSaved,
     renameFile,
+    testbenchOf,
     starterText,
     testbenches,
     type WorkingProject,
@@ -1892,14 +1893,38 @@
       cancelNaming();
       selectFile(name);
     } else {
-      renameFile(project, current.file, name);
-      fileHistory = renamed(fileHistory, current.file, name);
-      editor?.rename(current.file, name);
-      forgetProblems(current.file);
-      if (activeFile === current.file) activeFile = name;
+      // A design file's testbench may follow (adder.v, adder_tb.v): asked,
+      // since some name testbenches otherwise (the user's decision,
+      // 2026-11-20). Module names inside the files never change.
+      const [tbFrom, tbTo] = [testbenchOf(current.file), testbenchOf(name)];
+      const askTb =
+        tbFrom !== null && tbTo !== null && !!findFile(project, tbFrom) && !findFile(project, tbTo);
       cancelNaming();
+      const both =
+        askTb &&
+        (await confirmInApp({
+          title: "Rename its testbench too?",
+          lead: `${tbFrom} tests ${current.file}. Rename it to ${tbTo} as well?`,
+          steps: [],
+          note: "Module names inside the files don't change.",
+          okLabel: "Rename Both",
+          cancelLabel: "Just This File",
+        }));
+      if (!project) return;
+      renameOne(current.file, name);
+      if (both && tbFrom && tbTo) renameOne(tbFrom, tbTo);
       editor?.focus();
     }
+  }
+
+  /** Renames a project file in the project, the editor and what refers to it. */
+  function renameOne(from: string, to: string) {
+    if (!project) return;
+    renameFile(project, from, to);
+    fileHistory = renamed(fileHistory, from, to);
+    editor?.rename(from, to);
+    forgetProblems(from);
+    if (activeFile === from) activeFile = to;
   }
 
   function onNameKey(e: KeyboardEvent) {

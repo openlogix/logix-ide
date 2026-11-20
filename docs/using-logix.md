@@ -72,8 +72,10 @@ inside another project.
 - **New file**: the **+** at the end of the tabs, or **File > New File…**.
   Double-click a tab to rename it; right-click it to
   rename or delete it, or for the commands that work on that file, such as
-  **Auto Format**. These changes, like edits, are saved when you save
-  the project.
+  **Auto Format**. Renaming a file such as `adder.v` asks whether to
+  rename its testbench, `adder_tb.v`, too; a testbench's waveform layout
+  is renamed or deleted with it. Module names inside files never change.
+  These changes, like edits, are saved when you save the project.
 - **Open, close and save**: **File > Open Project…**, **Open Recent**,
   **Close Project**, **Save Project**, **Save Project As…**.
   Logix IDE reopens the last project when it starts, unless you closed it.

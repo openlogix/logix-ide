@@ -17,6 +17,8 @@ import {
   markSaved,
   renameFile,
   starterText,
+  layoutOf,
+  testbenchOf,
 } from "./workingProject";
 
 const savedDoc: ProjectDoc = {
@@ -60,6 +62,45 @@ describe("workingProject", () => {
     expect(p.removed).toEqual(["pinout.pcf"]);
     expect(p.files.map((f) => f.name)).toEqual(["main.v", "pins.pcf"]);
     expect(isDirty(p)).toBe(true);
+  });
+
+  it("names a testbench's layout and a design file's testbench", () => {
+    expect(layoutOf("adder_tb.v")).toBe("adder_tb.gtkw");
+    expect(layoutOf("adder_tb.sv")).toBe("adder_tb.gtkw");
+    expect(layoutOf("adder.v")).toBeNull();
+    expect(testbenchOf("adder.v")).toBe("adder_tb.v");
+    expect(testbenchOf("adder.sv")).toBe("adder_tb.sv");
+    expect(testbenchOf("adder_tb.v")).toBeNull();
+    expect(testbenchOf("defs.vh")).toBeNull();
+    expect(testbenchOf("pinout.pcf")).toBeNull();
+  });
+
+  it("renames and deletes a testbench's layout with it", () => {
+    const p = fromDoc({
+      ...savedDoc,
+      files: [...savedDoc.files, { name: "main_tb.v", text: "t" }, { name: "main_tb.gtkw", text: "g" }],
+    });
+    renameFile(p, "main_tb.v", "top_tb.v");
+    expect(p.files.map((f) => f.name)).toContain("top_tb.gtkw");
+    expect(p.removed).toEqual(["main_tb.v", "main_tb.gtkw"]);
+    deleteFile(p, "top_tb.v");
+    expect(p.files.map((f) => f.name)).toEqual(["main.v", "pinout.pcf"]);
+  });
+
+  it("leaves another file's layout alone when the name is taken", () => {
+    const p = fromDoc({
+      ...savedDoc,
+      files: [
+        ...savedDoc.files,
+        { name: "a_tb.v", text: "" },
+        { name: "a_tb.gtkw", text: "a" },
+        { name: "b_tb.gtkw", text: "b" },
+      ],
+    });
+    renameFile(p, "a_tb.v", "b_tb.v");
+    const names = p.files.map((f) => f.name);
+    expect(names).toContain("a_tb.gtkw");
+    expect(p.files.find((f) => f.name === "b_tb.gtkw")?.text).toBe("b");
   });
 
   it("never renames or deletes main.v", () => {

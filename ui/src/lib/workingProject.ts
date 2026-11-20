@@ -267,6 +267,21 @@ export function addFile(p: WorkingProject, name: string, text: string) {
   p.structureChanged = true;
 }
 
+/** A testbench's GTKWave layout (`main_tb.v`: `main_tb.gtkw`); null for other files. */
+export function layoutOf(name: string): string | null {
+  return isTestbench(name) ? name.replace(/\.s?v$/i, ".gtkw") : null;
+}
+
+/** The testbench a design file would have (`adder.v`: `adder_tb.v`); null for testbenches and other files. */
+export function testbenchOf(name: string): string | null {
+  return /\.s?v$/i.test(name) && !isTestbench(name) ? name.replace(/(\.s?v)$/i, "_tb$1") : null;
+}
+
+/**
+ * Renames a file. A testbench's layout goes along (the user's decision,
+ * 2026-11-20: left behind, it had no tab, so it stayed in the project
+ * unseen, and Simulate lost the testbench's layout).
+ */
 export function renameFile(p: WorkingProject, oldName: string, newName: string) {
   const f = findFile(p, oldName);
   if (!f || oldName === mainFile(p)) return;
@@ -274,14 +289,24 @@ export function renameFile(p: WorkingProject, oldName: string, newName: string) 
   f.name = newName;
   f.onDisk = false;
   p.structureChanged = true;
+  const [from, to] = [layoutOf(oldName), layoutOf(newName)];
+  const layout = from && findFile(p, from);
+  if (layout && to && !findFile(p, to)) {
+    if (layout.onDisk) p.removed.push(from);
+    layout.name = to;
+    layout.onDisk = false;
+  }
 }
 
+/** Deletes a file, and a testbench's layout with it. */
 export function deleteFile(p: WorkingProject, name: string) {
   const i = p.files.findIndex((f) => f.name === name);
   if (i < 0 || name === mainFile(p)) return;
   if (p.files[i].onDisk) p.removed.push(name);
   p.files.splice(i, 1);
   p.structureChanged = true;
+  const layout = layoutOf(name);
+  if (layout && findFile(p, layout)) deleteFile(p, layout);
 }
 
 /**
