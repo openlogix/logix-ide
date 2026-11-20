@@ -2213,35 +2213,6 @@
     });
   });
 
-  /**
-   * Tools > Add AI Agent Guide: AGENTS.md and CLAUDE.md in the project
-   * folder, telling an AI agent this is a Logix IDE project and where its
-   * rules are (spec/design/ai-side-by-side.md, question 3).
-   */
-  async function addAgentGuide() {
-    if (!project) return;
-    if (!project.dir) {
-      finish("Save the project first: the guide goes into its folder.");
-      return;
-    }
-    try {
-      const written = await backend.addAgentGuide(project.dir);
-      if (written.length === 0) {
-        finish("This project already has its AI agent guide, AGENTS.md and CLAUDE.md.");
-      } else if (!written.includes("CLAUDE.md")) {
-        finish(
-          "Added AGENTS.md for AI agents. CLAUDE.md was already there: add the line @AGENTS.md to it, so Claude Code reads the guide.",
-        );
-      } else {
-        finish(
-          `Added ${written.join(" and ")} for AI agents: they say this is a Logix IDE project and where its rules are.`,
-        );
-      }
-    } catch (e) {
-      commandFailed(e);
-    }
-  }
-
   async function onProjectFilesChanged(change: { dir: string; names: string[] }) {
     const p = project;
     if (!p || p.dir !== change.dir) return;
@@ -2400,10 +2371,6 @@
       goToFile();
       return;
     }
-    if (id === "add-agent-guide") {
-      addAgentGuide();
-      return;
-    }
     if (id === "toggle-comment") {
       editor?.toggleComment();
       return;
@@ -2458,7 +2425,6 @@
         | "settings"
         | "go-to-definition"
         | "go-to-file"
-        | "add-agent-guide"
         | "toggle-comment"
         | "select-all"
         | "output-select-all"

@@ -383,8 +383,6 @@ const fake = {
   finishSetup: () => handlers.finishSetup?.(),
   /** GTKWave's window appeared after Simulate (true), or not in time (false). */
   gtkwaveOpened: (found: boolean) => handlers.gtkwaveOpened?.(found),
-  /** Whether the project folder has the AI agent guide (`addAgentGuide`). */
-  agentGuideOnDisk: false,
   /** The folder Logix IDE watches (`watchProject`), or null. */
   watchedDir: null as string | null,
   /** Another program changes the watched folder: each file's new text, or null for deleted; a board for logix-ide.toml. */
@@ -1055,11 +1053,6 @@ export const backend: typeof Real.backend = {
     return () => {};
   },
 
-  addAgentGuide: async () => {
-    const written = fake.agentGuideOnDisk ? [] : ["AGENTS.md", "CLAUDE.md"];
-    fake.agentGuideOnDisk = true;
-    return written;
-  },
   watchProject: async (dir) => {
     fake.watchedDir = dir;
   },

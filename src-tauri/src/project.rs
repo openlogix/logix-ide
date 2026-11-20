@@ -458,7 +458,15 @@ pub fn create(
             .collect();
         copy_project_contents(source, target, &skip, CopyMode::All)?;
     }
-    save(target, files, &[], board, variant, serial_baud)
+    save(target, files, &[], board, variant, serial_baud)?;
+    // Every new project tells AI agents what it is (the user's decision,
+    // 2026-11-20): AGENTS.md and CLAUDE.md, written only when missing, as
+    // a project copied from another may already have its own. Not part of
+    // the examples. A failure here doesn't fail the save.
+    if let Err(e) = crate::agent_guide::add(target, crate::version::APP_COMMIT) {
+        crate::log!("Couldn't write the AI agent guide: {e:#}");
+    }
+    Ok(())
 }
 
 /// Save As into `target`: the project's own folder (`source`) is saved in
@@ -1125,6 +1133,49 @@ mod tests {
         std::fs::create_dir(&inner).unwrap();
         assert_eq!(save_as_start(None, &inner), tmp.path());
         assert_eq!(save_as_start(None, &outer), tmp.path());
+    }
+
+    #[test]
+    fn a_new_project_gets_the_ai_agent_guide() {
+        let tmp = tempfile::tempdir().unwrap();
+        let first = tmp.path().join("first");
+        create(
+            &first,
+            None,
+            &[file("main.v", "m")],
+            &[],
+            None,
+            NO_VARIANT,
+            None,
+        )
+        .unwrap();
+        let guide = std::fs::read_to_string(first.join("AGENTS.md")).unwrap();
+        assert!(guide.contains("Logix IDE project"), "{guide}");
+        assert_eq!(
+            std::fs::read_to_string(first.join("CLAUDE.md")).unwrap(),
+            "@AGENTS.md\n"
+        );
+        // A project made from another keeps the guide it brings along.
+        write(&first, "AGENTS.md", "my own rules");
+        let second = tmp.path().join("second");
+        create(
+            &second,
+            Some(&first),
+            &[file("main.v", "m")],
+            &[],
+            None,
+            NO_VARIANT,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            std::fs::read_to_string(second.join("AGENTS.md")).unwrap(),
+            "my own rules"
+        );
+        // Saving in place doesn't write it again.
+        std::fs::remove_file(first.join("CLAUDE.md")).unwrap();
+        save(&first, &[file("main.v", "n")], &[], None, NO_VARIANT, None).unwrap();
+        assert!(!first.join("CLAUDE.md").exists());
     }
 
     #[test]

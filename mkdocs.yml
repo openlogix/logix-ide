@@ -57,6 +57,10 @@ extra:
 extra_css:
   - stylesheets/extra.css
 
+# Platform tabs open on the reader's own system (as Logix Engine's docs).
+extra_javascript:
+  - javascripts/platform-tabs.js
+
 plugins:
   - search
 
