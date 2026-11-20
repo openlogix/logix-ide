@@ -111,7 +111,7 @@ Run these from the repository folder (the `scripts/` ones work from anywhere).
 - **`scripts/run.sh --engine-repo-dir <folder>`** first builds Logix Engine
   in your local `logix-engine` clone, then runs Logix IDE with it instead of the
   released engine, for working on both together. Its tools go to
-  `~/.logix/ide/dev/engine`, apart from the released engine's (the first run
+  `~/.logix/ide/dev/engine-data`, apart from the released engine's (the first run
   downloads them). Restart the script after changing the engine.
 - **Any engine binary, by hand**: `scripts/run.sh --engine-repo-dir` just sets
   `LOGIX_DEV_ENGINE_BINARY`, the path to a `logix-engine` executable. You can

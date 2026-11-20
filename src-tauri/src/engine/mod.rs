@@ -77,9 +77,10 @@ impl Layout {
             config_dir,
         }
     }
-    /// The engine releases, one folder each (`releases_dir/<release>/`).
+    /// The engine programs, one folder per release
+    /// (`engine-program/<release>/`).
     fn releases_dir(&self) -> PathBuf {
-        self.config_dir.join("engine-release")
+        self.config_dir.join("engine-program")
     }
     /// The unpacked engine package of `release` (the executable and its
     /// licenses), plus its receipt. A folder per release, so a new release
@@ -100,12 +101,12 @@ impl Layout {
     /// packages (toolchains), logs and scratch files. The engine requires
     /// its last name to contain "engine".
     fn engine_folder(&self) -> PathBuf {
-        self.config_dir.join("engine")
+        self.config_dir.join("engine-data")
     }
     /// The engine folder of a locally built engine (`LOGIX_DEV_ENGINE_BINARY`),
     /// kept apart so it never touches the released engine's packages.
     fn dev_engine_folder(&self) -> PathBuf {
-        self.data_dir.join("dev").join("engine")
+        self.data_dir.join("dev").join("engine-data")
     }
 }
 
@@ -185,7 +186,7 @@ mod tests {
     fn engine_folder_name_contains_engine() {
         let layout = Layout::new(Path::new("/Users/you/.logix/ide"), &ConfigSource::regular());
         let folder = layout.engine_folder();
-        assert_eq!(folder, Path::new("/Users/you/.logix/ide/engine"));
+        assert_eq!(folder, Path::new("/Users/you/.logix/ide/engine-data"));
         // The engine's path keyword rule.
         assert!(folder
             .file_name()
@@ -194,7 +195,7 @@ mod tests {
             .contains("engine"));
         assert!(!layout.bin_dir("2026-11-12").starts_with(&folder));
         let dev = layout.dev_engine_folder();
-        assert_eq!(dev, Path::new("/Users/you/.logix/ide/dev/engine"));
+        assert_eq!(dev, Path::new("/Users/you/.logix/ide/dev/engine-data"));
         assert!(dev
             .file_name()
             .unwrap()
@@ -210,10 +211,10 @@ mod tests {
         };
         let layout = Layout::new(Path::new("/Users/you/.logix/ide"), &source);
         let dir = Path::new("/Users/you/.logix/ide/dev/config-override");
-        assert_eq!(layout.engine_folder(), dir.join("engine"));
+        assert_eq!(layout.engine_folder(), dir.join("engine-data"));
         assert_eq!(
             layout.bin_dir("2026-11-12"),
-            dir.join("engine-release").join("2026-11-12")
+            dir.join("engine-program").join("2026-11-12")
         );
         assert!(layout.tmp_dir().starts_with(dir));
         assert_eq!(layout.config_dir, dir);

@@ -46,13 +46,13 @@ mod tests {
         let info = json!({"packages": [
             {"name": "logix-catalog", "status": "ready"},
             {"name": "logix-core", "status": "ready", "components": [
-                {"name": "verible", "description": "Verible", "bin_folder": "/Users/you/.logix/ide/engine/packages/logix-core/2026-11-10/verible/bin"}
+                {"name": "verible", "description": "Verible", "bin_folder": "/Users/you/.logix/ide/engine-data/packages/logix-core/2026-11-10/verible/bin"}
             ]}
         ]});
         assert_eq!(
             find_program(&info, "verible", "verible-verilog-ls").unwrap(),
             PathBuf::from(format!(
-                "/Users/you/.logix/ide/engine/packages/logix-core/2026-11-10/verible/bin/verible-verilog-ls{}",
+                "/Users/you/.logix/ide/engine-data/packages/logix-core/2026-11-10/verible/bin/verible-verilog-ls{}",
                 std::env::consts::EXE_SUFFIX
             ))
         );

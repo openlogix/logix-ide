@@ -775,13 +775,13 @@ mod tests {
         assert_eq!(info["platform"], "darwin-arm64");
         let dir = tmp.path().join("dev/config-override");
         let cached = remote_config::load_cache(&dir).expect("the cached config");
-        let receipt = package::receipt(&dir.join("engine-release")).unwrap();
+        let receipt = package::receipt(&dir.join("engine-program")).unwrap();
         let examples = package::receipt(&dir.join("examples")).unwrap();
         assert!(examples.matches(cached.examples(), Platform::MacosArm64));
         assert!(dir.join("examples/icesugar-1-5/blinky").is_dir());
-        assert!(dir.join("engine").is_dir());
+        assert!(dir.join("engine-data").is_dir());
         assert!(
-            !tmp.path().join("engine").exists(),
+            !tmp.path().join("engine-data").exists(),
             "the regular folders stay untouched"
         );
         assert!(receipt.matches(cached.engine(), Platform::MacosArm64));

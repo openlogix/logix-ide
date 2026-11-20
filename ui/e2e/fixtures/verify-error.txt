@@ -1,4 +1,4 @@
-[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DLOGIX_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/ide/engine/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40 ~/.logix/ide/engine/tmp/models-582ee2076d3b241e.vlt ~/.logix/ide/engine/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40/cells_sim.v main.v[0m
+[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DLOGIX_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/ide/engine-data/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40 ~/.logix/ide/engine-data/tmp/models-582ee2076d3b241e.vlt ~/.logix/ide/engine-data/packages/logix-core/2026-11-11/oss-cad-suite/share/yosys/ice40/cells_sim.v main.v[0m
 [31m%Error: main.v:13:3: syntax error, unexpected always, expecting ',' or ';'[0m
    13 |   always @(posedge sys_clk) counter <= counter + 1'b1;
       |   ^~~~~~
