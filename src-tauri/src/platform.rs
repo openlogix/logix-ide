@@ -804,7 +804,7 @@ mod tests {
     // process is named ld-linux-x86-64; its command line names it.
     #[test]
     fn a_program_is_found_by_its_command_line() {
-        let suite = b"/home/u/.logix/ide/engine/packages/logix-core/oss-cad-suite/lib/ld-linux-x86-64.so.2\0--inhibit-cache\0--library-path\0/x/lib\0/home/u/.logix/ide/engine/packages/logix-core/oss-cad-suite/libexec/gtkwave\0wave.vcd\0";
+        let suite = b"/home/u/.logix/ide/engine-data/packages/logix-core/oss-cad-suite/lib/ld-linux-x86-64.so.2\0--inhibit-cache\0--library-path\0/x/lib\0/home/u/.logix/ide/engine-data/packages/logix-core/oss-cad-suite/libexec/gtkwave\0wave.vcd\0";
         assert!(cmdline_runs(suite, "gtkwave"));
         assert!(cmdline_runs(b"/usr/bin/gtkwave\0a.vcd\0", "gtkwave"));
         assert!(cmdline_runs(b"gtkwave\0", "gtkwave"));

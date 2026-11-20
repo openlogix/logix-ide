@@ -184,7 +184,7 @@ mod tests {
             ],
         );
         let p = Platform::MacosArm64;
-        let bin_dir = tmp.path().join("engine-release");
+        let bin_dir = tmp.path().join("engine-program");
         let exe = "logix-engine";
         assert!(!is_unpacked(&bin_dir, p, &dep, exe));
 
@@ -228,7 +228,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let (archive, mut dep) = package(tmp.path(), &[("logix-engine/logix-engine", b"x")]);
         dep.sha256 = "00".repeat(32);
-        let bin_dir = tmp.path().join("engine-release");
+        let bin_dir = tmp.path().join("engine-program");
         let err = unpack(
             Platform::MacosArm64,
             &archive,
@@ -256,7 +256,7 @@ mod tests {
             "logix-engine",
             "logix-engine",
             &tmp.path().join("tmp"),
-            &tmp.path().join("engine-release"),
+            &tmp.path().join("engine-program"),
             &std::sync::atomic::AtomicU64::new(0),
             |_| Ok(()),
         )
