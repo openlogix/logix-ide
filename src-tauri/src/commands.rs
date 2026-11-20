@@ -122,8 +122,9 @@ async fn clean_logs(engine: &engine::Engine) {
 /// Help > Check for Updates: reads Logix IDE's remote config now and
 /// switches to a new engine release if it names one, then has the engine
 /// check its own packages (`check_updates`), with the progress in the
-/// console. Returns what changed, one line each, or a line saying
-/// everything is up to date. Waits for a running task to finish.
+/// console, then looks for a newer Logix IDE, which it only reports.
+/// Returns what changed, one line each, or a line saying everything is up
+/// to date. Waits for a running task to finish.
 #[tauri::command]
 pub async fn check_for_updates(
     app: AppHandle,
@@ -150,7 +151,8 @@ pub async fn check_for_updates(
     let mut changes = updated.lines;
     let running = slot.clone().expect("set above");
     drop(slot);
-    changes.extend(engine::check_for_updates(&running, log).await?);
+    changes.extend(engine::check_for_updates(&running, log.clone()).await?);
+    changes.extend(engine::newer_ide_lines(log).await);
     if changes.is_empty() {
         changes.push("Everything is up to date.".into());
     }

@@ -170,7 +170,7 @@ in parentheses):
    list several serial ports for the board, which one it is (the catalog's
    `docs/model.md`). A pull request in `logix-catalog`.
 2. **Logix Engine:** a catalog release with it, named by the engine's dev
-   config (`remote-config/logix-engine/<NNN>/dev.jsonc`, a pull request),
+   config (`remote-config/logix-engine/<NNN>/dev-channel.jsonc`, a pull request),
    or tried first with `LOGIX_ENGINE_DEV_REMOTE_CONFIG`.
 3. **Here:** run the prompt (README.md) for `serial` and the board, then the
    checks. If the board doesn't fit Per board (such as a clock that isn't a

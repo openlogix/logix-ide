@@ -2,18 +2,25 @@
 //! `CLAUDE.md`): which release of each of its dependencies Logix IDE uses.
 //! It's the version folder `remote-config/logix-ide/<NNN>/` in this repo, by
 //! the config version this build hard-codes, read from GitHub and cached in
-//! the data folder: `channels.jsonc` says which Logix IDE releases are on
+//! the data folder: `assign.jsonc` says which Logix IDE releases are on
 //! which channel, and Logix IDE reads its channel's config file there,
-//! `<channel>.jsonc` (`prod.jsonc` when its channel has none). Its channel:
-//! `LOGIX_IDE_CHANNEL` when set; else, for a release build, the channel
-//! `channels.jsonc` lists its own release under (dev when unlisted); a local
-//! build is always dev. There's no built-in pin: the repo's files are the
+//! `<channel>-channel.jsonc` (`prod-channel.jsonc` when its channel has
+//! none). Its channel: `LOGIX_IDE_CHANNEL` when set; else, for a release
+//! build, the channel `assign.jsonc` lists its own release under (dev when
+//! unlisted); a local build is always dev. There's no built-in pin: the repo's files are the
 //! pin lists, so a change there reaches every Logix IDE on this config
 //! version and channel without a new release. Plain Rust, no Tauri.
 //!
-//! A config names, per dependency, a GitHub repo, a release tag and a file
-//! template (`${PLATFORM}`, `${YYYYMMDD}`). Resolving it for this platform
+//! A config names `dependencies`, per dependency a GitHub repo, a release
+//! tag and a file template (`${PLATFORM}`, `${YYYYMMDD}`), and `latest`, the
+//! newest Logix IDE release on the channel. Resolving it for this platform
 //! takes each file's SHA-256 from its release's `SHA256SUMS`.
+//!
+//! A newer Logix IDE (`newer_release`, for Help > Check for Updates): the
+//! product folder's `index.jsonc` lists the version folders; Logix IDE walks
+//! them from the largest (by decimal value) down to its own, takes the first
+//! that has its channel's file, and reads only `latest` there, so a
+//! promotion sets `latest` only in the newest folder.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -24,7 +31,8 @@ use serde::{Deserialize, Serialize};
 
 /// The repo whose `remote-config/` holds Logix IDE's config.
 pub const CONFIG_REPO: &str = "openlogix/logix-ide";
-/// Logix IDE's config version: which `config-NNN.jsonc` it reads. Raise it
+/// Logix IDE's config version: which version folder
+/// `remote-config/logix-ide/<NNN>/` it reads. Raise it
 /// only when a new Logix IDE can't share the current file (a dependency
 /// added or dropped, or a release older Logix IDEs can't use).
 pub const CONFIG_VERSION: &str = "001";
@@ -42,7 +50,18 @@ pub const DEV_REMOTE_CONFIG_VARIABLE: &str = "LOGIX_IDE_DEV_REMOTE_CONFIG";
 /// `dev` is a channel name).
 pub const CHANNEL_VARIABLE: &str = "LOGIX_IDE_CHANNEL";
 /// Each version folder's channel lists.
-pub const CHANNELS_FILE: &str = "channels.jsonc";
+pub const ASSIGN_FILE: &str = "assign.jsonc";
+/// The prod channel's config file, which a channel without its own file reads.
+pub const PROD_FILE: &str = "prod-channel.jsonc";
+/// The product folder's list of its version folders.
+pub const INDEX_FILE: &str = "index.jsonc";
+/// The schema of `index.jsonc`.
+const INDEX_SCHEMA: &str = "https://www.openlogix.org/schemas/logix-config-index-v1.json";
+
+/// A channel's config file name.
+pub fn channel_file(channel: &str) -> String {
+    format!("{channel}-channel.jsonc")
+}
 /// Whether this is a release build (build.rs): a local build is always dev,
 /// since its version (today's date) could match a prod release's tag.
 pub const IS_RELEASE_BUILD: bool = env!("LOGIX_IDE_BUILD_RELEASE").len() == 4; // "true"
@@ -132,11 +151,11 @@ impl ConfigSource {
 pub struct Channel {
     /// Such as prod or dev.
     pub name: String,
-    /// Why: "listed" (channels.jsonc lists this release), "default" (it
+    /// Why: "listed" (assign.jsonc lists this release), "default" (it
     /// doesn't: dev), "local build" (always dev) or "LOGIX_IDE_CHANNEL".
     pub how: String,
-    /// The config file read: `<channel>.jsonc`, or `prod.jsonc` when the
-    /// channel has none.
+    /// The config file read: `<channel>-channel.jsonc`, or
+    /// `prod-channel.jsonc` when the channel has none.
     pub file: String,
 }
 
@@ -167,7 +186,7 @@ pub fn channel_variable() -> Result<Option<String>> {
     channel_from_variable(std::env::var_os(CHANNEL_VARIABLE))
 }
 
-/// channels.jsonc: channel name to its release tags.
+/// assign.jsonc: channel name to its release tags.
 pub fn parse_channels(text: &str) -> Result<BTreeMap<String, Vec<String>>> {
     let json: serde_json::Value =
         serde_json::from_str(&strip_comments(text)?).context("it isn't valid JSONC")?;
@@ -189,7 +208,7 @@ pub fn parse_channels(text: &str) -> Result<BTreeMap<String, Vec<String>>> {
 }
 
 /// Logix IDE's channel, by the rules in the module's comment (`file` is the
-/// channel's own; reading falls back to prod.jsonc). `release` says whether
+/// channel's own; reading falls back to prod-channel.jsonc). `release` says whether
 /// this is a release build, and `tag` is this release's tag.
 pub fn choose_channel(
     channels: &BTreeMap<String, Vec<String>>,
@@ -199,7 +218,7 @@ pub fn choose_channel(
 ) -> Result<Channel> {
     let (name, how) = if let Some(v) = variable {
         if v != "prod" && v != "dev" && !channels.contains_key(v) {
-            bail!("{CHANNEL_VARIABLE}: {v} isn't a channel (prod, dev or one in {CHANNELS_FILE})");
+            bail!("{CHANNEL_VARIABLE}: {v} isn't a channel (prod, dev or one in {ASSIGN_FILE})");
         }
         (v.to_string(), CHANNEL_VARIABLE)
     } else if !release {
@@ -214,7 +233,7 @@ pub fn choose_channel(
         }
     };
     Ok(Channel {
-        file: format!("{name}.jsonc"),
+        file: channel_file(&name),
         name,
         how: how.to_string(),
     })
@@ -305,10 +324,37 @@ pub fn is_date_tag(tag: &str) -> bool {
         })
 }
 
+/// A config's parts: its dependencies, by package name, and `latest`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Config {
+    pub dependencies: BTreeMap<String, Entry>,
+    /// The newest Logix IDE release on the channel (its `file` may be empty:
+    /// nothing downloads it).
+    pub latest: Option<Entry>,
+}
+
 /// Reads a config's text: its dependencies, by package name. Checks what
 /// the schema (logix-remote-config-v1) does that matters here, and that it
 /// names exactly the dependencies this Logix IDE needs.
 pub fn parse(text: &str) -> Result<BTreeMap<String, Entry>> {
+    let config = parse_config(text)?;
+    let names: Vec<&str> = config.dependencies.keys().map(String::as_str).collect();
+    let mut wanted = DEPENDENCIES.to_vec();
+    wanted.sort();
+    if names != wanted {
+        bail!(
+            "it must name exactly {}, not {}",
+            wanted.join(", "),
+            names.join(", ")
+        );
+    }
+    Ok(config.dependencies)
+}
+
+/// Reads a config's text as the schema has it: `latest` and `dependencies`,
+/// whatever they name. A newer config version's file is read this way, for
+/// its `latest` only.
+pub fn parse_config(text: &str) -> Result<Config> {
     let json: serde_json::Value =
         serde_json::from_str(&strip_comments(text)?).context("it isn't valid JSONC")?;
     let obj = json
@@ -317,8 +363,34 @@ pub fn parse(text: &str) -> Result<BTreeMap<String, Entry>> {
     if obj.get("$schema").and_then(|v| v.as_str()) != Some(SCHEMA) {
         bail!("its $schema must be {SCHEMA}");
     }
-    let mut out = BTreeMap::new();
-    for (name, dep) in obj.iter().filter(|(k, _)| *k != "$schema") {
+    if let Some(extra) = obj
+        .keys()
+        .find(|k| !["$schema", "latest", "dependencies"].contains(&k.as_str()))
+    {
+        bail!("unknown key {extra}");
+    }
+    let latest = obj
+        .get("latest")
+        .map(|l| entry("latest", l, false))
+        .transpose()?;
+    let deps = obj
+        .get("dependencies")
+        .and_then(|d| d.as_object())
+        .ok_or_else(|| anyhow!("it has no dependencies object"))?;
+    let mut dependencies = BTreeMap::new();
+    for (name, dep) in deps {
+        dependencies.insert(name.clone(), entry(name, dep, true)?);
+    }
+    Ok(Config {
+        dependencies,
+        latest,
+    })
+}
+
+/// One `repo`, `release`, `file` entry: a dependency (file required) or
+/// `latest` (file optional).
+fn entry(name: &str, dep: &serde_json::Value, needs_file: bool) -> Result<Entry> {
+    {
         let fields = dep
             .as_object()
             .ok_or_else(|| anyhow!("{name}: not an object"))?;
@@ -346,30 +418,56 @@ pub fn parse(text: &str) -> Result<BTreeMap<String, Entry>> {
         if !is_date_tag(&release) {
             bail!("{name}: release must be yyyy-mm-dd, not {release:?}");
         }
-        let file = field("file")?;
-        if !safe(&file.replace("${PLATFORM}", "x").replace("${YYYYMMDD}", "x")) {
+        let file = match fields.get("file") {
+            None if !needs_file => String::new(),
+            _ => field("file")?,
+        };
+        if !file.is_empty() && !safe(&file.replace("${PLATFORM}", "x").replace("${YYYYMMDD}", "x"))
+        {
             bail!("{name}: bad file {file:?}");
         }
-        out.insert(
-            name.clone(),
-            Entry {
-                repo,
-                release,
-                file,
-            },
-        );
+        Ok(Entry {
+            repo,
+            release,
+            file,
+        })
     }
-    let names: Vec<&str> = out.keys().map(String::as_str).collect();
-    let mut wanted = DEPENDENCIES.to_vec();
-    wanted.sort();
-    if names != wanted {
-        bail!(
-            "it must name exactly {}, not {}",
-            wanted.join(", "),
-            names.join(", ")
-        );
+}
+
+/// index.jsonc: the version folders, as listed.
+pub fn parse_index(text: &str) -> Result<Vec<String>> {
+    let json: serde_json::Value =
+        serde_json::from_str(&strip_comments(text)?).context("it isn't valid JSONC")?;
+    if json.get("$schema").and_then(|v| v.as_str()) != Some(INDEX_SCHEMA) {
+        bail!("its $schema must be {INDEX_SCHEMA}");
     }
-    Ok(out)
+    json.get("versions")
+        .and_then(|v| v.as_array())
+        .ok_or_else(|| anyhow!("it has no versions list"))?
+        .iter()
+        .map(|v| {
+            v.as_str()
+                .filter(|v| v.len() >= 3 && v.bytes().all(|c| c.is_ascii_digit()))
+                .map(str::to_string)
+                .ok_or_else(|| anyhow!("versions lists {v}, not a version folder such as 001"))
+        })
+        .collect()
+}
+
+/// The version folders to look in for a newer release: those not older than
+/// `own`, largest first, by decimal value (`0100` comes before `010`).
+pub fn folders_to_try(versions: &[String], own: &str) -> Vec<String> {
+    let value = |v: &str| v.parse::<u64>().unwrap_or(0);
+    let mut out: Vec<String> = versions
+        .iter()
+        .filter(|v| value(v) >= value(own))
+        .cloned()
+        .collect();
+    out.sort_by_key(|v| std::cmp::Reverse(value(v)));
+    if !out.iter().any(|v| value(v) == value(own)) {
+        out.push(own.to_string());
+    }
+    out
 }
 
 /// A single path component made of safe characters.
@@ -448,17 +546,17 @@ async fn read_file(
     }
 }
 
-/// Reads the version folder from its source (`channels.jsonc`, then the
-/// channel's config file, or `prod.jsonc` when the channel has none: a
+/// Reads the version folder from its source (`assign.jsonc`, then the
+/// channel's config file, or `prod-channel.jsonc` when the channel has none: a
 /// rule, not an error) and resolves it for `platform`: each dependency's
 /// file, URL and SHA-256.
 pub async fn fetch(source: &ConfigSource, platform: &str) -> Result<Cached> {
     let client = client()?;
-    let channels_text = read_file(source, CHANNELS_FILE, &client)
+    let channels_text = read_file(source, ASSIGN_FILE, &client)
         .await?
-        .ok_or_else(|| anyhow!("{}: there's no {CHANNELS_FILE}", source.location))?;
+        .ok_or_else(|| anyhow!("{}: there's no {ASSIGN_FILE}", source.location))?;
     let channels = parse_channels(&channels_text)
-        .with_context(|| format!("{}{CHANNELS_FILE} isn't valid", source.file("")))?;
+        .with_context(|| format!("{}{ASSIGN_FILE} isn't valid", source.file("")))?;
     let tag = crate::version::APP_VERSION.replace('.', "-");
     let mut channel = choose_channel(
         &channels,
@@ -469,18 +567,18 @@ pub async fn fetch(source: &ConfigSource, platform: &str) -> Result<Cached> {
     let text = match read_file(source, &channel.file, &client).await? {
         Some(t) => t,
         None if channel.name != "prod" => {
-            channel.file = "prod.jsonc".into();
-            read_file(source, "prod.jsonc", &client)
+            channel.file = PROD_FILE.into();
+            read_file(source, PROD_FILE, &client)
                 .await?
                 .ok_or_else(|| {
                     anyhow!(
-                        "{}: there's neither {}.jsonc nor prod.jsonc",
+                        "{}: there's neither {} nor {PROD_FILE}",
                         source.location,
-                        channel.name
+                        channel_file(&channel.name)
                     )
                 })?
         }
-        None => bail!("{}: there's no prod.jsonc", source.location),
+        None => bail!("{}: there's no {PROD_FILE}", source.location),
     };
     let entries = parse(&text).with_context(|| {
         format!(
@@ -520,6 +618,67 @@ pub async fn fetch(source: &ConfigSource, platform: &str) -> Result<Cached> {
     })
 }
 
+impl ConfigSource {
+    /// The product folder: the version folder's parent, which holds
+    /// `index.jsonc` and the other version folders.
+    fn product_folder(&self) -> ConfigSource {
+        let trimmed = self.location.trim_end_matches(['/', '\\']);
+        let parent = if self.is_url() {
+            trimmed
+                .rsplit_once('/')
+                .map_or(trimmed, |(p, _)| p)
+                .to_string()
+        } else {
+            Path::new(trimmed)
+                .parent()
+                .map_or(trimmed.to_string(), |p| p.display().to_string())
+        };
+        ConfigSource {
+            location: parent,
+            is_override: self.is_override,
+        }
+    }
+}
+
+/// The newest Logix IDE release on `channel` (Help > Check for Updates):
+/// from `index.jsonc` in the product folder, the largest version folder,
+/// not older than this build's, that has the channel's file (for a channel
+/// other than prod, `prod-channel.jsonc` when it has none, as `fetch`
+/// reads), and its `latest`. Without the index (offline, or a folder
+/// without one), it uses this build's own folder. None when no file names
+/// `latest`.
+pub async fn newer_release(source: &ConfigSource, channel: &str) -> Result<Option<Entry>> {
+    let client = client()?;
+    let product = source.product_folder();
+    let versions = match read_file(&product, INDEX_FILE, &client).await {
+        Ok(Some(text)) => parse_index(&text)
+            .with_context(|| format!("{} isn't valid", product.file(INDEX_FILE)))?,
+        Ok(None) => vec![CONFIG_VERSION.to_string()],
+        Err(e) => {
+            crate::log!("Couldn't read {INDEX_FILE}, using config {CONFIG_VERSION}: {e:#}");
+            vec![CONFIG_VERSION.to_string()]
+        }
+    };
+    let mut files = vec![channel_file(channel)];
+    if channel != "prod" {
+        files.push(PROD_FILE.to_string());
+    }
+    for version in folders_to_try(&versions, CONFIG_VERSION) {
+        let folder = ConfigSource {
+            location: product.file(&version),
+            is_override: source.is_override,
+        };
+        for name in &files {
+            if let Some(text) = read_file(&folder, name, &client).await? {
+                let config = parse_config(&text)
+                    .with_context(|| format!("{} isn't valid", folder.file(name)))?;
+                return Ok(config.latest);
+            }
+        }
+    }
+    Ok(None)
+}
+
 /// The cached, resolved config.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -540,7 +699,7 @@ pub struct Cached {
 
 /// This Logix IDE build, as the cache records it: its version, and whether
 /// it's a release build or a local one, which is what its channel depends
-/// on besides channels.jsonc and LOGIX_IDE_CHANNEL.
+/// on besides assign.jsonc and LOGIX_IDE_CHANNEL.
 pub fn reader() -> String {
     let kind = if IS_RELEASE_BUILD {
         "release"
@@ -638,19 +797,21 @@ mod tests {
     const CONFIG: &str = r#"// What Logix IDE on config 001 uses.
 {
   "$schema": "https://www.openlogix.org/schemas/logix-remote-config-v1.json",
+  "latest": { "repo": "openlogix/logix-ide", "release": "2026-11-17" },
+  "dependencies": {
+    /* The engine. A "//" in a string isn't a comment: "a//b". */
+    "logix-engine": {
+      "repo": "openlogix/logix-engine",
+      "release": "2026-11-12",
+      "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+    },
 
-  /* The engine. A "//" in a string isn't a comment: "a//b". */
-  "logix-engine": {
-    "repo": "openlogix/logix-engine",
-    "release": "2026-11-12",
-    "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
-  },
-
-  // The examples.
-  "logix-ide-examples": {
-    "repo": "openlogix/logix-ide",
-    "release": "2026-11-12",
-    "file": "logix-ide-examples-${YYYYMMDD}.tgz"
+    // The examples.
+    "logix-ide-examples": {
+      "repo": "openlogix/logix-ide",
+      "release": "2026-11-12",
+      "file": "logix-ide-examples-${YYYYMMDD}.tgz"
+    }
   }
 }
 "#;
@@ -698,6 +859,13 @@ mod tests {
                 "\"repo\": \"openlogix/logix-engine\", \"x\": 1,",
                 "unknown key",
             ),
+            ("\"latest\": {", "\"newest\": {", "unknown key newest"),
+            (
+                "\"release\": \"2026-11-17\"",
+                "\"release\": \"soon\"",
+                "latest: release",
+            ),
+            ("\"dependencies\": {", "\"deps\": {", "unknown key deps"),
         ] {
             assert!(CONFIG.contains(from), "{from}");
             let err = format!("{:#}", parse(&CONFIG.replacen(from, to, 1)).unwrap_err());
@@ -711,12 +879,13 @@ mod tests {
         let folder = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("..")
             .join(repo_path());
-        parse_channels(&std::fs::read_to_string(folder.join(CHANNELS_FILE)).unwrap()).unwrap();
-        // Every config file there is valid: prod.jsonc, dev.jsonc, others.
+        parse_channels(&std::fs::read_to_string(folder.join(ASSIGN_FILE)).unwrap()).unwrap();
+        // Every config file there is valid: prod-channel.jsonc,
+        // dev-channel.jsonc, others.
         let mut files = 0;
         for f in std::fs::read_dir(&folder).unwrap().flatten() {
             let name = f.file_name().to_string_lossy().into_owned();
-            if name != CHANNELS_FILE && name.ends_with(".jsonc") {
+            if name.ends_with("-channel.jsonc") {
                 parse(&std::fs::read_to_string(f.path()).unwrap()).unwrap();
                 files += 1;
             }
@@ -737,7 +906,7 @@ mod tests {
         let pick = |var: Option<&str>, release: bool, tag: &str| {
             choose_channel(&channels, var, release, tag).map(|c| (c.name, c.how, c.file))
         };
-        let c = |n: &str, h: &str| (n.to_string(), h.to_string(), format!("{n}.jsonc"));
+        let c = |n: &str, h: &str| (n.to_string(), h.to_string(), channel_file(n));
         assert_eq!(pick(None, true, "2026-11-20").unwrap(), c("prod", "listed"));
         assert_eq!(pick(None, true, "2026-11-21").unwrap(), c("dev", "default"));
         // A local build is dev, even with a prod release's tag.
@@ -810,12 +979,12 @@ mod tests {
         // Resolving reads SHA256SUMS from GitHub; a config that doesn't
         // parse fails before any network access.
         let tmp = tempfile::tempdir().unwrap();
-        std::fs::write(tmp.path().join(CHANNELS_FILE), r#"{"$schema": "x"}"#).unwrap();
-        // prod.jsonc: every channel reads it, its own or as a fallback, so
+        std::fs::write(tmp.path().join(ASSIGN_FILE), r#"{"$schema": "x"}"#).unwrap();
+        // prod-channel.jsonc: every channel reads it, its own or as a fallback, so
         // this holds on whichever channel the tests run (CI sets one per
         // config file in the repo).
         std::fs::write(
-            tmp.path().join("prod.jsonc"),
+            tmp.path().join(PROD_FILE),
             CONFIG.replace("2026-11-12", "soon"),
         )
         .unwrap();
@@ -842,7 +1011,7 @@ mod tests {
                     "local build"
                 }
                 .into(),
-                file: "dev.jsonc".into(),
+                file: "dev-channel.jsonc".into(),
             },
             source: default_url(),
             config_version: CONFIG_VERSION.into(),
@@ -889,5 +1058,58 @@ mod tests {
     fn times_are_utc() {
         assert_eq!(utc_time(0), "1970-01-01 00:00 UTC");
         assert_eq!(utc_time(1_794_441_600 + 3_660), "2026-11-12 01:01 UTC");
+    }
+
+    #[test]
+    fn newer_folders_are_tried_largest_first() {
+        let v = |l: &[&str]| l.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+        assert_eq!(
+            folders_to_try(&v(&["001", "002", "010", "0100"]), "002"),
+            v(&["0100", "010", "002"])
+        );
+        // Never below its own, which is tried even when the index lacks it.
+        assert_eq!(folders_to_try(&v(&["001"]), "002"), v(&["002"]));
+        let index = r#"// The version folders.
+{"$schema": "https://www.openlogix.org/schemas/logix-config-index-v1.json", "versions": ["001", "002"]}"#;
+        assert_eq!(parse_index(index).unwrap(), v(&["001", "002"]));
+        assert!(parse_index(&index.replace("\"002\"", "\"2\"")).is_err());
+        assert!(parse_index(&index.replace("index-v1", "index-v9")).is_err());
+    }
+
+    #[tokio::test]
+    async fn the_newest_folder_with_the_channel_gives_latest() {
+        let tmp = tempfile::tempdir().unwrap();
+        let product = tmp.path().join("logix-ide");
+        let write = |path: &str, text: &str| {
+            let f = product.join(path);
+            std::fs::create_dir_all(f.parent().unwrap()).unwrap();
+            std::fs::write(f, text).unwrap();
+        };
+        let config = |release: &str| CONFIG.replace("2026-11-17", release);
+        write(
+            INDEX_FILE,
+            r#"{"$schema": "https://www.openlogix.org/schemas/logix-config-index-v1.json", "versions": ["001", "002", "003"]}"#,
+        );
+        write("001/prod-channel.jsonc", &config("2026-11-17"));
+        write("002/prod-channel.jsonc", &config("2026-12-01"));
+        // 003 has no prod file yet: 002 is the newest with prod.
+        write("003/dev-channel.jsonc", &config("2026-12-05"));
+        let own = ConfigSource::from_variable(Some(product.join(CONFIG_VERSION).into())).unwrap();
+        let latest = |channel: &'static str| {
+            let own = own.clone();
+            async move {
+                newer_release(&own, channel)
+                    .await
+                    .unwrap()
+                    .map(|e| e.release)
+            }
+        };
+        assert_eq!(latest("prod").await.as_deref(), Some("2026-12-01"));
+        // Dev finds its own file in 003; beta has none, so prod's.
+        assert_eq!(latest("dev").await.as_deref(), Some("2026-12-05"));
+        assert_eq!(latest("beta").await.as_deref(), Some("2026-12-01"));
+        // Without the index: its own folder only.
+        std::fs::remove_file(product.join(INDEX_FILE)).unwrap();
+        assert_eq!(latest("prod").await.as_deref(), Some("2026-11-17"));
     }
 }

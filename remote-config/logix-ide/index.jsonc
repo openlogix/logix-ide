@@ -1,0 +1,8 @@
+// Logix IDE's config version folders, oldest first (Remote updates, in the
+// website repo's CLAUDE.md). Check for Updates reads it to find a newer
+// Logix IDE in a newer folder, without the GitHub API. Add a folder here when
+// adding it.
+{
+  "$schema": "https://www.openlogix.org/schemas/logix-config-index-v1.json",
+  "versions": ["001"]
+}

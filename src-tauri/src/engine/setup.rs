@@ -354,6 +354,53 @@ pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> R
     Ok(updated)
 }
 
+/// Help > Check for Updates' second part (the website repo's `CLAUDE.md`,
+/// Remote updates, A newer version of the product): whether a newer Logix
+/// IDE exists on this build's channel. Logix IDE never installs itself: it
+/// only says so, with the release's page. Returns the lines to show (the
+/// page, then the status line), or none when this one is the newest. A
+/// failure (offline, a broken file) is logged and shown in `log`, and isn't
+/// an error: the dependencies' part has already run.
+pub async fn newer_ide_lines(log: impl Fn(String)) -> Vec<String> {
+    let found = async {
+        let source = ConfigSource::from_env()?;
+        let layout = Layout::new(&platform::current_implemented()?.data_dir()?, &source);
+        let channel = match remote_config::load_cache(&layout.config_dir) {
+            Some(cached) if cached.matches(&source) => cached.channel.name,
+            _ => remote_config::channel_variable()?.unwrap_or_else(|| "dev".into()),
+        };
+        remote_config::newer_release(&source, &channel).await
+    }
+    .await;
+    match found {
+        Ok(latest) => newer_lines(latest.as_ref(), crate::version::APP_VERSION),
+        Err(e) => {
+            crate::log!("Couldn't check for a newer Logix IDE: {e:#}");
+            log(format!("Couldn't check for a newer Logix IDE: {e:#}"));
+            Vec::new()
+        }
+    }
+}
+
+/// The lines for a newer Logix IDE: its page, then "Logix IDE 2026.12.01 is
+/// available (you have 2026.11.17)."; none when `latest` isn't newer than
+/// `own` (this build's version, yyyy.mm.dd).
+fn newer_lines(latest: Option<&remote_config::Entry>, own: &str) -> Vec<String> {
+    let Some(latest) = latest.filter(|l| l.release > own.replace('.', "-")) else {
+        return Vec::new();
+    };
+    vec![
+        format!(
+            "Download it from https://github.com/{}/releases/tag/{}",
+            latest.repo, latest.release
+        ),
+        format!(
+            "Logix IDE {} is available (you have {own}).",
+            shown(&latest.release)
+        ),
+    ]
+}
+
 /// Help > Check for Updates, after `update_if_due(.., true)`: asks the
 /// running engine to check its own packages now (`check_updates`), with its
 /// progress, and returns one line per package whose release changed, in
@@ -791,5 +838,24 @@ mod tests {
         ));
         let again = update_if_due(|l| println!("{l}"), true).await.unwrap();
         assert!(!again.engine && again.lines.is_empty(), "{again:?}");
+    }
+
+    #[test]
+    fn a_newer_logix_ide_is_reported_with_its_page() {
+        let latest = remote_config::Entry {
+            repo: "openlogix/logix-ide".into(),
+            release: "2026-12-01".into(),
+            file: String::new(),
+        };
+        assert_eq!(
+            newer_lines(Some(&latest), "2026.11.17"),
+            [
+                "Download it from https://github.com/openlogix/logix-ide/releases/tag/2026-12-01",
+                "Logix IDE 2026.12.01 is available (you have 2026.11.17).",
+            ]
+        );
+        assert!(newer_lines(Some(&latest), "2026.12.01").is_empty());
+        assert!(newer_lines(Some(&latest), "2026.12.05").is_empty());
+        assert!(newer_lines(None, "2026.11.17").is_empty());
     }
 }

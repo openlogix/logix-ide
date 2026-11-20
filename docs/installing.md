@@ -48,6 +48,9 @@ projects.
 Later starts are quick and also work without internet. Once a day, when you
 use it, Logix IDE checks for newer releases of Logix Engine, its FPGA tools and
 the examples, and downloads them by itself (**Help > Check for Updates** checks now).
+**Help > Check for Updates** also tells you when a newer Logix IDE is
+available, with the page to download it from; Logix IDE never updates
+itself.
 
 ## Where Logix IDE keeps its files
 

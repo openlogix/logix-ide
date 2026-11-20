@@ -159,25 +159,35 @@ Logix IDE has no built-in engine pin. It uses the engine release its remote
 config names, in the version folder `remote-config/logix-ide/001/` of this
 repo:
 
-- `channels.jsonc` lists which Logix IDE releases are on which channel. A
+- `assign.jsonc` lists which Logix IDE releases are on which channel. A
   release listed under `prod` is a prod release; every other release is on
   `dev`, and so are local builds (such as `scripts/run.sh`).
-- `<channel>.jsonc`, such as `dev.jsonc` or `prod.jsonc`, names what that
-  channel uses. A channel without its own file uses `prod.jsonc`.
+- `<channel>-channel.jsonc`, such as `dev-channel.jsonc` or
+  `prod-channel.jsonc`, names what that channel uses, under `dependencies`,
+  and `latest`, the newest Logix IDE release on that channel. A channel
+  without its own file uses `prod-channel.jsonc`.
+- `remote-config/logix-ide/index.jsonc`, next to the version folders, lists
+  them. Help > Check for Updates reads it to find a newer Logix IDE (in the
+  newest folder that has its channel's file, by `latest`), which it only
+  reports.
 
 ```jsonc
-"logix-engine": {
-  "repo": "openlogix/logix-engine",
-  "release": "2026-11-12",
-  "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+"dependencies": {
+  "logix-engine": {
+    "repo": "openlogix/logix-engine",
+    "release": "2026-11-12",
+    "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+  },
+  ...
 }
 ```
 
 Every Logix IDE reads its channel's file from `main` (cached for 24 hours),
 so a change there reaches installed Logix IDEs on that channel without a new
 release. Change it by pull request, with a comment saying why; CI checks
-that the release and its file exist (and that `prod.jsonc` names only stable
-releases), and runs the tests once per config file (a job per channel). A pre-release a config
+that the release and its file exist (and that `prod-channel.jsonc` names
+only stable releases, and that `latest` is the newest release on its
+channel), and runs the tests once per config file (a job per channel). A pre-release a config
 names is kept, so dev pins don't expire.
 
 Two settings change this on your own computer only:
