@@ -1074,6 +1074,8 @@ test("Check for Updates shows the progress and what changed", async ({ page }) =
   await expect(output(page)).toContainText("Downloading logix-catalog 2026.11.30...");
   await expect(output(page)).toContainText("Updated logix-catalog to 2026.11.30.");
   await expect(status(page)).toContainText("Updated logix-catalog to 2026.11.30.");
+  // Once in the output, not twice (the status line was written again).
+  await expect(output(page).locator(".line", { hasText: "Updated logix-catalog to 2026.11.30." })).toHaveCount(1);
 });
 
 test("Upload asks which device when several fit the board", async ({ page }) => {
