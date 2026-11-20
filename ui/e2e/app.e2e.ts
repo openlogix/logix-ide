@@ -1859,6 +1859,8 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   expect((await fake()).serialOpened).toEqual([
     { port: "/dev/cu.usbmodem0700000001", baud: 115200, device: "usb:1-1:1d50:602b:0700000001" },
   ]);
+  // Said to be the board's, from its data.
+  await expect(page.locator(".monitor .port")).toContainText("The iCESugar v1.5's serial port");
   // Text from the board, in pieces, becomes lines.
   await page.evaluate(() => {
     const f = (window as unknown as { __fake: Fake }).__fake;
@@ -1881,9 +1883,16 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
     ]),
   );
   await expect(monitor).toContainText("The serial port was closed while the board is programmed.");
+  // Clear empties the tab shown: the Serial Monitor here, not the output.
+  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await expect(monitor.locator(".line")).toHaveCount(0);
+  await expect(output(page)).toBeHidden();
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.serialReceive("Hello from your FPGA board\r\n"));
+  await expect(monitor.locator(".line").nth(-2)).toHaveText("Hello from your FPGA board");
   // The Output tab and back: the monitor kept its lines.
   await page.getByRole("tab", { name: "Output" }).click();
   await expect(output(page)).toBeVisible();
+  await expect(output(page)).toContainText("Ready.");
   await page.getByRole("tab", { name: "Serial Monitor" }).click();
   await expect(monitor).toContainText("Hello from your FPGA board");
   // Another speed reopens the port at it, and is saved with the project.

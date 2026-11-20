@@ -323,8 +323,9 @@ shows as it arrives.
   board is back.
 - **Port** chooses another serial port, for a board whose port Logix IDE
   doesn't know. **Disconnect** frees the port for another program.
-- **Timestamps** shows when each line arrived; **Clear** empties the
-  monitor.
+- **Timestamps** shows when each line arrived. **Clear**, at the bottom
+  right, empties the tab you're looking at: the Serial Monitor or the
+  output.
 
 The Serial Monitor stays open while you look at the **Output** tab, so
 nothing the board sends is missed.

@@ -86,6 +86,17 @@
     scrollDown();
   }
 
+  /** Empties the monitor: the status bar's Clear, while this tab is shown. */
+  export function clear() {
+    lines = [];
+  }
+
+  /** "The Alhambra II's serial port": `who` is the board's name in a sentence. */
+  function uartCaption(c: SerialChoice): string {
+    const who = c.who.charAt(0).toUpperCase() + c.who.slice(1);
+    return `${who}'s serial port`;
+  }
+
   function label(c: SerialChoice): string {
     const where = c.interface != null ? `, interface ${c.interface}` : "";
     return `${c.port} (${c.who}${where})`;
@@ -234,6 +245,10 @@
       {:else}
         <span title={chosen ? label(chosen) : undefined}>{chosen ? chosen.port : "No port"}</span>
       {/if}
+      {#if chosen?.boardUart}
+        <!-- The board's UART, by its data (Logix Catalog, through Logix Engine). -->
+        <span class="what">{uartCaption(chosen)}</span>
+      {/if}
     </span>
     {#if open}
       <button onclick={disconnect} title="Close the port, so other programs can open it">Disconnect</button>
@@ -261,7 +276,6 @@
     </label>
     <label class="check"><input type="checkbox" bind:checked={liveKeys} /> Send each key</label>
     <label class="check"><input type="checkbox" bind:checked={timestamps} /> Timestamps</label>
-    <button onclick={() => (lines = [])} title="Clear the Serial Monitor">Clear</button>
   </div>
   {#if note}
     <div class="note" class:warn={note.warn} role="status">{note.text}</div>
@@ -323,6 +337,10 @@
     align-items: center;
     gap: 6px;
     font-weight: 600;
+  }
+  .what {
+    font-weight: normal;
+    color: var(--muted);
   }
   .dot {
     width: 8px;
