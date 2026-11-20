@@ -119,6 +119,14 @@ export interface ProjectFile {
   text: string;
 }
 
+/** A project's files and settings as read after a change on disk (`readProjectChanges`). */
+export interface ProjectChanges {
+  /** Each file's text, or null when it's gone (or isn't text). */
+  files: { name: string; text: string | null }[];
+  /** The project file's values, when it changed. */
+  settings: { board: string | null; variant: Variant; serialBaud: number | null } | null;
+}
+
 /** A project as the UI sees it. `dir` is null for a new, unsaved project. */
 export interface ProjectDoc {
   dir: string | null;
@@ -920,6 +928,17 @@ export const backend = {
    */
   onGtkwaveOpened: (handler: (found: boolean) => void): Promise<UnlistenFn> =>
     listen<boolean>("gtkwave-opened", (e) => handler(e.payload)),
+
+  /** Watches the open project's folder for changes other programs make (null: stops). */
+  watchProject: (dir: string | null): Promise<void> => invoke("watch_project", { dir }),
+  /** Files that changed in the watched project folder (names only; read them with readProjectChanges). */
+  onProjectFilesChanged: (
+    handler: (change: { dir: string; names: string[] }) => void,
+  ): Promise<UnlistenFn> =>
+    listen<{ dir: string; names: string[] }>("project-files-changed", (e) => handler(e.payload)),
+  /** The files `names` of the project in `dir` as they are on disk now. */
+  readProjectChanges: (dir: string, names: string[]): Promise<ProjectChanges> =>
+    invoke<ProjectChanges>("read_project_changes", { dir, names }),
 
   /**
    * A block clicked in a Diagram window: the project (its build key) and

@@ -1,5 +1,7 @@
 // The project being edited, held in memory. Creating, renaming and deleting
-// files only take effect on disk when the project is saved.
+// files take effect on disk when the project is saved (by auto save, soon
+// after); changes made on disk by other programs come in through
+// applyDiskChanges.
 import type { ProjectDoc, Variant } from "./backend";
 
 /** The main file of new projects. */
@@ -347,6 +349,67 @@ export function markSaved(
     }
   }
   p.structureChanged = p.removed.length > 0 || p.files.some((f) => !f.onDisk);
+}
+
+/** A project file as read from disk after a change: its text, or null if it's gone (or not text). */
+export interface DiskFile {
+  name: string;
+  text: string | null;
+}
+
+/** What `applyDiskChanges` changed, for the editor and the status line. */
+export interface DiskChanges {
+  /** Files whose text now comes from disk; `hadEdits`: unsaved edits were replaced. */
+  reloaded: { name: string; text: string; hadEdits: boolean }[];
+  added: { name: string; text: string }[];
+  removed: string[];
+}
+
+/**
+ * Applies changes another program (an AI agent, another editor) made in
+ * the project folder, without asking (the user's rule, 2026-11-20;
+ * spec/design/ai-side-by-side.md): a changed file takes the disk's text,
+ * even over unsaved edits (the editor keeps them in its undo history); a
+ * new project file is added; a file deleted on disk goes, except the main
+ * file, which is written again by the next save. Logix IDE's own saves
+ * come back as no change: the disk holds what it last saved, or what it
+ * holds now. Files deleted in Logix IDE and not saved yet are left alone.
+ */
+export function applyDiskChanges(p: WorkingProject, disk: DiskFile[]): DiskChanges {
+  const out: DiskChanges = { reloaded: [], added: [], removed: [] };
+  for (const { name, text } of disk) {
+    const f = findFile(p, name);
+    if (!f) {
+      if (text !== null && !p.removed.includes(name)) {
+        p.files.push({ name, text, savedText: text, onDisk: true });
+        out.added.push({ name, text });
+      }
+      continue;
+    }
+    if (text === null) {
+      if (!f.onDisk) continue; // Not saved yet: it never was on disk.
+      if (name === mainFile(p)) {
+        f.onDisk = false; // The next save writes it again.
+        p.structureChanged = true;
+        continue;
+      }
+      p.files.splice(p.files.indexOf(f), 1);
+      out.removed.push(name);
+      continue;
+    }
+    if (text === f.savedText && f.onDisk) continue; // As Logix IDE last saved it.
+    if (text === f.text) {
+      f.savedText = text; // Already what Logix IDE holds.
+      f.onDisk = true;
+      continue;
+    }
+    const hadEdits = f.text !== f.savedText;
+    f.text = text;
+    f.savedText = text;
+    f.onDisk = true;
+    out.reloaded.push({ name, text, hadEdits });
+  }
+  return out;
 }
 
 /** The files as the backend wants them for saving. */

@@ -1197,6 +1197,43 @@ pub async fn serial_write(state: State<'_, AppState>, text: String) -> Result<()
     Ok(())
 }
 
+/// Watches the open project's folder (`dir`), or stops watching (`None`):
+/// changes other programs make come to the UI as "project-files-changed"
+/// events, `{dir, names}`, which it reads with `read_project_changes`.
+#[tauri::command]
+pub fn watch_project(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    dir: Option<String>,
+) -> Result<(), UserError> {
+    let mut current = state.project_watch.lock().unwrap();
+    *current = None;
+    let Some(dir) = dir else {
+        return Ok(());
+    };
+    let watched = dir.clone();
+    let watch = crate::watch::start(Path::new(&dir), move |names| {
+        let _ = app.emit(
+            "project-files-changed",
+            serde_json::json!({ "dir": watched, "names": names }),
+        );
+    })
+    .map_err(|e| anyhow::anyhow!("Can't watch the project folder {dir} for changes: {e}"))?;
+    crate::log!("Watching {dir} for changes");
+    *current = Some(watch);
+    Ok(())
+}
+
+/// The files `names` of the project in `dir` as they are on disk now, and
+/// its project file's values when it's among them.
+#[tauri::command]
+pub async fn read_project_changes(
+    dir: String,
+    names: Vec<String>,
+) -> Result<project::DiskChanges, UserError> {
+    Ok(blocking(move || project::read_changes(Path::new(&dir), &names)).await??)
+}
+
 /// Closes the Serial Monitor's port, so other programs can open it.
 #[tauri::command]
 pub async fn serial_close(state: State<'_, AppState>) -> Result<(), UserError> {

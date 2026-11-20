@@ -16,6 +16,7 @@ mod settings;
 mod setup_events;
 mod system_info;
 mod version;
+mod watch;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -52,6 +53,9 @@ pub struct AppState {
     /// The Serial Monitor's engine session, while open, and what stops its
     /// read loop (commands.rs, `serial_open`). One at a time.
     serial: tokio::sync::Mutex<Option<(String, tokio_util::sync::CancellationToken)>>,
+    /// The watch on the open project's folder, while one is open and saved
+    /// (`watch.rs`, `commands::watch_project`).
+    project_watch: std::sync::Mutex<Option<watch::ProjectWatch>>,
 }
 
 #[derive(Clone)]
@@ -156,6 +160,8 @@ pub fn run() {
             commands::serial_open,
             commands::serial_write,
             commands::serial_close,
+            commands::watch_project,
+            commands::read_project_changes,
             commands::lsp_start,
             commands::lsp_send,
             commands::lsp_stop,

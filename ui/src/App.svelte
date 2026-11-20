@@ -85,6 +85,8 @@
     roleTooltip,
     filesForSave,
     changedFiles,
+    applyDiskChanges,
+    isLayout,
     findFile,
     tabFiles,
     moduleAt,
@@ -2191,6 +2193,58 @@
     if (project && dirty) untrack(() => scheduleAutoSave());
   });
 
+  // ---- Changes other programs make in the project folder (an AI agent,
+  // another editor; the user's decision, 2026-11-20; spec/design/
+  // ai-side-by-side.md): watched while a saved project is open, and taken
+  // without asking: changed files reload in place (Undo goes back past the
+  // reload), new files become tabs, deleted ones go, and a board chosen in
+  // logix-ide.toml is followed (applyDiskChanges in workingProject.ts).
+
+  $effect(() => {
+    const dir = project?.dir ?? null;
+    untrack(() => {
+      backend.watchProject(dir).catch((e) => log(`Can't watch the project folder: ${toUserError(e).message}`));
+    });
+  });
+
+  async function onProjectFilesChanged(change: { dir: string; names: string[] }) {
+    const p = project;
+    if (!p || p.dir !== change.dir) return;
+    let disk;
+    try {
+      disk = await backend.readProjectChanges(change.dir, change.names);
+    } catch {
+      return; // Read again at the next change.
+    }
+    if (project !== p || p.dir !== change.dir) return;
+    const result = applyDiskChanges(p, disk.files);
+    for (const r of result.reloaded) {
+      if (!isLayout(r.name)) editor?.replaceText(r.name, r.text);
+      forgetProblems(r.name);
+    }
+    for (const a of result.added) {
+      if (!isLayout(a.name)) editor?.add(a.name, a.text);
+    }
+    for (const name of result.removed) {
+      if (!isLayout(name)) editor?.remove(name);
+      forgetProblems(name);
+      fileHistory = renamed(fileHistory, name, null);
+      if (activeFile === name) selectFile(mainFile(p));
+    }
+    if (disk.settings) {
+      // As if chosen in the menus, but not a change to save.
+      p.board = disk.settings.board;
+      p.savedBoard = disk.settings.board;
+      p.variant = { ...disk.settings.variant };
+      p.serialBaud = disk.settings.serialBaud;
+    }
+    const replaced = result.reloaded.find((r) => r.hadEdits);
+    if (replaced) {
+      const undo = shortcutLabel().startsWith("⌘") ? "⌘Z" : "Ctrl+Z";
+      finish(`${replaced.name} was changed on disk; ${undo} brings back your edits.`);
+    }
+  }
+
   $effect(() => {
     const onBlur = () => scheduleAutoSave(0);
     window.addEventListener("blur", onBlur);
@@ -2443,6 +2497,7 @@
       backend.onToolOutput((line) => log(line)),
       backend.onLspClosed(onLspClosed),
       backend.onGtkwaveOpened(onGtkwaveOpened),
+      backend.onProjectFilesChanged(onProjectFilesChanged),
       backend.onDiagramOpenSource(onDiagramOpenSource),
       backend.onOpenRecent(openRecent),
       backend.onMenu(onMenu),

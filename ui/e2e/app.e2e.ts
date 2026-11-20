@@ -2047,3 +2047,50 @@ test("auto save: a saved project's changes are saved after typing stops and on l
   await page.keyboard.press("Enter");
   await expect.poll(async () => (await saves()).at(-1)).toEqual({ files: ["add.v"], removed: ["adder.v"] });
 });
+
+test("changes other programs make in the project folder show up, without asking", async ({ page }) => {
+  type Change = { name: string; text: string | null };
+  type Fake = {
+    watchedDir: string | null;
+    diskChange: (files: Change[], settings?: unknown) => void;
+  };
+  const disk = (files: Change[], settings: unknown = null) =>
+    page.evaluate(
+      ([files, settings]) => (window as unknown as { __fake: Fake }).__fake.diskChange(files as Change[], settings),
+      [files, settings] as const,
+    );
+  await start(page);
+  // Only a saved project is watched.
+  expect(await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.watchedDir)).toBeNull();
+  await menu(page, "save-as");
+  await expect(status(page)).toContainText("Saved");
+  await expect
+    .poll(() => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.watchedDir))
+    .toMatch(/^\/fake\/projects\//);
+  // An agent changes main.v, adds a file and changes the board: no question.
+  await disk([
+    { name: "main.v", text: "// Written by the agent.\nmodule main;\nendmodule\n" },
+    { name: "adder.v", text: "module adder;\nendmodule\n" },
+  ]);
+  await expect(page.locator(".cm-content")).toContainText("Written by the agent.");
+  await expect(tab(page, "adder.v")).toBeVisible();
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(tab(page, "main.v").first().locator(".dot")).toHaveCount(0);
+  // It deletes adder.v: the tab goes.
+  await tab(page, "adder.v").click();
+  await disk([{ name: "adder.v", text: null }]);
+  await expect(tab(page, "adder.v")).toHaveCount(0);
+  await expect(page.locator(".cm-content")).toContainText("Written by the agent.");
+  // While the user types in main.v (before auto save), the agent changes
+  // it too: the disk wins, and Undo brings the typing back.
+  await typeAtStart(page, "// mine\n");
+  await disk([{ name: "main.v", text: "// The agent again.\nmodule main;\nendmodule\n" }]);
+  await expect(page.locator(".cm-content")).toContainText("The agent again.");
+  await expect(status(page)).toContainText("main.v was changed on disk");
+  await page.locator(".cm-content").click();
+  await page.keyboard.press("Meta+z");
+  await expect(page.locator(".cm-content")).toContainText("// mine");
+  // It chooses another board in logix-ide.toml: the toolbar follows.
+  await disk([], { board: "icesugar-1-5", variant: {}, serialBaud: null });
+  await expect(boardButton(page)).toContainText("iCESugar v1.5");
+});

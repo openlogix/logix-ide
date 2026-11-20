@@ -89,6 +89,11 @@ inside another project.
   another app, so another editor or an AI agent working on the same
   project always sees them. A new project or an example waits for its
   first **Save**. Turn it off in Settings.
+- **Changes from other programs**: when another editor or an AI agent
+  changes a saved project's folder, Logix IDE shows it at once, without
+  asking: changed files reload in their tabs (**Undo** goes back past
+  the change), new files get tabs, deleted files lose theirs, and a board
+  chosen in `logix-ide.toml` shows in the toolbar.
 - **Show Project Folder**: **Project > Show Project Folder** opens the
   folder in Finder (File Explorer on Windows). A new project gets its folder when it's first saved, so
   for a project not saved yet, it offers **Save As…** first.
