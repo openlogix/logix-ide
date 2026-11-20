@@ -1904,6 +1904,11 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   await monitor.evaluate((el) => (el.scrollTop = el.scrollHeight));
   await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.serialReceive("last\r\n"));
   await expect.poll(() => monitor.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThan(8);
+  // Timestamps show and hide the times of every line, then two spaces.
+  await page.getByRole("checkbox", { name: "Timestamps" }).check();
+  await expect(monitor.locator(".line").nth(-2)).toHaveText(/^\d\d:\d\d:\d\d\.\d\d\d {2}last$/);
+  await page.getByRole("checkbox", { name: "Timestamps" }).uncheck();
+  await expect(monitor.locator(".line").nth(-2)).toHaveText("last");
   // The Output tab and back: the monitor kept its lines.
   await page.getByRole("tab", { name: "Output" }).click();
   await expect(output(page)).toBeVisible();
