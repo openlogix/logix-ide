@@ -320,6 +320,8 @@ export function markSaved(
   name: string,
   saved: { name: string; text: string }[],
   board: string | null,
+  /** The deletions the save made; all of them when not given. */
+  removed?: string[],
 ) {
   p.dir = dir;
   p.templateDir = null;
@@ -332,11 +334,34 @@ export function markSaved(
       f.onDisk = true;
     }
   }
-  p.removed = [];
-  p.structureChanged = false;
+  // Only the deletions this save made: a file deleted or renamed while it
+  // ran stays to be saved (auto save runs often, the user's decision,
+  // 2026-11-20).
+  const done = removed ?? p.removed;
+  p.removed = p.removed.filter((r) => !done.includes(r));
+  // A file this save wrote that was deleted or renamed meanwhile is on
+  // disk now: the next save deletes it.
+  for (const s of saved) {
+    if (!p.files.some((f) => f.name === s.name) && !p.removed.includes(s.name)) {
+      p.removed.push(s.name);
+    }
+  }
+  p.structureChanged = p.removed.length > 0 || p.files.some((f) => !f.onDisk);
 }
 
 /** The files as the backend wants them for saving. */
 export function filesForSave(p: WorkingProject) {
   return p.files.map((f) => ({ name: f.name, text: f.text }));
+}
+
+/**
+ * Only the files that changed since they were last saved (new, renamed or
+ * edited), for a save into the project's own folder: writing the others
+ * would only touch them, and might overwrite a change another program (an
+ * AI agent) just made to a file Logix IDE hasn't reloaded yet.
+ */
+export function changedFiles(p: WorkingProject) {
+  return p.files
+    .filter((f) => !f.onDisk || f.text !== f.savedText)
+    .map((f) => ({ name: f.name, text: f.text }));
 }

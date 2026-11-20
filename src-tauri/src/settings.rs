@@ -43,6 +43,8 @@ pub struct Settings {
     pub hover_info: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub show_output: Option<ShowOutput>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub auto_save: Option<bool>,
     /// Unknown settings (e.g. from a newer version) are kept.
     #[serde(flatten)]
     extra: serde_json::Map<String, serde_json::Value>,
@@ -90,6 +92,10 @@ pub struct Preferences {
     pub hover_info: bool,
     /// When the hidden output comes back by itself.
     pub show_output: ShowOutput,
+    /// Whether a saved project's changes are saved by themselves (a second
+    /// after typing stops, and when the window loses focus), as in
+    /// Arduino IDE 2; on by default (spec/design/ai-side-by-side.md).
+    pub auto_save: bool,
 }
 
 pub const DEFAULT_FONT_SIZE: u32 = 13;
@@ -111,6 +117,7 @@ impl Settings {
             live_checking: self.live_checking.unwrap_or(true),
             hover_info: self.hover_info.unwrap_or(false),
             show_output: self.show_output.unwrap_or(ShowOutput::OnCommand),
+            auto_save: self.auto_save.unwrap_or(true),
         }
     }
 
@@ -149,6 +156,7 @@ impl Settings {
         self.hover_info = prefs.hover_info.then_some(true);
         self.show_output =
             (prefs.show_output != ShowOutput::OnCommand).then_some(prefs.show_output);
+        self.auto_save = (!prefs.auto_save).then_some(false);
         Ok(())
     }
 }
@@ -315,6 +323,7 @@ mod tests {
         );
         assert_eq!((p.live_checking, p.hover_info), (true, false));
         assert_eq!(p.show_output, ShowOutput::OnCommand);
+        assert!(p.auto_save);
 
         let changed = Preferences {
             // An absolute path on this platform.
@@ -330,6 +339,7 @@ mod tests {
             live_checking: false,
             hover_info: true,
             show_output: ShowOutput::OnError,
+            auto_save: false,
         };
         s.set_preferences(&changed, default_dir).unwrap();
         assert_eq!(s.preferences(default_dir), changed);

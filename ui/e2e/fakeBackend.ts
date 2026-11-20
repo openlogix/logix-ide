@@ -261,6 +261,7 @@ let preferences: Real.Preferences = {
   liveChecking: true,
   hoverInfo: false,
   showOutput: "onCommand",
+  autoSave: true,
 };
 
 const handlers: {
@@ -373,6 +374,8 @@ const fake = {
   taskVariant: null as Real.Variant | null,
   /** The board and variant last saved (`saveProject`, Save As). */
   saved: null as { board: string | null; variant: Real.Variant } | null,
+  /** Each Save into the project's folder (`saveProject`): the files written and deleted. */
+  saves: [] as { files: string[]; removed: string[] }[],
   /** Ends a setup held at the engine's package download (`/?engineSetup`). */
   finishSetup: () => handlers.finishSetup?.(),
   /** GTKWave's window appeared after Simulate (true), or not in time (false). */
@@ -880,7 +883,8 @@ export const backend: typeof Real.backend = {
   recentBoards: async () => fake.recentBoards,
   closeProject: async () => {},
   openProjectDialog: async () => null,
-  saveProject: async (_dir, _files, _removed, board, variant, serialBaud) => {
+  saveProject: async (_dir, files, removed, board, variant, serialBaud) => {
+    fake.saves.push({ files: files.map((f) => f.name), removed });
     fake.saved = { board, variant };
     fake.savedBaud = serialBaud;
   },
