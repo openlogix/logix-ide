@@ -1683,7 +1683,7 @@
 
   $effect(() => {
     // An empty name: no project, the title is just "Logix IDE".
-    if (project) backend.setDocumentState(project.name, dirty);
+    if (project) backend.setDocumentState(project.name, dirty && showDirty);
     else backend.setDocumentState("", false);
   });
 
@@ -2172,10 +2172,16 @@
   // first Save.
 
   let saving: Promise<void> | null = null;
-  let autoSaveFailed = false;
+  let autoSaveFailed = $state(false);
   let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
   const AUTO_SAVE_DELAY_MS = 1000;
   const autoSaveOn = $derived(prefs?.autoSave ?? true);
+  /**
+   * Whether the "●" marks show (on tabs and in the title). With auto save
+   * they'd flash for a second at every keystroke, so a saved project shows
+   * them only when an auto save failed (the user's request, 2026-11-20).
+   */
+  const showDirty = $derived(!(autoSaveOn && project?.dir) || autoSaveFailed);
 
   function scheduleAutoSave(delay = AUTO_SAVE_DELAY_MS) {
     if (autoSaveTimer) clearTimeout(autoSaveTimer);
@@ -2941,7 +2947,7 @@
                     class="problem-icon error"><Icon name="error" size={12} /></span
                   >{:else if fileProblems.get(f.name) === "warning"}<span
                     class="problem-icon warning"><Icon name="warning" size={12} /></span
-                  >{/if}{#if isFileDirty(project, f)}<span
+                  >{/if}{#if showDirty && isFileDirty(project, f)}<span
                     class="dot"
                     title="Unsaved changes">●</span
                   >{/if}

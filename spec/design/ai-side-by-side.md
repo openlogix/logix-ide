@@ -38,9 +38,11 @@ As in Arduino IDE 2 (Auto save, on by default) and VS Code's
 - **Projects not saved yet** (a new project, an example just opened) have no
   folder of their own, so nothing is saved until their first Save, as in
   Arduino IDE.
-- **The "●" on tabs and the title** shows only during the second before a
-  save, so in practice it disappears. In a project not saved yet, it stays
-  until the project's first Save. Save stays (⌘S saves at once).
+- **The "●" on tabs and the title** doesn't show in a saved project while
+  auto save is on, only after an auto save failed, until a save works (the
+  user's request, 2026-11-20, after testing: it flashed for a second at
+  every keystroke). In a project not saved yet, or with auto save off, it
+  shows as before. Save stays (⌘S saves at once).
 - **Builds** keep building from Logix IDE's files, which now match the disk.
 
 What changes for users: "Don't Save" on closing no longer throws away

@@ -5,7 +5,8 @@
 - **Toolbar**: **Verify** ![](images/icon-verify.png){ .toolbar-icon }, **Upload** ![](images/icon-upload.png){ .toolbar-icon },
   **Run Tests** ![](images/icon-test.png){ .toolbar-icon }, **Simulate** ![](images/icon-simulate.png){ .toolbar-icon },
   **Stop** ![](images/icon-stop.png){ .toolbar-icon }, and the board list.
-- **Tabs**: one per file of the project. A dot marks unsaved changes. A
+- **Tabs**: one per file of the project. A dot marks unsaved changes
+  (with auto save, only when saving failed). A
   flask marks testbenches, a chip marks the board's pin file (a pin file
   for another kind of board has no chip, since this board doesn't use it);
   hover over a tab to see what its file is for. When a project has more
@@ -87,8 +88,9 @@ inside another project.
 - **Auto save**: once a project is saved, your changes are saved by
   themselves, a second after you stop typing and when you switch to
   another app, so another editor or an AI agent working on the same
-  project always sees them. A new project or an example waits for its
-  first **Save**. Turn it off in Settings.
+  project always sees them, and no dot marks unsaved changes unless a
+  save fails. A new project or an example waits for its first **Save**.
+  Turn it off in Settings.
 - **Changes from other programs**: when another editor or an AI agent
   changes a saved project's folder, Logix IDE shows it at once, without
   asking: changed files reload in their tabs (**Undo** goes back past
