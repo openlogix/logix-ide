@@ -1,3 +1,4 @@
+mod agent_guide;
 mod build_dir;
 mod commands;
 mod diagram_window;
@@ -162,6 +163,7 @@ pub fn run() {
             commands::serial_close,
             commands::watch_project,
             commands::read_project_changes,
+            commands::add_agent_guide,
             commands::lsp_start,
             commands::lsp_send,
             commands::lsp_stop,
