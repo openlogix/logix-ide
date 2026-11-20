@@ -142,17 +142,23 @@
   }
   .files {
     overflow-y: auto;
-    padding: 0 4px 6px;
+    padding: 0 0 6px;
   }
+  /* As the board picker's groups (the user's request, 2026-11-20). */
   .group {
-    padding: 8px 10px 3px;
+    position: sticky;
+    top: 0;
+    padding: 6px 12px 4px;
+    background: var(--group-bg);
+    color: var(--group-fg);
     font-size: 11px;
+    font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--muted);
   }
   .file {
-    padding: 4px 10px;
+    margin: 0 4px;
+    padding: 4px 8px;
     border-radius: 4px;
     font-size: 13px;
     color: var(--fg);
