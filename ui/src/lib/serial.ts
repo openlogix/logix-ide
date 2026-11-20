@@ -1,7 +1,6 @@
 // The Serial Monitor's lines (SerialMonitor.svelte): what arrives, as a
-// terminal shows it (a line feed starts a new line, a carriage return goes
-// back to the line's start, to overwrite it), and notes (such as "Opened
-// COM5").
+// terminal shows it (a line feed starts a new line; text after a carriage
+// return replaces the line), and notes (such as "Opened COM5").
 
 /** One line of the Serial Monitor. */
 export interface SerialLine {
@@ -12,7 +11,8 @@ export interface SerialLine {
   time: string | null;
   /** Whether the line has ended (a line feed came); the next text starts a new one. */
   done: boolean;
-  /** Where the next character goes on the open line: its end, or 0 after a carriage return. */
+  /** Where the next character goes on the open line: its end, or 0 after a
+   * carriage return (the next character then starts the line over). */
   column: number;
 }
 
@@ -29,10 +29,13 @@ function clock(d: Date): string {
  * terminal would show it:
  *   - a line feed ends the line and starts the next at once, empty, as a
  *     terminal moves its cursor down (the user's report, 2026-11-19);
- *   - a carriage return goes back to the start of the line, so what comes
- *     next overwrites it, such as a counter updated in place (the user's
- *     request, 2026-11-20); a carriage return and a line feed together just
- *     end the line.
+ *   - text after a carriage return replaces the line, such as a counter
+ *     updated in place (the user's request, 2026-11-20). Unlike a strict
+ *     terminal, which overwrites only the characters it writes, the rest
+ *     of the old line goes too: otherwise a shorter line (or the end of a
+ *     line caught when the port opened mid-line) left characters behind,
+ *     such as "count: 0x0021006" (the user's report, 2026-11-20). A
+ *     carriage return and a line feed together just end the line.
  * `now` timestamps a line when it's written from its start (null: no
  * timestamps). Returns the new list.
  */
@@ -72,12 +75,14 @@ export function serialLines(
         line.column = 0;
         continue;
       }
-      // A character: written at the column, over what's there.
-      if (line.column === 0 && now) line.time = clock(now);
-      const chars = [...line.text];
-      chars[line.column] = c;
-      line.text = chars.join("");
-      line.column += 1;
+      // A character: at the line's start (a new line, or after a carriage
+      // return), the line starts over; else it's added at the end.
+      if (line.column === 0) {
+        line.text = "";
+        if (now) line.time = clock(now);
+      }
+      line.text += c;
+      line.column = line.text.length;
     }
     close();
   }
