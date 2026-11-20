@@ -15,15 +15,26 @@ describe("serial lines", () => {
     expect(texts(l)).toEqual(["rx:Hello from your FPGA board", "rx:AB", "rx:"]);
   });
 
-  it("drops a lone carriage return, and keeps blank lines", () => {
-    const l = serialLines([], "a\rb\n\nc", null);
-    expect(texts(l)).toEqual(["rx:ab", "rx:", "rx:c"]);
+  it("goes back to the line's start on a carriage return, and keeps blank lines", () => {
+    const l = serialLines([], "abc\rX\n\nc", null);
+    expect(texts(l)).toEqual(["rx:Xbc", "rx:", "rx:c"]);
     // Typed one key at a time: a, Enter (a line feed), b.
     let k = serialLines([], "a", null);
     k = serialLines(k, "\n", null);
     expect(texts(k)).toEqual(["rx:a", "rx:"]);
     k = serialLines(k, "b", null);
     expect(texts(k)).toEqual(["rx:a", "rx:b"]);
+  });
+
+  it("updates a value in place, line after line ending in a carriage return", () => {
+    let l = serialLines([], "count:0x0001\r", new Date(2026, 10, 20, 9, 0, 0, 0));
+    l = serialLines(l, "count:0x0002\r", new Date(2026, 10, 20, 9, 0, 1, 0));
+    expect(texts(l)).toEqual(["rx:count:0x0002"]);
+    // The time is the latest write's.
+    expect(l[0].time).toBe("09:00:01.000");
+    // A carriage return and a line feed just end the line.
+    l = serialLines(l, "\r\nnext", null);
+    expect(texts(l)).toEqual(["rx:count:0x0002", "rx:next"]);
   });
 
   it("puts notes on lines of their own", () => {
