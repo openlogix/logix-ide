@@ -27,11 +27,11 @@
 
   // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
   // packed by this repo's pre-release workflow (scripts/pack-examples.py).
-  // 2026-11-19: the serial examples (Alhambra II, iCESugar v1.5, iCESugar
-  // Pro, Tang Nano 9K, Arty A7-35T), for the Serial Monitor.
+  // 2026-11-20: the serial-debug examples (a simple debugger over the
+  // serial port), and the serial examples' uart.v in one file.
   "logix-ide-examples": {
     "repo": "openlogix/logix-ide",
-    "release": "2026-11-19",
+    "release": "2026-11-20",
     "file": "logix-ide-examples-${YYYYMMDD}.tgz"
   }
 }
