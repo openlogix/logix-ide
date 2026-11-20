@@ -20,6 +20,7 @@ import {
   layoutOf,
   testbenchOf,
   changedFiles,
+  applyDiskChanges,
 } from "./workingProject";
 
 const savedDoc: ProjectDoc = {
@@ -121,6 +122,41 @@ describe("workingProject", () => {
     expect(p.removed).toEqual(["pins.pcf"]);
     expect(isDirty(p)).toBe(true);
     expect(changedFiles(p).map((f) => f.name)).toEqual(["main.v"]);
+  });
+
+  it("takes changes made on disk by other programs, without asking", () => {
+    const p = fromDoc({
+      ...savedDoc,
+      files: [...savedDoc.files, { name: "a.v", text: "a" }, { name: "b.v", text: "b" }],
+    });
+    p.files[3].text = "b edited"; // Unsaved edits in b.v.
+    addFile(p, "new.v", "n"); // Not saved yet.
+    const changes = applyDiskChanges(p, [
+      { name: "a.v", text: "a by the agent" }, // Changed: reloaded.
+      { name: "b.v", text: "b by the agent" }, // Changed over unsaved edits: the disk wins.
+      { name: "pinout.pcf", text: "p" }, // As last saved (Logix IDE's own save): nothing.
+      { name: "c.v", text: "c" }, // New on disk: added.
+      { name: "new.v", text: null }, // Not saved yet: stays.
+      { name: "main.v", text: null }, // The main file can't go: saved again.
+    ]);
+    expect(changes.reloaded).toEqual([
+      { name: "a.v", text: "a by the agent", hadEdits: false },
+      { name: "b.v", text: "b by the agent", hadEdits: true },
+    ]);
+    expect(changes.added).toEqual([{ name: "c.v", text: "c" }]);
+    expect(changes.removed).toEqual([]);
+    expect(p.files.map((f) => f.name)).toEqual(["main.v", "pinout.pcf", "a.v", "b.v", "new.v", "c.v"]);
+    expect(isFileDirty(p, p.files[2])).toBe(false);
+    expect(isFileDirty(p, p.files[0])).toBe(true); // main.v is written again.
+    // A file deleted on disk goes; one deleted in Logix IDE, not saved yet, stays deleted.
+    deleteFile(p, "c.v");
+    const gone = applyDiskChanges(p, [
+      { name: "a.v", text: null },
+      { name: "c.v", text: "c again" },
+    ]);
+    expect(gone.removed).toEqual(["a.v"]);
+    expect(gone.added).toEqual([]);
+    expect(p.files.map((f) => f.name)).not.toContain("a.v");
   });
 
   it("never renames or deletes main.v", () => {

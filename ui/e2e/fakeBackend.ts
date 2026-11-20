@@ -269,6 +269,7 @@ const handlers: {
   output?: (line: string) => void;
   finishSetup?: () => void;
   gtkwaveOpened?: (found: boolean) => void;
+  projectFilesChanged?: (change: { dir: string; names: string[] }) => void;
   diagramOpenSource?: (at: { key: string; file: string; line: number }) => void;
   serial?: (event: Real.SerialEvent) => void;
 } = {};
@@ -380,7 +381,23 @@ const fake = {
   finishSetup: () => handlers.finishSetup?.(),
   /** GTKWave's window appeared after Simulate (true), or not in time (false). */
   gtkwaveOpened: (found: boolean) => handlers.gtkwaveOpened?.(found),
+  /** The folder Logix IDE watches (`watchProject`), or null. */
+  watchedDir: null as string | null,
+  /** Another program changes the watched folder: each file's new text, or null for deleted; a board for logix-ide.toml. */
+  diskChange: (
+    files: { name: string; text: string | null }[],
+    settings: Real.ProjectChanges["settings"] = null,
+  ) => {
+    if (!fake.watchedDir) return;
+    pendingDisk = { files, settings };
+    const names = files.map((f) => f.name);
+    if (settings) names.push("logix-ide.toml");
+    handlers.projectFilesChanged?.({ dir: fake.watchedDir, names });
+  },
 };
+
+/** What `readProjectChanges` returns next (`fake.diskChange`). */
+let pendingDisk: Real.ProjectChanges = { files: [], settings: null };
 (window as unknown as { __fake: typeof fake }).__fake = fake;
 
 /** The engine's logix-catalog in System Info; Check for Updates moves it. */
@@ -1032,6 +1049,15 @@ export const backend: typeof Real.backend = {
     handlers.gtkwaveOpened = handler;
     return () => {};
   },
+
+  watchProject: async (dir) => {
+    fake.watchedDir = dir;
+  },
+  onProjectFilesChanged: async (handler) => {
+    handlers.projectFilesChanged = handler;
+    return () => {};
+  },
+  readProjectChanges: async () => pendingDisk,
 
   onDiagramOpenSource: async (handler) => {
     handlers.diagramOpenSource = handler;

@@ -280,6 +280,70 @@ pub fn load(dir: &Path) -> Result<Project> {
     })
 }
 
+/// A project file as read after a change on disk (`read_changes`): its
+/// text, or `None` when it's gone or isn't text.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DiskFile {
+    pub name: String,
+    pub text: Option<String>,
+}
+
+/// The project file's values, as read after it changed on disk.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiskSettings {
+    pub board: Option<String>,
+    pub variant: Variant,
+    pub serial_baud: Option<u32>,
+}
+
+/// What `read_changes` read.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct DiskChanges {
+    pub files: Vec<DiskFile>,
+    /// When the project file (`logix-ide.toml`) was among the names.
+    pub settings: Option<DiskSettings>,
+}
+
+/// Reads the files `names` of the project in `dir` after the folder
+/// watch reported them (`watch.rs`): each one's text, and the project
+/// file's values when it's among them. The UI works out what changed.
+pub fn read_changes(dir: &Path, names: &[String]) -> Result<DiskChanges> {
+    let mut changes = DiskChanges {
+        files: Vec::new(),
+        settings: None,
+    };
+    for name in names {
+        if name == SETTINGS_FILE {
+            let settings = read_settings(dir)?;
+            changes.settings = Some(DiskSettings {
+                board: settings
+                    .get("board")
+                    .and_then(|b| b.as_str())
+                    .map(String::from),
+                variant: read_variant(&settings),
+                serial_baud: read_serial_baud(&settings),
+            });
+            continue;
+        }
+        check_plain_file_name(name)?;
+        if !is_project_file(name) {
+            continue;
+        }
+        let path = dir.join(name);
+        let text = if path.is_file() {
+            std::fs::read_to_string(&path).ok()
+        } else {
+            None
+        };
+        changes.files.push(DiskFile {
+            name: name.clone(),
+            text,
+        });
+    }
+    Ok(changes)
+}
+
 /// Saves into the existing project folder `dir`: deletes the `removed`
 /// files (deleted or renamed in the IDE), then writes `files` and the
 /// settings.
@@ -646,6 +710,38 @@ fn copy_recursive(from: &Path, to: &Path, mode: CopyMode) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn reads_files_and_settings_changed_on_disk() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path();
+        std::fs::write(dir.join("adder.v"), "module adder; endmodule\n").unwrap();
+        std::fs::write(
+            dir.join(SETTINGS_FILE),
+            "board = \"icesugar-1-5\"\n[serial]\nbaud = 9600\n",
+        )
+        .unwrap();
+        let names = ["adder.v", "gone.v", "notes.txt", SETTINGS_FILE].map(String::from);
+        let changes = read_changes(dir, &names).unwrap();
+        assert_eq!(
+            changes.files,
+            [
+                DiskFile {
+                    name: "adder.v".into(),
+                    text: Some("module adder; endmodule\n".into())
+                },
+                DiskFile {
+                    name: "gone.v".into(),
+                    text: None
+                },
+            ]
+        );
+        let settings = changes.settings.unwrap();
+        assert_eq!(settings.board.as_deref(), Some("icesugar-1-5"));
+        assert_eq!(settings.serial_baud, Some(9600));
+        // Names must be plain file names.
+        assert!(read_changes(dir, &["../x.v".to_string()]).is_err());
+    }
+
     use super::*;
 
     #[test]
