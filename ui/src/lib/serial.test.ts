@@ -15,7 +15,17 @@ describe("serial lines", () => {
     expect(texts(l)).toEqual(["rx:Hello from your FPGA board", "rx:AB", "rx:"]);
   });
 
-  it("replaces the line with what follows a carriage return, and keeps blank lines", () => {
+  it("overwrites in place after a carriage return, erasing the rest at the new line's end", () => {
+    // Slow, one character at a time: overwritten in place, never blank.
+    let o = serialLines([], "123456\r", null);
+    o = serialLines(o, "a", null);
+    expect(texts(o)).toEqual(["rx:a23456"]);
+    o = serialLines(o, "bcd", null);
+    expect(texts(o)).toEqual(["rx:abcd56"]);
+    // Its end (a carriage return) erases what's past it.
+    o = serialLines(o, "\r", null);
+    expect(texts(o)).toEqual(["rx:abcd"]);
+    // So does a line feed, and blank lines stay.
     const l = serialLines([], "abc\rX\n\nc", null);
     expect(texts(l)).toEqual(["rx:X", "rx:", "rx:c"]);
     // Opened mid-line: the end of a line, then whole lines, leave nothing behind.

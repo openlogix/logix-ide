@@ -324,8 +324,9 @@ shows as it arrives.
 - **Port** chooses another serial port, for a board whose port Logix IDE
   doesn't know. **Disconnect** frees the port for another program.
 - **Lines** work as in a terminal: a line feed starts a new line, and a
-  carriage return without one starts the line over, so what comes next
-  replaces it (a value updated in place). Scrolled up to
+  carriage return without one goes back to the line's start: what comes
+  next overwrites it in place, and when that new line ends, whatever is
+  left of the old one is erased (a value updated in place). Scrolled up to
   read, the monitor stays where you are; at the end, it follows new text.
 - **Timestamps** shows when each line arrived. **Clear**, at the bottom
   right, empties the tab you're looking at: the Serial Monitor or the
