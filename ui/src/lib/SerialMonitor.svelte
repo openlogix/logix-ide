@@ -72,18 +72,27 @@
    * and again (only Connect or a choice tries again). */
   let triedFor: string | null = null;
 
-  function scrollDown() {
+  /** Whether the output is scrolled to its end (within a few pixels): new
+   * text then keeps it there; scrolled up to read, it stays put (the user's
+   * report, 2026-11-20). */
+  function atEnd(): boolean {
+    return !outEl || outEl.scrollHeight - outEl.scrollTop - outEl.clientHeight < 8;
+  }
+  function follow(wasAtEnd: boolean) {
+    if (!wasAtEnd) return;
     queueMicrotask(() => {
       if (outEl) outEl.scrollTop = outEl.scrollHeight;
     });
   }
   function addText(text: string) {
+    const wasAtEnd = atEnd();
     lines = serialLines(lines, text, timestamps ? new Date() : null);
-    scrollDown();
+    follow(wasAtEnd);
   }
   function addNote(text: string) {
+    const wasAtEnd = atEnd();
     lines = serialLines(lines, null, null, text);
-    scrollDown();
+    follow(wasAtEnd);
   }
 
   /** Empties the monitor: the status bar's Clear, while this tab is shown. */
@@ -284,7 +293,7 @@
   <div class="out" bind:this={outEl} role="log" aria-label="Serial Monitor output" tabindex="0">
     {#each lines as l, i (i)}
       <div class="line" class:system={l.kind === "note"}>
-        {#if l.time}<span class="time">{l.time} → </span>{/if}{l.text}
+        {#if l.time}<span class="time">{l.time}  </span>{/if}{l.text}
       </div>
     {/each}
   </div>

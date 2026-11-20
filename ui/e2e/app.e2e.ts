@@ -1891,6 +1891,19 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   await expect(output(page)).toBeHidden();
   await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.serialReceive("Hello from your FPGA board\r\n"));
   await expect(monitor.locator(".line").nth(-2)).toHaveText("Hello from your FPGA board");
+  // Scrolled up to read, new lines don't pull it down; at the end, they do.
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    for (let i = 0; i < 60; i++) f.serialReceive(`line ${i}\r\n`);
+  });
+  await expect(monitor.locator(".line").nth(-2)).toHaveText("line 59");
+  await monitor.evaluate((el) => (el.scrollTop = 0));
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.serialReceive("more\r\n"));
+  await expect(monitor.locator(".line").nth(-2)).toHaveText("more");
+  expect(await monitor.evaluate((el) => el.scrollTop)).toBe(0);
+  await monitor.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.serialReceive("last\r\n"));
+  await expect.poll(() => monitor.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight)).toBeLessThan(8);
   // The Output tab and back: the monitor kept its lines.
   await page.getByRole("tab", { name: "Output" }).click();
   await expect(output(page)).toBeVisible();
