@@ -2095,3 +2095,15 @@ test("changes other programs make in the project folder show up, without asking"
   await disk([], { board: "icesugar-1-5", variant: {}, serialBaud: null });
   await expect(boardButton(page)).toContainText("iCESugar v1.5");
 });
+
+test("Tools > Add AI Agent Guide writes the guide into a saved project, once", async ({ page }) => {
+  await start(page);
+  await menu(page, "add-agent-guide");
+  await expect(status(page)).toContainText("Save the project first");
+  await menu(page, "save-as");
+  await expect(status(page)).toContainText("Saved");
+  await menu(page, "add-agent-guide");
+  await expect(status(page)).toContainText("Added AGENTS.md and CLAUDE.md for AI agents");
+  await menu(page, "add-agent-guide");
+  await expect(status(page)).toContainText("already has its AI agent guide");
+});

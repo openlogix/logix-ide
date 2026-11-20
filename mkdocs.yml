@@ -79,4 +79,5 @@ nav:
   - Tour: tour.md
   - Using Logix IDE: using-logix.md
   - Testbenches and simulation: testbenches.md
+  - Using an AI agent: ai-agents.md
   - Troubleshooting: troubleshooting.md
