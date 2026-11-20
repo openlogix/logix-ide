@@ -2017,3 +2017,33 @@ test("renaming a design file offers to rename its testbench too", async ({ page 
   await expect(tab(page, "sh.v")).toBeVisible();
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
 });
+
+test("auto save: a saved project's changes are saved after typing stops and on leaving the window", async ({ page }) => {
+  type Fake = { saves: { files: string[]; removed: string[] }[]; confirms: unknown[] };
+  const saves = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.saves);
+  await start(page);
+  // A project not saved yet isn't saved by itself.
+  await typeAtStart(page, "// a\n");
+  await page.waitForTimeout(1500);
+  expect(await saves()).toEqual([]);
+  // Saved once (Save As), it is.
+  await menu(page, "save-as");
+  await expect(status(page)).toContainText("Saved");
+  await typeAtStart(page, "// b\n");
+  // Only the file that changed is written, a second after typing stops.
+  await expect.poll(saves).toEqual([{ files: ["main.v"], removed: [] }]);
+  await expect(tab(page, "main.v").first().locator(".dot")).toHaveCount(0);
+  // Leaving the window saves at once.
+  await typeAtStart(page, "// c\n");
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expect.poll(async () => (await saves()).length, { timeout: 500 }).toBe(2);
+  // A rename is saved too: the new name written, the old one deleted.
+  await page.getByTitle(/^New file/).click();
+  await page.locator(".tab-input").fill("adder.v");
+  await page.keyboard.press("Enter");
+  await expect.poll(async () => (await saves()).at(-1)).toEqual({ files: ["adder.v"], removed: [] });
+  await tab(page, "adder.v").dblclick();
+  await page.locator(".tab-input").fill("add.v");
+  await page.keyboard.press("Enter");
+  await expect.poll(async () => (await saves()).at(-1)).toEqual({ files: ["add.v"], removed: ["adder.v"] });
+});

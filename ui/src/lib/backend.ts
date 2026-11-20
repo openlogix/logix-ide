@@ -566,6 +566,8 @@ export interface Preferences {
   hoverInfo: boolean;
   /** When the hidden output comes back by itself. */
   showOutput: ShowOutput;
+  /** Whether a saved project's changes are saved by themselves. */
+  autoSave: boolean;
 }
 
 /**

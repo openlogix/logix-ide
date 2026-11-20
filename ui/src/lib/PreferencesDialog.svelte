@@ -38,6 +38,8 @@
   let hoverInfo = $state(initial.hoverInfo);
   // svelte-ignore state_referenced_locally
   let showOutput = $state<ShowOutput>(initial.showOutput);
+  // svelte-ignore state_referenced_locally
+  let autoSave = $state(initial.autoSave);
 
   let error = $state<string | null>(null);
   let saving = $state(false);
@@ -58,6 +60,7 @@
       liveChecking,
       hoverInfo,
       showOutput,
+      autoSave,
     });
     saving = false;
     if (!error) onClose();
@@ -152,6 +155,14 @@
           <option value="onError">Only on errors</option>
           <option value="never">Never automatically</option>
         </select>
+      </div>
+
+      <span></span>
+      <div class="control">
+        <label class="check">
+          <input type="checkbox" bind:checked={autoSave} />
+          Save changes automatically
+        </label>
       </div>
 
       <span></span>

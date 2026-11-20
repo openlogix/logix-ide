@@ -84,6 +84,7 @@
     fileRole,
     roleTooltip,
     filesForSave,
+    changedFiles,
     findFile,
     tabFiles,
     moduleAt,
@@ -1725,6 +1726,8 @@
   function onEdit(file: string, text: string) {
     const f = project && findFile(project, file);
     if (f) f.text = text;
+    // Auto save waits until typing stops.
+    scheduleAutoSave();
     // Editing a file clears what the last command found in it.
     const after = afterEdit(commandProblems, file);
     if (after !== commandProblems) {
@@ -1978,6 +1981,8 @@
   /** Handles unsaved changes before they'd be lost. False to stay put. */
   async function confirmLeave(): Promise<boolean> {
     if (!project || !dirty) return true;
+    // With auto save, a saved project's changes are saved, not asked about.
+    if (autoSaveOn && project.dir) return save();
     const choice = await backend.askSaveChanges(project.name);
     if (choice === "cancel") return false;
     if (choice === "save") return save();
@@ -2120,27 +2125,77 @@
     }
   }
 
-  async function save(): Promise<boolean> {
+  /**
+   * Saves the project into its folder: the files changed since the last
+   * save, the deletions and the project file. `quiet` (auto save): no
+   * status line, and a failure is shown once, not again until a save
+   * works.
+   */
+  async function save(quiet = false): Promise<boolean> {
     if (!project) return false;
-    if (!project.dir) return saveAs();
+    if (!project.dir) return quiet ? false : saveAs();
+    // One save at a time: this one follows the one running.
+    if (saving) return saving.then(() => save(quiet));
     const p = project;
     const dir = project.dir;
-    const files = filesForSave(p);
+    const files = changedFiles(p);
+    const removed = [...p.removed];
     const board = p.board;
     const variant = { ...p.variant };
+    const write = () => backend.saveProject(dir, files, removed, board, variant, p.serialBaud);
+    let done: () => void = () => {};
+    saving = new Promise((resolve) => (done = resolve));
     try {
-      await during("Saving…", () =>
-        backend.saveProject(dir, files, [...p.removed], board, variant, p.serialBaud),
-      );
-      markSaved(p, dir, p.name, files, board);
+      await (quiet ? write() : during("Saving…", write));
+      markSaved(p, dir, p.name, files, board, removed);
       fileError = null;
-      finish(`Saved ${dir}.`);
+      autoSaveFailed = false;
+      if (!quiet) finish(`Saved ${dir}.`);
       return true;
     } catch (e) {
-      commandFailed(e);
+      if (!quiet || !autoSaveFailed) commandFailed(e);
+      if (quiet) autoSaveFailed = true;
       return false;
+    } finally {
+      saving = null;
+      done();
     }
   }
+
+  // ---- Auto save (the user's decision, 2026-11-20; spec/design/
+  // ai-side-by-side.md): a saved project's changes are saved a second
+  // after they stop, and at once when the window loses focus (the user
+  // switches to an AI agent or another editor), as in Arduino IDE 2. A
+  // Settings switch, on by default. A project not saved yet waits for its
+  // first Save.
+
+  let saving: Promise<void> | null = null;
+  let autoSaveFailed = false;
+  let autoSaveTimer: ReturnType<typeof setTimeout> | null = null;
+  const AUTO_SAVE_DELAY_MS = 1000;
+  const autoSaveOn = $derived(prefs?.autoSave ?? true);
+
+  function scheduleAutoSave(delay = AUTO_SAVE_DELAY_MS) {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = null;
+    if (!autoSaveOn || !project?.dir || !isDirty(project)) return;
+    autoSaveTimer = setTimeout(() => {
+      autoSaveTimer = null;
+      if (autoSaveOn && project?.dir && isDirty(project)) void save(true);
+    }, delay);
+  }
+
+  // Every change (an edit, a new, renamed or deleted file, another board)
+  // makes the project dirty: save it a second after the last one.
+  $effect(() => {
+    if (project && dirty) untrack(() => scheduleAutoSave());
+  });
+
+  $effect(() => {
+    const onBlur = () => scheduleAutoSave(0);
+    window.addEventListener("blur", onBlur);
+    return () => window.removeEventListener("blur", onBlur);
+  });
 
   async function saveAs(): Promise<boolean> {
     if (!project) return false;

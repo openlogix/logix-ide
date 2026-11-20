@@ -19,6 +19,7 @@ import {
   starterText,
   layoutOf,
   testbenchOf,
+  changedFiles,
 } from "./workingProject";
 
 const savedDoc: ProjectDoc = {
@@ -101,6 +102,25 @@ describe("workingProject", () => {
     const names = p.files.map((f) => f.name);
     expect(names).toContain("a_tb.gtkw");
     expect(p.files.find((f) => f.name === "b_tb.gtkw")?.text).toBe("b");
+  });
+
+  it("saves only the files that changed, and keeps changes made while saving", () => {
+    const p = fromDoc(savedDoc);
+    expect(changedFiles(p)).toEqual([]);
+    p.files[0].text = "m2";
+    addFile(p, "a.v", "a");
+    renameFile(p, "pinout.pcf", "pins.pcf");
+    const files = changedFiles(p);
+    expect(files.map((f) => f.name)).toEqual(["main.v", "pins.pcf", "a.v"]);
+    const removed = [...p.removed];
+    // While the save runs: an edit and a deletion.
+    p.files[0].text = "m3";
+    deleteFile(p, "pins.pcf");
+    markSaved(p, "/p/blinky", "blinky", files, null, removed);
+    expect(isFileDirty(p, p.files[0])).toBe(true);
+    expect(p.removed).toEqual(["pins.pcf"]);
+    expect(isDirty(p)).toBe(true);
+    expect(changedFiles(p).map((f) => f.name)).toEqual(["main.v"]);
   });
 
   it("never renames or deletes main.v", () => {

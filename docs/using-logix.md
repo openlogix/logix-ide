@@ -84,6 +84,11 @@ inside another project.
   the board in the toolbar is the one new projects use.
   **Save As…** over an existing project replaces it; the old one goes to
   the Trash (the Recycle Bin on Windows).
+- **Auto save**: once a project is saved, your changes are saved by
+  themselves, a second after you stop typing and when you switch to
+  another app, so another editor or an AI agent working on the same
+  project always sees them. A new project or an example waits for its
+  first **Save**. Turn it off in Settings.
 - **Show Project Folder**: **Project > Show Project Folder** opens the
   folder in Finder (File Explorer on Windows). A new project gets its folder when it's first saved, so
   for a project not saved yet, it offers **Save As…** first.
@@ -409,6 +414,8 @@ opens this run's folder of logs, to attach to a report (see
 - **Show the output**: when the hidden output comes back by itself: **When
   a command starts** (Verify, Upload, Run Tests or Simulate; the default),
   **Only on errors**, or **Never automatically**.
+- **Save changes automatically**: on by default (see Auto save, above).
+  Turn it off to keep changes until you choose **Save Project**.
 - **Show lint warnings on Verify**: turn off to skip the lint step.
 - **Check code while typing**: underline syntax errors as you type. On by
   default.

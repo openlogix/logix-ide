@@ -343,6 +343,11 @@ pub fn save(
     if is_new {
         text.insert_str(0, SETTINGS_HEADER);
     }
+    // Written only when it changes: auto save runs often, and a write is a
+    // change an AI agent or another editor watching the folder sees.
+    if std::fs::read_to_string(&path).ok().as_deref() == Some(text.as_str()) {
+        return Ok(());
+    }
     write_atomic(&path, text.as_bytes())
 }
 
