@@ -21,11 +21,13 @@ working as shipped. Other boards get no `serial`.
 
 ## Files
 
-Besides COMMON.md's files, four files, the same on every board, copied
-unchanged from [`serial/`](serial/) next to this file: `uart_tx.v`,
-`uart_rx.v`, `uart_tx_tb.v` and `uart_rx_tb.v`. They're the reusable parts:
-users copy them into their own projects. Never edit them for one board;
-a change goes into `serial/` and then into every board's example.
+Besides COMMON.md's files, two files, the same on every board, copied
+unchanged from [`serial/`](serial/) next to this file: `uart.v` (the
+modules `uart_tx` and `uart_rx`, in one file so a design that uses them
+gets one file, not two; the user's choice, 2026-11-19) and its testbench
+`uart_tb.v`. They're the reusable parts: users copy them into their own
+projects. Never edit them for one board; a change goes into `serial/` and
+then into every board's example.
 
 `main.v` and `main_tb.v` follow the reference in
 [`serial/reference/`](serial/reference/), the Alhambra II's: the same text,

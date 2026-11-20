@@ -1,4 +1,4 @@
-// Serial port demo for the Alhambra II, using uart_tx.v and uart_rx.v.
+// Serial port demo for the Alhambra II, using uart_tx and uart_rx (uart.v).
 //
 // What it does:
 //   - Every character you type is sent back to you (an "echo").
