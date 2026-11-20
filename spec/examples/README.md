@@ -10,8 +10,8 @@ it to each board.
 | --- | --- |
 | `README.md` | This file: how examples are made, checked and kept up to date |
 | `COMMON.md` | What every standard example shares: files, board data, pin files, style, testbenches |
-| `<example>.md` | One standard example each, named like its folder: [`bare-minimum.md`](bare-minimum.md), [`blinky.md`](blinky.md), [`serial.md`](serial.md) |
-| `<example>/` | Files an example copies unchanged into every board's folder, when it has any: [`serial/`](serial/), the UART transmitter and receiver with their testbenches |
+| `<example>.md` | One standard example each, named like its folder: [`bare-minimum.md`](bare-minimum.md), [`blinky.md`](blinky.md), [`serial.md`](serial.md), [`serial-debug.md`](serial-debug.md) |
+| `<example>/` | Files an example copies unchanged into every board's folder, when it has any: [`serial/`](serial/), the UART (`uart.v`) with its testbench; [`serial-debug/`](serial-debug/), the debug modules (`debug.v`) with theirs |
 | `CATALOG.json` | The boards the examples were last written from (see When to run) |
 
 Shared files have capital names, examples lowercase ones. Since macOS and
