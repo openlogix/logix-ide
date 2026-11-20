@@ -1,0 +1,14 @@
+// Pins of Sipeed Tang Nano 9k used by main.v.
+
+// sys_clk: 27 MHz clock.
+IO_LOC "sys_clk" 52;
+IO_PORT "sys_clk" IO_TYPE=LVCMOS33;
+
+// uart: the USB serial port.
+IO_LOC "uart_tx" 17;
+IO_PORT "uart_tx" IO_TYPE=LVCMOS33;
+IO_LOC "uart_rx" 18;
+IO_PORT "uart_rx" IO_TYPE=LVCMOS33;
+
+// led: LED (active low).
+IO_LOC "led" 10;

@@ -1,0 +1,18 @@
+# Pins of Alhambra II used by main.v.
+
+# sys_clk: 12 MHz clock.
+set_io sys_clk 49
+
+# uart: the USB serial port.
+set_io uart_tx 61
+set_io uart_rx 62
+
+# leds: 8 LEDs (active high).
+set_io leds[0] 45
+set_io leds[1] 44
+set_io leds[2] 43
+set_io leds[3] 42
+set_io leds[4] 41
+set_io leds[5] 39
+set_io leds[6] 38
+set_io leds[7] 37
