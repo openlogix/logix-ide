@@ -898,7 +898,9 @@
     log("Checking for updates…");
     try {
       const changes = await during("Checking for updates…", () => backend.checkForUpdates());
-      log(...changes);
+      // The last line is the status, which finish() writes too (in green):
+      // the others go to the output here, so none shows twice.
+      log(...changes.slice(0, -1));
       finish(changes[changes.length - 1] ?? "Everything is up to date.");
     } catch (e) {
       commandFailed(e);
