@@ -86,7 +86,8 @@
   }
   function addText(text: string) {
     const wasAtEnd = atEnd();
-    lines = serialLines(lines, text, timestamps ? new Date() : null);
+    // Every line keeps its time; Timestamps only shows or hides them.
+    lines = serialLines(lines, text, new Date());
     follow(wasAtEnd);
   }
   function addNote(text: string) {
@@ -293,7 +294,7 @@
   <div class="out" bind:this={outEl} role="log" aria-label="Serial Monitor output" tabindex="0">
     {#each lines as l, i (i)}
       <div class="line" class:system={l.kind === "note"}>
-        {#if l.time}<span class="time">{l.time}  </span>{/if}{l.text}
+        {#if timestamps && l.time}<span class="time">{`${l.time}  `}</span>{/if}{l.text}
       </div>
     {/each}
   </div>

@@ -8,7 +8,7 @@ export interface SerialLine {
   /** "rx": text from the board; "note": a message from Logix IDE or Logix Engine. */
   kind: "rx" | "note";
   text: string;
-  /** When the line was last written from its start (hh:mm:ss.mmm), with timestamps on; else null. */
+  /** When the line was last written from its start (hh:mm:ss.mmm); null before any text. Shown with Timestamps on. */
   time: string | null;
   /** Whether the line has ended (a line feed came); the next text starts a new one. */
   done: boolean;
