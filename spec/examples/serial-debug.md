@@ -26,9 +26,13 @@ unchanged:
 
 - `uart.v` and `uart_tb.v` from [`serial/`](serial/) (the UART, shared with
   `serial`, so both examples have the same one);
-- `debug.v` (the modules `debug_print` and `debug_input`, in one file so a
-  design that uses them gets one file; the user's choice, 2026-11-19) and
-  its testbench `debug_tb.v`, from [`serial-debug/`](serial-debug/).
+- `debug.v` and its testbench `debug_tb.v`, from
+  [`serial-debug/`](serial-debug/). Users wire one module, `debug`, to the
+  serial pins: it holds the UART (`uart_tx`, `uart_rx`) and its parts,
+  `debug_print` and `debug_input`, inside, so a design needs one instance
+  and no UART wiring of its own (the user's choice, 2026-11-19). One per
+  serial port, since the port has one line each way: several values are
+  watched together as one wider value.
 
 They're the reusable parts: users copy them into their own projects. Never
 edit them for one board; a change goes into its folder here and then into
@@ -48,14 +52,13 @@ the drives. Nothing else.
 
 ## Design
 
-As the reference: `uart_rx` (instance `receiver`) feeds `debug_input`
-(instance `set_count`, 4 digits); a 16-bit `count` goes up by one at each
-`tick` (every `TICK_CYCLES`, a parameter of `main`, half a second of the
-clock by default) or takes the value typed; `debug_print` (instance
-`show_count`, label "count", 4 digits, `OVERWRITE` 1, so the value updates
-in place) prints it one cycle after each change, through `uart_tx`
-(instance `sender`). `BAUD` is a parameter of `main`, 115200 by default.
-The LEDs, if any, show the count's lowest bits.
+As the reference: a 16-bit `count` goes up by one at each `tick` (every
+`TICK_CYCLES`, a parameter of `main`, half a second of the clock by
+default) or takes the value typed; one `debug` (instance `dbg`, label
+"count", 4 digits, `OVERWRITE` 1, so the value updates in place) prints it
+one cycle after each change and gives the values typed. `BAUD` is a
+parameter of `main`, 115200 by default. The LEDs, if any, show the count's
+lowest bits.
 
 Counter widths are written as numbers, the smallest that fits, with a
 comment saying why, as in `serial`.
@@ -84,8 +87,8 @@ in parentheses):
 
 - **Board name** in the first line of each file ("Alhambra II"): the
   board's `name`.
-- **Clock:** its frequency in the clock port's comment, `CLK_HZ` of both
-  UART instances (`12_000_000`), `TICK_CYCLES`'s default, half a second of
+- **Clock:** its frequency in the clock port's comment, `CLK_HZ` of `dbg`
+  (`12_000_000`), `TICK_CYCLES`'s default, half a second of
   the clock, and its comment (`6_000_000`, "0.5 s at 12 MHz"); the clock
   port's name is the clock resource's (`sys_clk`).
 - **Tick counter width:** the smallest number of bits that counts to
