@@ -2088,7 +2088,8 @@ test("changes other programs make in the project folder show up, without asking"
   await expect(page.locator(".cm-content")).toContainText("The agent again.");
   await expect(status(page)).toContainText("main.v was changed on disk");
   await page.locator(".cm-content").click();
-  await page.keyboard.press("Meta+z");
+  // Undo: ⌘Z on macOS, Ctrl+Z on Windows and Linux.
+  await page.keyboard.press("ControlOrMeta+z");
   await expect(page.locator(".cm-content")).toContainText("// mine");
   // It chooses another board in logix-ide.toml: the toolbar follows.
   await disk([], { board: "icesugar-1-5", variant: {}, serialBaud: null });
