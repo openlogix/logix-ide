@@ -136,6 +136,10 @@ pub fn show(
         .inner_size(1100.0, 700.0)
         .min_inner_size(520.0, 320.0)
         .initialization_script(INIT_SCRIPT)
+        // The page's own drag and drop (reordering rows): Tauri's file-drop
+        // handling would take every drag as a file drop, with a "+" cursor
+        // and no drop for the page (the user's report, 2026-11-21).
+        .disable_drag_drop_handler()
         .on_navigation(|url| {
             url.scheme() == SCHEME || url.host_str() == Some(&format!("{SCHEME}.localhost"))
         })
