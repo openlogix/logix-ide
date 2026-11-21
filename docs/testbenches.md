@@ -38,7 +38,8 @@ In the Waveforms window:
   it. **Shift+click** puts a marker, to measure the time between the two.
 - **Choose the signals** in the list on the left: tick a signal to show it,
   open a module to see its signals. Drag rows to reorder them, and add
-  comment rows to group them (a comment row's arrow folds its group).
+  groups (right-click a row) to give signals a title; click a group to
+  fold it.
 - **Right-click** anything for what you can do with it, such as showing a
   bus's value in decimal, changing a signal's color, or saving the view as
   an image.
