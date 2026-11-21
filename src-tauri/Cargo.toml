@@ -25,6 +25,8 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 time = { version = "0.3", features = ["formatting", "macros", "local-offset"] }
 tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "sync", "time"] }
 tauri-plugin-dialog = "2"
+# The waveform viewer's PNG images come as base64.
+base64 = "0.22"
 regex = "1"
 tokio-util = "0.7"
 # MCP client for Logix Engine (engine/), the same crate the engine uses.
@@ -36,26 +38,14 @@ sha2 = "0.10"
 hex = "0.4"
 notify = { version = "8", default-features = false, features = ["macos_fsevent"] }
 
-# macOS only: bringing GTKWave's window to the front (platform.rs).
-[target.'cfg(target_os = "macos")'.dependencies]
-objc2 = "0.6"
-objc2-app-kit = { version = "0.3", features = ["NSApplication", "NSResponder", "NSRunningApplication", "NSWorkspace"] }
-objc2-foundation = { version = "0.3", features = ["NSArray", "NSString", "NSURL"] }
-
-# Windows only (platform.rs): bringing GTKWave's window to the front, and
-# the clipboard.
 # The clipboard on macOS (its pasteboard) and Linux (X11, and Wayland
 # through XWayland): platform.rs.
 [target.'cfg(any(target_os = "macos", target_os = "linux"))'.dependencies]
 arboard = { version = "3", default-features = false }
 
-# Bringing GTKWave's window to the front on Linux (X11, and XWayland
-# windows on Wayland): platform.rs. Already a dependency of arboard.
-[target.'cfg(target_os = "linux")'.dependencies]
-x11rb = "0.13"
-
+# Windows only (platform.rs): the clipboard.
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Diagnostics_ToolHelp", "Win32_System_Memory", "Win32_System_Ole", "Win32_UI_WindowsAndMessaging"] }
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Memory", "Win32_System_Ole"] }
 
 [dev-dependencies]
 tempfile = "3"

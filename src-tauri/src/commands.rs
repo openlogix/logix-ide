@@ -17,7 +17,7 @@ use crate::examples;
 use crate::outcome;
 use crate::project::{self, ProjectFile};
 use crate::setup_events::{SetupEvent, SetupStage};
-use crate::{build_dir, diagram_window, platform, settings, AppState, Catalog};
+use crate::{build_dir, diagram_window, platform, settings, wave_window, AppState, Catalog};
 
 /// An error for the UI: `message` is short plain language for the user,
 /// `details` is the full technical chain for the console.
@@ -565,12 +565,6 @@ pub async fn run_task(
     // The values the user chose, as they are: the engine uses the board's
     // first variant with them ({} for its default).
     let board_variant = variant.clone();
-    let on_line = {
-        let channel = on_event.clone();
-        move |line: String| {
-            let _ = channel.send(outcome::TaskEvent::line(line));
-        }
-    };
     let root = platform::current_implemented()?
         .data_dir()?
         .join("_scratch")
@@ -591,24 +585,9 @@ pub async fn run_task(
     }
     let constraint =
         build_dir::constraint_file(&files, pin_extension.as_deref()).map(str::to_owned);
-    let log = on_line;
     let (project_dir_kept, key_kept) = (project_dir.clone(), key.clone());
-    let (dir, layouts) = blocking(move || {
-        // GTKWave layouts saved since the UI last read them (preparing
-        // clears the build folder): this run uses them, and the UI takes
-        // them into the project, as edits.
-        let mut files = files;
-        let mut layouts = Vec::new();
-        for layout in build_dir::user_layouts(&root, &key).unwrap_or_default() {
-            match files.iter_mut().find(|f| f.name == layout.name) {
-                Some(f) if f.text == layout.text => continue,
-                Some(f) => f.text = layout.text.clone(),
-                None => files.push(layout.clone()),
-            }
-            log(gtkw_taken_message(&layout.name));
-            layouts.push(layout);
-        }
-        let prepared = build_dir::prepare(
+    let dir = blocking(move || {
+        build_dir::prepare(
             &root,
             &build_dir::BuildInput {
                 key: &key,
@@ -616,18 +595,9 @@ pub async fn run_task(
                 files: &files,
             },
         )
-        .context("Couldn't prepare the build.")?;
-        Ok::<_, anyhow::Error>((prepared, layouts))
+        .context("Couldn't prepare the build.")
     })
     .await??;
-    // GTKWave windows open before the simulation, to recognize the new one.
-    let gtkwave_before = if task == outcome::Task::Simulate {
-        on_main_thread(&app, || platform::running_app_pids(GTKWAVE))
-            .await
-            .unwrap_or_default()
-    } else {
-        Vec::new()
-    };
     let cancel = tokio_util::sync::CancellationToken::new();
     *state.task_cancel.lock().unwrap() = Some(cancel.clone());
     if info.custom {
@@ -669,7 +639,35 @@ pub async fn run_task(
         .context("Couldn't run Logix Engine.");
     *state.task_cancel.lock().unwrap() = None;
     let mut outcome = result?;
-    outcome.layouts = layouts;
+    // Simulate: the waveform window shows the engine's viewer page,
+    // reloaded in place when it's open (R6).
+    if let Some(page) = outcome.wave_page.take() {
+        let name = project_dir_kept
+            .as_deref()
+            .and_then(|d| Path::new(d).file_name())
+            .map_or("New project".to_string(), |n| {
+                n.to_string_lossy().into_owned()
+            });
+        let testbench = testbench.clone().unwrap_or_default();
+        let shown = on_main_thread(&app, {
+            let (app, key, names) = (app.clone(), key_kept.clone(), names.clone());
+            move || {
+                wave_window::show(
+                    &app,
+                    &key,
+                    &format!("Waveforms · {name} · {testbench}"),
+                    page,
+                    names,
+                    &testbench,
+                    true,
+                )
+            }
+        })
+        .await;
+        if let Some(Err(e)) = shown {
+            return Err(anyhow!("Couldn't show the waveforms: {e}").into());
+        }
+    }
     // Show Diagram, or Verify with the Diagram window open: the window
     // shows the engine's page.
     if let Some(page) = outcome.diagram_page.take() {
@@ -707,83 +705,7 @@ pub async fn run_task(
             return Err(anyhow!("Couldn't show the diagram: {e}").into());
         }
     }
-    // The engine opens GTKWave whenever the testbench ran, even failing
-    // (its waveform shows where).
-    if task == outcome::Task::Simulate && !outcome.testbenches.is_empty() {
-        let generation = GTKWAVE_WAIT.fetch_add(1, Ordering::SeqCst) + 1;
-        tauri::async_runtime::spawn(bring_gtkwave_to_front(app, gtkwave_before, generation));
-    }
     Ok(outcome)
-}
-
-/// How GTKWave's process is named.
-const GTKWAVE: &str = "gtkwave";
-
-/// The latest simulation's wait for GTKWave: an older wait that ends after
-/// a newer simulation started says nothing.
-static GTKWAVE_WAIT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-
-/// How long to wait for GTKWave's window: a cold start (the first after a
-/// while) can take over 8 seconds.
-const GTKWAVE_WAIT_SECONDS: u64 = 30;
-
-/// Linux: how long a running GTKWave may take to show an X11 window before
-/// Logix IDE stops trying to raise it (a native Wayland window has none).
-const GTKWAVE_RAISE_SECONDS: u64 = 10;
-
-/// After a simulation, GTKWave starts in the background and its
-/// window would stay behind Logix IDE. Waits for the new GTKWave (up to
-/// `GTKWAVE_WAIT_SECONDS`) and brings it to the front, then tells the UI
-/// with the `gtkwave-opened` event (true when found), which ends its
-/// "Opening GTKWave…" status.
-async fn bring_gtkwave_to_front(app: AppHandle, before: Vec<i32>, generation: u64) {
-    use std::time::Duration;
-    let tell = |found: bool| {
-        if GTKWAVE_WAIT.load(Ordering::SeqCst) == generation {
-            let _ = app.emit("gtkwave-opened", found);
-        }
-    };
-    // When a new GTKWave was first seen (Linux: see below).
-    let mut seen: Option<std::time::Instant> = None;
-    for _ in 0..GTKWAVE_WAIT_SECONDS * 4 {
-        tokio::time::sleep(Duration::from_millis(250)).await;
-        let pids = on_main_thread(&app, || platform::running_app_pids(GTKWAVE))
-            .await
-            .unwrap_or_default();
-        let new: Vec<i32> = pids.into_iter().filter(|p| !before.contains(p)).collect();
-        if !new.is_empty() && seen.is_none() {
-            seen = Some(std::time::Instant::now());
-        }
-        // Linux: a native Wayland window can't be raised by another
-        // program, so a GTKWave that's running without an X11 window after
-        // GTKWAVE_RAISE_SECONDS is open, where the desktop put it.
-        if cfg!(target_os = "linux")
-            && seen.is_some_and(|t| t.elapsed() >= Duration::from_secs(GTKWAVE_RAISE_SECONDS))
-        {
-            crate::log!(
-                "GTKWave is running, but has no X11 window to bring to the front (Wayland?)"
-            );
-            tell(true);
-            return;
-        }
-        // Each new one (Windows' process ids aren't in start order), until
-        // one is brought to the front: on Windows and Linux, once it has a
-        // window.
-        for pid in new {
-            let brought = on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
-            if brought != Some(true) && (cfg!(windows) || cfg!(target_os = "linux")) {
-                continue;
-            }
-            // Once more after its window has had time to appear.
-            tokio::time::sleep(Duration::from_millis(500)).await;
-            let moved = on_main_thread(&app, move || platform::bring_app_to_front(pid)).await;
-            crate::log!("Brought GTKWave (pid {pid}) to the front: {moved:?}");
-            tell(true);
-            return;
-        }
-    }
-    crate::log!("Didn't find a new GTKWave window to bring to the front");
-    tell(false);
 }
 
 /// Runs `f` on the main thread (needed for native window APIs) and returns
@@ -1248,29 +1170,6 @@ pub async fn serial_close(state: State<'_, AppState>) -> Result<(), UserError> {
     }
     crate::log!("Serial Monitor: closed {session}");
     Ok(())
-}
-
-/// The GTKWave layouts the user saved from GTKWave for the project `key`
-/// (`build_dir::user_layouts`): the UI takes those that differ into the
-/// project, as edits, saved with it like any other file. The UI calls this
-/// when the window regains focus, typically after saving a layout in
-/// GTKWave; each run also does it before preparing the build folder.
-#[tauri::command]
-pub async fn read_gtkwave_layouts(key: String) -> Result<Vec<ProjectFile>, UserError> {
-    let root = platform::current_implemented()?
-        .data_dir()?
-        .join("_scratch")
-        .join("build");
-    let layouts = blocking(move || build_dir::user_layouts(&root, &key)).await?;
-    Ok(layouts.unwrap_or_else(|e| {
-        crate::log!("Can't read GTKWave layouts: {e:#}");
-        Vec::new()
-    }))
-}
-
-/// The console line when a run takes a layout saved in GTKWave.
-fn gtkw_taken_message(name: &str) -> String {
-    format!("Took the layout saved in GTKWave into {name} (not saved yet).")
 }
 
 /// Whether Verify lints (Settings > "Show lint warnings on Verify").

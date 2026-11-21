@@ -26,7 +26,7 @@ pub struct ProjectWatch {
 }
 
 /// The names worth reporting among changed `paths`: project files (tabs and
-/// GTKWave layouts) and the project file, directly in `dir`; sorted, each
+/// waveform views) and the project file, directly in `dir`; sorted, each
 /// once.
 pub fn changed_names(dir: &Path, paths: &[PathBuf]) -> Vec<String> {
     let dir = dir.canonicalize().unwrap_or_else(|_| dir.to_path_buf());
@@ -102,6 +102,7 @@ mod tests {
         std::fs::create_dir(dir.join("_build")).unwrap();
         let paths: Vec<PathBuf> = [
             "adder.v",
+            "adder_tb.view",
             "adder_tb.gtkw",
             "logix-ide.toml",
             "notes.txt",
@@ -114,7 +115,7 @@ mod tests {
         .collect();
         assert_eq!(
             changed_names(dir, &paths),
-            ["adder.v", "adder_tb.gtkw", "logix-ide.toml"]
+            ["adder.v", "adder_tb.view", "logix-ide.toml"]
         );
     }
 

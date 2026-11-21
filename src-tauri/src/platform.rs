@@ -259,30 +259,6 @@ pub fn trash_name() -> &'static str {
     }
 }
 
-/// Process ids of the running GUI apps whose name or executable contains
-/// `name` (any case); on Windows, of the processes whose executable's file
-/// name does. Must be called on the main thread (see
-/// `AppHandle::run_on_main_thread`); elsewhere returns nothing.
-pub fn running_app_pids(name: &str) -> Vec<i32> {
-    #[cfg(target_os = "macos")]
-    {
-        macos::running_app_pids(name)
-    }
-    #[cfg(windows)]
-    {
-        windows::running_app_pids(name)
-    }
-    #[cfg(target_os = "linux")]
-    {
-        linux::running_app_pids(name)
-    }
-    #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
-    {
-        let _ = name;
-        Vec::new()
-    }
-}
-
 /// The variable that turns off WebKitGTK's DMA-BUF (GPU) renderer.
 pub const WEBKIT_DMABUF_VARIABLE: &str = "WEBKIT_DISABLE_DMABUF_RENDERER";
 
@@ -314,120 +290,17 @@ pub fn prepare_web_view() -> Option<String> {
     ))
 }
 
-/// Brings the app with process id `pid` to the front, e.g. GTKWave after a
-/// simulation (an app started in the background by another program stays
-/// behind the IDE). Must be called on the main thread while the IDE is the
-/// active app. Returns whether the request was made: on Windows and
-/// Linux, false until the process has a window (on Linux, an X11 one: a
-/// native Wayland window can't be raised by another program).
-pub fn bring_app_to_front(pid: i32) -> bool {
-    #[cfg(target_os = "macos")]
-    {
-        macos::bring_app_to_front(pid)
-    }
-    #[cfg(windows)]
-    {
-        windows::bring_app_to_front(pid)
-    }
-    #[cfg(target_os = "linux")]
-    {
-        linux::bring_app_to_front(pid)
-    }
-    #[cfg(not(any(target_os = "macos", windows, target_os = "linux")))]
-    {
-        let _ = pid;
-        false
-    }
-}
-
 #[cfg(windows)]
 mod windows {
     use anyhow::{bail, Context, Result};
-    use windows_sys::Win32::Foundation::{
-        CloseHandle, GlobalFree, HWND, INVALID_HANDLE_VALUE, LPARAM,
-    };
+    use windows_sys::Win32::Foundation::GlobalFree;
     use windows_sys::Win32::System::DataExchange::{
         CloseClipboard, EmptyClipboard, OpenClipboard, SetClipboardData,
-    };
-    use windows_sys::Win32::System::Diagnostics::ToolHelp::{
-        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
-        TH32CS_SNAPPROCESS,
     };
     use windows_sys::Win32::System::Memory::{
         GlobalAlloc, GlobalLock, GlobalUnlock, GMEM_MOVEABLE,
     };
     use windows_sys::Win32::System::Ole::CF_UNICODETEXT;
-    use windows_sys::Win32::UI::WindowsAndMessaging::{
-        EnumWindows, GetWindow, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
-        SetForegroundWindow, ShowWindow, GW_OWNER, SW_RESTORE,
-    };
-
-    pub fn running_app_pids(name: &str) -> Vec<i32> {
-        let name = name.to_lowercase();
-        let mut pids = Vec::new();
-        // SAFETY: a process snapshot, walked with a correctly sized entry
-        // and closed at the end.
-        unsafe {
-            let snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-            if snap == INVALID_HANDLE_VALUE {
-                return pids;
-            }
-            let mut entry: PROCESSENTRY32W = std::mem::zeroed();
-            entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
-            let mut more = Process32FirstW(snap, &mut entry) != 0;
-            while more {
-                let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(0);
-                let exe = String::from_utf16_lossy(&entry.szExeFile[..len]).to_lowercase();
-                if exe.contains(&name) {
-                    pids.push(entry.th32ProcessID as i32);
-                }
-                more = Process32NextW(snap, &mut entry) != 0;
-            }
-            CloseHandle(snap);
-        }
-        pids
-    }
-
-    /// The process's visible top-level window, restored if minimized, is
-    /// made the foreground window. Logix IDE, the foreground app, may do so.
-    pub fn bring_app_to_front(pid: i32) -> bool {
-        struct Search {
-            pid: u32,
-            found: HWND,
-        }
-        unsafe extern "system" fn each(hwnd: HWND, data: LPARAM) -> i32 {
-            // SAFETY: `data` is the `Search` below, alive during EnumWindows.
-            let search = unsafe { &mut *(data as *mut Search) };
-            let mut owner_pid = 0u32;
-            // SAFETY: plain queries on a window EnumWindows gave.
-            unsafe {
-                GetWindowThreadProcessId(hwnd, &mut owner_pid);
-                if owner_pid == search.pid
-                    && IsWindowVisible(hwnd) != 0
-                    && GetWindow(hwnd, GW_OWNER).is_null()
-                {
-                    search.found = hwnd;
-                    return 0;
-                }
-            }
-            1
-        }
-        let mut search = Search {
-            pid: pid as u32,
-            found: std::ptr::null_mut(),
-        };
-        // SAFETY: the callback only uses `search`, which outlives the call.
-        unsafe {
-            EnumWindows(Some(each), &mut search as *mut Search as LPARAM);
-            if search.found.is_null() {
-                return false;
-            }
-            if IsIconic(search.found) != 0 {
-                ShowWindow(search.found, SW_RESTORE);
-            }
-            SetForegroundWindow(search.found) != 0
-        }
-    }
 
     /// Puts `text` on the clipboard as Unicode text (UTF-16, ending in a
     /// zero, with no byte order mark).
@@ -510,162 +383,6 @@ mod windows {
                 assert_eq!(clipboard_text(), text);
             }
         }
-
-        #[test]
-        fn finds_its_own_process() {
-            let me = std::env::current_exe().unwrap();
-            let name = me.file_stem().unwrap().to_string_lossy().to_string();
-            let pids = super::running_app_pids(&name);
-            assert!(pids.contains(&(std::process::id() as i32)), "{pids:?}");
-        }
-    }
-}
-
-#[cfg(target_os = "macos")]
-mod macos {
-    use objc2::MainThreadMarker;
-    use objc2_app_kit::{
-        NSApplication, NSApplicationActivationOptions, NSRunningApplication, NSWorkspace,
-    };
-
-    pub fn running_app_pids(name: &str) -> Vec<i32> {
-        if MainThreadMarker::new().is_none() {
-            return Vec::new();
-        }
-        let name = name.to_lowercase();
-        let apps = NSWorkspace::sharedWorkspace().runningApplications();
-        apps.iter()
-            .filter(|app| {
-                let localized = app
-                    .localizedName()
-                    .map(|n| n.to_string().to_lowercase())
-                    .unwrap_or_default();
-                let exe = app
-                    .executableURL()
-                    .and_then(|u| u.path())
-                    .map(|p| p.to_string().to_lowercase())
-                    .unwrap_or_default();
-                localized.contains(&name) || exe.contains(&name)
-            })
-            .map(|app| app.processIdentifier())
-            .collect()
-    }
-
-    pub fn bring_app_to_front(pid: i32) -> bool {
-        let Some(mtm) = MainThreadMarker::new() else {
-            return false;
-        };
-        let apps = NSWorkspace::sharedWorkspace().runningApplications();
-        let Some(target) = apps.iter().find(|a| a.processIdentifier() == pid) else {
-            return false;
-        };
-        // Cooperative activation (macOS 14+): the active app (Logix IDE) yields
-        // to the target, which is then activated.
-        NSApplication::sharedApplication(mtm).yieldActivationToApplication(&target);
-        let target: &NSRunningApplication = &target;
-        target.activateWithOptions(NSApplicationActivationOptions::ActivateAllWindows)
-    }
-}
-
-/// Whether a process's command line (its NUL-separated arguments, as in
-/// /proc/<pid>/cmdline) runs the program `name`: its first argument, or,
-/// for a program started through a loader (the OSS CAD Suite runs GTKWave
-/// as `.../lib/ld-linux-x86-64.so.2 ... .../libexec/gtkwave`), one of the
-/// loader's arguments that is a path to it. Pure, for tests.
-#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-pub fn cmdline_runs(cmdline: &[u8], name: &str) -> bool {
-    let args: Vec<&[u8]> = cmdline
-        .split(|&b| b == 0)
-        .filter(|a| !a.is_empty())
-        .collect();
-    let file = |a: &[u8]| -> String {
-        let text = String::from_utf8_lossy(a);
-        text.rsplit('/').next().unwrap_or("").to_string()
-    };
-    let Some(first) = args.first() else {
-        return false;
-    };
-    if file(first) == name {
-        return true;
-    }
-    file(first).starts_with("ld-linux")
-        && args
-            .iter()
-            .skip(1)
-            .any(|a| a.contains(&b'/') && file(a) == name)
-}
-
-#[cfg(target_os = "linux")]
-mod linux {
-    use x11rb::connection::Connection;
-    use x11rb::protocol::xproto::{AtomEnum, ClientMessageEvent, ConnectionExt, EventMask, Window};
-
-    /// The processes running `name` (`cmdline_runs`), from /proc.
-    pub fn running_app_pids(name: &str) -> Vec<i32> {
-        let own = std::process::id() as i32;
-        let Ok(entries) = std::fs::read_dir("/proc") else {
-            return Vec::new();
-        };
-        let mut pids: Vec<i32> = entries
-            .flatten()
-            .filter_map(|e| e.file_name().to_str()?.parse::<i32>().ok())
-            .filter(|&pid| pid != own)
-            .filter(|pid| {
-                std::fs::read(format!("/proc/{pid}/cmdline"))
-                    .is_ok_and(|c| super::cmdline_runs(&c, name))
-            })
-            .collect();
-        pids.sort();
-        pids
-    }
-
-    /// Asks the window manager to activate the process's top-level window
-    /// (`_NET_ACTIVE_WINDOW`, from a pager, which window managers honor; it
-    /// also restores a minimized window), found by its `_NET_WM_PID` in the
-    /// window manager's `_NET_CLIENT_LIST`. Works on X11, and on Wayland for
-    /// windows that run through XWayland. False without an X display or such
-    /// a window (such as a native Wayland window, which no other program
-    /// can raise).
-    pub fn bring_app_to_front(pid: i32) -> bool {
-        raise(pid).unwrap_or(false)
-    }
-
-    fn raise(pid: i32) -> Result<bool, Box<dyn std::error::Error>> {
-        let (conn, screen) = x11rb::connect(None)?;
-        let root = conn.setup().roots[screen].root;
-        let atom = |name: &[u8]| -> Result<u32, Box<dyn std::error::Error>> {
-            Ok(conn.intern_atom(false, name)?.reply()?.atom)
-        };
-        let (client_list, wm_pid, active) = (
-            atom(b"_NET_CLIENT_LIST")?,
-            atom(b"_NET_WM_PID")?,
-            atom(b"_NET_ACTIVE_WINDOW")?,
-        );
-        let windows: Vec<Window> = conn
-            .get_property(false, root, client_list, AtomEnum::WINDOW, 0, u32::MAX)?
-            .reply()?
-            .value32()
-            .map(|v| v.collect())
-            .unwrap_or_default();
-        let Some(window) = windows.into_iter().find(|&w| {
-            conn.get_property(false, w, wm_pid, AtomEnum::CARDINAL, 0, 1)
-                .ok()
-                .and_then(|c| c.reply().ok())
-                .and_then(|r| r.value32().and_then(|mut v| v.next()))
-                == Some(pid as u32)
-        }) else {
-            return Ok(false);
-        };
-        // data: source 2 (a pager), time 0 (now), no currently active window.
-        let event = ClientMessageEvent::new(32, window, active, [2, 0, 0, 0, 0]);
-        conn.send_event(
-            false,
-            root,
-            EventMask::SUBSTRUCTURE_REDIRECT | EventMask::SUBSTRUCTURE_NOTIFY,
-            event,
-        )?;
-        conn.flush()?;
-        Ok(true)
     }
 }
 
@@ -802,22 +519,6 @@ mod tests {
 
     // GTKWave on Linux runs through the OSS CAD Suite's loader, so its
     // process is named ld-linux-x86-64; its command line names it.
-    #[test]
-    fn a_program_is_found_by_its_command_line() {
-        let suite = b"/home/u/.logix/ide/engine-data/packages/logix-core/oss-cad-suite/lib/ld-linux-x86-64.so.2\0--inhibit-cache\0--library-path\0/x/lib\0/home/u/.logix/ide/engine-data/packages/logix-core/oss-cad-suite/libexec/gtkwave\0wave.vcd\0";
-        assert!(cmdline_runs(suite, "gtkwave"));
-        assert!(cmdline_runs(b"/usr/bin/gtkwave\0a.vcd\0", "gtkwave"));
-        assert!(cmdline_runs(b"gtkwave\0", "gtkwave"));
-        // Not GTKWave: an editor with a file named gtkwave, a loader running
-        // something else, nothing.
-        assert!(!cmdline_runs(b"/usr/bin/vim\0gtkwave\0", "gtkwave"));
-        assert!(!cmdline_runs(
-            b"/x/lib/ld-linux-x86-64.so.2\0/x/libexec/yosys\0",
-            "gtkwave"
-        ));
-        assert!(!cmdline_runs(b"", "gtkwave"));
-    }
-
     #[test]
     fn shell_paths_are_quoted_only_when_needed() {
         let p = Platform::MacosArm64;

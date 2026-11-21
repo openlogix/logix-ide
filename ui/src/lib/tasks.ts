@@ -41,7 +41,7 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
       return `${VERB.test.done} (${n}) in ${time}${w}.`;
     }
     if (task === "simulate") {
-      return `${VERB.simulate.done} in ${time}. GTKWave shows the signals.`;
+      return `${VERB.simulate.done} in ${time}. The Waveforms window shows the signals.`;
     }
     if (task === "diagram") return `${VERB.diagram.done} in ${time}.`;
     // The engine's one-line report, as it words it ("Uses 0.4% of …").
@@ -65,20 +65,12 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   // A failing testbench is still simulated: its waveform shows the problem.
   if (task === "simulate" && outcome.testbenches.length > 0) {
     return located
-      ? "The testbench failed. GTKWave shows the signals."
-      : `The testbench failed (GTKWave shows the signals): ${first.message}`;
+      ? "The testbench failed. The Waveforms window shows where."
+      : `The testbench failed (the Waveforms window shows where): ${first.message}`;
   }
   return located
     ? `${VERB[task].noun} failed.`
     : `${VERB[task].noun} failed: ${first.message}`;
-}
-
-/**
- * The status line after a successful simulation whose GTKWave window
- * didn't appear in time (a slow start): it may still open, behind Logix IDE.
- */
-export function gtkwaveSlowText(outcome: TaskOutcome): string {
-  return `${VERB.simulate.done} in ${outcome.seconds.toFixed(1)} s. GTKWave is taking a while to start; it may open behind this window.`;
 }
 
 /** The first error (or else warning) that points into a file. */

@@ -339,11 +339,6 @@ export interface TaskOutcome {
    */
   driverDevice: DriverDevice | null;
   sameIds: Consent | null;
-  /**
-   * GTKWave layouts the user saved from GTKWave, which this run used: the
-   * UI takes them into the project, as edits. Absent when none.
-   */
-  layouts?: ProjectFile[];
 }
 
 /** For Upload (Windows and Linux): install the board's driver or udev rule first, which the user agreed to. */
@@ -721,8 +716,8 @@ export const backend = {
    * Builds, uploads, tests, simulates or draws (diagram) the given (possibly
    * unsaved) files. `testbench` picks one testbench for "test" (all if
    * null) and "simulate", or the module the Diagram window opens on for "diagram" (main if null). `key` identifies the project; `sourceDir` is the folder
-   * whose other files are copied along; `projectDir` (saved projects only)
-   * receives GTKWave layouts saved since the last run. `device` is the
+   * whose other files are copied along; `projectDir` is the saved
+   * project's folder (null for a project never saved). `device` is the
    * device Upload uses (a `UsbDevice` id the user chose), or null to let
    * Upload use the only one that fits. The tools' output and the engine's
    * phases go to `onEvent`. Resolves with the outcome
@@ -866,14 +861,6 @@ export const backend = {
   copyProjectPath: (dir: string): Promise<string> =>
     invoke<string>("copy_project_path", { dir }),
 
-  /**
-   * The GTKWave layouts the user saved from GTKWave for the project with
-   * this build key: the UI takes those that differ into the project, as
-   * edits, saved with it like any other file.
-   */
-  readGtkwaveLayouts: (key: string): Promise<ProjectFile[]> =>
-    invoke<ProjectFile[]>("read_gtkwave_layouts", { key }),
-
   /** The current preferences. */
   getPreferences: (): Promise<Preferences> =>
     invoke<Preferences>("get_preferences"),
@@ -923,11 +910,26 @@ export const backend = {
     listen<string>("lsp-message", (e) => handler(e.payload)),
 
   /**
-   * After Simulate: GTKWave's window appeared and was brought to the front
-   * (true), or didn't appear within 30 s (false).
+   * The waveform window's page saved its view (the signals shown, their
+   * formats, the zoom): the project (its build key), the view file's name
+   * (`main_tb.view`) and its text, a project file taken in as an edit.
    */
-  onGtkwaveOpened: (handler: (found: boolean) => void): Promise<UnlistenFn> =>
-    listen<boolean>("gtkwave-opened", (e) => handler(e.payload)),
+  onWaveView: (
+    handler: (view: { key: string; name: string; text: string }) => void,
+  ): Promise<UnlistenFn> =>
+    listen<{ key: string; name: string; text: string }>("wave-view", (e) => handler(e.payload)),
+
+  /**
+   * A signal's name or a failure clicked in the waveform window: the
+   * project (its build key) and the file and line to show. The backend
+   * sends only the project's files.
+   */
+  onWaveOpenSource: (
+    handler: (at: { key: string; file: string; line: number }) => void,
+  ): Promise<UnlistenFn> =>
+    listen<{ key: string; file: string; line: number }>("wave-open-source", (e) =>
+      handler(e.payload),
+    ),
 
   /** Tools > Add AI Agent Guide: writes AGENTS.md and CLAUDE.md unless they exist; the files written. */
 

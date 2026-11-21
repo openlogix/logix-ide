@@ -18,6 +18,7 @@ mod setup_events;
 mod system_info;
 mod version;
 mod watch;
+mod wave_window;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -88,6 +89,9 @@ pub fn run() {
         .register_uri_scheme_protocol(diagram_window::SCHEME, |_ctx, request| {
             diagram_window::serve(request.uri().path())
         })
+        .register_uri_scheme_protocol(wave_window::SCHEME, |ctx, request| {
+            wave_window::serve(ctx.app_handle(), request.uri().path(), request.body())
+        })
         .setup(|app| {
             logging::init(&format!(
                 "Logix IDE {} ({}), remote config {}",
@@ -125,9 +129,14 @@ pub fn run() {
             if let WindowEvent::Destroyed = event {
                 if diagram_window::is_diagram(window.label()) {
                     diagram_window::forget(window.label());
+                } else if wave_window::is_wave(window.label()) {
+                    wave_window::forget(window.label());
                 } else if window.label() == "main" {
-                    // Diagram windows close with the main window.
-                    for w in diagram_window::windows(window.app_handle()) {
+                    // Diagram and waveform windows close with the main window.
+                    for w in diagram_window::windows(window.app_handle())
+                        .into_iter()
+                        .chain(wave_window::windows(window.app_handle()))
+                    {
                         let _ = w.close();
                     }
                 }
@@ -173,7 +182,6 @@ pub fn run() {
             commands::get_preferences,
             commands::set_preferences,
             commands::choose_folder_dialog,
-            commands::read_gtkwave_layouts,
             commands::format_file,
             commands::get_boards,
             commands::get_fpga_families,

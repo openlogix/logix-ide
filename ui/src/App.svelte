@@ -114,7 +114,6 @@
   import {
     byFile,
     firstLocated,
-    gtkwaveSlowText,
     location,
     outcomeText,
     runningText,
@@ -722,26 +721,7 @@
   }
 
   /** Whether Logix IDE is doing something (the status bar shows a spinner). */
-  /**
-   * After a successful Simulate, while GTKWave starts (a cold start can
-   * take seconds): the "Opening GTKWave…" status and the texts that replace
-   * it when its window appears (`done`) or doesn't within 30 s (`slow`).
-   * Only while that status is still shown: another command's status ends
-   * it.
-   */
-  let gtkwaveWait = $state<{ done: string; slow: string } | null>(null);
-  const OPENING_GTKWAVE = "Opening GTKWave…";
-  const openingGtkwave = $derived(gtkwaveWait !== null && status?.text === OPENING_GTKWAVE);
-
-  function onGtkwaveOpened(found: boolean) {
-    const wait = gtkwaveWait;
-    gtkwaveWait = null;
-    if (!wait || status?.text !== OPENING_GTKWAVE) return;
-    status = { text: found ? wait.done : wait.slow, kind: "ok" };
-  }
-
   const isBusy = $derived(
-    openingGtkwave ||
     activity !== null ||
       running !== null ||
       formatting ||
@@ -1403,7 +1383,6 @@
     fileError = null;
     running = task;
     taskStep = null;
-    let opening: { done: string; slow: string } | null = null;
     status = { text: runningText(task), kind: "info" };
     clearConsole();
     showOutput("command");
@@ -1437,7 +1416,6 @@
       );
       taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
-      if (outcome.layouts) takeLayouts(p, outcome.layouts, false);
       if (task === "test") log("", ...testbenchLines(outcome));
       // The report is always the last build's: a failed or stopped build
       // has none, so the previous one's goes (Upload's report is its
@@ -1489,11 +1467,6 @@
         text: outcomeText(task, outcome),
         kind: outcome.ok ? "ok" : outcome.cancelled ? "info" : "error",
       };
-      // GTKWave starts after the engine returns: "Opening GTKWave…" until
-      // its window appears (after the result goes to the output).
-      if (task === "simulate" && outcome.ok && outcome.testbenches.length > 0) {
-        opening = { done: status.text, slow: gtkwaveSlowText(outcome) };
-      }
       const first =
         outcome.ok || outcome.cancelled
           ? null
@@ -1514,10 +1487,6 @@
       if (project === p) {
         if (askingDriver && status) log(status.text);
         else logDone();
-      }
-      if (opening && project === p) {
-        status = { text: OPENING_GTKWAVE, kind: "info" };
-        gtkwaveWait = opening;
       }
     }
   }
@@ -2074,38 +2043,20 @@
   }
 
   /**
-   * Takes GTKWave layouts the user saved in GTKWave into the project `p`:
-   * a layout is a project file like the sources (the user's decision,
-   * 2026-11-16), so a new or changed one is an edit, saved with the
-   * project. `announce` logs it (a run already did).
+   * The waveform window saved its view (`main_tb.view`): a project file
+   * like the sources (the user's decision, 2026-11-16, for GTKWave's
+   * layouts), so a new or changed one is an edit, saved with the project
+   * (by auto save, or Save Project). Not a tab: only the project in memory
+   * changes.
    */
-  function takeLayouts(p: WorkingProject, layouts: ProjectFile[], announce: boolean) {
-    for (const l of layouts) {
-      const f = findFile(p, l.name);
-      if (f?.text === l.text) continue;
-      // Not a tab: only the project in memory changes.
-      if (f) f.text = l.text;
-      else addFile(p, l.name, l.text);
-      if (announce) log(`Took the layout saved in GTKWave into ${l.name} (not saved yet).`);
-    }
+  function onWaveView(view: { key: string; name: string; text: string }) {
+    const p = project;
+    if (!p || buildKey(p) !== view.key) return;
+    const f = findFile(p, view.name);
+    if (f?.text === view.text) return;
+    if (f) f.text = view.text;
+    else addFile(p, view.name, view.text);
   }
-
-  // GTKWave layouts are saved from GTKWave while Logix IDE is in the
-  // background; take them into the project when the user comes back.
-  $effect(() => {
-    const onFocus = async () => {
-      const p = project;
-      if (!p) return;
-      try {
-        const layouts = await backend.readGtkwaveLayouts(buildKey(p));
-        if (project === p) takeLayouts(p, layouts, true);
-      } catch {
-        // Best effort; the next run takes them too.
-      }
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  });
 
   /** Shows a file at a 1-based line (from a link in the output). */
   function jumpTo(file: string, line: number) {
@@ -2502,7 +2453,8 @@
     const unlisten = [
       backend.onToolOutput((line) => log(line)),
       backend.onLspClosed(onLspClosed),
-      backend.onGtkwaveOpened(onGtkwaveOpened),
+      backend.onWaveView(onWaveView),
+      backend.onWaveOpenSource(onDiagramOpenSource),
       backend.onProjectFilesChanged(onProjectFilesChanged),
       backend.onDiagramOpenSource(onDiagramOpenSource),
       backend.onOpenRecent(openRecent),
@@ -2747,7 +2699,7 @@
       onclick={() => runTask("test")}><Icon name="test" /></button
     >
     <button
-      title="Simulate: run the open testbench and show its signals in GTKWave"
+      title="Simulate: run the open testbench and show its signals"
       class:busy={running === "simulate"}
       disabled={!canRun || !menuState.simulate}
       onclick={() => runTask("simulate")}><Icon name="simulate" /></button

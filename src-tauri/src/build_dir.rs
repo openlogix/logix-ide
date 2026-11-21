@@ -16,9 +16,6 @@ pub const CONSTRAINT_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc"];
 
 /// Records which project the folder was prepared for.
 const KEY_FILE: &str = ".logix-build-key";
-/// The engine puts one of these in the GTKWave layouts (.gtkw) it
-/// generates; files without them were saved by the user from GTKWave.
-const GTKW_AUTO_MARKERS: &[&str] = &["THIS FILE WAS GENERATED AUTOMATICALLY BY LOGIX ENGINE"];
 /// The engine's output folder, kept between builds.
 const OUTPUT_DIR: &str = "_build";
 
@@ -125,45 +122,6 @@ pub fn prepare_single(root: &Path, file: &ProjectFile) -> Result<PathBuf> {
     std::fs::create_dir_all(root).with_context(|| format!("can't create {}", root.display()))?;
     std::fs::write(root.join(&file.name), &file.text)?;
     Ok(root.to_path_buf())
-}
-
-/// Whether `path` is a GTKWave layout (.gtkw) the user saved from GTKWave:
-/// one without the engine's generated-layout marker.
-fn is_user_gtkw(path: &Path) -> bool {
-    let is_gtkw = path
-        .extension()
-        .is_some_and(|e| e.eq_ignore_ascii_case("gtkw"));
-    is_gtkw
-        && path.is_file()
-        && std::fs::read(path).is_ok_and(|text| {
-            let content = String::from_utf8_lossy(&text);
-            !GTKW_AUTO_MARKERS.iter().any(|m| content.contains(m))
-        })
-}
-
-/// The GTKWave layouts (.gtkw) the user saved from GTKWave in the build
-/// folder (those without the engine's generated-layout marker), as project
-/// files: the UI takes them into the project like edits, so a layout is
-/// saved with the project like any other file (the user's decision,
-/// 2026-11-16). Only if `root` was prepared for the project `key`.
-pub fn user_layouts(root: &Path, key: &str) -> Result<Vec<ProjectFile>> {
-    let same_project = std::fs::read_to_string(root.join(KEY_FILE)).is_ok_and(|k| k == key);
-    if !same_project {
-        return Ok(Vec::new());
-    }
-    let mut out = Vec::new();
-    for entry in std::fs::read_dir(root)? {
-        let entry = entry?;
-        if !is_user_gtkw(&entry.path()) {
-            continue;
-        }
-        out.push(ProjectFile {
-            name: entry.file_name().to_string_lossy().into_owned(),
-            text: String::from_utf8_lossy(&std::fs::read(entry.path())?).into_owned(),
-        });
-    }
-    out.sort_by(|a, b| a.name.cmp(&b.name));
-    Ok(out)
 }
 
 #[cfg(test)]
@@ -316,38 +274,6 @@ mod tests {
             files: &no_main,
         };
         assert!(prepare(tmp.path(), &bad_files).is_err());
-    }
-
-    #[test]
-    fn finds_the_gtkwave_layouts_the_user_saved() {
-        let tmp = tempfile::tempdir().unwrap();
-        let root = tmp.path().join("build");
-        let files = [file("main.v", "m")];
-        prepare(
-            &root,
-            &BuildInput {
-                key: "p1",
-                source_dir: None,
-                files: &files,
-            },
-        )
-        .unwrap();
-        // What a simulation and GTKWave leave behind.
-        for (i, marker) in GTKW_AUTO_MARKERS.iter().enumerate() {
-            std::fs::write(
-                root.join(format!("auto{i}_tb.gtkw")),
-                format!("[*] {marker}.\nx\n"),
-            )
-            .unwrap();
-        }
-        std::fs::write(root.join("main_tb.gtkw"), "[*] user layout\n").unwrap();
-
-        // Another project's build folder: none.
-        assert!(user_layouts(&root, "p2").unwrap().is_empty());
-        assert_eq!(
-            user_layouts(&root, "p1").unwrap(),
-            [file("main_tb.gtkw", "[*] user layout\n")]
-        );
     }
 
     #[test]

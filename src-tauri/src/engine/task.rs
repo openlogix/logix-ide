@@ -168,18 +168,6 @@ fn design_files(files: &[String]) -> Vec<String> {
         .collect()
 }
 
-/// The GTKWave layout for a testbench, next to it: `main_tb.v` ->
-/// `main_tb.gtkw`. The engine writes a default one there unless the project
-/// has its own, a project file like the sources (`build_dir::user_layouts`
-/// finds those the user saved from GTKWave).
-fn layout_file(testbench: &str) -> String {
-    let stem = Path::new(testbench)
-        .file_stem()
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| testbench.to_string());
-    format!("{stem}.gtkw")
-}
-
 /// A task that can't start because the project's custom boards file has
 /// problems: they are its diagnostics, marked in the file like build
 /// errors.
@@ -204,7 +192,7 @@ pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOu
         devices: Vec::new(),
         driver_device: None,
         same_ids: None,
-        layouts: Vec::new(),
+        wave_page: None,
     }
 }
 
@@ -222,7 +210,7 @@ fn new_outcome() -> TaskOutcome {
         devices: Vec::new(),
         driver_device: None,
         same_ids: None,
-        layouts: Vec::new(),
+        wave_page: None,
     }
 }
 
@@ -558,8 +546,11 @@ where
         Ok(true)
     }
 
-    /// Simulate: runs one testbench to the end and opens GTKWave on it,
-    /// failing or not (the waveform is how the user finds the problem).
+    /// Simulate: runs one testbench to the end, failing or not (the
+    /// waveform is how the user finds the problem), and keeps the engine's
+    /// waveform viewer page for the waveform window. The engine opens no
+    /// viewer itself; it reads the testbench's view (`main_tb.view`), a
+    /// project file the page saves through the window.
     async fn simulate(&self, input: &TaskInput<'_>, outcome: &mut TaskOutcome) -> Result<bool> {
         let Some(testbench) = input.target else {
             outcome
@@ -579,7 +570,8 @@ where
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
                     "testbench_file": testbench,
-                    "layout_file": layout_file(testbench),
+                    "view_file": crate::wave_window::view_file(testbench),
+                    "open_viewer": false,
                 }),
             )
             .await?;
@@ -589,6 +581,17 @@ where
                 tb["file"] = json!(testbench);
                 self.testbench_result(&tb, outcome);
                 outcome.ok = sim["passed"] == true;
+                let Some(file) = sim["viewer_file"].as_str() else {
+                    anyhow::bail!(
+                        "This Logix Engine has no waveform viewer: update it with Help > Check for Updates."
+                    );
+                };
+                let path = self.build_folder.join(file);
+                outcome.wave_page = Some(
+                    tokio::fs::read_to_string(&path)
+                        .await
+                        .with_context(|| format!("can't read {}", path.display()))?,
+                );
             }
             Err(e) if is_cancelled(&e) => return Ok(false),
             Err(e) => self.failed(outcome, &e),
@@ -1086,7 +1089,7 @@ mod tests {
             devices: Vec::new(),
             driver_device: None,
             same_ids: None,
-            layouts: Vec::new(),
+            wave_page: None,
         };
         let lines = Mutex::new(Vec::new());
         let e = json!({
@@ -1613,12 +1616,6 @@ mod tests {
         assert!(capture(Task::Test, None, blinky, "test.txt").await.ok);
         let diagram = capture(Task::Diagram, None, blinky, "diagram.txt").await;
         std::fs::write(out.join("diagram.html"), diagram.diagram_page.unwrap()).unwrap();
-    }
-
-    #[test]
-    fn layout_next_to_the_testbench() {
-        assert_eq!(layout_file("main_tb.v"), "main_tb.gtkw");
-        assert_eq!(layout_file("uart_tb.sv"), "uart_tb.gtkw");
     }
 
     #[test]
