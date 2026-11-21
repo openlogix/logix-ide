@@ -1830,6 +1830,27 @@ test("settings change the theme and font size", async ({ page }) => {
   expect(fontSize.trim()).toBe("18px");
 });
 
+test("Verilog files show scope lines, which Settings can turn off", async ({ page }) => {
+  await start(page);
+  const markers = page.locator(".cm-content .cm-indent-markers");
+  // blinky's main.v has indented blocks.
+  await expect(markers.first()).toBeVisible();
+  // A pin file has no blocks and gets none.
+  await tab(page, "pinout.pcf").click();
+  await expect(markers).toHaveCount(0);
+  await tab(page, "main.v").first().click();
+  await expect(markers.first()).toBeVisible();
+
+  await menu(page, "settings");
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await dialog.getByLabel("Show scope lines").uncheck();
+  await dialog.getByRole("button", { name: "OK" }).click();
+  await expect(markers).toHaveCount(0);
+  // Other files follow when shown.
+  await tab(page, "main_tb.v").click();
+  await expect(markers).toHaveCount(0);
+});
+
 test("a tab's right-click menu has the commands for its file", async ({ page }) => {
   await start(page);
   await chooseBoard(page);

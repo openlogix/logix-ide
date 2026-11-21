@@ -2980,6 +2980,7 @@
           onChange={onEdit}
           onContextMenu={openEditorMenu}
           {dark}
+          scopeLines={prefs?.scopeLines ?? true}
           {lsp}
           projectDir={project?.dir ?? null}
         />

@@ -43,6 +43,8 @@
   --warning-mark: #e0a100;
   --banner-error-bg: #c62828;
   --banner-error-fg: #ffffff;
+  /* The editor's scope lines (Settings > Show scope lines). */
+  --scope-line: #dde3e5;
   /* Settings > Editor font size. */
   --editor-font-size: 13px;
   color-scheme: light;
@@ -87,6 +89,7 @@
   --status-ok-bg: #173a24;
   --status-ok-fg: #9be3b0;
   --banner-error-bg: #b3261e;
+  --scope-line: #3b414c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -123,6 +126,7 @@
     --status-ok-bg: #173a24;
     --status-ok-fg: #9be3b0;
     --banner-error-bg: #b3261e;
+    --scope-line: #3b414c;
   }
 }
 

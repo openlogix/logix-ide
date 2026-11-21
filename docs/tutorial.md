@@ -281,6 +281,8 @@ The settings are:
   Dark).
 - **Show the output**: when the output area comes back by itself after you
   hide it.
+- **Show scope lines**: faint lines that show where each block of your
+  code starts and ends.
 - **Show lint warnings on Verify**: turn it off to skip the design check.
 - **Check code while typing**: mark syntax errors as you type.
 

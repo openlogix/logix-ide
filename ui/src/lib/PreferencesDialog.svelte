@@ -40,6 +40,8 @@
   let showOutput = $state<ShowOutput>(initial.showOutput);
   // svelte-ignore state_referenced_locally
   let autoSave = $state(initial.autoSave);
+  // svelte-ignore state_referenced_locally
+  let scopeLines = $state(initial.scopeLines);
 
   let error = $state<string | null>(null);
   let saving = $state(false);
@@ -61,6 +63,7 @@
       hoverInfo,
       showOutput,
       autoSave,
+      scopeLines,
     });
     saving = false;
     if (!error) onClose();
@@ -155,6 +158,14 @@
           <option value="onError">Only on errors</option>
           <option value="never">Never automatically</option>
         </select>
+      </div>
+
+      <span></span>
+      <div class="control">
+        <label class="check">
+          <input type="checkbox" bind:checked={scopeLines} />
+          Show scope lines
+        </label>
       </div>
 
       <span></span>

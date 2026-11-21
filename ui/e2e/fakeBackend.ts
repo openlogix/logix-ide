@@ -262,6 +262,7 @@ let preferences: Real.Preferences = {
   hoverInfo: false,
   showOutput: "onCommand",
   autoSave: true,
+  scopeLines: true,
 };
 
 const handlers: {

@@ -45,6 +45,8 @@ pub struct Settings {
     pub show_output: Option<ShowOutput>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub auto_save: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope_lines: Option<bool>,
     /// Unknown settings (e.g. from a newer version) are kept.
     #[serde(flatten)]
     extra: serde_json::Map<String, serde_json::Value>,
@@ -96,6 +98,9 @@ pub struct Preferences {
     /// after typing stops, and when the window loses focus), as in
     /// Arduino IDE 2; on by default (spec/design/ai-side-by-side.md).
     pub auto_save: bool,
+    /// Whether the Verilog editor shows scope lines (a faint line through
+    /// each indented block); on by default.
+    pub scope_lines: bool,
 }
 
 pub const DEFAULT_FONT_SIZE: u32 = 13;
@@ -118,6 +123,7 @@ impl Settings {
             hover_info: self.hover_info.unwrap_or(false),
             show_output: self.show_output.unwrap_or(ShowOutput::OnCommand),
             auto_save: self.auto_save.unwrap_or(true),
+            scope_lines: self.scope_lines.unwrap_or(true),
         }
     }
 
@@ -157,6 +163,7 @@ impl Settings {
         self.show_output =
             (prefs.show_output != ShowOutput::OnCommand).then_some(prefs.show_output);
         self.auto_save = (!prefs.auto_save).then_some(false);
+        self.scope_lines = (!prefs.scope_lines).then_some(false);
         Ok(())
     }
 }
@@ -323,7 +330,7 @@ mod tests {
         );
         assert_eq!((p.live_checking, p.hover_info), (true, false));
         assert_eq!(p.show_output, ShowOutput::OnCommand);
-        assert!(p.auto_save);
+        assert!(p.auto_save && p.scope_lines);
 
         let changed = Preferences {
             // An absolute path on this platform.
@@ -340,6 +347,7 @@ mod tests {
             hover_info: true,
             show_output: ShowOutput::OnError,
             auto_save: false,
+            scope_lines: false,
         };
         s.set_preferences(&changed, default_dir).unwrap();
         assert_eq!(s.preferences(default_dir), changed);

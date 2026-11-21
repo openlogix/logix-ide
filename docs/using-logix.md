@@ -421,6 +421,9 @@ opens this run's folder of logs, to attach to a report (see
 - **Show the output**: when the hidden output comes back by itself: **When
   a command starts** (Verify, Upload, Run Tests or Simulate; the default),
   **Only on errors**, or **Never automatically**.
+- **Show scope lines**: a faint vertical line through each indented block
+  of a Verilog file, so you see where each block starts and ends. On by
+  default.
 - **Save changes automatically**: on by default (see Auto save, above).
   Turn it off to keep changes until you choose **Save Project**.
 - **Show lint warnings on Verify**: turn off to skip the lint step.

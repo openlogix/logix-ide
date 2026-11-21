@@ -35,6 +35,7 @@
   import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
   import { verilog } from "@codemirror/legacy-modes/mode/verilog";
   import { oneDark } from "@codemirror/theme-one-dark";
+  import { indentationMarkers } from "@replit/codemirror-indentation-markers";
   import {
     lintGutter,
     lintKeymap,
@@ -54,6 +55,7 @@
     onChange,
     onContextMenu,
     dark = false,
+    scopeLines = true,
     lsp = null,
     projectDir = null,
   }: {
@@ -62,6 +64,8 @@
     onContextMenu?: () => void;
     /** Dark colors (from the theme in Settings). */
     dark?: boolean;
+    /** Settings > Show scope lines. */
+    scopeLines?: boolean;
     /** The language server client (live errors), once it's running. */
     lsp?: LSPClient | null;
     /** The project folder, for the files' addresses in the language server. */
@@ -74,6 +78,8 @@
   let shown: string | null = null;
 
   const themeSlot = new Compartment();
+  /** The scope lines of Verilog documents (Settings > Show scope lines). */
+  const scopeSlot = new Compartment();
   /** The language server connection of each Verilog document. */
   const lspSlot = new Compartment();
 
@@ -120,6 +126,23 @@
     return /\.(s?v|s?vh)$/i.test(file);
   }
 
+  // Scope lines: a faint vertical line through each indented block, from
+  // the indentation alone, so a syntax error doesn't move them (the user's
+  // design, 2026-11-21, from a preview). No highlight of the cursor's block
+  // (the user's choice: start without it). The package draws each line half
+  // a character into its column; the theme below moves it to the column's
+  // start plus 2 px, under the first letter of the line that opens the block.
+  const scopeLines_ = indentationMarkers({
+    highlightActiveBlock: false,
+    markerType: "fullScope",
+    thickness: 1,
+    colors: { light: "var(--scope-line)", dark: "var(--scope-line)" },
+  });
+
+  function scopeExtension(file: string) {
+    return scopeLines && isVerilog(file) ? scopeLines_ : [];
+  }
+
   // CodeMirror's basicSetup without its fold gutter: the Verilog mode has
   // no folding, so that column was always empty, space right of the line
   // numbers (the user's report, 2026-11-20).
@@ -163,6 +186,7 @@
         // 2026-11-18). Escape, then Tab, still leaves the editor.
         keymap.of([indentWithTab]),
         themeSlot.of(currentTheme()),
+        scopeSlot.of(scopeExtension(file)),
         lspSlot.of(lspExtension(file)),
         EditorView.theme({
           "&": { height: "100%" },
@@ -179,6 +203,8 @@
           ".cm-gutter-lint": { width: "1em" },
           ".cm-gutter-lint .cm-gutterElement": { padding: "0 1px" },
           ".cm-lint-marker": { width: "0.85em", height: "0.85em" },
+          // See scopeLines_: the package's 2px, minus its half character, plus 2px.
+          ".cm-indent-markers::before": { left: "calc(4px - 0.5ch)" },
         }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChange(file, update.state.doc.toString());
@@ -212,7 +238,12 @@
     if (!state) return;
     view.setState(state);
     // The document may have been created under the other color scheme.
-    view.dispatch({ effects: themeSlot.reconfigure(currentTheme()) });
+    view.dispatch({
+      effects: [
+        themeSlot.reconfigure(currentTheme()),
+        scopeSlot.reconfigure(scopeExtension(file)),
+      ],
+    });
     shown = file;
     // The file shown before may have edits the server hasn't seen yet.
     syncLsp();
@@ -392,6 +423,13 @@
   $effect(() => {
     const theme = currentTheme();
     view?.dispatch({ effects: themeSlot.reconfigure(theme) });
+  });
+
+  // Follow Settings > Show scope lines (other documents get it when shown).
+  $effect(() => {
+    void scopeLines;
+    if (view && shown !== null)
+      view.dispatch({ effects: scopeSlot.reconfigure(scopeExtension(shown)) });
   });
 
   onMount(() => {

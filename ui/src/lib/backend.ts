@@ -576,6 +576,8 @@ export interface Preferences {
   showOutput: ShowOutput;
   /** Whether a saved project's changes are saved by themselves. */
   autoSave: boolean;
+  /** Whether the editor shows scope lines in Verilog files. */
+  scopeLines: boolean;
 }
 
 /**
