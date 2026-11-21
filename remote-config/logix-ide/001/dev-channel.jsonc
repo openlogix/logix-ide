@@ -11,6 +11,8 @@
   "dependencies": {
     // Logix Engine, which builds, tests and programs the board, and downloads
     // its own FPGA tools and board catalog (its own remote config).
+    // 2026-11-21: reads the renamed remote config files (assign.jsonc,
+    // <channel>-channel.jsonc, index.jsonc); 2026-11-20 can't, so setup failed.
     // 2026-11-20: the serial tools pass bytes only, as hex (the user's
     // decision; Logix IDE decodes them since logix-ide#31).
     // 2026-11-19: the serial tools, for the Serial Monitor (open_serial,
@@ -21,17 +23,19 @@
     // udev Rule taking effect at once.
     "logix-engine": {
       "repo": "openlogix/logix-engine",
-      "release": "2026-11-20",
+      "release": "2026-11-21",
       "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
     },
 
     // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
     // packed by this repo's pre-release workflow (scripts/pack-examples.py).
+    // 2026-11-21: built with the renamed remote config files (no change to
+    // the examples since 2026-11-20).
     // 2026-11-20: the serial-debug examples (a simple debugger over the
     // serial port), and the serial examples' uart.v in one file.
     "logix-ide-examples": {
       "repo": "openlogix/logix-ide",
-      "release": "2026-11-20",
+      "release": "2026-11-21",
       "file": "logix-ide-examples-${YYYYMMDD}.tgz"
     }
   }
