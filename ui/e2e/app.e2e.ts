@@ -1832,7 +1832,7 @@ test("settings change the theme and font size", async ({ page }) => {
 
 test("Verilog files show scope lines, which Settings can turn off", async ({ page }) => {
   await start(page);
-  const markers = page.locator(".cm-content .cm-indent-markers");
+  const markers = page.locator(".cm-content .cm-scope-lines");
   // blinky's main.v has indented blocks.
   await expect(markers.first()).toBeVisible();
   // A pin file has no blocks and gets none.
