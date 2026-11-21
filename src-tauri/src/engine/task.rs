@@ -1616,6 +1616,9 @@ mod tests {
         assert!(capture(Task::Test, None, blinky, "test.txt").await.ok);
         let diagram = capture(Task::Diagram, None, blinky, "diagram.txt").await;
         std::fs::write(out.join("diagram.html"), diagram.diagram_page.unwrap()).unwrap();
+        // The Waveforms window's page (the docs' waveforms screenshot).
+        let simulated = capture(Task::Simulate, Some("main_tb.v"), blinky, "simulate.txt").await;
+        std::fs::write(out.join("waveforms.html"), simulated.wave_page.unwrap()).unwrap();
     }
 
     #[test]

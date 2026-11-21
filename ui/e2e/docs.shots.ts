@@ -113,6 +113,23 @@ test("diagram", async ({ page }) => {
   await shot(page, "diagram");
 });
 
+test("waveforms", async ({ page }) => {
+  // The Waveforms window shows Logix Engine's waveform viewer, captured for
+  // the blinky testbench (fixtures/waveforms.html), at the window's size:
+  // the testbench's signals, the design's counter and green_on added, and
+  // the cursor on one of the LED's changes.
+  await page.setViewportSize({ width: 1100, height: 640 });
+  await page.goto("/e2e/fixtures/waveforms.html?theme=light");
+  await expect(page.locator(".nrow")).toHaveCount(2);
+  await page.locator(".scope-h", { hasText: "dut" }).click();
+  await page.locator('.var[data-path="main_tb.dut.counter"]').click();
+  await page.locator('.var[data-path="main_tb.dut.green_on"]').click();
+  const box = (await page.locator("#waves").boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.62, box.y + 45);
+  await page.mouse.move(box.x + box.width * 0.62, box.y + 200);
+  await shot(page, "waveforms");
+});
+
 test("settings", async ({ page }) => {
   await startWithBoard(page);
   await menu(page, "settings");

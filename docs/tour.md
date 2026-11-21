@@ -30,7 +30,7 @@ To get it, see [Installing Logix IDE](installing.md).
 | ![Verify](images/icon-verify.png){ .toolbar-icon } | **Verify** | Checks the design and builds it |
 | ![Upload](images/icon-upload.png){ .toolbar-icon } | **Upload** | Builds the design and programs the board |
 | ![Run Tests](images/icon-test.png){ .toolbar-icon } | **Run Tests** | Runs all the project's testbenches |
-| ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals in GTKWave |
+| ![Simulate](images/icon-simulate.png){ .toolbar-icon } | **Simulate** | Shows the signals over time in the Waveforms window |
 | ![Stop](images/icon-stop.png){ .toolbar-icon } | **Stop** | Stops whatever is running |
 | | Board list | Picks your board; the ones you used recently come first |
 | | ⓘ | Shows the board in the Board Explorer: its FPGA, pins and examples |
@@ -94,7 +94,7 @@ uses, and programs the board. If it can't find the board,
 
 A **testbench** drives your design's inputs and checks its outputs, with no
 board needed. The **Run Tests** button ![Run Tests button](images/icon-test.png){ .toolbar-icon } runs them all and shows each result;
-the **Simulate** button ![Simulate button](images/icon-simulate.png){ .toolbar-icon } shows the signals over time in GTKWave. Most examples come with
+the **Simulate** button ![Simulate button](images/icon-simulate.png){ .toolbar-icon } shows the signals over time in the Waveforms window. Most examples come with
 a testbench. More in [Testbenches and simulation](testbenches.md).
 
 ![Run Tests: the testbench's output and its result](images/tests.png)

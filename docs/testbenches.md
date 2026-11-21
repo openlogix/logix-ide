@@ -21,17 +21,37 @@ error, and the line that failed is marked in the editor.
 ## Simulate
 
 The **Simulate** button ![Simulate button](images/icon-simulate.png){ .toolbar-icon } runs the testbench that's open
-(or the project's only one) and shows its signals in **GTKWave**, a waveform
-viewer. The testbench runs to the end even when a check fails, and GTKWave
-opens zoomed in around the first failure, so you can see what led up to it.
+(or the project's only one) and shows its signals in the **Waveforms**
+window. The testbench runs to the end even when a check fails, and the window
+opens zoomed in around the first failure, with the check's message above the
+signals, so you can see what led up to it.
 
-![A testbench's signals in GTKWave: the clock, a counter and the LEDs over time](images/gtkwave.png)
+![A testbench's signals in the Waveforms window: the clock, the LEDs, and the design's counter over time](images/waveforms.png)
 
-To keep how GTKWave shows the signals, save it from GTKWave with
-**File > Write Save File**. When you go back to Logix IDE, the saved layout
-(`main_tb.gtkw` for `main_tb.v`) becomes part of your project, and the next
-simulation uses it. Like any other change, it's kept when you save the
-project. It has no tab: you change it only in GTKWave.
+In the Waveforms window:
+
+- **Zoom** with the mouse wheel or a pinch on the trackpad, around the
+  pointer: zoom out, move the pointer to what you want to see, and zoom in.
+  Drag to move along in time.
+- **Click** to put the cursor there: the **Value** column shows every
+  signal's value at that moment. Near a change, the cursor lands right on
+  it. **Shift+click** puts a marker, to measure the time between the two.
+- **Choose the signals** in the list on the left: tick a signal to show it,
+  open a module to see its signals. Drag rows to reorder them, and add
+  comment rows to group them (a comment row's arrow folds its group).
+- **Right-click** anything for what you can do with it, such as showing a
+  bus's value in decimal, changing a signal's color, or saving the view as
+  an image.
+- **A failed check** is a red flag on the time line. **Previous** and
+  **Next** go from one failure to the next, and clicking a failure's place,
+  such as `main_tb.v:42`, shows that line in the editor.
+- Double-click a signal's name to see where it's declared.
+
+What you choose is kept: the window saves it as the testbench's view
+(`main_tb.view` for `main_tb.v`), part of your project, and the next
+simulation opens the same way. Undo (⌘Z, Ctrl+Z on Windows and Linux) goes
+back step by step. The view has no tab: you change it only in the Waveforms
+window.
 
 ## Writing a testbench
 
@@ -53,7 +73,7 @@ module counter_tb;
     //   if (actual !== expected)
     //     $error("expected %h, got %h", expected, actual);
     // Run Tests stops at the first error; Simulate runs to the end and
-    // shows the signals in GTKWave.
+    // shows the signals in the Waveforms window.
 
     #100;
     $finish;
