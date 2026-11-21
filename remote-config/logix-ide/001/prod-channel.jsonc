@@ -13,7 +13,7 @@
   // installers differ by platform, and nothing downloads it.
   "latest": {
     "repo": "openlogix/logix-ide",
-    "release": "2026-11-17"
+    "release": "2026-11-21"
   },
   "dependencies": {
     // Logix Engine, which builds, tests and programs the board, and downloads
@@ -26,18 +26,24 @@
     // (install_driver and uninstall_driver), the Linux session in
     // operating_system, and the shorter log names Logix IDE 2026-11-17 goes
     // with.
+    // 2026-11-21, a promotion: the serial tools for the Serial Monitor (bytes
+    // as hex, which Logix IDE decodes), a board's resources by type, the
+    // driver and udev texts Logix IDE shows, the new remote config files, and
+    // check_updates' newer_engine.
     "logix-engine": {
       "repo": "openlogix/logix-engine",
-      "release": "2026-11-17",
+      "release": "2026-11-21",
       "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
     },
 
     // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
     // packed by this repo's pre-release workflow (scripts/pack-examples.py).
     // Pinned at the first promotion, 2026-11-13.
+    // 2026-11-21, a promotion: the serial and serial-debug examples, on the
+    // boards with a UART.
     "logix-ide-examples": {
       "repo": "openlogix/logix-ide",
-      "release": "2026-11-12",
+      "release": "2026-11-21",
       "file": "logix-ide-examples-${YYYYMMDD}.tgz"
     }
   }
