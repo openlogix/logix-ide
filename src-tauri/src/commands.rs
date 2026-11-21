@@ -655,7 +655,7 @@ pub async fn run_task(
                 wave_window::show(
                     &app,
                     &key,
-                    &format!("Waveforms · {name} · {testbench}"),
+                    &format!("Logix Waveforms · {name} · {testbench}"),
                     page,
                     names,
                     &testbench,
@@ -690,8 +690,8 @@ pub async fn run_task(
                     &app,
                     &key,
                     &match module.as_deref() {
-                        Some(m) if m != "main" => format!("Diagram · {name} · {m}"),
-                        _ => format!("Diagram · {name}"),
+                        Some(m) if m != "main" => format!("Logix Diagram · {name} · {m}"),
+                        _ => format!("Logix Diagram · {name}"),
                     },
                     page,
                     names,
