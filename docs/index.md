@@ -24,8 +24,8 @@ its first start.
 - **Verify** a design: lint it for common mistakes, build it, and see how much
   of the FPGA it uses and how fast it can run.
 - **Upload** it to your board; Logix IDE shows when it's connected.
-- **Test** it with testbenches, and **simulate** it to see the signals in
-  GTKWave.
+- **Test** it with testbenches, and **simulate** it to see the signals over
+  time.
 - **Learn** from more than 110 examples for over 80 boards.
 - **See** your design as a diagram.
 

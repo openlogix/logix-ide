@@ -147,9 +147,8 @@ Logix IDE follows the Open Logix log layout (Logix Engine's
 `~/.logix/ide/logs/<yyyymmdd>-<hhmmss>-<pid>/` (local time), with
 `ide.log` (versions, errors, and what the output pane showed; the dev
 terminal shows the same `[logix] ...` lines), `ide.engine.log`
-(the engine Logix IDE started), `ide.engine.gtkwave.log` (its
-GTKWave windows) and `ide.verible-verilog-ls.log` (the language
-server). Each run of a program appends after a separator line. Old session
+(the engine Logix IDE started) and `ide.verible-verilog-ls.log` (the
+language server). Each run of a program appends after a separator line. Old session
 folders are deleted by the engine's `clean_logs`. In the app: **Help > Show
 Log Folder** opens this session's folder.
 

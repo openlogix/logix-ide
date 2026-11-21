@@ -124,8 +124,11 @@ with both values.
 - Checks for what the example promises, each with a comment.
 - A comment showing where the user adds their own checks.
 
-## GTKWave layout
+## Waveform view
 
-No `.gtkw` file (the user's decision, 2026-11-10): Simulate opens the
-engine's default layout for the testbench, which the engine may improve
-over time. A layout the user saves from GTKWave is the user's, and stays.
+No `.view` file (the user's decision, 2026-11-10, for GTKWave's `.gtkw`
+layouts then): Simulate opens the waveform viewer's default view for the
+testbench, its own signals in the order it declares them, which the engine
+may improve over time. A view the user changes in the Waveforms window is
+the user's, and stays. So declare the signals worth seeing first in the
+testbench, in a useful order.
