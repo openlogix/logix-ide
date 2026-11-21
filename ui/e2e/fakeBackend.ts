@@ -268,7 +268,8 @@ const handlers: {
   menu?: (id: MenuId) => void;
   output?: (line: string) => void;
   finishSetup?: () => void;
-  gtkwaveOpened?: (found: boolean) => void;
+  waveView?: (view: { key: string; name: string; text: string }) => void;
+  waveOpenSource?: (at: { key: string; file: string; line: number }) => void;
   projectFilesChanged?: (change: { dir: string; names: string[] }) => void;
   diagramOpenSource?: (at: { key: string; file: string; line: number }) => void;
   serial?: (event: Real.SerialEvent) => void;
@@ -311,6 +312,8 @@ const fake = {
   shownFolder: null as string | null,
   /** The window's title state last set (`setDocumentState`). */
   documentState: null as { name: string; dirty: boolean } | null,
+  /** The last task's project (its build key), as the Waveforms window's events name it. */
+  lastRun: null as { key: string } | null,
   /** The text System Info's Copy copied last (`copyText`). */
   copiedText: null as string | null,
   /** The path Copy Project Folder Path copied last (`copyProjectPath`). */
@@ -335,8 +338,6 @@ const fake = {
    * driver that isn't ready makes Upload ask to install WinUSB first.
    */
   uploadDriver: null as RawDriver | null,
-  /** GTKWave layouts the user saved, as `readGtkwaveLayouts` returns them (and the next run, as `layouts`). */
-  gtkwaveLayouts: [] as Real.ProjectFile[],
   /**
    * When set, Logix Engine refuses to install a driver without
    * `allowSameIds`, with this message (other devices with the same USB IDs
@@ -381,8 +382,10 @@ const fake = {
   saves: [] as { files: string[]; removed: string[] }[],
   /** Ends a setup held at the engine's package download (`/?engineSetup`). */
   finishSetup: () => handlers.finishSetup?.(),
-  /** GTKWave's window appeared after Simulate (true), or not in time (false). */
-  gtkwaveOpened: (found: boolean) => handlers.gtkwaveOpened?.(found),
+  /** The Waveforms window saved its view (as the real backend's "wave-view" event). */
+  waveView: (view: { key: string; name: string; text: string }) => handlers.waveView?.(view),
+  /** A source line asked for in the Waveforms window ("wave-open-source"). */
+  waveOpenSource: (at: { key: string; file: string; line: number }) => handlers.waveOpenSource?.(at),
   /** The folder Logix IDE watches (`watchProject`), or null. */
   watchedDir: null as string | null,
   /** Another program changes the watched folder: each file's new text, or null for deleted; a board for logix-ide.toml. */
@@ -749,7 +752,7 @@ export const backend: typeof Real.backend = {
   runTask: async (
     task,
     target,
-    _key,
+    key,
     sourceDir,
     _projectDir,
     files,
@@ -761,6 +764,7 @@ export const backend: typeof Real.backend = {
   ) => {
     fake.taskVariant = variant;
     fake.taskBoardsFolder = sourceDir;
+    fake.lastRun = { key };
     // As the IDE's backend: a file with problems stops the task, its
     // problems in the console at line and column.
     const own = fakeProjectBoards(boardsOnDisk(sourceDir), sourceDir, _projectDir != null);
@@ -783,7 +787,7 @@ export const backend: typeof Real.backend = {
       // The backend shows the engine's page in the Diagram window, which
       // the fake has none of: it records the module the window opens on.
       lines = outputLines(diagramOutput);
-      fake.diagramShown = { key: _key, module: target };
+      fake.diagramShown = { key: key, module: target };
       outcome.report = null;
     }
     // Logix Engine reports each task's phases.
@@ -1038,7 +1042,6 @@ export const backend: typeof Real.backend = {
     fake.copiedPath = dir;
     return `'${dir}'`; // as the real one quotes a path with a space
   },
-  readGtkwaveLayouts: async () => fake.gtkwaveLayouts,
   cancelTask: async () => false,
 
   // No language server in the fake: it never answers, so the UI quietly
@@ -1048,8 +1051,12 @@ export const backend: typeof Real.backend = {
   lspStop: async () => {},
   onLspMessage: unlisten,
   onLspClosed: unlisten,
-  onGtkwaveOpened: async (handler) => {
-    handlers.gtkwaveOpened = handler;
+  onWaveView: async (handler) => {
+    handlers.waveView = handler;
+    return () => {};
+  },
+  onWaveOpenSource: async (handler) => {
+    handlers.waveOpenSource = handler;
     return () => {};
   },
 

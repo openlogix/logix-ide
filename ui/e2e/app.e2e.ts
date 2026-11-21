@@ -193,31 +193,31 @@ test("a new project for a board builds right away", async ({ page }) => {
   await expect(output(page)).toContainText(/Build succeeded in .*\s*Ready\.\s*$/);
 });
 
-// A GTKWave layout saved in GTKWave is a project file like the sources
-// (the user's decision, 2026-11-16): back in Logix IDE, it's an unsaved
-// change, even in a project never saved, but no tab (2026-11-17).
-test("a layout saved in GTKWave becomes an unsaved project file", async ({ page }) => {
+// The Waveforms window's view is a project file like the sources (the
+// user's decision, 2026-11-16, for GTKWave's layouts): when the page saves
+// it, it's an unsaved change, even in a project never saved, but no tab.
+test("a view saved in the Waveforms window becomes an unsaved project file", async ({ page }) => {
   await start(page);
   await chooseBoard(page);
-  await page.evaluate(() => {
-    const f = (window as unknown as { __fake: { gtkwaveLayouts: unknown[] } }).__fake;
-    f.gtkwaveLayouts = [{ name: "main_tb.gtkw", text: "[*] my layout\n" }];
-  });
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(output(page)).toContainText("main_tb.gtkw");
-  await expect(tab(page, "main_tb.gtkw")).toHaveCount(0);
-  // The project is unsaved now (the window's document state).
-  const documentState = () =>
-    page.evaluate(
-      () =>
-        (window as unknown as { __fake: { documentState?: { dirty: boolean } } }).__fake
-          .documentState?.dirty,
-    );
-  await expect.poll(documentState).toBe(true);
-  await expect(output(page)).toContainText("Took the layout saved in GTKWave into main_tb.gtkw (not saved yet).");
-  // The same layout again changes nothing.
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(output(page).getByText("Took the layout saved in GTKWave")).toHaveCount(1);
+  type Fake = {
+    waveView: (v: { key: string; name: string; text: string }) => void;
+    lastRun?: { key: string };
+    documentState?: { dirty: boolean };
+  };
+  await menu(page, "simulate");
+  await expect(status(page)).toContainText("Simulation done");
+  const key = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.lastRun?.key ?? "");
+  await page.evaluate(
+    (key) => (window as unknown as { __fake: Fake }).__fake.waveView({ key, name: "main_tb.view", text: '{"version": 1}\n' }),
+    key,
+  );
+  await expect(tab(page, "main_tb.view")).toHaveCount(0);
+  const dirty = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.documentState?.dirty);
+  await expect.poll(dirty).toBe(true);
+  // Another project's view changes nothing here.
+  await page.evaluate(() =>
+    (window as unknown as { __fake: Fake }).__fake.waveView({ key: "other", name: "x_tb.view", text: "{}" }),
+  );
 });
 
 test("Board Utilization shows the used resources, all on request, and copies them", async ({ page }) => {
@@ -1561,33 +1561,22 @@ test("a project's boards folder, edited outside Logix IDE, adds its own boards",
   await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(0);
 });
 
-test("Simulate says Opening GTKWave… until its window appears", async ({ page }) => {
+test("Simulate shows the signals in the Waveforms window, which opens source lines", async ({ page }) => {
   await start(page);
-  const fake = (found: boolean) =>
-    page.evaluate(
-      (f) => (window as unknown as { __fake: { gtkwaveOpened: (f: boolean) => void } }).__fake.gtkwaveOpened(f),
-      found,
-    );
+  type Fake = {
+    waveOpenSource: (at: { key: string; file: string; line: number }) => void;
+    lastRun?: { key: string };
+  };
   await menu(page, "simulate");
-  // The result goes to the output; the status waits for GTKWave, busy.
-  await expect(status(page)).toHaveText("Opening GTKWave…");
-  await expect(page.locator(".status-bar .spinner")).toBeVisible();
-  await expect(output(page)).toContainText(/Simulation done in [\d.]+ s\. GTKWave shows the signals\./);
-  await fake(true);
-  await expect(status(page)).toHaveText(/^Simulation done in [\d.]+ s\. GTKWave shows the signals\.$/);
+  await expect(status(page)).toHaveText(/^Simulation done in [\d.]+ s\. The Waveforms window shows the signals\.$/);
   await expect(page.locator(".status-bar .spinner")).toHaveCount(0);
-  // Not found within 30 s: it may open behind Logix IDE.
-  await menu(page, "simulate");
-  await expect(status(page)).toHaveText("Opening GTKWave…");
-  await fake(false);
-  await expect(status(page)).toHaveText(/GTKWave is taking a while to start; it may open behind this window\.$/);
-  // Another command's status isn't replaced by a late answer.
-  await menu(page, "simulate");
-  await expect(status(page)).toHaveText("Opening GTKWave…");
-  await menu(page, "verify");
-  await expect(status(page)).toContainText("Build succeeded");
-  await fake(true);
-  await expect(status(page)).toContainText("Build succeeded");
+  // A signal's declaration, asked for in the Waveforms window.
+  const key = await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.lastRun?.key ?? "");
+  await page.evaluate(
+    (key) => (window as unknown as { __fake: Fake }).__fake.waveOpenSource({ key, file: "main_tb.v", line: 3 }),
+    key,
+  );
+  await expect(tab(page, "main_tb.v").first()).toHaveClass(/active/);
 });
 
 test("the Board Explorer shows the board's FPGA and the boards with the same FPGA", async ({ page }) => {

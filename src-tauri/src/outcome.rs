@@ -63,11 +63,10 @@ pub struct TaskOutcome {
     /// For Upload with `confirm_same_ids`: the engine's question, naming
     /// the other devices with the same USB IDs (they'd get WinUSB too).
     pub same_ids: Option<crate::engine::Consent>,
-    /// GTKWave layouts the user saved from GTKWave since the UI last read
-    /// them, which this run used: the UI takes them into the project, as
-    /// edits (`read_gtkwave_layouts`). Omitted when none.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub layouts: Vec<crate::project::ProjectFile>,
+    /// For Simulate: the engine's waveform viewer page. Not sent to the
+    /// UI: the backend shows it in the waveform window.
+    #[serde(skip)]
+    pub wave_page: Option<String>,
 }
 
 /// A device that needs a driver before Upload can program it.

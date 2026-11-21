@@ -124,15 +124,16 @@ export function mainFile(p: WorkingProject): string {
 }
 
 /**
- * Whether a project file is a GTKWave layout (`.gtkw`): held and saved with
- * the project like the sources, but not shown as a tab (the user's
- * decision, 2026-11-17).
+ * Whether a project file is a waveform view (`.view`, which the Waveforms
+ * window saves; GTKWave's `.gtkw` layouts before Milestone 5): held and
+ * saved with the project like the sources, but not shown as a tab (the
+ * user's decision, 2026-11-17).
  */
 export function isLayout(name: string): boolean {
-  return /\.gtkw$/i.test(name);
+  return /\.view$/i.test(name);
 }
 
-/** The files shown as tabs (and in the editor): all but the GTKWave layouts. */
+/** The files shown as tabs (and in the editor): all but the waveform views. */
 export function tabFiles<F extends { name: string }>(files: F[]): F[] {
   return files.filter((f) => !isLayout(f.name));
 }
@@ -254,7 +255,7 @@ module ${module};
     //   if (actual !== expected)
     //     $error("expected %h, got %h", expected, actual);
     // Run Tests stops at the first error; Simulate runs to the end and
-    // shows the signals in GTKWave.
+    // shows the signals in the Waveforms window.
 
     #100;
     $finish;
@@ -269,9 +270,9 @@ export function addFile(p: WorkingProject, name: string, text: string) {
   p.structureChanged = true;
 }
 
-/** A testbench's GTKWave layout (`main_tb.v`: `main_tb.gtkw`); null for other files. */
+/** A testbench's waveform view (`main_tb.v`: `main_tb.view`); null for other files. */
 export function layoutOf(name: string): string | null {
-  return isTestbench(name) ? name.replace(/\.s?v$/i, ".gtkw") : null;
+  return isTestbench(name) ? name.replace(/\.s?v$/i, ".view") : null;
 }
 
 /** The testbench a design file would have (`adder.v`: `adder_tb.v`); null for testbenches and other files. */

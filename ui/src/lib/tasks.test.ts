@@ -113,24 +113,24 @@ describe("test results", () => {
       testbenchLines({ ok: false, diagnostics: [], report: null, cancelled: false, testbenches: benches, seconds: 1, action: null, devices: [], driverDevice: null, sameIds: null }),
     ).toEqual(["✓ main_tb.v passed", "✗ alu_tb.v failed"]);
   });
-  it("mentions GTKWave after simulating", () => {
+  it("names the Waveforms window after simulating", () => {
     expect(
       outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 0.3, action: null, devices: [], driverDevice: null, sameIds: null }),
-    ).toBe("Simulation done in 0.3 s. GTKWave shows the signals.");
+    ).toBe("Simulation done in 0.3 s. The Waveforms window shows the signals.");
   });
-  it("says GTKWave shows a failing testbench too", () => {
+  it("says the Waveforms window shows a failing testbench too", () => {
     const failure = { severity: "error" as const, file: "main_tb.v", line: 52, column: null, message: "Assertion failed" };
     const outcome = { ok: false, diagnostics: [failure], report: null, cancelled: false, seconds: 0.3, action: null, devices: [], driverDevice: null, sameIds: null };
     expect(
       outcomeText("simulate", { ...outcome, testbenches: [{ name: "main_tb.v", passed: false }] }),
-    ).toBe("The testbench failed. GTKWave shows the signals.");
+    ).toBe("The testbench failed. The Waveforms window shows where.");
     // A compile error: nothing was simulated.
     expect(outcomeText("simulate", { ...outcome, testbenches: [] })).toBe("Simulation failed.");
     // An error without a location is shown only here, so it stays.
     const unlocated = { ...failure, file: null, line: null, message: "vvp stopped." };
     expect(
       outcomeText("simulate", { ...outcome, diagnostics: [unlocated], testbenches: [{ name: "main_tb.v", passed: false }] }),
-    ).toBe("The testbench failed (GTKWave shows the signals): vvp stopped.");
+    ).toBe("The testbench failed (the Waveforms window shows where): vvp stopped.");
   });
 });
 

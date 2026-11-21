@@ -74,18 +74,20 @@ pub fn custom_boards_stamp(folder: &Path) -> Option<String> {
 /// and headers, and the pin constraint formats of the supported boards.
 pub const EDITABLE_EXTENSIONS: &[&str] = &["v", "sv", "vh", "svh", "pcf", "lpf", "cst", "xdc"];
 
-/// GTKWave layouts (`.gtkw`: what Simulate shows for a testbench) are
-/// project files like the sources: loaded, held in memory, unsaved when they
-/// change and saved with the project, but not shown as tabs, nor created or
-/// edited in Logix IDE (the user's decision, 2026-11-17).
+/// Waveform views (`.view`: what the waveform viewer shows for a testbench,
+/// in place of GTKWave's `.gtkw` layouts, Milestone 5) are project files
+/// like the sources: loaded, held in memory, unsaved when they change and
+/// saved with the project, but not shown as tabs, nor created or edited in
+/// Logix IDE (the user's decision, 2026-11-17, for layouts). The viewer's
+/// page saves them through its window (`wave_window`).
 pub fn is_layout(name: &str) -> bool {
     Path::new(name)
         .extension()
-        .is_some_and(|e| e.eq_ignore_ascii_case("gtkw"))
+        .is_some_and(|e| e.eq_ignore_ascii_case("view"))
 }
 
 /// Whether a file in the project folder is a project file: a tab's, or a
-/// GTKWave layout.
+/// waveform view.
 pub fn is_project_file(name: &str) -> bool {
     is_editable(name) || is_layout(name)
 }
@@ -1458,11 +1460,12 @@ mod tests {
     #[test]
     fn the_custom_boards_folder_is_not_a_tab() {
         assert!(!is_editable("boards/mine.json"));
-        // GTKWave layouts are project files, but not tabs, and can't be
+        // Waveform views are project files, but not tabs, and can't be
         // created as new files.
-        assert!(is_layout("main_tb.gtkw") && is_project_file("main_tb.gtkw"));
-        assert!(!is_editable("main_tb.gtkw"));
-        assert!(check_new_file_name("main_tb.gtkw", &[]).is_err());
+        assert!(is_layout("main_tb.view") && is_project_file("main_tb.view"));
+        assert!(!is_editable("main_tb.view"));
+        assert!(check_new_file_name("main_tb.view", &[]).is_err());
+        assert!(!is_project_file("main_tb.gtkw"));
         assert!(check_new_file_name("mine.json", &[]).is_err());
         let tmp = tempfile::tempdir().unwrap();
         assert_eq!(custom_boards_folder(tmp.path()), None);

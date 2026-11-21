@@ -67,8 +67,8 @@ describe("workingProject", () => {
   });
 
   it("names a testbench's layout and a design file's testbench", () => {
-    expect(layoutOf("adder_tb.v")).toBe("adder_tb.gtkw");
-    expect(layoutOf("adder_tb.sv")).toBe("adder_tb.gtkw");
+    expect(layoutOf("adder_tb.v")).toBe("adder_tb.view");
+    expect(layoutOf("adder_tb.sv")).toBe("adder_tb.view");
     expect(layoutOf("adder.v")).toBeNull();
     expect(testbenchOf("adder.v")).toBe("adder_tb.v");
     expect(testbenchOf("adder.sv")).toBe("adder_tb.sv");
@@ -80,11 +80,11 @@ describe("workingProject", () => {
   it("renames and deletes a testbench's layout with it", () => {
     const p = fromDoc({
       ...savedDoc,
-      files: [...savedDoc.files, { name: "main_tb.v", text: "t" }, { name: "main_tb.gtkw", text: "g" }],
+      files: [...savedDoc.files, { name: "main_tb.v", text: "t" }, { name: "main_tb.view", text: "g" }],
     });
     renameFile(p, "main_tb.v", "top_tb.v");
-    expect(p.files.map((f) => f.name)).toContain("top_tb.gtkw");
-    expect(p.removed).toEqual(["main_tb.v", "main_tb.gtkw"]);
+    expect(p.files.map((f) => f.name)).toContain("top_tb.view");
+    expect(p.removed).toEqual(["main_tb.v", "main_tb.view"]);
     deleteFile(p, "top_tb.v");
     expect(p.files.map((f) => f.name)).toEqual(["main.v", "pinout.pcf"]);
   });
@@ -95,14 +95,14 @@ describe("workingProject", () => {
       files: [
         ...savedDoc.files,
         { name: "a_tb.v", text: "" },
-        { name: "a_tb.gtkw", text: "a" },
-        { name: "b_tb.gtkw", text: "b" },
+        { name: "a_tb.view", text: "a" },
+        { name: "b_tb.view", text: "b" },
       ],
     });
     renameFile(p, "a_tb.v", "b_tb.v");
     const names = p.files.map((f) => f.name);
-    expect(names).toContain("a_tb.gtkw");
-    expect(p.files.find((f) => f.name === "b_tb.gtkw")?.text).toBe("b");
+    expect(names).toContain("a_tb.view");
+    expect(p.files.find((f) => f.name === "b_tb.view")?.text).toBe("b");
   });
 
   it("saves only the files that changed, and keeps changes made while saving", () => {
