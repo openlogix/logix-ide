@@ -48,15 +48,14 @@ itself.
 - 📚 **Learn from examples**: more than 110 ready-to-run examples for
   over 80 boards, from a blinking LED onwards.
 - 🧪 **Test and simulate** your design with testbenches, and look at its
-  signals in GTKWave, without a board.
+  signals over time in the Waveforms window, without a board.
 - 🔍 **See your design as a diagram** of its modules and signals.
 
 ![The Examples window: pick a board, then an example](docs/images/examples.png)
 
 ![A design drawn as a diagram](docs/images/diagram.png)
 
-![A simulation's signals in GTKWave](docs/images/gtkwave.png)
-<sub>GTKWave screenshot from the [Apio](https://github.com/FPGAwars/apio) project.</sub>
+![A simulation's signals in the Waveforms window](docs/images/waveforms.png)
 
 ## Install Logix IDE
 
@@ -151,7 +150,7 @@ the `.log` files in that folder into your report.
 Logix IDE stands on the shoulders of great open source projects:
 [Apio](https://github.com/FPGAwars/apio) and the
 [FPGAwars](https://fpgawars.github.io/) community, Yosys, nextpnr, Icarus
-Verilog, Verilator, Verible, GTKWave and more. Thank you!
+Verilog, Verilator, Verible and more. Thank you!
 
 ## For developers
 

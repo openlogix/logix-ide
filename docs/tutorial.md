@@ -169,23 +169,24 @@ design still works.
 
 Click **Simulate** ![Simulate button](images/icon-simulate.png){ .toolbar-icon }.
 Logix IDE runs the testbench too, but instead of a pass or fail result it opens
-the design's signals in **GTKWave**, a waveform viewer, in a window of its own.
+the design's signals in the **Waveforms** window.
 
-![GTKWave showing a testbench's signals over time: the clock, the counter and the LEDs](images/gtkwave.png)
+![The Waveforms window showing a testbench's signals over time: the clock, the LEDs, and the design's counter](images/waveforms.png)
 
 Try it:
 
-- **Read the waves:** each row on the right is one signal over time, from
-  left to right: the clock ticking, the counter counting up, and the LED
-  turning on and off as the counter's top bit changes.
-- **Zoom** with the zoom buttons in GTKWave's toolbar, to see single clock
-  cycles or the whole simulation.
-- **Add a signal:** select the testbench in the tree at the top left, select a
-  signal in the list below it, and click **Append**.
-- **Keep your view:** choose **File > Write Save File** in GTKWave, and the
-  next simulation opens the same way.
+- **Read the waves:** each row is one signal over time, from left to right:
+  the clock ticking and the LEDs changing.
+- **Zoom** with the mouse wheel or a pinch on the trackpad, around the
+  pointer, to see single clock cycles or the whole simulation.
+- **Click** on the waves to put the cursor there: the **Value** column shows
+  every signal's value at that moment.
+- **Add a signal:** open **dut** (the design) in the list on the left and
+  tick **counter**: the counter counting up, and **green_on** following its
+  top bit.
 
-Close GTKWave when you're done.
+The window keeps what you chose: the next simulation opens the same way.
+Close it when you're done.
 
 [Testbenches and simulation](testbenches.md) explains both.
 
