@@ -358,7 +358,15 @@ pub fn save(
     if !dir.is_dir() {
         bail!("The project folder {} no longer exists.", dir.display());
     }
-    check_files(files)?;
+    // A save into the project's folder sends only the files that changed
+    // (auto save, 2026-11-20), so the main file may be unchanged, on disk:
+    // a save of only the testbench or its waveform view failed with "The
+    // project has no main.v or main.sv." (the user's report, 2026-11-21).
+    check_file_names(files)?;
+    let main_sent = files.iter().any(|f| MAIN_FILES.contains(&f.name.as_str()));
+    if !main_sent && !MAIN_FILES.iter().any(|m| dir.join(m).is_file()) {
+        bail!("The project has no main.v or main.sv.");
+    }
     for name in removed {
         check_plain_name(name).map_err(anyhow::Error::msg)?;
         if MAIN_FILES.contains(&name.as_str()) || files.iter().any(|f| &f.name == name) {
@@ -626,11 +634,17 @@ pub(crate) fn check_plain_file_name(name: &str) -> Result<()> {
     check_plain_name(name).map_err(anyhow::Error::msg)
 }
 
-/// Validates the files sent by the UI before writing anything.
+/// Validates the files sent by the UI before writing anything: all of a
+/// project's files, so its main file is among them.
 pub(crate) fn check_files(files: &[ProjectFile]) -> Result<()> {
     if !files.iter().any(|f| MAIN_FILES.contains(&f.name.as_str())) {
         bail!("The project has no main.v or main.sv.");
     }
+    check_file_names(files)
+}
+
+/// Validates the names of files sent by the UI: plain names, each once.
+fn check_file_names(files: &[ProjectFile]) -> Result<()> {
     for (i, f) in files.iter().enumerate() {
         check_plain_name(&f.name).map_err(anyhow::Error::msg)?;
         if files[..i]
@@ -960,8 +974,10 @@ mod tests {
             None,
         );
         assert!(err.is_err());
+        // Without main.v, sent or on disk: no project.
+        let empty = tempfile::tempdir().unwrap();
         assert!(save(
-            tmp.path(),
+            empty.path(),
             &[file("other.v", "x")],
             &[],
             None,
@@ -969,6 +985,31 @@ mod tests {
             None
         )
         .is_err());
+    }
+
+    #[test]
+    fn save_writes_only_the_changed_files_with_main_on_disk() {
+        // Auto save sends only what changed: here a testbench's waveform
+        // view, with main.v unchanged on disk.
+        let tmp = tempfile::tempdir().unwrap();
+        write(tmp.path(), "main.v", "m");
+        save(
+            tmp.path(),
+            &[file("main_tb.view", "{}")],
+            &[],
+            None,
+            NO_VARIANT,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            std::fs::read_to_string(tmp.path().join("main.v")).unwrap(),
+            "m"
+        );
+        assert_eq!(
+            std::fs::read_to_string(tmp.path().join("main_tb.view")).unwrap(),
+            "{}"
+        );
     }
 
     #[test]
