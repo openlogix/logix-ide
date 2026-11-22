@@ -126,9 +126,17 @@ with both values.
 
 ## Waveform view
 
-No `.view` file (the user's decision, 2026-11-10, for GTKWave's `.gtkw`
-layouts then): Simulate opens the waveform viewer's default view for the
-testbench, its own signals in the order it declares them, which the engine
-may improve over time. A view the user changes in the Waveforms window is
-the user's, and stays. So declare the signals worth seeing first in the
-testbench, in a useful order.
+Most examples have no `.view` file (the user's decision, 2026-11-10, for
+GTKWave's `.gtkw` layouts then): Simulate opens the waveform viewer's
+default view for the testbench, its own signals in the order it declares
+them, which the engine may improve over time. So declare the signals worth
+seeing first in the testbench, in a useful order. A view the user changes
+in the Waveforms window is the user's, and stays.
+
+`serial` and `serial-debug` have a view for each testbench (the user's
+decision, 2026-11-22: their signals are many, and a beginner learns more
+from them grouped by what the design does): `<testbench>.view`, the
+viewer's JSON, `{"version": 1, "rows": [...]}` with only rows (signals by
+full path, with `show_as` and `color`, and groups), so it opens on the
+whole run. Characters show as `ascii`, counts as `dec`. Their example files
+say how each is made.

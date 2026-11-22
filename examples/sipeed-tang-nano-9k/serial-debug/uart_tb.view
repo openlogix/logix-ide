@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "rows": [
+    {
+      "signal": "uart_tb.clk",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "group": "Sending"
+    },
+    {
+      "signal": "uart_tb.tx_valid",
+      "show_as": "bin",
+      "color": 4
+    },
+    {
+      "signal": "uart_tb.tx_data",
+      "show_as": "ascii",
+      "color": 4
+    },
+    {
+      "signal": "uart_tb.tx_ready",
+      "show_as": "bin",
+      "color": 4
+    },
+    {
+      "signal": "uart_tb.tx",
+      "show_as": "bin",
+      "color": 2
+    },
+    {
+      "group": "Receiving"
+    },
+    {
+      "signal": "uart_tb.rx",
+      "show_as": "bin",
+      "color": 2
+    },
+    {
+      "signal": "uart_tb.rx_valid",
+      "show_as": "bin",
+      "color": 3
+    },
+    {
+      "signal": "uart_tb.rx_data",
+      "show_as": "ascii",
+      "color": 3
+    },
+    {
+      "signal": "uart_tb.rx_error",
+      "show_as": "bin",
+      "color": 3
+    }
+  ]
+}

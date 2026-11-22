@@ -27,7 +27,9 @@ unchanged:
 - `uart.v` and `uart_tb.v` from [`serial/`](serial/) (the UART, shared with
   `serial`, so both examples have the same one);
 - `debug.v` and its testbench `debug_tb.v`, from
-  [`serial-debug/`](serial-debug/). Users wire one module, `debug`, to the
+  [`serial-debug/`](serial-debug/).
+- the views `uart_tb.view` from `serial/` and `debug_tb.view` from
+  `serial-debug/` (COMMON.md, Waveform view). Users wire one module, `debug`, to the
   serial pins: it holds the UART (`uart_tx`, `uart_rx`) and its parts,
   `debug_print` and `debug_input`, inside, so a design needs one instance
   and no UART wiring of its own (the user's choice, 2026-11-19). One per
@@ -38,7 +40,7 @@ They're the reusable parts: users copy them into their own projects. Never
 edit them for one board; a change goes into its folder here and then into
 every board's example (for `uart.v`, both examples).
 
-`main.v` and `main_tb.v` follow the reference in
+`main.v`, `main_tb.v` and `main_tb.view` follow the reference in
 [`serial-debug/reference/`](serial-debug/reference/), the Alhambra II's:
 the same text, names, sections and comments on every board, changed only
 where Per board, below, says. A change to the example is made in the
@@ -81,6 +83,10 @@ and Enter prints 0x004D at once, shown on the LEDs; then it counts on to
 0x004E.
 
 ## Per board
+
+`main_tb.view`: as in `serial` (its Per board), the LED row names the
+testbench's LED wire, and without a LED resource the LEDs group is left
+out.
 
 What changes from the reference, and nothing else (the reference's values
 in parentheses):

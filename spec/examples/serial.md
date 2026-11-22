@@ -29,7 +29,10 @@ gets one file, not two; the user's choice, 2026-11-19) and its testbench
 projects. Never edit them for one board; a change goes into `serial/` and
 then into every board's example.
 
-`main.v` and `main_tb.v` follow the reference in
+The view `uart_tb.view` (COMMON.md, Waveform view) is copied unchanged
+from `serial/` too.
+
+`main.v`, `main_tb.v` and `main_tb.view` follow the reference in
 [`serial/reference/`](serial/reference/), the Alhambra II's: the same text,
 names, sections and comments on every board, changed only where Per board,
 below, says. So every board's example reads the same, and a change to the
@@ -103,6 +106,10 @@ It checks:
 - the next greeting, with nothing typed since, has no new line first.
 
 ## Per board
+
+`main_tb.view` is the reference's with its LED row (`main_tb.leds`) naming
+the testbench's LED wire (`leds` or `led`); without a LED resource, the
+LEDs group and everything under it are left out.
 
 What changes from the reference, and nothing else (the reference's values
 in parentheses):

@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "rows": [
+    {
+      "signal": "main_tb.sys_clk",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "group": "Serial lines"
+    },
+    {
+      "signal": "main_tb.uart_rx",
+      "show_as": "bin",
+      "color": 2
+    },
+    {
+      "signal": "main_tb.uart_tx",
+      "show_as": "bin",
+      "color": 2
+    },
+    {
+      "group": "Counter"
+    },
+    {
+      "signal": "main_tb.dut.tick",
+      "show_as": "bin",
+      "color": 5
+    },
+    {
+      "signal": "main_tb.dut.count",
+      "show_as": "hex",
+      "color": 5
+    },
+    {
+      "group": "Debug"
+    },
+    {
+      "signal": "main_tb.dut.print",
+      "show_as": "bin",
+      "color": 4
+    },
+    {
+      "signal": "main_tb.dut.dbg.printer.busy",
+      "show_as": "bin",
+      "color": 4
+    },
+    {
+      "signal": "main_tb.dut.got_value",
+      "show_as": "bin",
+      "color": 3
+    },
+    {
+      "signal": "main_tb.dut.new_value",
+      "show_as": "hex",
+      "color": 3
+    }
+  ]
+}
