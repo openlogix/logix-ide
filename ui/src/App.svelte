@@ -918,6 +918,12 @@
    * at the end. Logix IDE also checks on its own every 24 hours, before an
    * operation; this checks now.
    */
+  /**
+   * What Check for Updates downloads now, and its percentage, for the
+   * status bar (as setup's: the user's report, 2026-11-22).
+   */
+  let updateStep = $state<{ message: string; percent: number | null } | null>(null);
+
   async function checkForUpdates() {
     if (!ready) {
       fileError = "The FPGA tools aren't ready yet.";
@@ -926,7 +932,11 @@
     showOutput("command");
     log("Checking for updates…");
     try {
-      const changes = await during("Checking for updates…", () => backend.checkForUpdates());
+      const changes = await during("Checking for updates…", () =>
+        backend.checkForUpdates((e) => {
+          if (e.kind === "progress") updateStep = { message: e.message, percent: e.percent ?? null };
+        }),
+      );
       // The last line is the status, which finish() writes too (in green):
       // the others go to the output here, so none shows twice.
       log(...changes.slice(0, -1));
@@ -934,6 +944,7 @@
     } catch (e) {
       commandFailed(e);
     } finally {
+      updateStep = null;
       systemInfoRefresh++;
     }
   }
@@ -3132,6 +3143,17 @@
           {#if taskStep.percent != null}
             <progress value={taskStep.percent / 100} max="1"></progress>
           {/if}
+        {:else if updateStep && activity}
+          <!-- Check for Updates: what downloads, as setup shows it. -->
+          <span class="setup-detail"
+            >{updateStep.message}{updateStep.percent != null
+              ? ` ${updateStep.percent}%`
+              : ""}</span
+          >
+          <progress
+            value={updateStep.percent != null ? updateStep.percent / 100 : undefined}
+            max="1"
+          ></progress>
         {:else if settingUp && !activity && !running}
           {#if setupDetail}
             <span class="setup-detail">{setupDetail}</span>

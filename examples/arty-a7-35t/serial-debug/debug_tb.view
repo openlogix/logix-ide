@@ -17,7 +17,7 @@
     {
       "signal": "debug_tb.uart_tx",
       "show_as": "bin",
-      "color": 2
+      "color": 3
     },
     {
       "group": "Printing"
@@ -30,12 +30,12 @@
     {
       "signal": "debug_tb.value",
       "show_as": "hex",
-      "color": 4
+      "color": 5
     },
     {
       "signal": "debug_tb.dut.printer.busy",
       "show_as": "bin",
-      "color": 4
+      "color": 6
     },
     {
       "group": "Typing"
@@ -43,12 +43,12 @@
     {
       "signal": "debug_tb.typed",
       "show_as": "bin",
-      "color": 3
+      "color": 1
     },
     {
       "signal": "debug_tb.typed_value",
       "show_as": "hex",
-      "color": 3
+      "color": 2
     }
   ]
 }

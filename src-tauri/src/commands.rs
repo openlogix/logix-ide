@@ -129,14 +129,19 @@ async fn clean_logs(engine: &engine::Engine) {
 pub async fn check_for_updates(
     app: AppHandle,
     state: State<'_, AppState>,
+    on_progress: Channel<outcome::TaskEvent>,
 ) -> Result<Vec<String>, UserError> {
+    // What downloads, with its percentage, for the status bar.
+    let progress = move |message: String, percent: Option<u32>| {
+        let _ = on_progress.send(outcome::TaskEvent::Progress { message, percent });
+    };
     let _running = state.task.lock().await;
     let log = console_log(&app);
     let mut slot = state.engine.lock().await;
     if slot.is_none() {
         return Err(anyhow!("The FPGA tools aren't ready yet.").into());
     }
-    let updated = engine::update_if_due(&log, true).await?;
+    let updated = engine::update_if_due(&log, true, &progress).await?;
     if updated.engine {
         *slot = None;
         let (started, _) = engine::start_engine(|_| {})
@@ -151,7 +156,7 @@ pub async fn check_for_updates(
     let mut changes = updated.lines;
     let running = slot.clone().expect("set above");
     drop(slot);
-    changes.extend(engine::check_for_updates(&running, log.clone()).await?);
+    changes.extend(engine::check_for_updates(&running, log.clone(), progress).await?);
     changes.extend(engine::newer_ide_lines(log).await);
     if changes.is_empty() {
         changes.push("Everything is up to date.".into());
@@ -356,7 +361,7 @@ async fn engine_with_check(
         return Err(anyhow!("The FPGA tools aren't ready yet.").into());
     };
     let updated = match log {
-        Some(log) => match engine::update_if_due(log, false).await {
+        Some(log) => match engine::update_if_due(log, false, &|_, _| {}).await {
             Ok(u) => u.engine,
             Err(e) => {
                 crate::log!("Checking for updates failed: {e:#}");

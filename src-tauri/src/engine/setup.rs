@@ -300,7 +300,11 @@ pub struct Updated {
 /// engine (`LOGIX_DEV_ENGINE_BINARY`) is never replaced. Without `force`, a
 /// config that can't be read (such as offline) isn't an error: what's in
 /// place stays, and the next check waits an hour.
-pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> Result<Updated> {
+pub async fn update_if_due(
+    log: impl Fn(String) + Send + Sync,
+    force: bool,
+    progress: &(dyn Fn(String, Option<u32>) + Send + Sync),
+) -> Result<Updated> {
     let dev = dev_engine_binary(std::env::var_os(DEV_ENGINE_VARIABLE))?;
     let platform = platform::current_implemented()?;
     let source = ConfigSource::from_env()?;
@@ -335,6 +339,13 @@ pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> R
         Some(exe) => EngineInUse::Local(exe),
         None => {
             let dep = config.engine().clone();
+            // Its progress, for Check for Updates' status bar (one
+            // percentage for the download and the unpacking).
+            let message = format!(
+                "Downloading {} {}",
+                DependencyKind::engine(platform).name,
+                crate::version::shown(&dep.release)
+            );
             let line = download_dependency(
                 platform,
                 &layout,
@@ -342,7 +353,10 @@ pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> R
                 &DependencyKind::engine(platform),
                 &layout.bin_dir(&dep.release),
                 &log,
-                &no_progress,
+                &|p| match p {
+                    DownloadProgress::Started => progress(message.clone(), None),
+                    DownloadProgress::Percent(percent) => progress(message.clone(), percent),
+                },
             )
             .await?;
             // The engine still running is of an earlier release: on Windows
@@ -415,14 +429,19 @@ fn newer_lines(latest: Option<&remote_config::Entry>, own: &str) -> Vec<String> 
 pub async fn check_for_updates(
     engine: &Engine,
     log: impl Fn(String) + Send + Sync + 'static,
+    progress: impl Fn(String, Option<u32>) + Send + Sync + 'static,
 ) -> Result<Vec<String>> {
     let log = std::sync::Arc::new(log);
     let sink = {
         let log = log.clone();
-        phase_sink(move |message, _percent, new_phase| {
+        // Each package's phase as a console line, and its percentage for
+        // the status bar, as setup shows them (the user's report,
+        // 2026-11-22: only a spinner showed while logix-core downloaded).
+        phase_sink(move |message, percent, new_phase| {
             if new_phase {
                 log(format!("{message}..."));
             }
+            progress(message.to_string(), percent);
         })
     };
     let out = engine
@@ -844,7 +863,9 @@ mod tests {
             super::super::in_use().map(|u| u.engine),
             Some(EngineInUse::Release(_))
         ));
-        let again = update_if_due(|l| println!("{l}"), true).await.unwrap();
+        let again = update_if_due(|l| println!("{l}"), true, &|_, _| {})
+            .await
+            .unwrap();
         assert!(!again.engine && again.lines.is_empty(), "{again:?}");
     }
 
