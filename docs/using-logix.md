@@ -201,8 +201,9 @@ The **Verify** button ![Verify button](images/icon-verify.png){ .toolbar-icon }:
 The **Upload** button ![Upload button](images/icon-upload.png){ .toolbar-icon } builds the design, shows the same summary, and
 programs the board. If several connected devices could be the board (for
 example two of the same board), Upload asks which one to use. (On Windows,
-some boards need the WinUSB driver first: Upload offers to install it. See
-[Drivers on Windows](#drivers-on-windows).)
+some boards need the WinUSB driver first, and on Linux a udev rule: Upload
+offers to add it. See [Drivers on Windows](#drivers-on-windows) and
+[udev rules on Linux](#udev-rules-on-linux).)
 
 Both use the files as they are in the editor, saved or not. The **Stop**
 button ![Stop button](images/icon-stop.png){ .toolbar-icon } stops a build or upload that takes too long.
@@ -328,6 +329,8 @@ pane) opens the board's serial port by itself: Logix IDE knows from the
 board's data which port it is, even when the computer lists several for
 the board (such as the two channels of an FTDI chip). What the board sends
 shows as it arrives.
+
+![The Serial Monitor with the serial example's greeting](images/serial-monitor.png)
 
 - **Type** a message and press ++enter++ to send it. **Enter sends** says
   what's added at the end (a newline by default). With **Send each key**,

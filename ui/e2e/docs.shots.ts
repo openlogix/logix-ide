@@ -150,6 +150,12 @@ test("connected devices", async ({ page }) => {
 
 test("serial monitor", async ({ page }) => {
   await startWithBoard(page);
+  // The serial example, whose greeting the monitor shows below.
+  await menu(page, "examples");
+  const examples = page.getByRole("dialog", { name: "Examples" });
+  await examples.getByRole("button", { name: /^serial(?!-debug)/ }).click();
+  await examples.getByRole("button", { name: "New Project" }).click();
+  await expect(page.locator(".tab", { hasText: "uart.v" })).toBeVisible();
   await menu(page, "serial-monitor");
   const monitor = page.getByRole("log", { name: "Serial Monitor output" });
   await expect(monitor).toContainText("Opened");
