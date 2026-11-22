@@ -11,6 +11,7 @@ mod menu;
 mod newer;
 mod outcome;
 mod package;
+mod page_host;
 mod platform;
 mod project;
 mod remote_config;
@@ -87,8 +88,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .menu(menu::build)
-        .register_uri_scheme_protocol(diagram_window::SCHEME, |_ctx, request| {
-            diagram_window::serve(request.uri().path())
+        .register_uri_scheme_protocol(diagram_window::SCHEME, |ctx, request| {
+            diagram_window::serve(ctx.app_handle(), request.uri().path(), request.body())
         })
         .register_uri_scheme_protocol(wave_window::SCHEME, |ctx, request| {
             wave_window::serve(ctx.app_handle(), request.uri().path(), request.body())

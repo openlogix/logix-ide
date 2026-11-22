@@ -6,11 +6,14 @@
 //! The page is the engine's, as is: self-contained, with every module,
 //! drill-down, pan, zoom and hover. Logix IDE keeps it in memory and serves
 //! it on the `logix-diagram` scheme (the build folder is cleared before
-//! each task, so the file doesn't last). The page gets no Tauri access:
-//! double-clicking a block calls `window.logixDiagramOpenSource(file, line)`,
-//! which this window defines as a navigation to `logix-open-source:`; the
-//! navigation is cancelled here and becomes a `diagram-open-source` event
-//! to the main window, only for a file of the project.
+//! each task, so the file doesn't last). The page gets no Tauri access: it
+//! asks through the page contract, `window.logixHost` (`page_host.rs`,
+//! shared with the Waveforms window), which `serve` answers: a block's
+//! source line (`openSource`) becomes a `diagram-open-source` event to the
+//! main window, only for a file of the project, and Export's images
+//! (`saveAs`) go through a save dialog. Until 2026-11-22 a click navigated
+//! to a `logix-open-source:` address that this window cancelled, and Export
+//! couldn't save.
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -19,18 +22,12 @@ use std::sync::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
+use crate::page_host::{self, Call, Request};
+
 /// The scheme the pages are served on.
 pub const SCHEME: &str = "logix-diagram";
-/// The scheme a click on a block navigates to.
-const OPEN_SOURCE: &str = "logix-open-source";
 /// Window labels start with this.
 const LABEL_PREFIX: &str = "diagram-";
-
-/// Defines the engine page's hook for clicks on blocks (see the engine's
-/// tool API, diagram tool, Showing the diagram).
-const INIT_SCRIPT: &str = "window.logixDiagramOpenSource = function (file, line) {\
-    location.href = 'logix-open-source://open/?file=' + encodeURIComponent(file) + '&line=' + encodeURIComponent(line);\
-};";
 
 /// A window's page and what it may open.
 struct Page {
@@ -85,23 +82,6 @@ pub struct OpenSource {
     pub line: u32,
 }
 
-/// A click's file and line, if the file is one of the project's.
-fn open_source_request(url: &tauri::Url, files: &[String]) -> Option<(String, u32)> {
-    let mut file = None;
-    let mut line = None;
-    for (k, v) in url.query_pairs() {
-        match k.as_ref() {
-            "file" => file = Some(v.into_owned()),
-            "line" => line = v.parse::<u32>().ok(),
-            _ => {}
-        }
-    }
-    let file = file?;
-    files
-        .contains(&file)
-        .then_some((file, line.unwrap_or(1).max(1)))
-}
-
 /// Shows the project's diagram: opens its window, or updates the open one.
 /// `module` is the module the diagram starts at (None: the top module); a
 /// diagram from the same module reloads in place, staying on the module it
@@ -143,68 +123,72 @@ pub fn show(
         }
         return Ok(());
     }
-    let handle = app.clone();
-    let for_navigation = label.clone();
     let url = page_url(&label).parse().expect("a valid URL");
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::CustomProtocol(url))
         .title(title)
         .inner_size(1000.0, 700.0)
         .min_inner_size(480.0, 320.0)
-        .initialization_script(INIT_SCRIPT)
-        .on_navigation(move |url| {
-            if url.scheme() != OPEN_SOURCE {
-                return url.scheme() == SCHEME
-                    || url.host_str() == Some(&format!("{SCHEME}.localhost"));
-            }
-            let request = PAGES
-                .lock()
-                .unwrap()
-                .as_ref()
-                .and_then(|p| p.get(&for_navigation))
-                .and_then(|page| {
-                    open_source_request(url, &page.files).map(|(file, line)| OpenSource {
-                        key: page.key.clone(),
-                        file,
-                        line,
-                    })
-                });
-            match request {
-                Some(r) => {
-                    crate::log!("Diagram: open {}:{}", r.file, r.line);
-                    if let Some(main) = handle.get_webview_window("main") {
-                        let _ = main.emit("diagram-open-source", r);
-                        let _ = main.set_focus();
-                    }
-                }
-                None => crate::log!("Diagram: ignored a request to open {url}"),
-            }
-            false
+        .initialization_script(page_host::SCRIPT)
+        .on_navigation(|url| {
+            url.scheme() == SCHEME || url.host_str() == Some(&format!("{SCHEME}.localhost"))
         })
         .build()?;
     crate::commands::apply_stored_window_preferences(&window);
     Ok(())
 }
 
-/// The scheme's handler: the page of the window the address names.
-pub fn serve(path: &str) -> tauri::http::Response<Vec<u8>> {
-    let label = path
-        .trim_start_matches('/')
-        .split(['/', '?', '#'])
-        .next()
-        .unwrap_or("");
-    let html = PAGES
+/// A window's page, by its label.
+fn page_html(label: &str) -> Option<String> {
+    PAGES
         .lock()
         .unwrap()
         .as_ref()
-        .and_then(|p| p.get(label).map(|page| page.html.clone()));
-    let builder = tauri::http::Response::builder();
-    match html {
-        Some(h) => builder
-            .header("Content-Type", "text/html; charset=utf-8")
-            .body(h.into_bytes()),
-        None => builder.status(404).body(b"No diagram.".to_vec()),
+        .and_then(|p| p.get(label).map(|page| page.html.clone()))
+}
+
+/// The scheme's handler: a window's page (GET), or what its page asks
+/// through `window.logixHost` (POST to `/<label>/<call>`, `page_host.rs`).
+pub fn serve(app: &AppHandle, path: &str, body: &[u8]) -> tauri::http::Response<Vec<u8>> {
+    let (label, what) = match page_host::request(path) {
+        Request::Page(label) => {
+            return match page_html(label) {
+                Some(h) => page_host::respond(200, h.into_bytes()),
+                None => page_host::respond(404, b"No diagram.".to_vec()),
+            };
+        }
+        Request::Call(label, what) => (label, what),
+    };
+    let page = PAGES
+        .lock()
+        .unwrap()
+        .as_ref()
+        .and_then(|p| p.get(label))
+        .map(|p| (p.key.clone(), p.files.clone()));
+    let Some((key, files)) = page else {
+        return page_host::respond(404, Vec::new());
+    };
+    match page_host::call(what, body) {
+        Ok(Call::OpenSource { file, line }) if files.contains(&file) => {
+            crate::log!("Diagram: open {file}:{line}");
+            if let Some(main) = app.get_webview_window("main") {
+                let _ = main.emit("diagram-open-source", OpenSource { key, file, line });
+                let _ = main.set_focus();
+            }
+        }
+        Ok(Call::OpenSource { .. }) => {
+            crate::log!("Diagram: ignored a request to open a file outside the project")
+        }
+        Ok(Call::SaveAs { name, mime, data }) => {
+            page_host::save_as(app, label, "Diagram", &name, &mime, &data)
+        }
+        Ok(Call::OpenUrl(url)) => page_host::open_url("Diagram", &url),
+        // The engine declares no file for the diagram page.
+        Ok(Call::WriteDeclared { id, .. }) => {
+            crate::log!("Diagram: ignored a write of {id:?}, which isn't declared")
+        }
+        Err(e) => crate::log!("Diagram: ignored a request: {e}"),
     }
-    .expect("a valid response")
+    page_host::respond(204, Vec::new())
 }
 
 /// Every open Diagram window.
@@ -244,29 +228,6 @@ mod tests {
     }
 
     #[test]
-    fn only_project_files_are_opened() {
-        let files = vec!["main.v".to_string(), "uart.v".to_string()];
-        let url =
-            |q: &str| -> tauri::Url { format!("logix-open-source://open/?{q}").parse().unwrap() };
-        assert_eq!(
-            open_source_request(&url("file=uart.v&line=12"), &files),
-            Some(("uart.v".into(), 12))
-        );
-        assert_eq!(
-            open_source_request(&url("file=main.v"), &files),
-            Some(("main.v".into(), 1))
-        );
-        for bad in [
-            "file=..%2Fsecret.v&line=1",
-            "file=%2Fetc%2Fpasswd",
-            "line=3",
-            "file=other.v",
-        ] {
-            assert_eq!(open_source_request(&url(bad), &files), None, "{bad}");
-        }
-    }
-
-    #[test]
     fn pages_are_served_by_window() {
         PAGES
             .lock()
@@ -282,12 +243,13 @@ mod tests {
                 },
             );
         assert_eq!(module_of("diagram-test"), Some("alu".into()));
-        let r = serve("/diagram-test");
-        assert_eq!(r.status(), 200);
-        assert_eq!(r.body(), b"<html>ok</html>");
-        assert_eq!(serve("/diagram-none").status(), 404);
+        assert_eq!(
+            page_html("diagram-test").as_deref(),
+            Some("<html>ok</html>")
+        );
+        assert_eq!(page_html("diagram-none"), None);
         forget("diagram-test");
-        assert_eq!(serve("/diagram-test").status(), 404);
+        assert_eq!(page_html("diagram-test"), None);
         // WebView2 serves custom schemes as http://<scheme>.localhost/.
         let expected = if cfg!(windows) {
             "http://logix-diagram.localhost/diagram-1"
