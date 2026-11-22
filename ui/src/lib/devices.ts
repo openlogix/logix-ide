@@ -207,6 +207,21 @@ export function deviceSummaryLines(devices: Devices): string[] {
  * serial number, driver and boards, then the last driver change and its
  * log.
  */
+/** What else a device reports, a line each, for the dialog and Copy: its
+ * serial number, USB release and serial ports, so a pasted Copy says what
+ * a bug report or a board request to Logix Catalog needs (Milestone 6,
+ * the user's decision, 2026-11-22). */
+export function deviceDetails(d: UsbDevice): string[] {
+  const out: string[] = [];
+  if (d.serialNumber) out.push(`Serial: ${d.serialNumber}`);
+  if (d.release) out.push(`USB release: ${d.release}`);
+  for (const p of d.serialPorts ?? []) {
+    const where = p.interface === null ? "" : ` (USB interface ${p.interface})`;
+    out.push(`Serial port: ${p.port}${where}${p.description ? `, ${p.description}` : ""}`);
+  }
+  return out;
+}
+
 export function devicesReport(
   devices: Devices,
   selected: string | null,
@@ -227,7 +242,7 @@ export function devicesReport(
     if (i > 0) out.push("");
     out.push(item.kind === "usb" ? d.label : `${d.label}, ${lockedTag(item.device)}`);
     out.push(`  ID: ${d.id}`);
-    if (item.kind === "usb" && item.device.serialNumber) out.push(`  Serial: ${item.device.serialNumber}`);
+    if (item.kind === "usb") out.push(...deviceDetails(item.device).map((l) => `  ${l}`));
     if (d.driver) out.push(`  ${d.driver.state}`);
     if (item.kind === "usb") {
       const { matches, others } = deviceBoardGroups(item.device, selected);

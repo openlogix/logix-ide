@@ -559,6 +559,7 @@ const icesugarDevice: Real.UsbDevice = {
   manufacturer: "MuseLab",
   product: "DAPLink CMSIS-DAP",
   serialNumber: "07000001004300413100001056313032a5a5a5a500000000",
+  release: "0100",
   boards: [{ board: "icesugar-1-5", level: "strong" }],
   likelyBoards: ["icesugar-1-5"],
   buildMatch: "strong", driver: null, who: "the iCESugar v1.5",
@@ -580,6 +581,8 @@ const alhambraDevice: Real.UsbDevice = {
   manufacturer: "AlhambraBits",
   product: "Alhambra II v1.0A",
   serialNumber: "FTATANKC",
+  // Not captured from the board.
+  release: "",
   boards: [
     { board: "alhambra-ii", level: "strong" },
     { board: "alchitry-au", level: "weak" },
