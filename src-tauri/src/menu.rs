@@ -455,7 +455,53 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .build()
 }
 
+/// The window in front, when it's one of Logix IDE's own other windows
+/// (Waveforms, Diagram), not the main window.
+fn other_window_in_front<R: Runtime>(app: &AppHandle<R>) -> Option<tauri::WebviewWindow<R>> {
+    app.webview_windows()
+        .into_values()
+        .find(|w| w.label() != "main" && w.is_focused().unwrap_or(false))
+}
+
+/// Brings the main window to the front, so what a menu command shows there
+/// (a dialog, the output) isn't hidden behind the Waveforms or Diagram
+/// window (the user's report, 2026-11-21).
+fn bring_main_forward<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.unminimize();
+        let _ = main.set_focus();
+    }
+}
+
+/// Whether a command shows something in the main window, so the main window
+/// comes to the front first. Not Simulate and the diagram commands, which
+/// bring their own windows up, and not the text commands, which act where
+/// the person is.
+pub fn shows_in_main(id: &str) -> bool {
+    !matches!(
+        id,
+        SIMULATE
+            | SIMULATE_THIS_TEST
+            | SHOW_DIAGRAM
+            | SHOW_MODULE_DIAGRAM
+            | SELECT_ALL
+            | TOGGLE_COMMENT
+            | GO_TO_DEFINITION
+            | OUTPUT_SELECT_ALL
+            | SHOW_FOLDER
+    )
+}
+
 pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
+    // On macOS the menu bar is shared by every window, so Close Project (⌘W)
+    // and Close Window (⇧⌘W) in front of a Waveforms or Diagram window close
+    // that window, not the project or the app.
+    if matches!(id, CLOSE | CLOSE_PROJECT) {
+        if let Some(window) = other_window_in_front(app) {
+            let _ = window.close();
+            return;
+        }
+    }
     match id {
         // Both go through CloseRequested, which checks for unsaved changes.
         // Closing the only window quits the app.
@@ -470,6 +516,9 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
         | TOGGLE_COMMENT | SELECT_ALL | OUTPUT_SELECT_ALL | CLEAR_OUTPUT | RUN_THIS_TEST
         | SIMULATE_THIS_TEST | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER | SYSTEM_INFO
         | CHECK_UPDATES | BUILD_REPORT => {
+            if shows_in_main(id) {
+                bring_main_forward(app);
+            }
             let _ = app.emit("menu", id);
         }
         SHOW_LOGS => {
@@ -490,6 +539,7 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
             let _ = app.emit("menu", RECENTS_CHANGED);
         }
         _ if id.starts_with(VARIANT_PREFIX) => {
+            bring_main_forward(app);
             let _ = app.emit("menu", id);
         }
         _ if id.starts_with(HELP_PREFIX) => {
@@ -768,6 +818,31 @@ fn recent_labels(dirs: &[PathBuf]) -> Vec<String> {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn commands_that_show_in_the_main_window_bring_it_forward() {
+        for id in [
+            SYSTEM_INFO,
+            SETTINGS,
+            VERIFY,
+            EXAMPLES,
+            DEVICES,
+            CHECK_UPDATES,
+        ] {
+            assert!(shows_in_main(id), "{id}");
+        }
+        // Their own windows come up instead, or they act where the person is.
+        for id in [
+            SIMULATE,
+            SHOW_DIAGRAM,
+            SHOW_MODULE_DIAGRAM,
+            SELECT_ALL,
+            TOGGLE_COMMENT,
+        ] {
+            assert!(!shows_in_main(id), "{id}");
+        }
+    }
+
     use super::*;
 
     #[test]
