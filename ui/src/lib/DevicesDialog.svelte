@@ -18,6 +18,7 @@
   import { arrowNav } from "./arrowNav";
   import { type Driver, type UnreachableDevice, type UsbDevice } from "./backend";
   import {
+    deviceDetails,
     deviceBoardGroups,
     lockedTag,
     devicesReport,
@@ -213,7 +214,7 @@
     <!-- The serial number on its own line under the name, as the driver's,
          outside the button so it can be selected (the user's requests,
          2026-11-14 and 2026-11-15: a long one wrapped to the left edge). -->
-    {#if d.serialNumber}<div class="muted serial">Serial: {d.serialNumber}</div>{/if}
+    {#each deviceDetails(d) as line (line)}<div class="muted serial">{line}</div>{/each}
     {#if d.driver}
       {@render driverLine(d.id, d.driver)}
     {/if}

@@ -1378,7 +1378,11 @@ test("lists the connected devices", async ({ page }) => {
   const dialog = page.getByRole("dialog", { name: "Connected Devices" });
   await expect(dialog).toContainText("Alhambra II v1.0A (AlhambraBits, 0403:6010)");
   // Its serial number on its own line, under the name.
-  await expect(dialog.locator(".serial")).toHaveText("Serial: FTATANKC");
+  await expect(dialog.locator(".serial").first()).toHaveText("Serial: FTATANKC");
+  // Then its serial ports, for a pasted Copy to say everything.
+  await expect(dialog.locator(".serial").nth(1)).toHaveText(
+    "Serial port: /dev/cu.usbserial-FTATANKC0 (USB interface 0), USB device (0403:6010)'s programming port",
+  );
   // The device is a group, open, with its matches as a bullet list.
   const device = dialog.getByRole("button", { name: /Alhambra II v1.0A/ });
   await expect(device).toHaveAttribute("aria-expanded", "true");

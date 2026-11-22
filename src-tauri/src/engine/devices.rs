@@ -26,6 +26,9 @@ pub struct UsbDevice {
     pub manufacturer: String,
     pub product: String,
     pub serial_number: String,
+    /// Its USB release (the engine's `release`, bcdDevice as four hex
+    /// digits, such as "0100"); empty when it doesn't report one.
+    pub release: String,
     /// The boards it may be, best first (the engine's order).
     pub boards: Vec<DeviceBoard>,
     /// The boards it most likely is, by the engine (none when its matches
@@ -253,6 +256,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
             manufacturer: text(d, "manufacturer"),
             product: text(d, "product"),
             serial_number: text(d, "serial_number"),
+            release: text(d, "release"),
             boards: d["boards"]
                 .as_array()
                 .map(|boards| boards.iter().map(parse_board).collect())

@@ -11,6 +11,7 @@ import {
   orderedDevices,
   unreachableNote,
   devicesReport,
+  deviceDetails,
   durationText,
   driverWorkEnd,
   lockedTag,
@@ -34,6 +35,7 @@ const alhambra: UsbDevice = {
   manufacturer: "AlhambraBits",
   product: "Alhambra II v1.0A",
   serialNumber: "FTATANKC",
+  release: "0700",
   boards: [
     { board: "alhambra-ii", level: "strong" as const },
     { board: "alchitry-au", level: "weak" as const },
@@ -147,6 +149,7 @@ describe("devices", () => {
       "Alhambra II v1.0A (AlhambraBits, 0403:6010)",
       "  ID: usb:1-1:0403:6010:FTATANKC",
       "  Serial: FTATANKC",
+      "  USB release: 0700",
       "  Matching boards: Alhambra II",
       "",
       "Last driver change: Installing the WinUSB driver…",
@@ -235,5 +238,24 @@ describe("devices", () => {
     });
     expect(none[0]).toBe("No USB devices are connected.");
     expect(none[1]).toBe("  • USB device (0403:6014) can't be opened. Allow it.");
+  });
+});
+
+describe("deviceDetails", () => {
+  it("gives the serial number, the USB release and each serial port, for Copy", () => {
+    const d = {
+      ...alhambra,
+      serialPorts: [
+        { port: "/dev/cu.usbserial-FTATANKC1", interface: 1, role: "uart" as const, description: "The Alhambra II's serial port" },
+        { port: "/dev/cu.usbserial-X", interface: null, role: null, description: "" },
+      ],
+    };
+    expect(deviceDetails(d)).toEqual([
+      "Serial: FTATANKC",
+      "USB release: 0700",
+      "Serial port: /dev/cu.usbserial-FTATANKC1 (USB interface 1), The Alhambra II's serial port",
+      "Serial port: /dev/cu.usbserial-X",
+    ]);
+    expect(deviceDetails({ ...d, serialNumber: "", release: "", serialPorts: [] })).toEqual([]);
   });
 });

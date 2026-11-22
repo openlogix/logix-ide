@@ -455,6 +455,8 @@ export interface UsbDevice {
   manufacturer: string;
   product: string;
   serialNumber: string;
+  /** Its USB release (bcdDevice, four hex digits, such as "0100"); empty when it reports none. */
+  release: string;
   /** The boards it may be, strongest first, each with its match level. */
   boards: { board: string; level: MatchLevel }[];
   /** The boards it most likely is, by the engine (none when only weak matches). */
