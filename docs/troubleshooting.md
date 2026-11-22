@@ -55,10 +55,6 @@ connect to what on the board. Start a new project with the board selected
 (**File > New Project**), or open one of the board's examples
 (**File > Examples…**), and use its pin file.
 
-A few boards have no examples to take the pins from. For those, add a pin
-file yourself (**File > New File…**, e.g. `pinout.pcf` for iCE40 boards),
-with the pins from the board's documentation.
-
 ## A mistake isn't underlined while typing
 
 Live checking catches mistakes in the grammar, such as a missing `;`. Other
@@ -85,8 +81,7 @@ board (see
 ## An example isn't in the list
 
 Logix IDE comes with examples for the boards it supports; boards it doesn't
-support yet have none (see above). Some examples aren't in Logix IDE
-yet, such as ones with files in subfolders or several build setups.
+support yet have none (see above).
 
 ## A build or simulation doesn't finish
 

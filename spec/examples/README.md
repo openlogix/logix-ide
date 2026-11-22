@@ -66,7 +66,7 @@ change in a board that wasn't meant to change is a mistake.
   `board-info.sh` output for every board the examples were written from,
   with the catalog version (`get_engine_info` `catalog`), so a later run
   can tell which boards changed: compare it with a new `board-info.sh`
-  output, then write it anew. (Not in `examples/`, which the app embeds.)
+  output, then write it anew. (Not in `examples/`, which is packed into the examples package.)
 - **A file here changed:** that example on every board (`COMMON.md`: all).
 - **A new board:** all its examples.
 

@@ -778,7 +778,7 @@ mod tests {
     }
 
     /// Downloads the real `logix-catalog` package (30 KB) through the setup's
-    /// progress path and checks the banner gets percentages:
+    /// progress path and checks the setup's progress gets percentages:
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> cargo test real_engine_download_progress -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]

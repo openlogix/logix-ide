@@ -10,8 +10,8 @@
 # The shared parts are Open Logix actions in openlogix/.github (tested
 # there): start-pre-release, read-build-info and publish-pre-release, which
 # also writes the standard release text and applies the pre-release policy.
-# macOS (Apple Silicon) and Windows (x64), each its own
-# build-<platform>.yaml workflow; Linux will be added the same way.
+# macOS (Apple Silicon), Windows (x64) and Linux (x64), each its own
+# build-<platform>.yaml workflow.
 
 name: build-pre-release
 

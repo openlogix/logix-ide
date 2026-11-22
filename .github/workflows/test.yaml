@@ -57,7 +57,7 @@ jobs:
   test:
     name: test (${{ matrix.os }}, ${{ matrix.channel }})
     needs: channels
-    # macOS on Apple Silicon: the only platform implemented so far, on each
+    # macOS on Apple Silicon, on each
     # macOS version GitHub offers (all arm64), named explicitly: add a new
     # one when GitHub ships it (macos-latest isn't listed: it's one of these,
     # so it tested the same image twice). Windows x64 (Milestone 3), named

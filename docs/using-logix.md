@@ -13,7 +13,7 @@
   tabs than fit, scroll them with the mouse wheel or the trackpad, and
   **▾** at their right end lists all the files, the ones you looked at
   most recently first; type part of a name to find one. **Edit > Go to
-  File…** (++cmd+p++, or ++ctrl+p++ on Windows and Linux) opens the same
+  File…** opens the same
   list in any project.
 - **Editor**: Verilog and SystemVerilog with syntax colors. Mistakes in the
   grammar (a missing `;`, a misspelled keyword) are underlined as you type.
@@ -74,7 +74,7 @@ inside another project.
   Double-click a tab to rename it; right-click it to
   rename or delete it, or for the commands that work on that file, such as
   **Auto Format**. Renaming a file such as `adder.v` asks whether to
-  rename its testbench, `adder_tb.v`, too; a testbench's waveform layout
+  rename its testbench, `adder_tb.v`, too; a testbench's waveform view
   is renamed or deleted with it. Module names inside files never change.
   These changes, like edits, are saved when you save the project.
 - **Open, close and save**: **File > Open Project…**, **Open Recent**,
@@ -184,12 +184,10 @@ The boards are grouped by FPGA family in the same way.
 ![The Examples window: boards on the left, the selected board's examples on the right](images/examples.png)
 
 Every board's list starts with **bare-minimum**, like the Arduino IDE's BareMinimum: the
-board's pins (from its basic example) and a design that does nothing yet.
-Its outputs are set to 0 so that it builds; replace that with your design.
+board's pins and a design that does nothing yet: its LEDs are off and its
+serial port is idle. Your design goes where its comment says.
 
 An example opens as a new, unsaved project; saving it asks where to put it.
-A few of the examples that come with the FPGA tools use features Logix IDE
-doesn't support yet, so they're not listed.
 
 ## Verify and Upload
 

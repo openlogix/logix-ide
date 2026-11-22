@@ -4,7 +4,6 @@ import {
   deviceBoardGroups,
   deviceSummaryLines,
   isBoardNotFound,
-  mayBeBoard,
   needsDeviceChoice,
   needsDriver,
   confirmContent,
@@ -181,13 +180,6 @@ describe("devices", () => {
     expect(unreachableNote({ ...locked, boards: [locked.boards[0]] }, null, name)).toContain("the Alhambra II: it has its USB IDs");
     // Elsewhere (Linux permissions), the engine's fix too.
     expect(unreachableNote({ ...locked, driver: null, fix: "Fix the permissions." }, null, name)).toContain("Fix the permissions.");
-  });
-
-  it("tells whether a device may be a board", () => {
-    const generic = { ...alhambra, boards: [{ board: "alchitry-au", level: "weak" as const }] };
-    expect(mayBeBoard(generic, "alchitry-au")).toBe(true);
-    expect(mayBeBoard(generic, "icestick")).toBe(false);
-    expect(mayBeBoard(generic, null)).toBe(false);
   });
 
   it("splits a device's boards into the engine's likely boards and others", () => {
