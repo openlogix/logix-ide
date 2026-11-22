@@ -2007,9 +2007,12 @@ test("many files: the tabs scroll by themselves, and All files and Go to File li
   await start(page);
   // A small project: no All files button, as before.
   await expect(page.getByRole("button", { name: "All files" })).toHaveCount(0);
-  // Many files.
+  // Many files, made with File > New File: the + button moves as each new
+  // tab scrolls the strip, and a click waits for it to hold still, which
+  // timed out on GitHub's Windows runner (2026-11-22). The + button has its
+  // own test.
   for (let i = 1; i <= 24; i++) {
-    await page.getByTitle(/^New file/).click();
+    await menu(page, "new-file");
     const name = `stage_${String(i).padStart(2, "0")}.v`;
     await page.locator(".tab-input").fill(name);
     await page.keyboard.press("Enter");
