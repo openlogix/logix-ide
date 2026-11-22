@@ -123,9 +123,9 @@ module debug_tb;
     end
   endtask
 
-  reg [8*8-1:0] text2;
-  reg [7:0] c;
-  integer i;
+  reg [8*8-1:0] text2 = 0;
+  reg [7:0] c = 8'd0;
+  integer i = 0;
 
   initial begin
     $dumpvars(0, debug_tb);

@@ -35,15 +35,15 @@ module main_tb;
   );
 
   // The ROM address and note as of the previous clock.
-  reg [7:0] prev_addr;
-  reg [15:0] prev_note;
+  reg [7:0] prev_addr = 8'd0;
+  reg [15:0] prev_note = 16'd0;
 
   // Loop index for the checks.
-  integer i;
+  integer i = 0;
 
   // The expected ROM address. Compared through [7:0], to match the
   // signal's width.
-  integer expected;
+  integer expected = 0;
 
   // The test sequence.
   initial begin

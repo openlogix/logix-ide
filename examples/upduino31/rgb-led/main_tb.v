@@ -26,7 +26,7 @@ module main_tb;
   main #(.N(4)) dut (.rgb_led(rgb_led));
 
   // Loop index for the LED checks.
-  integer i;
+  integer i = 0;
 
   // The test sequence.
   initial begin

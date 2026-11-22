@@ -31,7 +31,7 @@ module main_tb;
   );
 
   // Loop index for the LED checks.
-  integer i;
+  integer i = 0;
 
   // The test sequence.
   initial begin

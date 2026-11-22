@@ -32,7 +32,7 @@ module main #(
     else if (sys_rst) rst_cnt <= rst_cnt + 1;
 
   // Counts clocks from 0 to DIV-1.
-  reg [31:0] counter;
+  reg [31:0] counter = 32'd0;
 
   // Toggle the LED every DIV clocks. The LED is on after reset.
   always @(posedge sys_clk)

@@ -35,11 +35,11 @@ module main_tb;
   );
 
   // Loop index for the checks.
-  integer i;
+  integer i = 0;
 
   // The expected note index. Compared through [5:0], to match the
   // signal's width.
-  integer expected;
+  integer expected = 0;
 
   // The test sequence.
   initial begin

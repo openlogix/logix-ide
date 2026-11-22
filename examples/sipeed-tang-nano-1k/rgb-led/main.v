@@ -13,13 +13,14 @@ module main #(
     output [2:0] rgb_led_n  // RGB LED, active low. [0]=red, [1]=green, [2]=blue.
 );
 
-  // Pass the button through a two flip-flop synchronizer. They start at
-  // 1, released.
-  reg [1:0] btn_sync = 2'b11;
-  always @(posedge sys_clk) btn_sync <= {btn_sync[0], btn_n};
+  // Pass "pressed" through a two flip-flop synchronizer. The button is
+  // active low, so pressed is ~btn_n; it rests at 0, where registers start
+  // (some FPGAs can only start a register at 0).
+  reg [1:0] pressed_sync = 2'b00;
+  always @(posedge sys_clk) pressed_sync <= {pressed_sync[0], ~btn_n};
 
-  // The button is active low, so invert it.
-  wire btn = ~btn_sync[1];
+  // 1 while the button is pressed.
+  wire btn = pressed_sync[1];
 
   // Power-on reset: sys_rst is high for the first 3 clocks, and again
   // while the button is pressed and for 3 clocks after it.
@@ -30,10 +31,10 @@ module main #(
     else if (sys_rst) rst_cnt <= rst_cnt + 1;
 
   // Counts clocks from 0 to DIV-1.
-  reg [31:0] counter;
+  reg [31:0] counter = 32'd0;
 
   // The RGB LED colors, one-hot. Red after reset.
-  reg [ 2:0] rgb_led;
+  reg [ 2:0] rgb_led = 3'd0;
 
   // Move to the next color, red -> blue -> green, every DIV clocks.
   always @(posedge sys_clk)
