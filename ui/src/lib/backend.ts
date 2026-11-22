@@ -680,7 +680,16 @@ export const backend = {
    * its own packages. Progress goes to the console (`tool-output`); returns
    * what changed, a line each, or a line saying everything is up to date.
    */
-  checkForUpdates: (): Promise<string[]> => invoke<string[]>("check_for_updates"),
+  /**
+   * Help > Check for Updates: the lines saying what changed. `onProgress`
+   * gets what downloads meanwhile, with its percentage (`progress` events),
+   * for the status bar.
+   */
+  checkForUpdates: (onProgress: (event: TaskEvent) => void): Promise<string[]> => {
+    const channel = new Channel<TaskEvent>();
+    channel.onmessage = onProgress;
+    return invoke<string[]>("check_for_updates", { onProgress: channel });
+  },
 
   /**
    * The newer-version banner: a newer Logix IDE on this build's channel,

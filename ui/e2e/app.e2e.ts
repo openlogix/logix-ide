@@ -1090,9 +1090,20 @@ test("no newer-version banner when this is the newest", async ({ page }) => {
 
 test("Check for Updates shows the progress and what changed", async ({ page }) => {
   await start(page);
+  type Fake = { holdUpdates: boolean; finishUpdates: () => void };
+  await page.evaluate(() => ((window as unknown as { __fake: Fake }).__fake.holdUpdates = true));
   await menu(page, "check-for-updates");
   await expect(output(page)).toContainText("Checking for updates…");
   await expect(output(page)).toContainText("Downloading logix-catalog 2026.11.30...");
+  // While a package downloads, the status bar shows it, with its
+  // percentage and a progress bar, as setup does.
+  const bar = page.locator(".status-bar");
+  await expect(bar.locator(".setup-detail")).toHaveText("Downloading logix-catalog 2026.11.30 42%");
+  await expect(bar.locator("progress")).toHaveAttribute("value", "0.42");
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.finishUpdates());
+  // Done: the bar goes, the result stays.
+  await expect(bar.locator("progress")).toHaveCount(0);
+  await expect(bar.locator(".setup-detail")).toHaveCount(0);
   await expect(output(page)).toContainText("Updated logix-catalog to 2026.11.30.");
   await expect(status(page)).toContainText("Updated logix-catalog to 2026.11.30.");
   // Once in the output, not twice (the status line was written again).
