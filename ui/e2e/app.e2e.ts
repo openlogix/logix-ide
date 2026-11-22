@@ -1962,14 +1962,20 @@ test("the Serial Monitor asks for the port when it can't tell, once", async ({ p
 });
 
 test("many files: the tabs scroll by themselves, and All files and Go to File list them, recent first", async ({ page }) => {
+  // Making 24 files one by one takes 3 s on a Mac but ran past the 30 s
+  // limit once on GitHub's Ubuntu 22.04 runner (2026-11-22).
+  test.slow();
   await start(page);
   // A small project: no All files button, as before.
   await expect(page.getByRole("button", { name: "All files" })).toHaveCount(0);
   // Many files.
   for (let i = 1; i <= 24; i++) {
     await page.getByTitle(/^New file/).click();
-    await page.locator(".tab-input").fill(`stage_${String(i).padStart(2, "0")}.v`);
+    const name = `stage_${String(i).padStart(2, "0")}.v`;
+    await page.locator(".tab-input").fill(name);
     await page.keyboard.press("Enter");
+    // The tab exists before the next one is made.
+    await expect(page.locator(".tab-input")).toHaveCount(0);
   }
   // The window doesn't widen: nothing scrolls sideways but the tabs.
   const wide = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
