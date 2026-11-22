@@ -97,7 +97,8 @@ readability wins.
 - Time constants, such as a counter's width, are parameters, so the
   testbench can make them small.
 - Outputs the design doesn't use, such as other LEDs, are held off.
-- **Every register starts at 0** (the user's rule, 2026-11-22), in its
+- **Every register starts at 0** (Open Logix's rule for generated HDL code,
+  in the website repo's `CLAUDE.md`, Generated HDL code), in its
   declaration (`reg [7:0] count = 8'd0;`), and the design is written so
   that 0 is its resting state: some FPGAs, such as the iCE40, can only
   start a register at 0 (the build fakes other values with hidden
