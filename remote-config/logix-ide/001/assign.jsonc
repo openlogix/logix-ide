@@ -11,5 +11,9 @@
   // The first promotion, 2026-11-13.
   // 2026-11-16: Windows (Milestone 3), drivers and the new System Info.
   // 2026-11-18: Linux (Milestone 4), with udev rules for boards.
-  "prod": ["2026-11-12", "2026-11-15", "2026-11-17"]
+  // 2026-11-21: the Waveforms window in place of GTKWave (Milestone 5), the
+  // Serial Monitor and the serial examples, many files (Go to File), auto
+  // save and folder watching for AI agents, and Check for Updates telling of
+  // a newer Logix IDE.
+  "prod": ["2026-11-12", "2026-11-15", "2026-11-17", "2026-11-21"]
 }
