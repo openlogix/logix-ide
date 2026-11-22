@@ -289,7 +289,8 @@ const fake = {
   /** The speed Save wrote (`saveProject`). */
   savedBaud: undefined as number | null | undefined,
   /** Connects a real Alhambra II, with its captured USB names, in place of
-   * the default iCESugar v1.5 (whose names aren't captured yet). */
+   * the default iCESugar v1.5: an FTDI board with two ports and a driver,
+   * for the tests that need them. */
   useAlhambra: () => {
     fake.usb = [alhambraDevice];
     fake.uploadDevices = [alhambraDevice];
@@ -306,7 +307,7 @@ const fake = {
   recents: (new URLSearchParams(location.search).get("recents") ?? "")
     .split(",")
     .filter(Boolean),
-  /** The USB devices Tools > Connected Devices lists (`scanDevices`); one Alhambra II by default. */
+  /** The USB devices Tools > Connected Devices lists (`scanDevices`); one iCESugar v1.5 by default. */
   usb: null as Real.UsbDevice[] | null,
   /** The folder Show Project Folder showed last (`showProjectFolder`). */
   shownFolder: null as string | null,
@@ -546,25 +547,26 @@ function engineFix(driver: RawDriver | null): string {
     : "Add a udev rule for it, so it can be programmed and its name read.";
 }
 
-/** An iCESugar v1.5, as Logix Engine lists it: its USB IDs from the
- * catalog. Its product and manufacturer names aren't captured from a real
- * board yet, so it has none (the canonical board TODO). */
+/** An iCESugar v1.5, as Logix Engine lists it: captured from a real board
+ * (2026-11-22, Logix Engine 2026.11.21 on macOS), its serial number's last
+ * digits zeroed. Its programmer, a DAPLink, names itself; its UART is USB
+ * interface 2. */
 const icesugarDevice: Real.UsbDevice = {
-  id: "usb:1-1:1d50:602b:0700000001",
-  label: "USB device (1d50:602b)",
+  id: "usb:1-1.4.2:1d50:602b:07000001004300413100001056313032a5a5a5a500000000",
+  label: "DAPLink CMSIS-DAP (MuseLab, 1d50:602b)",
   vid: "1d50",
   pid: "602b",
-  manufacturer: "",
-  product: "",
-  serialNumber: "0700000001",
-  boards: [{ board: "icesugar-1-5", level: "possible" }],
+  manufacturer: "MuseLab",
+  product: "DAPLink CMSIS-DAP",
+  serialNumber: "07000001004300413100001056313032a5a5a5a500000000",
+  boards: [{ board: "icesugar-1-5", level: "strong" }],
   likelyBoards: ["icesugar-1-5"],
-  buildMatch: "possible", driver: null, who: "the iCESugar v1.5",
-  // The iCELink's one serial port.
+  buildMatch: "strong", driver: null, who: "the iCESugar v1.5",
+  // The DAPLink's one serial port, the board's UART.
   serialPorts: [
-    { port: "/dev/cu.usbmodem0700000001", interface: 1, role: "uart", description: "The iCESugar v1.5's serial port" },
+    { port: "/dev/cu.usbmodem114202", interface: 2, role: "uart", description: "The iCESugar v1.5's serial port" },
   ],
-  serialPort: "/dev/cu.usbmodem0700000001",
+  serialPort: "/dev/cu.usbmodem114202",
 };
 
 

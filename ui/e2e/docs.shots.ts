@@ -27,10 +27,10 @@ async function startWithBoard(page: Page) {
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
       {
-        id: "usb:1-2:1d50:602b:0700000001",
-        name: "USB device",
-        serial: "0700000001",
-        boards: [{ board: "icesugar-1-5", level: "possible", variants: [{}] }],
+        id: "usb:1-1.4.2:1d50:602b:07000001004300413100001056313032a5a5a5a500000000",
+        name: "DAPLink CMSIS-DAP",
+        serial: "07000001004300413100001056313032a5a5a5a500000000",
+        boards: [{ board: "icesugar-1-5", level: "strong", variants: [{}] }],
       },
     ];
     window.dispatchEvent(new Event("focus"));
@@ -137,14 +137,13 @@ test("settings", async ({ page }) => {
   await shot(page, "settings");
 });
 
-// Still the Alhambra II's, the one board whose USB names were captured from
-// real hardware: retake it on an iCESugar v1.5 once its names are captured.
+// The canonical board, an iCESugar v1.5, with the USB names captured from a
+// real one.
 test("connected devices", async ({ page }) => {
   await startWithBoard(page);
-  await page.evaluate(() => (window as unknown as { __fake: { useAlhambra: () => void } }).__fake.useAlhambra());
   await menu(page, "devices");
   await expect(page.getByRole("dialog", { name: "Connected Devices" })).toContainText(
-    "Alhambra II",
+    "DAPLink CMSIS-DAP (MuseLab, 1d50:602b)",
   );
   await shot(page, "devices");
 });
