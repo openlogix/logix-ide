@@ -78,10 +78,10 @@ with a comment saying why (such as "26 bits count up to 67 million, enough
 for 5 seconds at 12 MHz"), not computed with `$clog2`, so beginners read a
 plain size.
 
-The top comment says what the example does and how to try it: open the
-board's serial port in a terminal program (PuTTY on Windows, `screen
-<port> 115200` on macOS and Linux) at 115200 baud, 8N1. Then a "Which
-port" paragraph from the UART's `user_notes`, in plain words: when they
+The top comment says what the example does and how to try it (Tools >
+Serial Monitor, 115200 baud, as in `serial-debug`; a terminal program
+such as PuTTY isn't needed). Then a "Which port" paragraph from the
+UART's `user_notes`, in plain words: when they
 say the computer lists several serial ports for the board (such as an
 FTDI chip's two channels), which one to use and how to tell, and "If you
 see no greeting or echo, try the other."; when they say nothing about it,

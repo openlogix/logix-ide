@@ -7,9 +7,7 @@
 //     character you type starts the 5 seconds over, so the greeting waits
 //     while you type. After you've typed, the greeting starts on a new line.
 //
-// To try it: upload it, then open the board's serial port in a terminal
-// program (such as PuTTY on Windows, or `screen <port> 115200` on macOS and
-// Linux) at 115200 baud, 8N1 (8 data bits, no parity, 1 stop bit).
+// To try it: upload it, then open Tools > Serial Monitor (115200 baud).
 
 module main #(
   parameter BAUD = 115_200,         // Serial speed, in bits per second.
