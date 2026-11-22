@@ -99,6 +99,11 @@ jobs:
           cp "${dmgs[0]}" "logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg"
           ls -al *.dmg
 
+      # The mounted disk's own icon (the app icon with a drive badge), so it
+      # isn't taken for the app; Tauri's bundler always uses the app icon.
+      - name: Set the .dmg's volume icon
+        run: _repo/scripts/set-dmg-volume-icon.sh "logix-ide-darwin-arm64-${PACKAGE_TAG}.dmg" _repo/src-tauri/icons/dmg-volume.icns
+
       # Checks what users get: the .dmg is sound, it has the app, the
       # Applications shortcut and the Finder layout (.DS_Store), and the app
       # has a valid (ad-hoc) signature
@@ -115,6 +120,7 @@ jobs:
           ls -al "$mnt"
           test -L "$mnt/Applications"
           test -f "$mnt/.DS_Store"
+          cmp "$mnt/.VolumeIcon.icns" _repo/src-tauri/icons/dmg-volume.icns
           app="$mnt/Logix IDE.app"
           IFS=- read -r y m d <<< "$RELEASE_TAG"
           semver="$((10#$y)).$((10#$m)).$((10#$d))"
