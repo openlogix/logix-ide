@@ -1586,6 +1586,45 @@ test("a project's boards folder, edited outside Logix IDE, adds its own boards",
   await expect(page.getByRole("option", { name: "My UPduino", exact: true })).toHaveCount(0);
 });
 
+test("Simulate runs the open file's testbench, else asks which one and remembers it", async ({ page }) => {
+  await start(page);
+  type Fake = { lastRun: { task?: string; target?: string | null } | null };
+  const ran = () =>
+    page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.lastRun?.target ?? null);
+  const forget = () =>
+    page.evaluate(() => ((window as unknown as { __fake: Fake }).__fake.lastRun = null));
+  const simulate = page.getByTitle(/^Simulate/);
+  // Blinky, with a second testbench.
+  await page.getByTitle(/^New file/).click();
+  await page.locator(".tab-input").fill("blink_tb.v");
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".tab-input")).toHaveCount(0);
+  // main.v: its own testbench.
+  await tab(page, "main.v").click();
+  await expect(simulate).toHaveAttribute("title", "Simulate main_tb.v: run it and show its signals");
+  // The pin file has no testbench of its own, and none was simulated yet:
+  // Simulate is enabled and asks which one.
+  await tab(page, "pinout.pcf").click();
+  await expect(simulate).toBeEnabled();
+  await expect(simulate).toHaveAttribute("title", /asks which testbench/);
+  await simulate.click();
+  const picker = page.getByRole("dialog", { name: "Choose a Testbench" });
+  await expect(picker.getByRole("listitem")).toHaveText([/main_tb\.v/, /blink_tb\.v/]);
+  await picker.getByRole("listitem").filter({ hasText: "blink_tb.v" }).getByRole("button").click();
+  await expect(picker).toHaveCount(0);
+  await expect.poll(ran).toBe("blink_tb.v");
+  await expect(status(page)).toHaveText(/^Simulation done/);
+  // Next time it runs that one without asking.
+  await expect(simulate).toHaveAttribute("title", "Simulate blink_tb.v: run it and show its signals");
+  await forget();
+  await simulate.click();
+  await expect.poll(ran).toBe("blink_tb.v");
+  await expect(picker).toHaveCount(0);
+  // An open testbench is the one Simulate runs.
+  await tab(page, "main_tb.v").click();
+  await expect(simulate).toHaveAttribute("title", "Simulate main_tb.v: run it and show its signals");
+});
+
 test("Simulate shows the signals in the Waveforms window, which opens source lines", async ({ page }) => {
   await start(page);
   type Fake = {

@@ -326,7 +326,7 @@ const fake = {
   /** The window's title state last set (`setDocumentState`). */
   documentState: null as { name: string; dirty: boolean } | null,
   /** The last task's project (its build key), as the Waveforms window's events name it. */
-  lastRun: null as { key: string } | null,
+  lastRun: null as { key: string; task?: string; target?: string | null } | null,
   /** The text System Info's Copy copied last (`copyText`). */
   copiedText: null as string | null,
   /** The path Copy Project Folder Path copied last (`copyProjectPath`). */
@@ -781,7 +781,7 @@ export const backend: typeof Real.backend = {
   ) => {
     fake.taskVariant = variant;
     fake.taskBoardsFolder = sourceDir;
-    fake.lastRun = { key };
+    fake.lastRun = { key, task, target };
     // As the IDE's backend: a file with problems stops the task, its
     // problems in the console at line and column.
     const own = fakeProjectBoards(boardsOnDisk(sourceDir), sourceDir, _projectDir != null);
