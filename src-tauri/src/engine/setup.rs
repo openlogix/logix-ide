@@ -167,6 +167,9 @@ where
     let config = read_config(&layout, &source, platform, source.is_override)
         .await
         .context(MSG_CONFIG)?;
+    if let Some(line) = remote_config::channel_line(&config.channel) {
+        log(line);
+    }
     ensure_examples(platform, &layout, &config, &log).await?;
 
     let (exe, folder, in_use) = match dev {
