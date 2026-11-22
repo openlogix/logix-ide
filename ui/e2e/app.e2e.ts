@@ -684,10 +684,10 @@ test("shows if the board is connected, and lists recently used boards first", as
     const w = window as unknown as { __fake: { connected: unknown[] } };
     w.__fake.connected = [
       {
-        id: "usb:1-2:1d50:602b:0700000001",
-        name: "USB device",
-        serial: "0700000001",
-        boards: [{ board: "icesugar-1-5", level: "possible", variants: [{}] }],
+        id: "usb:1-1.4.2:1d50:602b:07000001004300413100001056313032a5a5a5a500000000",
+        name: "DAPLink CMSIS-DAP",
+        serial: "07000001004300413100001056313032a5a5a5a500000000",
+        boards: [{ board: "icesugar-1-5", level: "strong", variants: [{}] }],
       },
     ];
     window.dispatchEvent(new Event("focus"));
@@ -1846,14 +1846,14 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   await menu(page, "serial-monitor");
   const monitor = page.getByRole("log", { name: "Serial Monitor output" });
   // Opened by itself: the board's UART, as Logix Engine marks it, with the device.
-  await expect(monitor).toContainText("Opened /dev/cu.usbmodem0700000001 (the iCESugar v1.5, interface 1) at 115200 baud.");
+  await expect(monitor).toContainText("Opened /dev/cu.usbmodem114202 (the iCESugar v1.5, interface 2) at 115200 baud.");
   expect((await fake()).serialOpened).toEqual([
-    { port: "/dev/cu.usbmodem0700000001", baud: 115200, device: "usb:1-1:1d50:602b:0700000001" },
+    { port: "/dev/cu.usbmodem114202", baud: 115200, device: "usb:1-1.4.2:1d50:602b:07000001004300413100001056313032a5a5a5a500000000" },
   ]);
   // Said to be the board's, from its data, in the port's hover text.
   await expect(page.locator(".monitor .port span[title]")).toHaveAttribute(
     "title",
-    "The iCESugar v1.5's serial port\n/dev/cu.usbmodem0700000001\nDevice: USB device (1d50:602b)\nUSB interface 1",
+    "The iCESugar v1.5's serial port\n/dev/cu.usbmodem114202\nDevice: DAPLink CMSIS-DAP (MuseLab, 1d50:602b)\nUSB interface 2",
   );
   // Text from the board, in pieces, becomes lines.
   await page.evaluate(() => {
