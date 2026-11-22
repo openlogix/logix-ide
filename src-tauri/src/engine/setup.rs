@@ -365,17 +365,7 @@ pub async fn update_if_due(log: impl Fn(String) + Send + Sync, force: bool) -> R
 /// failure (offline, a broken file) is logged and shown in `log`, and isn't
 /// an error: the dependencies' part has already run.
 pub async fn newer_ide_lines(log: impl Fn(String)) -> Vec<String> {
-    let found = async {
-        let source = ConfigSource::from_env()?;
-        let layout = Layout::new(&platform::current_implemented()?.data_dir()?, &source);
-        let channel = match remote_config::load_cache(&layout.config_dir) {
-            Some(cached) if cached.matches(&source) => cached.channel.name,
-            _ => remote_config::channel_variable()?.unwrap_or_else(|| "dev".into()),
-        };
-        remote_config::newer_release(&source, &channel).await
-    }
-    .await;
-    match found {
+    match newer_ide_release().await {
         Ok(latest) => newer_lines(latest.as_ref(), crate::version::APP_VERSION),
         Err(e) => {
             crate::log!("Couldn't check for a newer Logix IDE: {e:#}");
@@ -383,6 +373,20 @@ pub async fn newer_ide_lines(log: impl Fn(String)) -> Vec<String> {
             Vec::new()
         }
     }
+}
+
+/// The newest Logix IDE release on this build's channel (the channel of
+/// the cached config, else `LOGIX_IDE_CHANNEL` or `dev`), as the remote
+/// config's `latest` names it; for Check for Updates and the newer-version
+/// banner (`newer.rs`).
+pub async fn newer_ide_release() -> Result<Option<remote_config::Entry>> {
+    let source = ConfigSource::from_env()?;
+    let layout = Layout::new(&platform::current_implemented()?.data_dir()?, &source);
+    let channel = match remote_config::load_cache(&layout.config_dir) {
+        Some(cached) if cached.matches(&source) => cached.channel.name,
+        _ => remote_config::channel_variable()?.unwrap_or_else(|| "dev".into()),
+    };
+    remote_config::newer_release(&source, &channel).await
 }
 
 /// The lines for a newer Logix IDE: its page, then "Logix IDE 2026.12.01 is
@@ -394,8 +398,8 @@ fn newer_lines(latest: Option<&remote_config::Entry>, own: &str) -> Vec<String> 
     };
     vec![
         format!(
-            "Download it from https://github.com/{}/releases/tag/{}",
-            latest.repo, latest.release
+            "Download it from {}",
+            crate::newer::release_page(&latest.repo, &latest.release)
         ),
         format!(
             "Logix IDE {} is available (you have {own}).",

@@ -29,6 +29,7 @@
     type Variant,
     type BuildReport,
     type ProjectFile,
+    type NewerIde,
   } from "./lib/backend";
   import Editor from "./lib/Editor.svelte";
   import { setHoverEnabled, startLanguageServer } from "./lib/lsp";
@@ -408,6 +409,7 @@
       startLsp();
       log("Ready.");
       startedUp = true;
+      checkNewerIde();
     } catch (e) {
       const err = toUserError(e);
       setupError = err.message;
@@ -504,6 +506,39 @@
     } finally {
       scanning = false;
     }
+  }
+
+  // ---- A newer Logix IDE (newer.rs) ----
+
+  /** A newer Logix IDE, shown in a banner under the toolbar until dismissed. */
+  let newerIde = $state<NewerIde | null>(null);
+  let newerAskedAt = 0;
+  /**
+   * Asks whether a newer Logix IDE is out: at startup and, in a long
+   * session, when the window gets the focus, at most hourly (the backend
+   * itself looks at most once a day).
+   */
+  function checkNewerIde() {
+    newerAskedAt = Date.now();
+    backend
+      .newerIdeNotice()
+      .then((n) => (newerIde = n))
+      .catch(() => {});
+  }
+  $effect(() => {
+    if (!ready) return;
+    const onFocus = () => {
+      if (Date.now() - newerAskedAt > 3600_000) checkNewerIde();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  });
+  function downloadNewerIde() {
+    backend.openNewerIdePage().catch((e) => commandFailed(e));
+  }
+  function dismissNewerIde() {
+    newerIde = null;
+    backend.dismissNewerIde().catch(() => {});
   }
 
   // As in Arduino IDE 2: notice boards being plugged in and out.
@@ -2757,6 +2792,14 @@
     </div>
   {/if}
 
+  {#if newerIde}
+    <div class="banner newer" role="status">
+      <span>Logix IDE {newerIde.version} is available (you have {newerIde.current}).</span>
+      <button onclick={downloadNewerIde} title={newerIde.url}>Download…</button>
+      <button onclick={dismissNewerIde}>Dismiss</button>
+    </div>
+  {/if}
+
   {#if fileError}
     <div class="banner error" role="alert">
       <span>{fileError}</span>
@@ -3190,6 +3233,7 @@
     color: var(--banner-error-fg);
     border-bottom-color: transparent;
   }
+  .banner.newer button,
   .banner.error button {
     padding: 4px 14px;
     border: 1px solid currentColor;

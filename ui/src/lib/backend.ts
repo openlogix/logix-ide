@@ -13,6 +13,16 @@ export interface AppInfo {
 }
 
 /** Error returned by backend commands (see `UserError` in Rust). */
+/** A newer Logix IDE, for the banner under the toolbar (`newer.rs`). */
+export interface NewerIde {
+  /** The newer release's version, yyyy.mm.dd. */
+  version: string;
+  /** This build's version. */
+  current: string;
+  /** The release's page, where its installers and install steps are. */
+  url: string;
+}
+
 export interface UserError {
   /** Short plain-language message for the user. */
   message: string;
@@ -671,6 +681,19 @@ export const backend = {
    * what changed, a line each, or a line saying everything is up to date.
    */
   checkForUpdates: (): Promise<string[]> => invoke<string[]>("check_for_updates"),
+
+  /**
+   * The newer-version banner: a newer Logix IDE on this build's channel,
+   * or null (none, or the banner was dismissed in the last week). Looks at
+   * most once a day; never fails.
+   */
+  newerIdeNotice: (): Promise<NewerIde | null> => invoke<NewerIde | null>("newer_ide_notice"),
+
+  /** The banner's Dismiss: it stays away for a week. */
+  dismissNewerIde: (): Promise<void> => invoke<void>("dismiss_newer_ide"),
+
+  /** The banner's Download: the newer release's page, in the browser. */
+  openNewerIdePage: (): Promise<void> => invoke<void>("open_newer_ide_page"),
 
   /** Puts text on the clipboard. */
   copyText: (text: string): Promise<void> => invoke<void>("copy_text", { text }),

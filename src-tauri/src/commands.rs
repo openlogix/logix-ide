@@ -17,7 +17,7 @@ use crate::examples;
 use crate::outcome;
 use crate::project::{self, ProjectFile};
 use crate::setup_events::{SetupEvent, SetupStage};
-use crate::{build_dir, diagram_window, platform, settings, wave_window, AppState, Catalog};
+use crate::{build_dir, diagram_window, newer, platform, settings, wave_window, AppState, Catalog};
 
 /// An error for the UI: `message` is short plain language for the user,
 /// `details` is the full technical chain for the console.
@@ -157,6 +157,59 @@ pub async fn check_for_updates(
         changes.push("Everything is up to date.".into());
     }
     Ok(changes)
+}
+
+/// The newer-version banner (`newer.rs`): a newer Logix IDE on this
+/// build's channel, unless the banner was dismissed in the last week. Looks
+/// at most once a day; in between, and when it can't look (offline), the
+/// last answer is used. Never an error: a failed look is logged.
+#[tauri::command]
+pub async fn newer_ide_notice() -> Result<Option<newer::Notice>, UserError> {
+    let path = settings::default_path()?;
+    let now = newer::now();
+    if newer::due(settings::load(&path).newer_ide_check.as_ref(), now) {
+        match engine::newer_ide_release().await {
+            Ok(latest) => {
+                // Read again: other settings may have changed meanwhile.
+                let mut s = settings::load(&path);
+                s.newer_ide_check = Some(newer::Check {
+                    at: now,
+                    repo: latest.as_ref().map(|l| l.repo.clone()),
+                    release: latest.map(|l| l.release),
+                });
+                settings::save(&path, &s)?;
+            }
+            Err(e) => crate::log!("Couldn't check for a newer Logix IDE: {e:#}"),
+        }
+    }
+    let s = settings::load(&path);
+    Ok(s.newer_ide_check
+        .as_ref()
+        .and_then(|c| newer::notice(c, crate::version::APP_VERSION, s.newer_ide_dismissed, now)))
+}
+
+/// The newer-version banner's Dismiss: it stays away for a week.
+#[tauri::command]
+pub fn dismiss_newer_ide() -> Result<(), UserError> {
+    let path = settings::default_path()?;
+    let mut s = settings::load(&path);
+    s.newer_ide_dismissed = Some(newer::now());
+    settings::save(&path, &s)?;
+    Ok(())
+}
+
+/// The newer-version banner's Download: opens the newer release's page in
+/// the browser. The page comes from the last look, never from the UI.
+#[tauri::command]
+pub fn open_newer_ide_page() -> Result<(), UserError> {
+    let check = settings::load(&settings::default_path()?).newer_ide_check;
+    let page = check
+        .and_then(|c| Some(newer::release_page(&c.repo?, &c.release?)))
+        .ok_or_else(|| anyhow!("No newer Logix IDE is known."))?;
+    platform::current_implemented()?
+        .open_url(&page)
+        .context("Couldn't open the release's page.")?;
+    Ok(())
 }
 
 /// Puts text on the clipboard (System Info's Copy).

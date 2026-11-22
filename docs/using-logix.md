@@ -408,6 +408,12 @@ troubleshooting.
 opens this run's folder of logs, to attach to a report (see
 [Troubleshooting](troubleshooting.md#still-stuck)).
 
+**Check for Updates** gets the newest FPGA tools and examples now (Logix
+IDE also gets them by itself, at most once a day), and says whether a newer
+Logix IDE is out. When one is, a banner under the toolbar also says so by
+itself: **Download…** opens its page, with its installers and install
+steps; **Dismiss** hides the banner for a week.
+
 ## Settings
 
 **Logix IDE > Settings…** (on Windows, **File > Settings…**):
