@@ -17,7 +17,7 @@
     {
       "signal": "main_tb.uart_tx",
       "show_as": "bin",
-      "color": 2
+      "color": 3
     },
     {
       "group": "Counter"
@@ -25,7 +25,7 @@
     {
       "signal": "main_tb.dut.tick",
       "show_as": "bin",
-      "color": 5
+      "color": 4
     },
     {
       "signal": "main_tb.dut.count",
@@ -38,17 +38,17 @@
     {
       "signal": "main_tb.dut.print",
       "show_as": "bin",
-      "color": 4
+      "color": 6
     },
     {
       "signal": "main_tb.dut.dbg.printer.busy",
       "show_as": "bin",
-      "color": 4
+      "color": 1
     },
     {
       "signal": "main_tb.dut.got_value",
       "show_as": "bin",
-      "color": 3
+      "color": 2
     },
     {
       "signal": "main_tb.dut.new_value",
@@ -61,7 +61,7 @@
     {
       "signal": "main_tb.led",
       "show_as": "bin",
-      "color": 6
+      "color": 4
     }
   ]
 }

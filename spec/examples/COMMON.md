@@ -158,4 +158,7 @@ from them grouped by what the design does): `<testbench>.view`, the
 viewer's JSON, `{"version": 1, "rows": [...]}` with only rows (signals by
 full path, with `show_as` and `color`, and groups), so it opens on the
 whole run. Characters show as `ascii`, counts as `dec`. Their example files
-say how each is made.
+say how each is made. Colors cycle 1 to 6 down the signal rows, groups
+skipped, as the viewer's own default view colors them, so neighboring
+signals always differ (the user's request, 2026-11-22: one color per group
+made a group's many signals hard to tell apart).
