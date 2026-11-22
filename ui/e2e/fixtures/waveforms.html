@@ -1,0 +1,1867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logix Waveforms</title>
+<!-- Written by Logix Engine's simulate tool (docs/tool-api.md, "The
+     waveform viewer"). Self-contained: it needs no network and nothing
+     installed. Hosts can embed it in an iframe or a window of their own:
+     ?theme=light|dark sets the theme, and it accepts
+     {type: "logix-wave:theme", theme}. It posts
+     {type: "logix-wave:open-source", file, line} when a signal's name or a
+     failure is double-clicked or clicked, and {type: "logix-wave:view", view}
+     with the view (the .view file's JSON) after every change, so a host saves
+     it. A host that loads it directly can define
+     window.logixWaveOpenSource(file, line) and window.logixWaveSaveView(view)
+     instead. Save as image posts {type: "logix-wave:save-file", name, mime,
+     data} (SVG text, or PNG as base64), or calls window.logixWaveSaveFile. With no host, as in a browser, the view isn't saved: there's no Save view button (the user's decision, 2026-11-21, until a clear use for one). -->
+<style>
+/* Layout: a one-screen tool. Header bar; signal browser on the left; the viewer on the right as three aligned columns (name, value at cursor, waves) under one time ruler. */
+:root {
+  --bg: #f4f6f5; --panel: #ffffff; --fg: #15201e; --muted: #5c6b68; --line: #dde4e2; --soft: #edf2f0;
+  --accent: #00838a; --accent-soft: #d8efee; --wave-bg: #ffffff; --grid: #eef2f1; --sel: #f1f7f6; --group-bg: #e4e8e8; --group-fg: #36433f;
+  --x: #d23b3b; --z: #b88400; --fail: #d23b3b; --marker: #7a52d6;
+  --s1: #0f8a66; --s2: #2463c7; --s3: #b25b06; --s4: #8a3fd0; --s5: #c23478; --s6: #0d7891;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --row-h: 30px; --name-w: 210px; --val-w: 92px; --radius: 8px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0c1110; --panel: #121918; --fg: #e2ebe9; --muted: #8b9d99; --line: #22302d; --soft: #19221f;
+  --accent: #3cc8c0; --accent-soft: #143331; --wave-bg: #0f1615; --grid: #182220; --sel: #15201e; --group-bg: #232d2b; --group-fg: #c6d2cf;
+  --x: #f47272; --z: #f2b52a; --fail: #f47272; --marker: #b493ff;
+  --s1: #3ad69c; --s2: #72a9ff; --s3: #f5a43a; --s4: #bd92ff; --s5: #f477b5; --s6: #2fd0ea;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0c1110; --panel: #121918; --fg: #e2ebe9; --muted: #8b9d99; --line: #22302d; --soft: #19221f;
+  --accent: #3cc8c0; --accent-soft: #143331; --wave-bg: #0f1615; --grid: #182220; --sel: #15201e; --group-bg: #232d2b; --group-fg: #c6d2cf;
+  --x: #f47272; --z: #f2b52a; --fail: #f47272; --marker: #b493ff;
+  --s1: #3ad69c; --s2: #72a9ff; --s3: #f5a43a; --s4: #bd92ff; --s5: #f477b5; --s6: #2fd0ea;
+  color-scheme: dark; }
+
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); font-size: 13px; overflow: hidden; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; grid-template-columns: 250px 1fr;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px; gap: 10px; box-sizing: border-box; }
+
+/* Header */
+.top { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; min-width: 0; }
+.top .right { display: flex; align-items: center; gap: 8px 10px; margin-left: auto; }
+/* The time base: Time | Cycles, and the clock (R44). */
+.btns button.on { background: var(--panel); color: var(--accent); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.clock-pick { gap: 6px; font-family: var(--mono); font-size: 12px; max-width: 220px; }
+.clock-pick #clockName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.clock-pick .clk-ico svg { width: 14px; height: 14px; display: block; color: var(--accent); }
+.clock-pick .dd { width: 12px; height: 12px; flex: none; color: var(--muted); }
+.clock-pick.idle { color: var(--muted); }
+.clock-pick.idle .clk-ico svg { color: var(--muted); }
+.pill { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); background: var(--accent-soft); padding: 3px 8px; border-radius: 999px; }
+/* One toolbar across the window: the testbench's name is in the window's
+   title, so the page has no name or icon of its own (R43). */
+.spacer { flex: 1; }
+/* hidden always hides, whatever display a class gives (a hidden button
+   showed, the user's report, 2026-11-21). */
+[hidden] { display: none !important; }
+.btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--panel); cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 600; }
+.btn svg { width: 15px; height: 15px; }
+.icon-btn { width: 30px; padding: 0; justify-content: center; }
+.browser-toggle { display: none; }
+
+/* Browser */
+.browser { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.browser h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 12px 12px 8px; font-weight: 600; }
+.search { margin: 0 10px 8px; position: relative; }
+.search input { width: 100%; box-sizing: border-box; height: 30px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--fg); padding: 0 10px 0 28px; font: inherit; }
+.search svg { position: absolute; left: 9px; top: 8px; width: 14px; height: 14px; color: var(--muted); }
+.tree { overflow: auto; padding: 0 6px 10px; flex: 1; }
+.scope-h { display: flex; align-items: center; gap: 6px; width: 100%; border: 0; background: none; padding: 5px 6px; border-radius: 6px; cursor: pointer; font-weight: 600; text-align: left; }
+.scope-h:hover { background: var(--soft); }
+.scope-h .chev { width: 10px; transition: transform .15s; color: var(--muted); }
+.scope[data-open="false"] > .kids { display: none; }
+.scope[data-open="true"] > .scope-h .chev { transform: rotate(90deg); }
+.scope-h .kind { font-weight: 400; color: var(--muted); font-size: 11px; }
+.kids { padding-left: 12px; }
+.var { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 4px 6px; border-radius: 6px; cursor: default; text-align: left; font-family: var(--mono); font-size: 12px; }
+.var:hover { background: var(--soft); }
+.var .chk { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--line); flex: none; display: grid; place-items: center; cursor: pointer; position: relative; }
+/* A larger area to click than the box drawn. */
+.var .chk::before { content: ""; position: absolute; inset: -6px; }
+.var .chk:hover { border-color: var(--accent); }
+.var.on .chk { background: var(--accent); border-color: var(--accent); }
+.var.on .chk::after { content: ""; width: 7px; height: 4px; border: 2px solid var(--panel); border-top: 0; border-right: 0; transform: translate(0, -1px) rotate(-45deg); }
+.var .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.var .w { color: var(--muted); font-size: 11px; }
+.browser .hint { margin: 0; padding: 10px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+/* Viewer */
+.viewer { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; position: relative; }
+.btns { display: flex; gap: 2px; background: var(--soft); border-radius: var(--radius); padding: 2px; }
+.btns button { border: 0; background: none; height: 26px; min-width: 28px; padding: 0 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; color: var(--fg); }
+.btns button:hover:not(:disabled) { background: var(--panel); }
+.btns button:disabled { opacity: .35; cursor: default; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 12px; }
+.keys kbd { font-family: var(--mono); font-size: 11px; background: var(--soft); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; white-space: nowrap; justify-self: start; }
+/* A group row is a group's title: gray in the Signal column only, as the
+   board picker's family headings, and an arrow that folds the group. */
+.nrow.group, .nrow.group.sel, .nrow.group:hover { background: var(--group-bg); }
+.nrow.group { cursor: pointer; }
+.nrow .fold svg { width: 16px; height: 16px; display: block; margin: auto; }
+.nrow .fold { border: 0; background: none; color: var(--group-fg); width: 24px; height: 24px; margin-left: -6px; padding: 0; cursor: pointer; font-size: 17px; line-height: 24px; border-radius: 5px; flex: none; }
+.nrow .fold:hover { background: var(--soft); color: var(--fg); }
+.nrow .hidden-n { font-weight: 400; font-family: var(--mono); font-size: 11px; }
+.nrow.group .nm { font-family: var(--font); font-weight: 600; font-size: 12px; color: var(--group-fg); letter-spacing: .02em; }
+.nrow.blank .nm { color: var(--muted); font-size: 11px; opacity: 0; }
+.nrow.blank:hover .nm { opacity: .7; }
+.pop input[type=text] { width: 100%; box-sizing: border-box; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); padding: 0 8px; font: inherit; }
+.btns button svg { width: 15px; height: 15px; }
+/* Undo and redo, next to the testbench's name where they're easy to find, a size up. */
+.btns.undo button { height: 30px; min-width: 34px; }
+.btns.undo button svg { width: 19px; height: 19px; }
+.fail-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--fail) 45%, transparent); background: color-mix(in srgb, var(--fail) 10%, transparent); color: var(--fail); font-weight: 600; cursor: pointer; }
+.fail-chip[hidden] { display: none; }
+.failbar { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--fail) 9%, var(--panel)); color: var(--fg); font-size: 12.5px; flex-wrap: wrap; }
+.failbar[hidden], .truncbar[hidden] { display: none; }
+.failbar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fail); flex: none; }
+.failbar .msg { font-family: var(--mono); min-width: 0; overflow-wrap: anywhere; }
+.failbar .src { color: var(--fail); font-family: var(--mono); font-size: 12px; }
+.failbar .count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.failbar .btn { height: 26px; padding: 0 10px; font-size: 12px; }
+.failbar .spacer { flex: 1; }
+.truncbar { padding: 7px 12px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--z) 12%, var(--panel)); font-size: 12.5px; }
+.flist { display: flex; flex-direction: column; gap: 2px; max-height: 320px; overflow: auto; }
+.flist button { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; text-align: left; border: 0; background: none; padding: 6px 8px; border-radius: 6px; cursor: pointer; }
+.flist button:hover, .flist button.on { background: var(--soft); }
+.flist .t { font-family: var(--mono); font-size: 11px; color: var(--fail); white-space: nowrap; }
+.flist .m { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
+.flist .s { grid-column: 2; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.fail-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--fail); }
+
+.cols { display: grid; grid-template-columns: var(--name-w) var(--val-w) minmax(0, 1fr); }
+.head { border-bottom: 1px solid var(--line); height: 30px; }
+.head > div { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; display: flex; align-items: center; padding: 0 10px; border-right: 1px solid var(--line); }
+.head canvas, .wavecol canvas { display: block; width: 100%; }
+.rows { flex: 1; overflow: auto; min-height: 0; position: relative; }
+.names, .vals { border-right: 1px solid var(--line); }
+.nrow, .vrow { height: var(--row-h); display: flex; align-items: center; box-sizing: border-box; border-bottom: 1px solid var(--grid); }
+.nrow { gap: 8px; padding: 0 4px 0 10px; cursor: pointer; user-select: none; }
+/* Rows are selected, not text: Shift+click selects a range of rows (R46). */
+.names, .vals { -webkit-user-select: none; user-select: none; }
+/* Hover is a faint gray, unlike the selection's tint, so it can't pass for
+   a selected row (the user's report, 2026-11-21). After a drop it waits for
+   the mouse to move: the browser keeps the hover where the drag began. */
+.nrow.sel, .vrow.sel { background: var(--sel); }
+.names:not(.after-drop) .nrow:not(.sel):not(.group):hover { background: color-mix(in srgb, var(--fg) 7%, var(--panel)); }
+.nrow.sel { box-shadow: inset 2px 0 0 var(--c); }
+.nrow.drop { box-shadow: inset 0 2px 0 var(--accent); }
+.nrow.drop-below { box-shadow: inset 0 -2px 0 var(--accent); }
+.nrow .dot { width: 8px; height: 8px; border-radius: 3px; background: var(--c); flex: none; }
+.clk-badge { display: inline-flex; vertical-align: -2px; margin-left: 6px; color: var(--accent); }
+.clk-badge svg { width: 13px; height: 13px; }
+.clk-badge.idle { color: var(--muted); opacity: .75; }
+.nrow .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--mono); font-size: 12px; }
+.nrow .sc { color: var(--muted); }
+.nrow .rg { color: var(--muted); font-size: 11px; }
+/* Values end 12 px from the column's right border, as its title does, so
+   digits line up (tabular numbers). */
+.vrow { padding: 0 12px 0 8px; text-align: right; text-overflow: ellipsis; display: block; line-height: calc(var(--row-h) - 1px); font-family: var(--mono); font-size: 12px; color: var(--c); font-weight: 500; font-variant-numeric: tabular-nums; overflow: hidden; white-space: nowrap; }
+/* A value too long for the column is cut on its left, keeping its low
+   digits, the ones that change (the user's request, 2026-11-21): the cell
+   runs right to left, the value itself left to right. */
+.vrow { direction: rtl; white-space: nowrap; }
+.vrow.xv { color: var(--x); }
+.wavecol { position: relative; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); grid-column: 1 / -1; }
+.empty[hidden] { display: none; }
+
+.status { display: flex; gap: 4px 16px; align-items: center; padding: 7px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.status b { color: var(--fg); font-weight: 500; font-family: var(--mono); }
+.status .cur b { color: var(--accent); }
+.status .mk b { color: var(--marker); }
+.status .help { margin-left: auto; }
+/* On a line of their own (a narrow window), the hints start at the left, as the line above. */
+.status.wrapped .help { margin-left: 0; }
+.app.no-hints .status .help, .app.no-hints .browser > .hint { display: none; }
+
+/* A short message after an action that shows nothing by itself, such as a
+   download. */
+.toast { position: fixed; left: 50%; bottom: 56px; transform: translateX(-50%); z-index: 80; max-width: min(520px, calc(100% - 32px)); background: var(--fg); color: var(--panel); border-radius: 8px; padding: 9px 14px; font-size: 13px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,.22); }
+.tip { position: fixed; pointer-events: none; background: var(--fg); color: var(--panel); border-radius: 7px; padding: 6px 9px; font-size: 12px; line-height: 1.4; z-index: 30; max-width: 280px; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.tip .how { margin-top: 3px; opacity: .7; font-size: 11.5px; }
+.tip code { font-family: var(--mono); }
+.tip .t { opacity: .7; font-family: var(--mono); font-size: 11px; }
+.tip code { font-family: var(--mono); }
+
+/* Popovers and dialog */
+/* The viewer's own right-click menu. */
+.ctx { position: fixed; z-index: 70; min-width: 230px; max-width: 300px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 34px rgba(0,0,0,.2); padding: 5px; display: flex; flex-direction: column; font-size: 13px; }
+.ctx .ttl { padding: 6px 10px 4px; font-family: var(--mono); font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx .it { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; text-align: left; padding: 6px 10px; border-radius: 6px; cursor: pointer; color: var(--fg); }
+.ctx .it:hover, .ctx .it:focus { background: var(--accent-soft); outline: none; }
+.ctx .it:disabled { opacity: .4; cursor: default; background: none; }
+.ctx .it .k { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.ctx .it.danger { color: var(--x); }
+.ctx .sep { height: 1px; background: var(--line); margin: 4px 6px; }
+.ctx .sub { padding: 4px 10px 6px; display: flex; flex-direction: column; gap: 5px; }
+.ctx .sub .lbl { font-size: 11px; color: var(--muted); }
+.ctx .seg button { font-size: 11.5px; }
+.pop { position: fixed; z-index: 40; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 12px 34px rgba(0,0,0,.18); padding: 12px; width: 250px; display: flex; flex-direction: column; gap: 12px; }
+.pop h3 { margin: 0; font-size: 12px; font-family: var(--mono); font-weight: 600; overflow-wrap: anywhere; }
+.pop .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; background: var(--soft); padding: 2px; border-radius: 8px; }
+.seg button { flex: 1; border: 0; background: none; height: 26px; padding: 0 6px; border-radius: 6px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+.seg button.on { background: var(--panel); box-shadow: 0 1px 2px rgba(0,0,0,.12); font-weight: 600; }
+.swatches { display: flex; gap: 8px; }
+.swatches button { width: 22px; height: 22px; border-radius: 6px; border: 0; cursor: pointer; background: var(--c); }
+.swatches button.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--c); }
+.pop .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.pop .actions .btn { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn.danger { color: var(--x); }
+.check { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.check input { accent-color: var(--accent); }
+
+.overlay { position: fixed; inset: 0; background: rgba(5, 12, 11, .45); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.overlay[hidden] { display: none; }
+.dialog { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; width: min(560px, 100%); padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+.dialog h2 { margin: 0; font-size: 16px; }
+.dialog p { margin: 0; color: var(--muted); line-height: 1.5; }
+.dialog pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px; font-family: var(--mono); font-size: 12px; max-height: 260px; overflow: auto; }
+.dialog .actions { display: flex; justify-content: flex-end; gap: 8px; }
+.drop-hint { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 18%, transparent); border: 3px dashed var(--accent); font-size: 18px; font-weight: 600; color: var(--accent); pointer-events: none; }
+.drop-hint[hidden] { display: none; }
+
+/* More room for the waves: the signal list hides, and the Signal and Value
+   columns are resized by dragging their right border. */
+.app.no-browser { grid-template-columns: 1fr; }
+.app.no-browser .browser { display: none; }
+.side-btn.on { border-color: var(--accent); color: var(--accent); }
+.head > div { position: relative; overflow: hidden; white-space: nowrap; }
+#valHead { padding: 0 8px 0 4px; }
+/* The title gives way first: at any width the chevron stays. */
+#valHead .vt { margin-left: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.app.val-narrow #valHead .vt { display: none; }
+/* A hidden Value column stays as a narrow strip with a chevron: a click on
+   it brings the column back at its last width. */
+.val-open { display: none; }
+#valHead { gap: 4px; }
+.val-close { flex: none; display: grid; place-items: center; width: 18px; height: 18px; border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0; border-radius: 4px; }
+.val-close svg, .val-open svg { width: 13px; height: 13px; display: block; }
+.val-close:hover { color: var(--accent); background: var(--soft); }
+.app.val-hidden .val-close { display: none; }
+.app.val-hidden #valHead { padding: 0; }
+.app.val-hidden #valHead .vt { display: none; }
+.app.val-hidden .val-open { display: grid; place-items: center; width: 100%; height: 100%; border: 0; padding: 0; background: var(--soft); color: var(--muted); cursor: pointer; }
+.app.val-hidden .val-open:hover { color: var(--accent); }
+.app.val-hidden .vrow { padding: 0; color: transparent; background: var(--soft); cursor: pointer; }
+/* A hidden Value column keeps its handle, just right of the Signal column's, to drag it back. */
+.colgrips { position: absolute; left: 0; right: 0; top: var(--grips-top, 0px); bottom: var(--grips-bottom, 0px); pointer-events: none; z-index: 4; }
+.grip { position: absolute; top: 0; bottom: 0; width: 8px; user-select: none; cursor: col-resize; pointer-events: auto; }
+.grip[data-col="name"] { left: calc(var(--name-w) - 6px); }
+.grip[data-col="val"] { left: calc(var(--name-w) + var(--val-w) - 1px); }
+.grip::after { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: transparent; }
+.grip[data-col="name"]::after { left: 5px; }
+.grip[data-col="val"]::after { left: 0; }
+.grip:hover::after, .grip.active::after { background: var(--accent); }
+.vrow, .nrow { overflow: hidden; }
+.cols.head { position: relative; }
+@media (max-width: 760px) {
+  :root { --name-w: 118px; --val-w: 62px; }
+  .app { grid-template-columns: 1fr; }
+  .browser { position: fixed; z-index: 45; top: 60px; bottom: 12px; left: max(16px, env(safe-area-inset-left, 0px)); width: min(280px, calc(100% - 32px)); box-shadow: 0 16px 40px rgba(0,0,0,.25); }
+  .app:not(.show-browser) .browser { display: none; }
+  .app.no-browser.show-browser .browser { display: flex; }
+  .side-btn { display: none; }
+  .browser-toggle { display: inline-flex; }
+  .status .help, .btn .txt, .file { display: none; }
+  .nrow .sc { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="top">
+    <button class="btn icon-btn side-btn on" id="sideBtn" aria-label="Hide the signal list" title="Hide the signal list, for more room (S)" aria-pressed="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></button>
+    <div class="btns undo" role="group" aria-label="Undo">
+      <button id="undoBtn" title="Undo (⌘Z)" aria-label="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+      <button id="redoBtn" title="Redo (⇧⌘Z)" aria-label="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+    </div>
+    <div class="btns" role="group" aria-label="Zoom">
+      <button id="zoomOut" title="Zoom out (−)" aria-label="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+      <button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></button>
+      <button id="fit" title="Show the whole simulation (F)">Fit</button>
+    </div>
+    <div class="btns" role="group" aria-label="Move the cursor">
+      <button id="prevEdge" title="Previous change of the selected signal (←)" aria-label="Previous change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <button id="nextEdge" title="Next change of the selected signal (→)" aria-label="Next change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      <button id="setMarker" title="Put the marker at the cursor, to measure from it (M)">Marker</button>
+    </div>
+    <div class="btns tb" role="group" aria-label="Time base">
+      <button id="tbTime" title="Show time">Time</button>
+      <button id="tbCycles" title="Count the clock's cycles">Cycles</button>
+    </div>
+    <button class="btn clock-pick" id="clockPick" title="The clock whose cycles are counted"><span class="clk-ico"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.6V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span id="clockName">No clock</span><svg class="dd" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="fail-chip" id="failChip" hidden title="Show the first failed check"><span class="dot"></span><span id="failText">Failed check</span></button>
+    <!-- Kept together, so they wrap as one group in a narrow window. -->
+    <div class="right">
+      <button class="btn browser-toggle" id="browserToggle" aria-label="Show signals">Signals</button>
+      <button class="btn" id="imageBtn" title="Copy or save the waves, to share: a picture, a spreadsheet or a web page">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="15.5" cy="8.5" r="1.5"/></svg><span class="txt">Export</span>
+      </button>
+      <button class="btn icon-btn" id="helpBtn" aria-label="Keyboard and mouse" title="Keyboard and mouse">?</button>
+      <button class="btn icon-btn" id="settingsBtn" aria-label="View settings" title="View settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+    </div>
+  </header>
+
+  <aside class="browser" id="browser" aria-label="Signals in the file">
+    <h2>Signals in the file</h2>
+    <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="search" type="search" placeholder="Find a signal" aria-label="Find a signal"></div>
+    <div class="tree" id="tree"></div>
+    <p class="hint">Tick a signal's box to show or hide it; it goes after the selected row. Drag rows to reorder them.</p>
+  </aside>
+
+  <main class="viewer" id="viewer">
+    <div class="failbar" id="failbar" hidden>
+      <span class="dot"></span><span class="msg" id="failMsg"></span>
+      <a class="src" id="failSrc" href="#" hidden></a>
+      <span class="spacer"></span>
+      <span class="count" id="failCount"></span>
+      <button class="btn" id="failPrev" title="Previous failure">Previous</button>
+      <button class="btn" id="failNext" title="Next failure">Next</button>
+    </div>
+    <div class="truncbar" id="truncbar" hidden></div>
+    <div class="cols head">
+      <div>Signal</div>
+      <div id="valHead"><button class="val-close" id="valClose" title="Hide the Value column" aria-label="Hide the Value column"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="vt">Value</span><button class="val-open" id="valOpen" title="Show the Value column" aria-label="Show the Value column"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+      <canvas id="ruler" height="30" aria-label="Time ruler"></canvas>
+    </div>
+    <div class="rows" id="rows">
+      <div class="cols">
+        <div class="names" id="names"></div>
+        <div class="vals" id="vals"></div>
+        <div class="wavecol" id="wavecol"><canvas id="waves" aria-label="Waveforms"></canvas></div>
+        <div class="empty" id="empty" hidden>No signals shown yet. Pick some from Signals in the file.</div>
+      </div>
+    </div>
+    <!-- The column borders, draggable along the whole height. -->
+    <div class="colgrips" id="colgrips">
+      <span class="grip" data-col="name" title="Drag to resize the Signal column; double-click for the default width"></span>
+      <span class="grip" data-col="val" title="Drag to resize the Value column, or almost to nothing to hide it; double-click for the default width"></span>
+    </div>
+    <div class="status" id="status"></div>
+  </main>
+</div>
+
+<div class="tip" id="tip" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="overlay" id="overlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <h2 id="dlgTitle"></h2>
+    <p id="dlgText"></p>
+    <div class="actions"><button class="btn" id="dlgClose">Close</button></div>
+  </div>
+</div>
+
+<script>
+(() => {
+// The page as the engine wrote it, without its data, taken before the script
+// changes anything: Export's web page is this page with new data (R48).
+const PAGE = (() => {
+  // The data's line starts the line (this code has the same words inside it).
+  const h = '<!doctype html>\n' + document.documentElement.outerHTML, mark = '\nconst DATA = ', k = h.indexOf(mark);
+  if (k < 0) return null;
+  return { head: h.slice(0, k + mark.length), tail: h.slice(h.indexOf('\n', k + 1)) };
+})();
+const $ = (s) => document.querySelector(s);
+const S = { wave: null, file: '', rows: [], start: 0, end: 1, cursor: null, anchor: null, clock: null, edges: [], cycles: false, marker: null, sel: -1, rowH: 30, grid: true, theme: 'auto', marks: [] };
+// The data the engine wrote into the page.
+const DATA = {"waveform":"main_tb.vcd","testbench":"main_tb.v","view_file":"main_tb.view","vcd":"$date\n\tSat Nov 21 19:07:53 2026\n$end\n$version\n\tIcarus Verilog\n$end\n$timescale\n\t1ps\n$end\n$scope module main_tb $end\n$var wire 3 ! rgb_led [2:0] $end\n$var reg 1 \" sys_clk $end\n$scope module dut $end\n$var wire 3 # rgb_led [2:0] $end\n$var wire 1 \" sys_clk $end\n$var wire 1 $ green_on $end\n$var parameter 32 % N $end\n$var reg 4 & counter [3:0] $end\n$upscope $end\n$scope task cycles $end\n$var integer 32 ' n [31:0] $end\n$upscope $end\n$upscope $end\n$enddefinitions $end\n$comment Show the parameter values. $end\n$dumpall\nb100 %\n$end\n#0\n$dumpvars\nbx '\nb0 &\n0$\nb111 #\n0\"\nb111 !\n$end\n#1000\nb1000 '\n#41667\nb1 &\n1\"\n#83334\n0\"\n#125001\nb10 &\n1\"\n#166668\n0\"\n#208335\nb11 &\n1\"\n#250002\n0\"\n#291669\nb100 &\n1\"\n#333336\n0\"\n#375003\nb101 &\n1\"\n#416670\n0\"\n#458337\nb110 &\n1\"\n#500004\n0\"\n#541671\nb111 &\n1\"\n#583338\n0\"\n#625005\nb101 !\nb101 #\n1$\nb1000 &\n1\"\n#666672\n0\"\n#708339\nb1001 &\n1\"\n#750006\n0\"\n#791673\nb1010 &\n1\"\n#833340\n0\"\n#875007\nb1011 &\n1\"\n#916674\n0\"\n#958341\nb1100 &\n1\"\n#1000008\n0\"\n#1041675\nb1101 &\n1\"\n#1083342\n0\"\n#1125009\nb1110 &\n1\"\n#1166676\n0\"\n#1208343\nb1111 &\n1\"\n#1250010\n0\"\n#1291677\nb111 !\nb111 #\n0$\nb0 &\n1\"\n#1292677\nb10000 '\n#1333344\n0\"\n#1375011\nb1 &\n1\"\n#1416678\n0\"\n#1458345\nb10 &\n1\"\n#1500012\n0\"\n#1541679\nb11 &\n1\"\n#1583346\n0\"\n#1625013\nb100 &\n1\"\n#1666680\n0\"\n#1708347\nb101 &\n1\"\n#1750014\n0\"\n#1791681\nb110 &\n1\"\n#1833348\n0\"\n#1875015\nb111 &\n1\"\n#1916682\n0\"\n#1958349\nb101 !\nb101 #\n1$\nb1000 &\n1\"\n#2000016\n0\"\n#2041683\nb1001 &\n1\"\n#2083350\n0\"\n#2125017\nb1010 &\n1\"\n#2166684\n0\"\n#2208351\nb1011 &\n1\"\n#2250018\n0\"\n#2291685\nb1100 &\n1\"\n#2333352\n0\"\n#2375019\nb1101 &\n1\"\n#2416686\n0\"\n#2458353\nb1110 &\n1\"\n#2500020\n0\"\n#2541687\nb1111 &\n1\"\n#2583354\n0\"\n#2625021\nb111 !\nb111 #\n0$\nb0 &\n1\"\n","truncated":null,"order":["main_tb.sys_clk","main_tb.rgb_led"],"declarations":{"main_tb.rgb_led":{"file":"main_tb.v","line":13},"main_tb.sys_clk":{"file":"main_tb.v","line":12}},"failures":[],"failure_count":0,"view":null,"focus":null};
+// Hosted: in a host's window or iframe, which saves the view and opens sources.
+const hosted = window.parent !== window || typeof window.logixWaveSaveView === 'function';
+function toHost(msg, fn, ...args) {
+  if (typeof window[fn] === 'function') window[fn](...args);
+  else if (window.parent !== window) window.parent.postMessage(msg, '*');
+}
+function openSource(file, line) { if (file) toHost({ type: 'logix-wave:open-source', file, line }, 'logixWaveOpenSource', file, line); }
+// Theme: ?theme=, a host's message, else the system's.
+function setTheme(t) {
+  if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  else delete document.documentElement.dataset.theme;
+}
+setTheme(new URLSearchParams(location.search).get('theme'));
+window.addEventListener('message', (e) => { if (e.data && e.data.type === 'logix-wave:theme') setTheme(e.data.theme); });
+const RADIX = [['bin', 'Binary'], ['hex', 'Hex'], ['dec', 'Decimal'], ['signed', 'Signed'], ['ascii', 'ASCII']];
+
+/* ---------- VCD reading ---------- */
+function parseTimescale(s) {
+  const m = /(\d+)\s*(s|ms|us|ns|ps|fs)/.exec(s);
+  if (!m) return 1e-9;
+  return +m[1] * { s: 1, ms: 1e-3, us: 1e-6, ns: 1e-9, ps: 1e-12, fs: 1e-15 }[m[2]];
+}
+function parseVCD(text) {
+  const tok = text.split(/\s+/);
+  const root = { name: '', kind: '', children: [], vars: [] };
+  const stack = [root], scope = [], vars = [], data = new Map();
+  let ts = 1e-9, t = 0, end = 0, i = 0;
+  const push = (id, val) => {
+    const d = data.get(id); if (!d) return;
+    const n = d.t.length;
+    if (n && d.t[n - 1] === t) { d.v[n - 1] = val; return; }
+    if (n && d.v[n - 1] === val) return;
+    d.t.push(t); d.v.push(val);
+  };
+  while (i < tok.length) {
+    const w = tok[i++]; if (!w) continue;
+    if (w[0] === '$') {
+      if (w === '$timescale') { let s = ''; while (i < tok.length && tok[i] !== '$end') s += tok[i++]; i++; ts = parseTimescale(s); }
+      else if (w === '$scope') {
+        const kind = tok[i++], name = tok[i++]; while (i < tok.length && tok[i++] !== '$end');
+        const p = stack[stack.length - 1];
+        let n = p.children.find((c) => c.name === name);
+        if (!n) { n = { name, kind, children: [], vars: [] }; p.children.push(n); }
+        stack.push(n); scope.push(name);
+      }
+      else if (w === '$upscope') { while (i < tok.length && tok[i++] !== '$end'); stack.pop(); scope.pop(); }
+      else if (w === '$var') {
+        const type = tok[i++], width = +tok[i++], id = tok[i++], name = tok[i++];
+        let range = ''; while (i < tok.length && tok[i] !== '$end') range += tok[i++]; i++;
+        const v = { id, type, width, name, range, path: [...scope, name].join('.') };
+        vars.push(v); stack[stack.length - 1].vars.push(v);
+        if (!data.has(id)) data.set(id, { t: [], v: [] });
+      }
+      else if (['$dumpvars', '$dumpall', '$dumpon', '$dumpoff', '$end'].includes(w)) { /* values follow */ }
+      else { while (i < tok.length && tok[i++] !== '$end'); }
+      continue;
+    }
+    const c = w[0];
+    if (c === '#') { t = +w.slice(1); if (t > end) end = t; }
+    else if (c === 'b' || c === 'B') push(tok[i++], w.slice(1).toLowerCase());
+    else if (c === 'r' || c === 'R') push(tok[i++], 'r' + w.slice(1));
+    else push(w.slice(1), c.toLowerCase());
+  }
+  return { ts, end: Math.max(end, 1), root, vars, data };
+}
+
+/* ---------- Sample: a UART transmitter testbench with one failed check ---------- */
+function sampleVCD() {
+  const ev = [], add = (t, id, v) => ev.push([t, id, v]);
+  const bits = (n, w) => n.toString(2).padStart(w, '0');
+  add(0, '!', '0'); add(0, '"', '1'); add(0, '#', 'b000'); add(0, '$', 'bxx'); add(0, '%', 'x'); add(0, '&', 'x');
+  add(0, "'", 'bxxxxxxxx'); add(0, '(', 'b000'); add(0, ')', 'b000');
+  for (let t = 5, v = 1; t <= 2000; t += 5, v ^= 1) add(t, '!', String(v));
+  add(20, '"', '0'); add(20, '$', 'b00'); add(20, '%', '0'); add(20, '&', '1');
+  const frame = (t0, byte, late) => {
+    add(t0, '%', '1'); add(t0, '$', 'b01'); add(t0, '&', '0'); add(t0, "'", 'b' + bits(byte, 8));
+    for (let k = 0; k < 8; k++) {
+      const t = t0 + 80 * (k + 1);
+      if (k === 0) add(t, '$', 'b10');
+      add(t, '&', String((byte >> k) & 1)); add(t, '(', 'b' + bits(k, 3));
+    }
+    add(t0 + 720, '$', 'b11'); add(t0 + 720, '&', '1'); add(t0 + 720, '(', 'b000');
+    add(t0 + 800, '$', 'b00');
+    const busyEnd = t0 + 800 + late;
+    for (let t = t0 + 10, c = 1; t < busyEnd; t += 10, c = (c + 1) % 8) add(t, ')', 'b' + bits(c, 3));
+    add(busyEnd, ')', 'b000'); add(busyEnd, '%', '0');
+  };
+  frame(100, 0x48, 0);   // 'H'
+  frame(1000, 0x69, 80); // 'i': busy stays high one bit too long
+  add(500, '#', 'b001'); add(1300, '#', 'b010'); add(1890, '#', 'b100');
+  ev.sort((a, b) => a[0] - b[0]);
+  let out = `$date 2026-11-17 $end
+$version Icarus Verilog $end
+$timescale 1ns $end
+$scope module tb $end
+$var wire 1 ! clk $end
+$var reg 1 " rst $end
+$var wire 3 # led [2:0] $end
+$scope module dut $end
+$var wire 1 ! clk $end
+$var reg 2 $ state [1:0] $end
+$var reg 1 % busy $end
+$var reg 1 & tx $end
+$var reg 8 ' tx_data [7:0] $end
+$var reg 3 ( bit_count [2:0] $end
+$var reg 3 ) baud_cnt [2:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+`;
+  let last = -1;
+  for (const [t, id, v] of ev) {
+    if (t !== last) { out += `#${t}\n`; last = t; }
+    out += v.length > 1 && v[0] === 'b' ? `${v} ${id}\n` : `${v}${id}\n`;
+  }
+  return out + '#2000\n';
+}
+const SAMPLE_ROWS = [
+  ['tb.clk', 'bin', 6], ['tb.rst', 'bin', 3], ['tb.dut.state', 'dec', 4], ['tb.dut.busy', 'bin', 1],
+  ['tb.dut.tx', 'bin', 2], ['tb.dut.tx_data', 'ascii', 5], ['tb.dut.bit_count', 'dec', 3], ['tb.dut.baud_cnt', 'dec', 2], ['tb.led', 'bin', 1],
+];
+
+/* ---------- Values ---------- */
+function norm(v, w) {
+  if (v.length >= w) return v.slice(-w);
+  const p = v[0] === '1' ? '0' : v[0];
+  return p.repeat(w - v.length) + v;
+}
+function fmt(v, w, radix) {
+  if (v == null) return '';
+  if (v[0] === 'r') return String(+(+v.slice(1)).toPrecision(6));
+  v = norm(v, w);
+  if (w === 1) return v;
+  const hasXZ = /[xz]/.test(v);
+  if (hasXZ && /^x+$/.test(v)) return 'x';
+  if (hasXZ && /^z+$/.test(v)) return 'z';
+  if (radix === 'bin') return v;
+  if (radix === 'hex' || hasXZ) {
+    let out = '';
+    for (let e = v.length; e > 0; e -= 4) {
+      const nib = v.slice(Math.max(0, e - 4), e);
+      out = (/x/.test(nib) ? 'X' : /z/.test(nib) ? 'Z' : parseInt(nib, 2).toString(16).toUpperCase()) + out;
+    }
+    return hasXZ && radix !== 'hex' ? 'h' + out : out;
+  }
+  let n = BigInt('0b' + v);
+  if (radix === 'dec') return n.toString();
+  if (radix === 'signed') { if (v[0] === '1') n -= 1n << BigInt(w); return n.toString(); }
+  if (radix === 'ascii') {
+    let s = '';
+    for (let e = v.length; e > 0; e -= 8) {
+      const c = parseInt(v.slice(Math.max(0, e - 8), e), 2);
+      s = (c >= 32 && c < 127 ? String.fromCharCode(c) : '·') + s;
+    }
+    return `'${s.replace(/^·+(?=.)/, '')}'`;
+  }
+  return v;
+}
+function idx(arr, t) { let lo = 0, hi = arr.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (arr[m] <= t) { r = m; lo = m + 1; } else hi = m - 1; } return r; }
+function valueAt(v, t) { const d = S.wave.data.get(v.id); const k = idx(d.t, t); return k < 0 ? null : d.v[k]; }
+const isX = (v) => v != null && v[0] !== 'r' && /[xz]/.test(v);
+
+/* ---------- Time ---------- */
+const UNITS = [['s', 1], ['ms', 1e-3], ['µs', 1e-6], ['ns', 1e-9], ['ps', 1e-12], ['fs', 1e-15]];
+function unitFor() { const sec = S.wave.end * S.wave.ts; for (const u of UNITS) if (sec / u[1] >= 1 && sec / u[1] < 1e5) return u; return UNITS[3]; }
+function fmtTime(t) { const [name, f] = unitFor(); const v = t * S.wave.ts / f; return `${v.toLocaleString('en-US', { maximumFractionDigits: 3 })} ${name}`; }
+function niceStep(span, px) {
+  const target = span * 90 / Math.max(px, 1);
+  const p = 10 ** Math.floor(Math.log10(target));
+  for (const m of [1, 2, 5, 10]) if (m * p >= target) return m * p;
+  return 10 * p;
+}
+
+/* ---------- Clock cycles (R44) ---------- */
+// The ruler, cursor and marker can count cycles of a chosen clock instead of
+// time. A cycle is a clean rising edge, 0 to 1 (not from x or z), counted
+// from the clock's own transitions, so a clock that starts late, stops or
+// changes speed is still counted right. Cycle 0 is the first rising edge.
+// Two controls in the toolbar (the user's design, 2026-11-21): Time | Cycles
+// switches the time base, and the clock picker chooses the clock. S.clock is
+// always a clock when the run has one (the likely clock at first, then the
+// one chosen), shown by the picker even while time shows, so it's never a
+// hidden choice; S.cycles is the switch.
+function risingEdges(v) {
+  const d = S.wave.data.get(v.id), out = [];
+  for (let k = 1; k < d.t.length; k++) if (d.v[k] === '1' && d.v[k - 1] === '0') out.push(d.t[k]);
+  return out;
+}
+const isClockable = (v) => v && v.width === 1;
+function setClock(path) {
+  const v = path && varByPath().get(path);
+  S.clock = isClockable(v) ? path : null;
+  S.edges = S.clock ? risingEdges(v) : [];
+  if (!S.clock) S.cycles = false;
+}
+const counting = () => S.cycles && S.edges.length > 1;
+// Where a time is in cycles, as a number: 37 on the 38th rising edge, 37.5
+// halfway to the next one; before the first edge or after the last, the
+// nearest cycle's length carries on.
+function cyclePos(t) {
+  const E = S.edges, n = E.length;
+  let k = idx(E, t); if (k < 0) k = 0; else if (k > n - 2) k = n - 2;
+  return k + (t - E[k]) / (E[k + 1] - E[k]);
+}
+// The time of a cycle position, the reverse of cyclePos.
+function cycleTime(c) {
+  const E = S.edges, n = E.length, k = Math.max(0, Math.min(Math.floor(c), n - 2));
+  return E[k] + (c - k) * (E[k + 1] - E[k]);
+}
+const roundCycle = (c) => Math.round(c * 10) / 10;
+function fmtCycles(c) { const r = roundCycle(c); return `${r.toLocaleString('en-US')} cycle${r === 1 ? '' : 's'}`; }
+// A time as the scale shows it: "cycle 37" or "4.625 µs".
+function fmtAt(t) {
+  if (!counting()) return fmtTime(t);
+  const c = roundCycle(cyclePos(t));
+  return c < 0 ? 'before cycle 0' : `cycle ${c.toLocaleString('en-US')}`;
+}
+// A suggested clock: a 1-bit signal that toggles steadily, a name like clk
+// first, then the one with the most rising edges.
+function suggestClock() {
+  let best = null;
+  for (const v of S.wave.vars) {
+    if (!isClockable(v)) continue;
+    const n = risingEdges(v).length; if (n < 4) continue;
+    const score = (/(^|_)(clk|clock)(_|$|\d)/i.test(v.name) ? 1e9 : 0) + n - v.path.split('.').length;
+    if (!best || score > best.score) best = { path: v.path, score };
+  }
+  return best && best.path;
+}
+const canCount = () => !!S.clock && S.edges.length > 1;
+// Chooses the clock and counts its cycles (the picker, Use as clock).
+function pickClock(path) {
+  const was = [S.clock, S.edges, S.cycles];
+  setClock(path);
+  if (!canCount()) { [S.clock, S.edges, S.cycles] = was; toast(`${shortName(path)} has fewer than two rising edges: it can't be used as the clock.`); return; }
+  S.cycles = true; renderRows();
+}
+// The switch: Time or Cycles of the clock.
+function setCycles(on) {
+  if (on && !canCount()) { toast('This run has no clock to count: right-click a 1-bit signal, Use as clock.'); return; }
+  S.cycles = on; renderRows();
+}
+// The picker's list: the likely clocks, 1-bit signals that toggle, a name
+// like clk first, then by how many rising edges; the chosen one always in it.
+function clockCandidates() {
+  const out = [];
+  for (const v of S.wave.vars) {
+    if (!isClockable(v)) continue;
+    const n = risingEdges(v).length; if (n < 2 && v.path !== S.clock) continue;
+    out.push({ path: v.path, score: (/(^|_)(clk|clock)(_|$|\d)/i.test(v.name) ? 1e9 : 0) + n - v.path.split('.').length });
+  }
+  out.sort((x, y) => y.score - x.score);
+  const top = out.slice(0, 8).map((c) => c.path);
+  if (S.clock && !top.includes(S.clock)) top.push(S.clock);
+  return top;
+}
+function clockMenu(x, y) {
+  openMenu(x, y, [
+    ...clockCandidates().map((p) => ({ label: (p === S.clock ? '✓ ' : '\u2003') + shortName(p), act: () => pickClock(p) })),
+    '-',
+    { label: 'Any 1-bit signal: right-click it, Use as clock', disabled: true, act: () => {} },
+  ], 'Clock');
+}
+// The toolbar's switch and picker, as the state is.
+function renderTimeBase() {
+  $('#tbTime').classList.toggle('on', !counting()); $('#tbCycles').classList.toggle('on', counting());
+  $('#tbCycles').disabled = !canCount();
+  $('#tbCycles').title = canCount() ? `Count the cycles of ${shortName(S.clock)}` : 'This run has no clock to count';
+  const pick = $('#clockPick');
+  $('#clockName').textContent = S.clock ? shortName(S.clock) : 'No clock';
+  pick.classList.toggle('idle', !counting());
+  pick.title = S.clock ? `Clock: ${S.clock}. Choose another clock.` : 'No clock found. Right-click a 1-bit signal: Use as clock.';
+}
+$('#tbTime').addEventListener('click', () => setCycles(false));
+$('#tbCycles').addEventListener('click', () => setCycles(true));
+$('#clockPick').addEventListener('click', (e) => { const r = e.currentTarget.getBoundingClientRect(); clockMenu(r.left, r.bottom + 4); });
+
+/* ---------- Rows and browser ---------- */
+const varByPath = () => new Map(S.wave.vars.map((v) => [v.path, v]));
+function row(i) { return S.rows[i]; }
+// A signal's name as the rows show it (sys_clk, dut.clk), without the
+// testbench's own name; the full path is on hover.
+function shortName(path) {
+  const parts = (path || '').split('.');
+  return parts.length > 2 ? parts.slice(-2).join('.') : parts[parts.length - 1];
+}
+const clockName = () => shortName(S.clock);
+function rowLabel(v) {
+  const parts = v.path.split('.');
+  const sc = parts.length > 2 ? parts[parts.length - 2] + '.' : '';
+  return `<span class="sc">${esc(sc)}</span>${esc(v.name)}${v.range && !v.name.includes('[') ? `<span class="rg">${esc(v.range)}</span>` : ''}`;
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]); }
+
+// The rows shown, as indexes into S.rows: a collapsed group row hides the
+// rows below it, blank rows included, up to the next group row.
+function visible() {
+  const out = []; let hide = false;
+  S.rows.forEach((r, i) => {
+    if (r.kind === 'group') { hide = !!r.collapsed; out.push(i); }
+    else if (!hide) out.push(i);
+  });
+  return out;
+}
+// How many signals a group has (its blank rows aren't counted).
+function groupSize(i) { let n = 0; for (let j = i + 1; j < S.rows.length && S.rows[j].kind !== 'group'; j++) if (S.rows[j].v) n++; return n; }
+// The row (an index into S.rows) at a height in the rows area, or -1.
+function rowAtY(y) { const v = visible()[Math.floor(y / S.rowH)]; return v == null ? -1 : v; }
+function toggleGroup(i) {
+  const r = S.rows[i]; if (!r || r.kind !== 'group') return;
+  r.collapsed = !r.collapsed;
+  if (r.collapsed && S.sel > i && !visible().includes(S.sel)) { S.anchor = null; S.sel = i; }
+  renderRows(); commit();
+}
+// Next to the name of the clock whose cycles are counted.
+const CLOCK_BADGE = '<span class="clk-badge" title="Cycles are counted on this clock\'s rising edges"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.6V8l2.4 1.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
+// The icon next to the chosen clock's name: in the accent color while its
+// cycles are counted, gray while time shows, so the choice stays visible
+// (the user's request, 2026-11-21).
+function clockBadge(path) {
+  if (S.clock !== path) return '';
+  return counting() ? CLOCK_BADGE
+    : CLOCK_BADGE.replace('class="clk-badge"', 'class="clk-badge idle"').replace(/title="[^"]*"/, 'title="The clock. Cycles, in the toolbar, counts its cycles."');
+}
+function renderRows() {
+  document.documentElement.style.setProperty('--row-h', S.rowH + 'px');
+  $('#names').innerHTML = visible().map((i) => { const r = S.rows[i]; return !r.v ? `<div class="nrow ${r.kind} ${isSel(i) ? 'sel' : ''}" draggable="true" data-i="${i}" style="--c:var(--muted)">${r.kind === 'group' ? `<button class="fold" data-i="${i}" aria-expanded="${!r.collapsed}" title="${r.collapsed ? 'Show' : 'Hide'} the ${groupSize(i)} signals of this group"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="${r.collapsed ? 'M6 3.5 10.5 8 6 12.5' : 'M3.5 6 8 10.5 12.5 6'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}<span class="nm">${r.kind === 'group' ? esc(r.text) + (r.collapsed ? ` <span class="hidden-n">(${groupSize(i)})</span>` : '') : 'blank row'}</span></div>` : `<div class="nrow ${isSel(i) ? 'sel' : ''}" draggable="true" data-i="${i}" style="--c:var(--s${r.color})" title="${esc(r.v.path)}"><span class="dot"></span><span class="nm">${rowLabel(r.v)}${clockBadge(r.v.path)}</span></div>`; }).join('');
+  $('#empty').hidden = S.rows.length > 0;
+  renderValues(); renderTree(); renderTimeBase(); draw();
+}
+function renderValues() {
+  $('#vals').innerHTML = visible().map((i) => {
+    const r = S.rows[i];
+    if (!r.v) return `<div class="vrow ${r.kind} ${isSel(i) ? 'sel' : ''}" data-i="${i}"></div>`;
+    const val = S.cursor == null ? null : valueAt(r.v, S.cursor);
+    const text = esc(fmt(val, r.v.width, r.radix));
+    return `<div class="vrow ${isSel(i) ? 'sel' : ''} ${isX(val) ? 'xv' : ''}" data-i="${i}" style="--c:var(--s${r.color})" title="${text}"><bdi dir="ltr">${text}</bdi></div>`;
+  }).join('');
+}
+function renderTree() {
+  const q = $('#search').value.trim().toLowerCase();
+  const shown = new Set(S.rows.filter((r) => r.v).map((r) => r.v.path));
+  const varBtn = (v, label) => `<button class="var ${shown.has(v.path) ? 'on' : ''}" data-path="${esc(v.path)}" title="${esc(v.path)}"><span class="chk"></span><span class="nm">${esc(label)}${clockBadge(v.path)}</span>${v.width > 1 ? `<span class="w">${v.width} bits</span>` : ''}</button>`;
+  if (q) {
+    const hits = S.wave.vars.filter((v) => v.path.toLowerCase().includes(q));
+    $('#tree').innerHTML = hits.length ? hits.map((v) => varBtn(v, v.path)).join('') : '<p class="hint" style="border:0">No signal matches.</p>';
+    return;
+  }
+  const open = S.openScopes;
+  const walk = (n, path) => n.children.map((c) => {
+    const p = path ? path + '.' + c.name : c.name;
+    const isOpen = open.has(p);
+    return `<div class="scope" data-open="${isOpen}"><button class="scope-h" data-scope="${esc(p)}" aria-expanded="${isOpen}"><svg class="chev" viewBox="0 0 10 10"><path d="M3 1.5 7 5 3 8.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(c.name)} <span class="kind">${esc(c.kind)}</span></button><div class="kids">${inOrder(c.vars).map((v) => varBtn(v, v.name)).join('')}${walk(c, p)}</div></div>`;
+  }).join('');
+  $('#tree').innerHTML = walk(S.wave.root, '');
+}
+// The testbench's signals in its source order (S.order), the rest after.
+function inOrder(vars) {
+  if (!S.order) return vars;
+  const at = (v) => { const k = S.order.indexOf(v.path); return k < 0 ? 1e9 : k; };
+  return [...vars].sort((a, b) => at(a) - at(b));
+}
+// New signals go right after the selected row (at the end when none is
+// selected), and the last one added becomes the selection, so picking a
+// group row, then ticking signals, builds a group in place.
+function insertSignals(vars) {
+  let at = S.sel >= 0 ? S.sel + 1 : S.rows.length;
+  for (const v of vars) { S.rows.splice(at, 0, sigRow(v, S.rows.length)); S.anchor = null; S.sel = at; at++; }
+}
+function toggleVar(path) {
+  const k = S.rows.findIndex((r) => r.v && r.v.path === path);
+  if (k >= 0) { S.rows.splice(k, 1); if (S.sel >= S.rows.length) { S.anchor = null; S.sel = -1; } }
+  else {
+    const v = varByPath().get(path);
+    insertSignals([v]);
+  }
+  renderRows();
+}
+
+/* ---------- Drawing ---------- */
+const ruler = $('#ruler'), waves = $('#waves');
+function tok(css, n) { return css.getPropertyValue(n).trim(); }
+function sizeCanvas(c, w, h) {
+  if (EXPORT) return EXPORT.ctx(c, w, h);
+  const dpr = window.devicePixelRatio || 1;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  c.style.height = h + 'px';
+  const ctx = c.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return ctx;
+}
+function draw() {
+  if (!S.wave) return;
+  const W = $('#wavecol').clientWidth; if (!W) return;
+  const css = getComputedStyle(document.documentElement);
+  const C = { bg: tok(css, '--wave-bg'), grid: tok(css, '--grid'), fg: tok(css, '--fg'), muted: tok(css, '--muted'), accent: tok(css, '--accent'), x: tok(css, '--x'), z: tok(css, '--z'), fail: tok(css, '--fail'), marker: tok(css, '--marker'), sel: tok(css, '--sel'), line: tok(css, '--line'), panel: tok(css, '--panel') };
+  const span = S.end - S.start, X = (t) => (t - S.start) / span * W;
+  const step = niceStep(span, W);
+  const mono = getComputedStyle(document.body).getPropertyValue('--mono') || 'monospace';
+  // The ruler's and grid's marks: times, or clock edges when counting
+  // cycles (each edge when there's room, else every few).
+  const marks = [];
+  if (counting()) {
+    const c0 = cyclePos(S.start), c1 = cyclePos(S.end), cstep = Math.max(1, niceStep(c1 - c0, W));
+    for (let c = Math.max(0, Math.ceil(c0 / cstep) * cstep); c <= c1 && c < S.edges.length; c += cstep) marks.push({ t: S.edges[c], label: c.toLocaleString('en-US') });
+  } else {
+    for (let t = Math.ceil(S.start / step) * step; t <= S.end; t += step) marks.push({ t, label: fmtTime(t) });
+  }
+  const gridTimes = counting() && W / Math.max(cyclePos(S.end) - cyclePos(S.start), 1e-9) >= 8
+    ? S.edges.slice(Math.max(0, idx(S.edges, S.start)), idx(S.edges, S.end) + 1) : marks.map((m) => m.t);
+
+  // Ruler
+  const R = sizeCanvas(ruler, W, 30);
+  R.fillStyle = C.panel; R.fillRect(0, 0, W, 30);
+  R.font = `500 11px ${mono}`; R.textBaseline = 'middle';
+  for (const m of marks) {
+    const x = Math.round(X(m.t)) + .5;
+    R.strokeStyle = C.line; R.beginPath(); R.moveTo(x, 20); R.lineTo(x, 30); R.stroke();
+    R.fillStyle = C.muted; R.fillText(m.label, x + 4, 13);
+  }
+  for (const m of S.marks) if (m.t >= S.start && m.t <= S.end) {
+    const x = X(m.t); R.fillStyle = C.fail;
+    R.beginPath(); R.moveTo(x, 30); R.lineTo(x - 6, 20); R.lineTo(x + 6, 20); R.closePath(); R.fill();
+  }
+  const pill = (t, color, label) => {
+    if (t == null || t < S.start || t > S.end) return;
+    const x = X(t), txt = label + fmtAt(t); R.font = `600 11px ${mono}`;
+    const w = R.measureText(txt).width + 12, px = Math.min(Math.max(x - w / 2, 0), W - w);
+    R.fillStyle = color; R.beginPath(); R.roundRect(px, 3, w, 19, 5); R.fill();
+    R.fillStyle = C.panel; R.fillText(txt, px + 6, 13);
+  };
+  pill(S.marker, C.marker, 'M ');
+  pill(S.cursor, C.accent, '');
+
+  // Waves
+  const shown = visible(), H = Math.max(shown.length * S.rowH, 1);
+  const ctx = sizeCanvas(waves, W, H);
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+  if (S.grid) {
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+    for (const t of gridTimes) { if (t < S.start) continue; const x = Math.round(X(t)) + .5; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  }
+  ctx.font = `500 11.5px ${mono}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  const endX = X(S.wave.end);
+  shown.forEach((i, pos) => {
+    const r = S.rows[i], y0 = pos * S.rowH;
+    if (isSel(i)) { ctx.fillStyle = C.sel; ctx.fillRect(0, y0, W, S.rowH); }
+    ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(0, y0 + S.rowH - .5); ctx.lineTo(W, y0 + S.rowH - .5); ctx.stroke();
+    if (!r.v) return;
+    const color = tok(css, '--s' + r.color);
+    const pad = Math.max(5, S.rowH * .2), hi = y0 + pad, lo = y0 + S.rowH - pad, mid = (hi + lo) / 2;
+    const d = S.wave.data.get(r.v.id);
+    let k = Math.max(idx(d.t, S.start), 0);
+    let denseA = null, denseB = null, prevLevel = null;
+    const flushDense = () => {
+      if (denseA == null) return;
+      ctx.fillStyle = color; ctx.globalAlpha = .35; ctx.fillRect(denseA, hi, Math.max(denseB - denseA, 1), lo - hi); ctx.globalAlpha = 1;
+      denseA = null; prevLevel = null;
+    };
+    ctx.lineWidth = 1.5;
+    for (; k < d.t.length && d.t[k] <= S.end; k++) {
+      const t1 = Math.max(d.t[k], S.start), t2 = Math.min(k + 1 < d.t.length ? d.t[k + 1] : S.wave.end, S.wave.end);
+      if (t2 <= t1 && k + 1 < d.t.length) continue;
+      const x1 = X(t1), x2 = Math.min(X(t2), endX), val = d.v[k];
+      if (x2 - x1 < 2) { if (denseA == null) denseA = x1; denseB = x2; continue; }
+      flushDense();
+      if (r.v.width === 1 && val[0] !== 'r') {
+        if (val === 'x' || val === 'z') {
+          const c = val === 'x' ? C.x : C.z;
+          ctx.fillStyle = c; ctx.globalAlpha = .12; ctx.fillRect(x1, hi, x2 - x1, lo - hi); ctx.globalAlpha = 1;
+          ctx.strokeStyle = c; ctx.beginPath(); ctx.moveTo(x1, mid); ctx.lineTo(x2, mid); ctx.stroke();
+          prevLevel = mid; continue;
+        }
+        const y = val === '1' ? hi : lo;
+        if (val === '1') { ctx.fillStyle = color; ctx.globalAlpha = .1; ctx.fillRect(x1, hi, x2 - x1, lo - hi); ctx.globalAlpha = 1; }
+        ctx.strokeStyle = color; ctx.beginPath();
+        if (prevLevel != null && prevLevel !== y && d.t[k] >= S.start) { ctx.moveTo(x1, prevLevel); ctx.lineTo(x1, y); } else ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y); ctx.stroke(); prevLevel = y;
+      } else {
+        const bad = isX(val), c = bad ? (/^z+$/.test(norm(val, r.v.width)) ? C.z : C.x) : color;
+        const s = Math.min(4, (x2 - x1) / 2), lx = d.t[k] >= S.start ? s : 0;
+        ctx.beginPath(); ctx.moveTo(x1, mid); ctx.lineTo(x1 + lx, hi); ctx.lineTo(x2 - s, hi); ctx.lineTo(x2, mid); ctx.lineTo(x2 - s, lo); ctx.lineTo(x1 + lx, lo); ctx.closePath();
+        ctx.fillStyle = c; ctx.globalAlpha = bad ? .12 : .1; ctx.fill(); ctx.globalAlpha = 1;
+        ctx.strokeStyle = c; ctx.stroke();
+        const a = Math.max(x1, 0), b = Math.min(x2, W), room = b - a - 10;
+        if (room > 8) {
+          let txt = fmt(val, r.v.width, r.radix);
+          if (ctx.measureText(txt).width > room) { while (txt.length > 1 && ctx.measureText(txt + '…').width > room) txt = txt.slice(0, -1); txt += '…'; }
+          if (ctx.measureText(txt).width <= room) { ctx.fillStyle = bad ? c : C.fg; ctx.fillText(txt, (a + b) / 2, mid + .5); }
+        }
+        prevLevel = null;
+      }
+    }
+    flushDense();
+  });
+  // Lines
+  const vline = (t, color, dash) => {
+    if (t == null || t < S.start || t > S.end) return;
+    const x = Math.round(X(t)) + .5; ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); ctx.setLineDash([]);
+  };
+  for (const m of S.marks) vline(m.t, C.fail, [4, 4]);
+  vline(S.marker, C.marker, [2, 3]);
+  vline(S.cursor, C.accent, []);
+  if (S.hoverT != null) vline(S.hoverT, S.hoverSnap ? C.accent : C.muted, S.hoverSnap ? [3, 2] : [1, 3]);
+  renderStatus();
+}
+// Whether the hints wrapped to a line of their own.
+function placeHelp() {
+  const st = $('#status'), help = st.querySelector('.help'), first = st.firstElementChild;
+  if (!help || !first) return;
+  st.classList.remove('wrapped');
+  st.classList.toggle('wrapped', help.offsetTop > first.offsetTop + 2);
+}
+new ResizeObserver(placeHelp).observe(document.getElementById('status'));
+function renderStatus() {
+  const parts = [];
+  const delta = () => {
+    const dt = fmtTime(Math.abs(S.cursor - S.marker));
+    return counting() ? `${fmtCycles(Math.abs(cyclePos(S.cursor) - cyclePos(S.marker)))} (${dt})` : dt;
+  };
+  parts.push(`<span class="cur">Cursor <b>${S.cursor == null ? '–' : fmtAt(S.cursor)}</b></span>`);
+  if (S.marker != null) parts.push(`<span class="mk">Marker <b>${fmtAt(S.marker)}</b></span>`, `<span>Δ <b>${S.cursor == null ? '–' : delta()}</b></span>`);
+  parts.push(`<span>Showing <b>${fmtAt(S.start)} – ${fmtAt(S.end)}</b></span>`);
+
+  parts.push(`<span class="help">Click: cursor · Shift+click: marker · Drag: pan · Wheel or pinch: zoom · Right-click: options</span>`);
+  $('#status').innerHTML = parts.join('');
+  placeHelp();
+}
+
+/* ---------- View ---------- */
+function setView(s, e) {
+  const total = S.wave.end, minSpan = Math.max(total * 1e-5, 2);
+  const span = Math.min(Math.max(e - s, minSpan), total);
+  s = Math.max(0, Math.min(s, total - span));
+  S.start = s; S.end = s + span; draw();
+}
+function zoom(f, at) {
+  const span = S.end - S.start;
+  if (at == null) at = S.cursor != null && S.cursor >= S.start && S.cursor <= S.end ? S.cursor : S.start + span / 2;
+  const r = (at - S.start) / span, ns = span * f;
+  setView(at - r * ns, at - r * ns + ns);
+}
+function setCursor(t) {
+  S.cursor = Math.max(0, Math.min(Math.round(t), S.wave.end));
+  if (S.cursor < S.start || S.cursor > S.end) { const span = S.end - S.start; setView(S.cursor - span / 2, S.cursor + span / 2); }
+  renderValues(); draw();
+}
+function edge(dir) {
+  if (!S.rows.length) return;
+  const from = S.cursor ?? S.start;
+  const rows = (S.sel >= 0 && S.rows[S.sel].v ? [S.rows[S.sel]] : S.rows).filter((r) => r.v);
+  let best = null;
+  for (const r of rows) {
+    const d = S.wave.data.get(r.v.id), k = idx(d.t, from);
+    const t = dir > 0 ? d.t[k + 1] : (d.t[k] === from ? d.t[k - 1] : d.t[k]);
+    if (t != null && (best == null || (dir > 0 ? t < best : t > best))) best = t;
+  }
+  if (best != null) setCursor(best);
+}
+
+/* ---------- Pointer on the waves ---------- */
+let drag = null;
+function timeAtX(x) { return S.start + x / waves.clientWidth * (S.end - S.start); }
+// Snapping (R40): near a transition of the signal under the pointer (within
+// SNAP_PX pixels), the time is the transition's, exactly; elsewhere it's
+// where the pointer is. Alt (Option on macOS) turns it off. The hover line
+// shows the snap before a click, so a click lands where it shows.
+const SNAP_PX = 6;
+function snapAt(x, y, alt) {
+  const t = timeAtX(x), r = S.rows[rowAtY(y)];
+  if (alt) return { t, snapped: false };
+  const pxPerT = waves.clientWidth / (S.end - S.start);
+  let best = null;
+  const near = (tt) => { const dist = Math.abs(tt - t) * pxPerT; if (dist <= SNAP_PX && (!best || dist < best.dist)) best = { t: tt, dist }; };
+  if (r && r.v) {
+    const d = S.wave.data.get(r.v.id), k = idx(d.t, t);
+    for (const j of [k, k + 1]) if (j >= 1 && j < d.t.length) near(d.t[j]);   // the first value isn't a transition
+  }
+  // Counting cycles, the clock's rising edges snap too, on any row.
+  if (counting()) { const k = idx(S.edges, t); for (const j of [k, k + 1]) if (j >= 0 && j < S.edges.length) near(S.edges[j]); }
+  return best ? { t: best.t, snapped: true } : { t, snapped: false };
+}
+waves.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; drag = { x: e.clientX, s: S.start, e: S.end, moved: false }; waves.setPointerCapture(e.pointerId); });
+waves.addEventListener('pointermove', (e) => {
+  const rect = waves.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
+  if (drag && (drag.moved || Math.abs(e.clientX - drag.x) > 3)) {
+    drag.moved = true; hideTip();
+    const dt = (e.clientX - drag.x) / rect.width * (drag.e - drag.s);
+    setView(drag.s - dt, drag.e - dt); waves.style.cursor = 'grabbing'; return;
+  }
+  const i = rowAtY(y), r = S.rows[i], sn = snapAt(x, y, e.altKey);
+  S.hoverT = sn.t; S.hoverSnap = sn.snapped; draw();
+  if (!r || !r.v) { hideTip(); return; }
+  const v = valueAt(r.v, S.hoverT);
+  let text = fmt(v, r.v.width, r.radix);
+  if (r.v.width > 1 && r.radix !== 'hex' && !isX(v)) text += `  (0x${fmt(v, r.v.width, 'hex')})`;
+  const tip = $('#tip');
+  tip.innerHTML = `<code>${esc(r.v.path)}</code> = <b><code>${esc(text)}</code></b><div class="t">${S.hoverSnap ? 'Edge at ' : ''}${counting() ? fmtAt(Math.round(S.hoverT)) + ', ' : ''}${fmtTime(Math.round(S.hoverT))}${S.hoverSnap ? ' (Alt: anywhere)' : ''}</div>`;
+  tip.hidden = false;
+  const tw = tip.offsetWidth;
+  tip.style.left = Math.min(e.clientX + 14, window.innerWidth - tw - 8) + 'px';
+  tip.style.top = (e.clientY + 16) + 'px';
+});
+waves.addEventListener('pointerup', (e) => {
+  waves.style.cursor = '';
+  if (drag && !drag.moved) {
+    const rect = waves.getBoundingClientRect(), i = rowAtY(e.clientY - rect.top);
+    const t = snapAt(e.clientX - rect.left, e.clientY - rect.top, e.altKey).t;
+    if (e.shiftKey) { S.marker = Math.round(t); draw(); }
+    else { if (S.rows[i]) { S.anchor = null; S.sel = i; } setCursor(t); renderRows(); }
+  }
+  drag = null;
+});
+waves.addEventListener('pointerleave', () => { S.hoverT = null; S.hoverSnap = false; hideTip(); draw(); });
+function hideTip() { $('#tip').hidden = true; }
+$('#wavecol').addEventListener('wheel', (e) => {
+  const rect = waves.getBoundingClientRect(), at = timeAtX(e.clientX - rect.left);
+  // Wheel deltas in lines (some mice) count as 16 px.
+  const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? rect.height : 1;
+  const dx = e.deltaX * unit, dy = e.deltaY * unit;
+  e.preventDefault();
+  // Pinch (the browser sends it as Ctrl+wheel) and Ctrl/Cmd+wheel: zoom.
+  if (e.ctrlKey || e.metaKey) { zoom(Math.exp(dy * 0.01), at); return; }
+  // Sideways swipe, or Shift+wheel: move along in time.
+  if (e.shiftKey || Math.abs(dx) > Math.abs(dy)) {
+    const d = (e.shiftKey ? dy || dx : dx) / rect.width * (S.end - S.start); setView(S.start + d, S.end + d); return;
+  }
+  // The wheel, or an up-down swipe: zoom around the pointer, so the time
+  // under it stays put: zoom out, move to the part that matters, zoom in.
+  zoom(Math.exp(dy * 0.0025), at);
+}, { passive: false });
+// Hovering the time ruler says what its scale is, the clock when it counts
+// cycles, and where the pointer is (R45); a failure's flag shows its
+// message instead (R26).
+function scaleTip(t) {
+  const at = counting() ? `${fmtAt(t)} (${fmtTime(t)})` : fmtTime(t);
+  if (counting()) return `<b>Clock cycles</b> of <code>${esc(clockName())}</code><div>Counted on its rising edges; cycle 0 is the first.</div><div>At the pointer: ${esc(at)}</div><div class="how">Time, in the toolbar: back to time. The clock picker: another clock.</div>`;
+  return `<b>Time</b>, in ${esc(unitFor()[0])}<div>At the pointer: ${esc(at)}</div><div class="how">${S.clock
+    ? `Cycles, in the toolbar: count the cycles of <code>${esc(clockName())}</code> instead.`
+    : 'This run has no clock to count. Right-click a 1-bit signal: Use as clock.'}</div>`;
+}
+ruler.addEventListener('pointermove', (e) => {
+  const r = ruler.getBoundingClientRect(), x = e.clientX - r.left, W = r.width;
+  const m = S.marks.find((m) => Math.abs((m.t - S.start) / (S.end - S.start) * W - x) <= 6);
+  const tip = $('#tip');
+  tip.innerHTML = m
+    ? `<b>Failed check</b> at ${esc(fmtAt(m.t))}<div>${esc(m.message)}</div>${m.file ? `<div class="t">${esc(m.file)}${m.line ? ':' + m.line : ''}</div>` : ''}`
+    : scaleTip(Math.round(timeAtX(x)));
+  tip.hidden = false;
+  tip.style.left = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8) + 'px';
+  tip.style.top = (e.clientY + 16) + 'px';
+});
+ruler.addEventListener('pointerleave', hideTip);
+ruler.addEventListener('click', (e) => { const r = ruler.getBoundingClientRect(); const t = timeAtX(e.clientX - r.left); if (e.shiftKey) { S.marker = Math.round(t); draw(); } else setCursor(t); });
+
+/* ---------- Names column: select, options, reorder ---------- */
+// A click selects a row; on a group row, anywhere on it, it also folds or
+// unfolds its group, as the family headings in Logix IDE's board picker
+// (the user's request, 2026-11-21). The group's name is edited from its
+// right-click menu, Edit the text.
+// Shift+click would also select text in the browser: rows only.
+$('#names').addEventListener('mousedown', (e) => { if (e.shiftKey) e.preventDefault(); });
+$('#names').addEventListener('mousemove', () => $('#names').classList.remove('after-drop'));
+$('#names').addEventListener('click', (e) => {
+  const rowEl = e.target.closest('.nrow'); if (!rowEl) return;
+  const i = +rowEl.dataset.i;
+  // Shift+click: the range from the selected row to this one (R46).
+  if (e.shiftKey && S.sel >= 0) { if (S.anchor == null) S.anchor = S.sel; S.sel = i; renderRows(); return; }
+  S.anchor = null; S.sel = i;
+  if (S.rows[i] && S.rows[i].kind === 'group') toggleGroup(i);
+  else renderRows();
+});
+// Double-click a signal's name: its declaration, in hosts that can (R27).
+$('#names').addEventListener('dblclick', (e) => {
+  const el = e.target.closest('.nrow'); if (!el) return;
+  const r = S.rows[+el.dataset.i];
+  if (r && r.v && S.decl[r.v.path]) openSource(S.decl[r.v.path].file, S.decl[r.v.path].line);
+});
+let dragRow = null;
+$('#names').addEventListener('dragstart', (e) => { const el = e.target.closest('.nrow'); if (!el) return; dragRow = +el.dataset.i; if (!isSel(dragRow)) { S.anchor = null; S.sel = dragRow; renderRows(); } e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', ''); } catch (_) {} });
+// Where a dragged row goes, from the pointer's height: the upper half of a
+// row drops above it, the lower half below it (below a collapsed group's
+// hidden rows), and the empty space under the last row at the end.
+function dropAt(y) {
+  const v = visible(), top = $('#names').getBoundingClientRect().top;
+  const k = Math.floor((y - top) / S.rowH);
+  if (k >= v.length) return { at: S.rows.length, el: v.length ? v[v.length - 1] : null, below: true };
+  const t = v[Math.max(0, k)], below = (y - top) - Math.max(0, k) * S.rowH >= S.rowH / 2;
+  return { at: below ? t + blockLen(t) : t, el: t, below };
+}
+function clearDrop() { document.querySelectorAll('.nrow.drop, .nrow.drop-below').forEach((n) => n.classList.remove('drop', 'drop-below')); }
+$('#rows').addEventListener('dragover', (e) => {
+  if (dragRow == null) return; e.preventDefault(); clearDrop();
+  // The line shows where the rows will land, after landing()'s rule.
+  const sp = selSpan(), from = dragRow, inSpan = sp && from >= sp.lo && from < sp.end;
+  const lo = inSpan ? sp.lo : from, len = inSpan ? sp.end - sp.lo : blockLen(from);
+  const at = landing(lo, len, dropAt(e.clientY).at), v = visible();
+  const before = v.find((x) => x >= at), after = [...v].reverse().find((x) => x < at);
+  const el = before != null ? $(`.nrow[data-i="${before}"]`) : after != null && $(`.nrow[data-i="${after}"]`);
+  if (el) el.classList.add(before != null ? 'drop' : 'drop-below');
+});
+$('#rows').addEventListener('drop', (e) => {
+  if (dragRow == null) return; e.preventDefault(); e.stopPropagation();
+  clearDrop(); moveBlockTo(dragRow, dropAt(e.clientY).at); dragRow = null;
+  $('#names').classList.add('after-drop');
+});
+$('#names').addEventListener('dragend', () => { dragRow = null; clearDrop(); });
+
+/* ---------- Popovers ---------- */
+let pop = null;
+function closePop() { if (pop) { pop.remove(); pop = null; } }
+function placePop(el, anchor) {
+  document.body.appendChild(el); pop = el;
+  const a = anchor.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = Math.max(8, Math.min(a.left, window.innerWidth - w - 8)) + 'px';
+  el.style.top = (a.bottom + h + 8 > window.innerHeight ? Math.max(8, a.top - h - 6) : a.bottom + 6) + 'px';
+}
+// The group or blank row's box: a group's name, and Remove.
+function openRowPop(i, anchor) {
+  closePop(); const r = S.rows[i]; if (!r || r.v) return;
+  return openPlainRowPop(r, anchor);
+}
+function openPlainRowPop(r, anchor) {
+  const el = document.createElement('div'); el.className = 'pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Row options');
+  el.innerHTML = `<h3>${r.kind === 'group' ? 'Group' : 'Blank row'}</h3>
+    ${r.kind === 'group' ? `<div><div class="lbl">Name</div><input type="text" id="groupName" value="${esc(r.text)}"></div>` : ''}
+    <div class="actions"><button class="btn danger" data-act="remove">Remove</button></div>`;
+  el.addEventListener('input', (e) => { if (e.target.id === 'groupName') { r.text = e.target.value; const n = document.querySelector(`.nrow[data-i="${S.rows.indexOf(r)}"] .nm`); if (n) n.textContent = r.text; } });
+  el.addEventListener('change', () => commit());
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { commit(); closePop(); } });
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    const cur = S.rows.indexOf(r);
+    if (b.dataset.act === 'remove') { S.rows.splice(cur, 1); S.anchor = null; S.sel = -1; closePop(); renderRows(); }
+  });
+  placePop(el, anchor);
+  const input = el.querySelector('#groupName'); if (input) { input.focus(); input.select(); }
+}
+function openHelp(anchor) {
+  closePop();
+  const el = document.createElement('div'); el.className = 'pop'; el.style.width = '300px'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Keyboard and mouse');
+  const mod = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
+  const rows = [
+    ['Click', 'Put the cursor there; near an edge, on the edge'], ['Shift+click', 'Put the marker there, the same way'], ['Alt+click', 'Anywhere, without snapping to an edge'], ['Drag', 'Move along in time'],
+    ['Wheel or pinch', 'Zoom around the pointer'], ['Shift+wheel or swipe sideways', 'Move along in time'], ['Wheel over the names', 'Scroll the rows'],['+  −', 'Zoom in, out'], ['F', 'Show the whole run'],
+    ['←  →', 'Previous, next change of the selected signal'], ['↑  ↓', 'Select the signal above, below'], ['Shift+click a name, Shift+↑ ↓', 'Select a range of rows'], ['Alt+↑  Alt+↓', 'Move the selected rows up, down (or drag them)'],
+    ['M', 'Put the marker at the cursor'], ['Delete', 'Hide the selected rows'], ['S', 'Hide or show the signal list'], ['Right-click', 'What you can do with what you clicked'], ['Drag a column border', 'Resize the Signal or Value column'], ['Click the narrow strip', 'Show a hidden Value column'],
+    [mod + 'Z', 'Undo'], ['⇧' + mod + 'Z', 'Redo'],
+  ];
+  el.innerHTML = `<h3 style="font-family:var(--font)">Keyboard and mouse</h3><div class="keys">${rows.map(([k, t]) => `<kbd>${esc(k)}</kbd><span>${esc(t)}</span>`).join('')}</div>`;
+  placePop(el, anchor);
+}
+function openSettings(anchor) {
+  closePop();
+  const el = document.createElement('div'); el.className = 'pop'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'View settings');
+  const seg = (key, opts) => `<div class="seg">${opts.map(([v, n]) => `<button data-${key}="${v}" class="${String(S[key === 'rows' ? 'rowH' : key]) === String(v) ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+  el.innerHTML = `<div><div class="lbl">Row height</div>${seg('rows', [[24, 'Compact'], [30, 'Normal'], [38, 'Roomy']])}</div>
+    <label class="check"><input type="checkbox" id="gridChk" ${S.grid ? 'checked' : ''}> Grid lines</label>
+    <label class="check" title="The mouse hints at the bottom and under the signal list"><input type="checkbox" id="hintsChk" ${hintsShown() ? 'checked' : ''}> Show hints</label>
+    <div class="actions"><button class="btn" data-act="reset" title="Back to the testbench's own signals and the whole run. You can undo it.">Reset view</button></div>
+    <div class="actions"><button class="btn" data-act="valcol">${valHidden() ? 'Show' : 'Hide'} the Value column</button><button class="btn" data-act="widths">Reset column widths</button></div>
+    `;
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (e.target.id === 'gridChk') { S.grid = e.target.checked; draw(); return; }
+    if (e.target.id === 'hintsChk') { setHints(e.target.checked); return; }
+    if (!b) return;
+    if (b.dataset.rows) { S.rowH = +b.dataset.rows; renderRows(); }
+    if (b.dataset.act === 'reset') { resetLayout(); closePop(); return; }
+    if (b.dataset.act === 'valcol') { showVal(valHidden()); closePop(); return; }
+    if (b.dataset.act === 'widths') { resetWidths(); closePop(); return; }
+    openSettings(anchor);
+  });
+  placePop(el, anchor);
+}
+document.addEventListener('pointerdown', (e) => { if (pop && !pop.contains(e.target) && !e.target.closest('#settingsBtn,#helpBtn,#failChip')) closePop(); });
+$('#helpBtn').addEventListener('click', (e) => { if (pop) { closePop(); return; } openHelp(e.currentTarget); });
+$('#settingsBtn').addEventListener('click', (e) => { if (pop) { closePop(); return; } openSettings(e.currentTarget); });
+
+/* ---------- Saving the view ---------- */
+// The .view file's JSON (R23): the rows, their formats and colors, the
+// zoom, the cursor and the marker.
+function viewData() {
+  const o = { version: 1, waveform: S.file, rows: S.rows.map(serRow), view: { from: Math.round(S.start), to: Math.round(S.end) }, cursor: S.cursor, marker: S.marker, row_height: S.rowH };
+  o.time_base = counting() ? 'cycles' : 'time'; if (S.clock) o.clock = S.clock;
+  return o;
+}
+function saveToHost() { if (hosted) toHost({ type: 'logix-wave:view', view: viewData() }, 'logixWaveSaveView', viewData()); }
+let toastTimer = null;
+function toast(text) {
+  const t = $('#toast'); t.textContent = text; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 4000);
+}
+$('#dlgClose').addEventListener('click', () => { $('#overlay').hidden = true; });
+$('#overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') $('#overlay').hidden = true; });
+
+function openAll(root) { const s = new Set(); const walk = (n, p) => n.children.forEach((c) => { const q = p ? p + '.' + c.name : c.name; s.add(q); walk(c, q); }); walk(root, ''); return s; }
+function load() {
+  const w = parseVCD(DATA.vcd || '');
+  S.wave = w; S.file = DATA.waveform || 'waveform.vcd';
+  S.openScopes = new Set(w.root.children.slice(0, 1).map((c) => c.name));
+  // The testbench's own signals in the order the testbench declares them
+  // (R9): the simulator writes them in its own order, so the engine reads
+  // the order from the testbench's source.
+  S.order = DATA.order && DATA.order.length ? DATA.order : null;
+  S.decl = DATA.declarations || {};
+  S.marks = (DATA.failures || []).map((f) => ({ ...f, t: Math.round(f.time_ns * 1e-9 / w.ts) }));
+  document.title = 'Logix Waveforms · ' + (DATA.testbench || S.file);
+  if (DATA.truncated) {
+    $('#truncbar').hidden = false;
+    $('#truncbar').textContent = `Showing the first part of the run: the waveform is ${DATA.truncated.size_mb} MB, more than the viewer holds (${DATA.truncated.limit_mb} MB).`;
+  }
+  S.rows = defaultRows(); S.start = 0; S.end = w.end; S.clock = null; S.edges = []; S.cycles = false;
+  const v = DATA.view;
+  if (v && Array.isArray(v.rows)) {
+    const rows = v.rows.map(deserRow).filter(Boolean);
+    if (rows.length) S.rows = rows;
+    if (v.row_height) S.rowH = v.row_height;
+    S.cursor = v.cursor ?? null; S.marker = v.marker ?? null;
+    if (v.view) { S.start = v.view.from; S.end = v.view.to; }
+    if (v.clock) {
+      setClock(v.clock);
+      if (!S.clock) setTimeout(() => toast(`The clock ${v.clock} isn't in this run: the likely clock is chosen instead.`), 0);
+    }
+    S.cycles = v.time_base === 'cycles';
+  }
+  if (!S.clock) setClock(suggestClock() || clockCandidates()[0]);
+  if (!canCount()) S.cycles = false;
+  // What a client asked to show first (R8): signals, a time range, the cursor.
+  const f = DATA.focus, ticks = (ns) => Math.round(ns * 1e-9 / w.ts);
+  if (f) {
+    const map = varByPath();
+    const rows = (f.signals || []).map((p) => map.get(p)).filter(Boolean).map(sigRow);
+    if (rows.length) S.rows = rows;
+    if (f.from_ns != null || f.to_ns != null) {
+      S.start = f.from_ns != null ? ticks(f.from_ns) : 0;
+      S.end = f.to_ns != null ? ticks(f.to_ns) : w.end;
+    }
+    if (f.cursor_ns != null) S.cursor = ticks(f.cursor_ns);
+  }
+  renderRows();
+  if ((v && v.view) || (f && (f.from_ns != null || f.to_ns != null))) setView(S.start, S.end);
+  showFailures();
+  // A failing run opens at its first failure (R25), even with a saved view.
+  if (S.marks.length) showFail(0);
+  H.cur = snap(); updUndo();
+}
+
+/* ---------- Failures (R25, R26, R35) ---------- */
+let failAt = 0;
+function showFailures() {
+  const n = S.marks.length;
+  $('#failChip').hidden = n === 0;
+  $('#failText').textContent = n === 1 ? '1 failed check' : `${n} failed checks`;
+  if (DATA.failure_count > n) $('#failText').textContent = `${DATA.failure_count} failed checks (first ${n} shown)`;
+}
+// Zooms around failure k, with the cursor on it and its message above the
+// waveforms.
+function showFail(k) {
+  const m = S.marks[k]; if (!m) return;
+  failAt = k;
+  const span = Math.max(S.wave.end / 12, 1);
+  setView(m.t - span * 0.65, m.t + span * 0.35); setCursor(m.t);
+  $('#failbar').hidden = false;
+  $('#failMsg').textContent = `${fmtAt(m.t)}: ${m.message}`;
+  const src = $('#failSrc');
+  src.hidden = !m.file; src.textContent = m.file ? `${m.file}${m.line ? ':' + m.line : ''}` : '';
+  src.title = hosted ? 'Open this line' : '';
+  $('#failCount').textContent = S.marks.length > 1 ? `${k + 1} of ${S.marks.length}` : '';
+  $('#failPrev').hidden = $('#failNext').hidden = S.marks.length < 2;
+}
+$('#failPrev').onclick = () => showFail((failAt - 1 + S.marks.length) % S.marks.length);
+$('#failNext').onclick = () => showFail((failAt + 1) % S.marks.length);
+$('#failSrc').onclick = (e) => { e.preventDefault(); const m = S.marks[failAt]; if (m) openSource(m.file, m.line); };
+// The list of failures, from the chip.
+function openFailList(anchor) {
+  closePop();
+  const el = document.createElement('div'); el.className = 'pop'; el.style.width = '380px';
+  el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Failed checks');
+  el.innerHTML = `<h3 style="font-family:var(--font)">Failed checks</h3><div class="flist">${S.marks.map((m, k) => `<button data-k="${k}" class="${k === failAt ? 'on' : ''}"><span class="t">${esc(fmtAt(m.t))}</span><span class="m">${esc(m.message)}</span>${m.file ? `<span class="s">${esc(m.file)}${m.line ? ':' + m.line : ''}</span>` : ''}</button>`).join('')}</div>`;
+  el.addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) { showFail(+b.dataset.k); closePop(); } });
+  placePop(el, anchor);
+}
+
+/* ---------- Rows, layouts, undo ---------- */
+// Counts (Verilog integers) read best in decimal; other buses in hex.
+function sigRow(v, i) { return { kind: 'signal', v, radix: v.type === 'integer' ? 'dec' : v.width > 1 ? 'hex' : 'bin', color: (i % 6) + 1 }; }
+function defaultRows() {
+  const map = varByPath();
+  const top = S.wave.root.children[0];
+  const paths = S.order || top.vars.filter((v) => v.type !== 'parameter').map((v) => v.path);
+  return paths.map((p) => map.get(p)).filter(Boolean).map(sigRow);
+}
+function serRow(r) {
+  if (r.v) return { signal: r.v.path, show_as: r.radix, color: r.color };
+  return r.kind === 'group' ? (r.collapsed ? { group: r.text, collapsed: true } : { group: r.text }) : { blank: true };
+}
+function deserRow(o) {
+  if (o.signal) { const v = varByPath().get(o.signal); return v && { kind: 'signal', v, radix: o.show_as || 'hex', color: o.color || 1 }; }
+  if (o.group != null) return { kind: 'group', text: String(o.group), collapsed: !!o.collapsed };
+  if (o.blank) return { kind: 'blank' };
+  return null;
+}
+function addRowAt(kind, at) {
+  const r = kind === 'group' ? { kind, text: 'New group' } : { kind };
+  S.rows.splice(at, 0, r); S.anchor = null; S.sel = at;
+  // A row added inside a collapsed group (a blank row below it) opens the group, so it shows.
+  if (!visible().includes(at)) for (let j = at - 1; j >= 0; j--) if (S.rows[j].kind === 'group') { S.rows[j].collapsed = false; break; }
+  renderRows(); commit();
+  if (kind === 'group') openRowPop(S.sel, $(`.nrow[data-i="${S.sel}"]`));
+}
+function resetLayout() {
+  S.rows = defaultRows(); S.anchor = null; S.sel = -1; S.cursor = null; S.marker = null;
+  S.start = 0; S.end = S.wave.end; renderRows(); commit();
+}
+// Undo and redo (R36): one history for the rows and the zoom. A snapshot
+// is taken after each gesture: a click, a drag, a key, or a wheel zoom once
+// it pauses, so a whole zoom is one step.
+const H = { past: [], future: [], cur: null, timer: null };
+function snap() { return JSON.stringify({ rows: S.rows.map(serRow), start: S.start, end: S.end, cursor: S.cursor, marker: S.marker, clock: S.clock, cycles: S.cycles }); }
+function commit() {
+  clearTimeout(H.timer); H.timer = null;
+  if (!S.wave) return;
+  const s = snap(); if (s === H.cur) return;
+  if (H.cur != null) H.past.push(H.cur);
+  H.cur = s; H.future = []; updUndo(); saveToHost();
+}
+function commitSoon() { clearTimeout(H.timer); H.timer = setTimeout(commit, 450); }
+function restore(s) {
+  const o = JSON.parse(s);
+  S.rows = o.rows.map(deserRow).filter(Boolean); S.cursor = o.cursor; S.marker = o.marker;
+  if (S.sel >= S.rows.length) { S.anchor = null; S.sel = -1; }
+  S.start = o.start; S.end = o.end; setClock(o.clock); S.cycles = !!S.clock && o.cycles; closePop(); renderRows();
+}
+function undo() { if (H.timer) commit(); if (!H.past.length) return; H.future.push(H.cur); H.cur = H.past.pop(); restore(H.cur); updUndo(); saveToHost(); }
+function redo() { if (!H.future.length) return; H.past.push(H.cur); H.cur = H.future.pop(); restore(H.cur); updUndo(); saveToHost(); }
+function updUndo() {
+  $('#undoBtn').disabled = !H.past.length && !H.timer; $('#redoBtn').disabled = !H.future.length;
+}
+// Every gesture ends in one of these; commit() records it only if something changed.
+// Typing a group's name is one step, taken when it's done (Enter or leaving the field).
+for (const ev of ['click', 'pointerup', 'drop', 'keyup']) document.addEventListener(ev, (e) => { if (!e.target.closest?.('input')) setTimeout(commit); }, true);
+$('#wavecol').addEventListener('wheel', () => { commitSoon(); $('#undoBtn').disabled = false; }, { passive: true });
+$('#undoBtn').addEventListener('click', (e) => { e.stopPropagation(); undo(); });
+$('#redoBtn').addEventListener('click', (e) => { e.stopPropagation(); redo(); });
+
+/* ---------- Toolbar, browser, keys ---------- */
+$('#zoomIn').onclick = () => zoom(0.5);
+$('#zoomOut').onclick = () => zoom(2);
+$('#fit').onclick = () => setView(0, S.wave.end);
+$('#prevEdge').onclick = () => edge(-1);
+$('#nextEdge').onclick = () => edge(1);
+$('#setMarker').onclick = () => { S.marker = S.cursor; draw(); };
+$('#failChip').onclick = (e) => { if (pop) { closePop(); return; } openFailList(e.currentTarget); };
+$('#tree').addEventListener('click', (e) => {
+  // Only the check box shows or hides a signal, not its name (the user's
+  // request, 2026-11-21); Enter or Space on the focused entry does too.
+  const v = e.target.closest('.var');
+  if (v) { if (e.target.closest('.chk') || e.detail === 0) toggleVar(v.dataset.path); return; }
+  const s = e.target.closest('.scope-h');
+  if (s) { const p = s.dataset.scope; S.openScopes.has(p) ? S.openScopes.delete(p) : S.openScopes.add(p); renderTree(); }
+});
+$('#search').addEventListener('input', renderTree);
+$('#browserToggle').onclick = () => $('#app').classList.toggle('show-browser');
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closePop(); $('#overlay').hidden = true; $('#app').classList.remove('show-browser'); return; }
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.target.closest('input, textarea')) {
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+    if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); return; }
+  }
+  if (e.target.closest('input, textarea') || !$('#overlay').hidden || e.metaKey || e.ctrlKey) return;
+  const k = e.key;
+  // Alt+Up and Alt+Down move the selected row, as dragging it does.
+  if (e.altKey) {
+    if ((k === 'ArrowUp' || k === 'ArrowDown') && S.sel >= 0) { e.preventDefault(); moveRow(S.sel, k === 'ArrowDown' ? 1 : -1); }
+    return;
+  }
+  if (k === '+' || k === '=') zoom(0.5);
+  else if (k === '-') zoom(2);
+  else if (k === 'f' || k === 'F') setView(0, S.wave.end);
+  else if (k === 'ArrowRight') edge(1);
+  else if (k === 'ArrowLeft') edge(-1);
+  else if ((k === 'ArrowDown' || k === 'ArrowUp') && S.rows.length && e.shiftKey && S.sel >= 0) { const v = visible(), at = v.indexOf(S.sel); if (S.anchor == null) S.anchor = S.sel; S.sel = v[Math.max(0, Math.min(v.length - 1, at + (k === 'ArrowDown' ? 1 : -1)))]; renderRows(); }
+  else if ((k === 'ArrowDown' || k === 'ArrowUp') && S.rows.length) { const v = visible(), at = v.indexOf(S.sel); S.anchor = null; S.sel = v[Math.max(0, Math.min(v.length - 1, at < 0 ? 0 : at + (k === 'ArrowDown' ? 1 : -1)))]; renderRows(); }
+  else if (k === 'm' || k === 'M') { S.marker = S.cursor; draw(); }
+  else if (k === 's' || k === 'S') setBrowser($('#app').classList.contains('no-browser'));
+  else if ((k === 'Delete' || k === 'Backspace') && S.sel >= 0) { const sp = selSpan(); S.rows.splice(sp.lo, sp.end - sp.lo); S.anchor = null; S.sel = -1; renderRows(); }
+  else return;
+  e.preventDefault();
+});
+
+
+/* ---------- Saving the view as an image (R34) ---------- */
+// The same drawing as on screen: draw() runs once with recording contexts
+// in place of the canvases, which turn each canvas operation into SVG.
+let EXPORT = null;
+const measurer = document.createElement('canvas').getContext('2d');
+class SvgCtx {
+  constructor(dx, dy) { Object.assign(this, { dx, dy, out: [], path: '', fillStyle: '#000', strokeStyle: '#000', lineWidth: 1, globalAlpha: 1, font: '11px monospace', textAlign: 'start', textBaseline: 'alphabetic', dash: [] }); }
+  setTransform() {}
+  setLineDash(d) { this.dash = d; }
+  op() { return this.globalAlpha < 1 ? ` opacity="${this.globalAlpha}"` : ''; }
+  fillRect(x, y, w, h) { this.out.push(`<rect x="${x + this.dx}" y="${y + this.dy}" width="${Math.max(w, 0)}" height="${Math.max(h, 0)}" fill="${this.fillStyle}"${this.op()}/>`); }
+  beginPath() { this.path = ''; }
+  moveTo(x, y) { this.path += `M${(x + this.dx).toFixed(2)} ${(y + this.dy).toFixed(2)}`; }
+  lineTo(x, y) { this.path += `L${(x + this.dx).toFixed(2)} ${(y + this.dy).toFixed(2)}`; }
+  closePath() { this.path += 'Z'; }
+  roundRect(x, y, w, h, r) { this.moveTo(x + r, y); this.lineTo(x + w - r, y); this.lineTo(x + w, y + r); this.lineTo(x + w, y + h - r); this.lineTo(x + w - r, y + h); this.lineTo(x + r, y + h); this.lineTo(x, y + h - r); this.lineTo(x, y + r); this.closePath(); }
+  stroke() { if (this.path) this.out.push(`<path d="${this.path}" fill="none" stroke="${this.strokeStyle}" stroke-width="${this.lineWidth}"${this.dash.length ? ` stroke-dasharray="${this.dash.join(' ')}"` : ''}${this.op()}/>`); }
+  fill() { if (this.path) this.out.push(`<path d="${this.path}" fill="${this.fillStyle}"${this.op()}/>`); }
+  measureText(t) { measurer.font = this.font; return measurer.measureText(t); }
+  fillText(t, x, y) {
+    const anchor = { center: 'middle', end: 'end', right: 'end' }[this.textAlign] || 'start';
+    const base = { middle: 'central', top: 'hanging' }[this.textBaseline] || 'alphabetic';
+    this.out.push(`<text x="${x + this.dx}" y="${y + this.dy}" fill="${this.fillStyle}" text-anchor="${anchor}" dominant-baseline="${base}" style="font:${esc(this.font)}"${this.op()}>${esc(t)}</text>`);
+  }
+}
+// The view as an SVG: the names, the values at the cursor, the ruler and
+// the waves, at the size they have on screen.
+function viewSvg() {
+  const css = getComputedStyle(document.documentElement), tok = (n) => css.getPropertyValue(n).trim();
+  const nameW = $('#names').offsetWidth, valW = $('#vals').offsetWidth, W = $('#wavecol').clientWidth;
+  const shownRows = visible(), left = nameW + valW, H = 30 + shownRows.length * S.rowH, mono = tok('--mono') || 'monospace';
+  const recs = [];
+  EXPORT = { ctx: (c) => { const r = new SvgCtx(left, c === ruler ? 0 : 30); recs.push(r); return r; } };
+  // No hover line or selected row in the image: only what the view shows.
+  const hover = S.hoverT, sel = S.sel, anchor = S.anchor; S.hoverT = null; S.sel = -1; S.anchor = null;
+  try { draw(); } finally { EXPORT = null; S.hoverT = hover; S.sel = sel; S.anchor = anchor; draw(); }
+  const out = [`<rect width="${left + W}" height="${H}" fill="${tok('--panel')}"/>`,
+    `<text x="10" y="15" fill="${tok('--muted')}" dominant-baseline="central" style="font:600 11px ${esc(mono)}">SIGNAL</text>`];
+  if (valW > 20) out.push(`<text x="${left - 12}" y="15" fill="${tok('--muted')}" text-anchor="end" dominant-baseline="central" style="font:600 11px ${esc(mono)}">VALUE</text>`);
+  shownRows.forEach((i, k) => {
+    const r = S.rows[i], y = 30 + k * S.rowH + S.rowH / 2, color = r.v ? tok('--s' + r.color) : tok('--group-fg');
+    if (r.kind === 'group') out.push(`<rect x="0" y="${30 + k * S.rowH}" width="${nameW}" height="${S.rowH}" fill="${tok('--group-bg')}"/>`);
+    const label = r.v ? r.v.path.split('.').slice(1).join('.') + (r.v.range && !r.v.name.includes('[') ? r.v.range : '') : r.kind === 'group' ? r.text : '';
+    out.push(`<text x="10" y="${y}" fill="${r.v ? tok('--fg') : color}" dominant-baseline="central" style="font:${r.v ? '' : '600 '}12px ${esc(mono)}">${esc(label)}</text>`);
+    if (r.v && valW > 20 && S.cursor != null) out.push(`<text x="${left - 12}" y="${y}" fill="${color}" text-anchor="end" dominant-baseline="central" style="font:500 12px ${esc(mono)}">${esc(fmt(valueAt(r.v, S.cursor), r.v.width, r.radix))}</text>`);
+  });
+  out.push(`<path d="M${left - 0.5} 0V${H}M${nameW - 0.5} 0V${H}M0 29.5H${left + W}" stroke="${tok('--line')}"/>`);
+  for (const r of recs) out.push(...r.out);
+  return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${left + W}" height="${H}" viewBox="0 0 ${left + W} ${H}">${out.join('')}</svg>`, w: left + W, h: H };
+}
+function saveFile(name, mime, data) {
+  if (hosted) { toHost({ type: 'logix-wave:save-file', name, mime, data }, 'logixWaveSaveFile', name, mime, data); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: mime }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+// The view as a PNG, drawn at twice the size so it stays sharp; `done`
+// gets the canvas.
+function pngCanvas(done) {
+  const { svg, w, h } = viewSvg(), img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+    const g = c.getContext('2d'); g.scale(2, 2); g.drawImage(img, 0, 0); done(c);
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+// Copies the view as a PNG image, to paste into a message or a document.
+// The clipboard item is made right away, inside the click, with the image
+// to come: browsers allow a copy only while handling the click.
+function copyImage() {
+  const failed = () => toast("Couldn't copy the image here: use Save as PNG instead.");
+  try {
+    const png = new Promise((resolve) => pngCanvas((c) => c.toBlob(resolve, 'image/png')));
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+      .then(() => toast('Copied a picture of the waves: paste it into a message or a document.'), failed);
+  } catch (_) { failed(); }
+}
+// In groups divided by lines, each entry short but saying what it makes
+// (the user's design, 2026-11-21): pictures are of what's shown; spreadsheets and web
+// pages of all signals or of the shown ones.
+const EXPORT_ITEMS = () => [
+  { label: 'Copy shown image', act: copyImage },
+  '-',
+  { label: 'Save shown image (PNG)…', act: () => exportImage('png') },
+  { label: 'Save shown image (SVG)…', act: () => exportImage('svg') },
+  '-',
+  { label: 'Spreadsheet of all signals…', act: () => exportCSV(true) },
+  { label: 'Spreadsheet of shown signals…', act: () => exportCSV(false) },
+  '-',
+  { label: 'Web page of all signals…', act: () => exportPage(true), disabled: !PAGE },
+  { label: 'Web page of shown signals…', act: () => exportPage(false), disabled: !PAGE },
+];
+function imageMenu(x, y) { openMenu(x, y, EXPORT_ITEMS()); }
+
+// A spreadsheet (R48), of all (every signal in the file over the whole run,
+// in the testbench's order, each in its usual format) or of what's shown
+// (the rows' signals and order over the range on screen); a row at
+// each change of any of them, or, counting cycles, at each rising edge of
+// the clock (the values a logic analyzer shows). Values are numbers (cell).
+const MAX_CSV_ROWS = 200000;
+function exportCSV(all) {
+  let rows = S.rows.filter((r) => r.v);
+  if (all) {
+    const vars = S.wave.vars.filter((v) => v.type !== 'parameter'), first = inOrder(vars.filter((v) => v.path.split('.').length === 2));
+    rows = [...first, ...vars.filter((v) => !first.includes(v)).sort((a, b) => a.path.localeCompare(b.path))].map(sigRow);
+  }
+  if (!rows.length) { toast('No signals are shown: nothing to export.'); return; }
+  const from = all ? 0 : S.start, to = all ? S.wave.end : S.end;
+  let times;
+  if (counting()) times = S.edges.filter((t) => t >= from && t <= to);
+  else {
+    const set = new Set([Math.max(0, Math.round(from))]);
+    for (const r of rows) { const d = S.wave.data.get(r.v.id); for (let k = Math.max(0, idx(d.t, from)); k < d.t.length && d.t[k] <= to; k++) if (d.t[k] >= from) set.add(d.t[k]); }
+    times = [...set].sort((a, b) => a - b);
+  }
+  const cut = times.length > MAX_CSV_ROWS; if (cut) times = times.slice(0, MAX_CSV_ROWS);
+  const [unit, f] = unitFor();
+  const q = (x) => /[",\n]/.test(x) ? `"${x.replace(/"/g, '""')}"` : x;
+  const name = (v) => v.path.split('.').slice(1).join('.') + (v.range && !v.name.includes('[') ? v.range : '');
+  // Numbers a spreadsheet can calculate and chart with (the user's
+  // decision, 2026-11-21): decimal, signed for signed signals (integers, or
+  // a row shown as Signed); unknown values (x, z) empty, which formulas and
+  // charts skip; buses over 48 bits as hex text with 0x, since spreadsheets
+  // keep only about 15 digits exactly.
+  let wide = false;
+  const cell = (r, t) => {
+    const val = valueAt(r.v, t), w = r.v.width;
+    if (val == null || isX(val) || /[xz]/.test(val)) return '';
+    if (val[0] === 'r') return fmt(val, w, 'dec');
+    if (w === 1) return fmt(val, w, 'bin');
+    if (w > 48) { wide = true; return '0x' + fmt(val, w, 'hex'); }
+    return fmt(val, w, r.radix === 'signed' || r.v.type === 'integer' ? 'signed' : 'dec');
+  };
+  const lines = [[...(counting() ? ['cycle'] : []), `time (${unit})`, ...rows.map((r) => name(r.v))].map(q).join(',')];
+  for (const t of times) {
+    const time = +(t * S.wave.ts / f).toFixed(6);
+    lines.push([...(counting() ? [Math.round(cyclePos(t))] : []), time, ...rows.map((r) => q(cell(r, t)))].join(','));
+  }
+  // The file's name says which: uart_tb-all.csv, uart_tb-shown.csv.
+  const base = S.file.replace(/\.vcd$/i, '') + (all ? '-all' : '-shown');
+  saveFile(base + '.csv', 'text/csv', lines.join('\n') + '\n');
+  const what = all ? `all ${rows.length} signals, the whole run` : `${rows.length} shown signals, ${fmtAt(from)} to ${fmtAt(to)}`;
+  toast(`${hosted ? 'Exported' : 'Downloaded'} ${base}.csv: ${what}, ${times.length.toLocaleString('en-US')} rows, as numbers${wide ? ' (buses over 48 bits as 0x hex text)' : ''}${cut ? ` (only the first ${MAX_CSV_ROWS.toLocaleString('en-US')}: export what's shown, zoomed in, for the rest)` : ''}.`);
+}
+
+// The view as a web page to share (R48): this page, with the view built in
+// (rows, groups, formats, zoom, cursor, marker, time base), and all the
+// waveform's signals, for someone to look into, or only the shown ones
+// (and the clock), small and holding what was meant. Anyone opens it in a
+// browser; their changes stay in their copy.
+function exportPage(all) {
+  if (!PAGE) return;
+  const base = S.file.replace(/\.vcd$/i, '') + (all ? '-all' : '-shown');
+  const save = (data) => {
+    const json = JSON.stringify(data).replace(/<\//g, '<\\/');
+    saveFile(base + '.html', 'text/html', PAGE.head + json + ';' + PAGE.tail);
+    toast(`${hosted ? 'Exported' : 'Downloaded'} ${base}.html: open it in any web browser.`);
+  };
+  if (all) { save({ ...DATA, view: viewData(), focus: null }); return; }
+  const keep = new Set(S.rows.filter((r) => r.v).map((r) => r.v.path)); if (S.clock) keep.add(S.clock);
+  const vars = S.wave.vars.filter((v) => keep.has(v.path));
+  const ids = new Set(vars.map((v) => v.id));
+  // A VCD of those signals, written from the parsed waveform.
+  const tsm = /\$timescale\s+([\s\S]*?)\$end/.exec(DATA.vcd || '');
+  const out = [`$timescale ${tsm ? tsm[1].trim() : '1ns'} $end`];
+  const has = (n) => n.vars.some((v) => keep.has(v.path)) || n.children.some(has);
+  const scope = (n) => {
+    if (!has(n)) return;
+    out.push(`$scope ${n.kind || 'module'} ${n.name} $end`);
+    for (const v of n.vars) if (keep.has(v.path)) out.push(`$var ${v.type} ${v.width} ${v.id} ${v.name}${v.range && !v.name.includes('[') ? ' ' + v.range : ''} $end`);
+    n.children.forEach(scope); out.push('$upscope $end');
+  };
+  S.wave.root.children.forEach(scope);
+  out.push('$enddefinitions $end');
+  const ev = [];
+  for (const id of ids) {
+    const d = S.wave.data.get(id), v = vars.find((x) => x.id === id);
+    for (let k = 0; k < d.t.length; k++) {
+      const val = d.v[k];
+      ev.push([d.t[k], val[0] === 'r' ? `r${val.slice(1)} ${id}` : v.width === 1 && val.length === 1 ? val + id : `b${val} ${id}`]);
+    }
+  }
+  ev.sort((a, b) => a[0] - b[0]);
+  let last = null;
+  for (const [t, line] of ev) { if (t !== last) { out.push('#' + t); last = t; } out.push(line); }
+  if (last !== S.wave.end) out.push('#' + S.wave.end);
+  const data = { ...DATA, vcd: out.join('\n') + '\n', view: viewData(), focus: null,
+    order: (DATA.order || []).filter((p) => keep.has(p)) };
+  save(data);
+}
+$('#imageBtn').addEventListener('click', (e) => { const r = e.currentTarget.getBoundingClientRect(); imageMenu(r.left, r.bottom + 4); });
+function exportImage(kind) {
+  const { svg } = viewSvg(), base = S.file.replace(/\.vcd$/i, '');
+  const said = (name) => { if (!hosted) toast(`Downloaded ${name}.`); };
+  if (kind === 'svg') { saveFile(base + '.svg', 'image/svg+xml', svg); said(base + '.svg'); return; }
+  pngCanvas((c) => {
+    if (hosted) saveFile(base + '.png', 'image/png', c.toDataURL('image/png').split(',')[1]);
+    else c.toBlob((b) => { saveFile(base + '.png', 'image/png', b); said(base + '.png'); }, 'image/png');
+  });
+}
+
+/* ---------- The right-click menu ---------- */
+// The viewer's own menu, with what makes sense for what was clicked (a
+// signal's row, a group row, the time ruler, the signal list), in place
+// of the browser's. Text fields keep the browser's menu, for Paste.
+let ctx = null;
+function closeMenu() { if (ctx) { ctx.remove(); ctx = null; } }
+function openMenu(x, y, items, title) {
+  closeMenu(); closePop(); hideTip();
+  const el = document.createElement('div'); el.className = 'ctx'; el.setAttribute('role', 'menu');
+  if (title) el.insertAdjacentHTML('beforeend', `<div class="ttl">${esc(title)}</div>`);
+  for (const it of items) {
+    if (!it) continue;
+    if (it === '-') { el.insertAdjacentHTML('beforeend', '<div class="sep"></div>'); continue; }
+    if (it.html) { const d = document.createElement('div'); d.className = 'sub'; d.innerHTML = it.html; d.addEventListener('click', (e) => { if (it.click(e) !== false) closeMenu(); }); el.appendChild(d); continue; }
+    const b = document.createElement('button'); b.className = 'it' + (it.danger ? ' danger' : ''); b.setAttribute('role', 'menuitem');
+    b.innerHTML = `<span>${esc(it.label)}</span>${it.key ? `<span class="k">${esc(it.key)}</span>` : ''}`;
+    b.disabled = !!it.disabled;
+    b.addEventListener('click', () => { closeMenu(); it.act(); });
+    el.appendChild(b);
+  }
+  document.body.appendChild(el); ctx = el;
+  const w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + 'px';
+  el.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + 'px';
+}
+document.addEventListener('pointerdown', (e) => { if (ctx && !ctx.contains(e.target)) closeMenu(); }, true);
+window.addEventListener('blur', closeMenu);
+window.addEventListener('resize', closeMenu);
+// Up and Down move through the items, Enter picks one, Escape closes.
+document.addEventListener('keydown', (e) => {
+  if (!ctx) return;
+  const its = [...ctx.querySelectorAll('.it:not(:disabled)')], k = its.indexOf(document.activeElement);
+  if (e.key === 'Escape') { closeMenu(); }
+  else if (e.key === 'ArrowDown') its[(k + 1) % its.length]?.focus();
+  else if (e.key === 'ArrowUp') its[(k - 1 + its.length) % its.length]?.focus();
+  else return;
+  e.preventDefault(); e.stopImmediatePropagation();
+}, true);
+function copyText(t) { try { navigator.clipboard.writeText(t).catch(() => {}); } catch (_) {} }
+const MOD = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl+';
+
+// The selected rows (R46): S.sel, or the range from S.anchor to S.sel
+// (Shift+click a name, Shift+Up and Shift+Down), a collapsed group's hidden
+// rows included. Its first index and the one after its end.
+function selSpan() {
+  if (S.sel < 0 || !S.rows[S.sel]) return null;
+  const a = S.anchor != null && S.rows[S.anchor] ? S.anchor : S.sel;
+  const lo = Math.min(a, S.sel), hi = Math.max(a, S.sel);
+  return { lo, end: hi + blockLen(hi) };
+}
+function isSel(i) { const sp = selSpan(); return !!sp && i >= sp.lo && i < sp.end; }
+// A row and what moves with it: a collapsed group takes its hidden rows
+// along, and stays collapsed (the user's request, 2026-11-21).
+function blockLen(i) {
+  const r = S.rows[i]; if (!r || r.kind !== 'group' || !r.collapsed) return 1;
+  let j = i + 1; while (j < S.rows.length && S.rows[j].kind !== 'group') j++;
+  return j - i;
+}
+// Where moved rows that hold a collapsed group may land: between groups or
+// at the end, never inside another group's rows, which would then join the
+// moved group (a group runs to the next group's row). Above the first group
+// any place goes. Other moves land where asked.
+function landing(lo, len, at) {
+  if (at == null || at >= S.rows.length || S.rows[at].kind === 'group') return at;
+  if (!S.rows.slice(lo, lo + len).some((r) => r.kind === 'group' && r.collapsed)) return at;
+  let g = at - 1; while (g >= 0 && S.rows[g].kind !== 'group') g--;
+  if (g < 0 || (g >= lo && g < lo + len)) return at;
+  if (at < lo) return g;
+  let n = at; while (n < S.rows.length && S.rows[n].kind !== 'group') n++;
+  return n;
+}
+// Moves `len` rows from `lo` so they land before the row now at index `at`
+// (S.rows.length: at the end), keeping the selection on them.
+function moveSpan(lo, len, at) {
+  at = landing(lo, len, at);
+  if (at == null || (at >= lo && at <= lo + len)) return;
+  const sOff = S.sel - lo, aOff = S.anchor != null ? S.anchor - lo : null;
+  const block = S.rows.splice(lo, len); if (at > lo) at -= len;
+  S.rows.splice(at, 0, ...block);
+  S.sel = at + sOff; S.anchor = aOff != null ? at + aOff : null; renderRows();
+}
+// Moves row `from` with its block (a collapsed group's hidden rows); a row
+// of the selected range moves the whole range.
+function moveBlockTo(from, at) {
+  const sp = selSpan();
+  if (sp && from >= sp.lo && from < sp.end) { moveSpan(sp.lo, sp.end - sp.lo, at); return; }
+  S.anchor = null; S.sel = from; moveSpan(from, blockLen(from), at);
+}
+// Alt+Up and Alt+Down: the selected rows past the next shown row, a
+// collapsed group as one.
+function moveRow(i, d) {
+  const sp = selSpan(); if (!sp) return;
+  const v = visible();
+  if (d < 0) { const k = v.indexOf(sp.lo); if (k > 0) moveSpan(sp.lo, sp.end - sp.lo, v[k - 1]); return; }
+  const n = v.find((x) => x >= sp.end); if (n != null) moveSpan(sp.lo, sp.end - sp.lo, n + blockLen(n));
+}
+function removeRow(i) { S.rows.splice(i, 1); S.anchor = null; S.sel = -1; renderRows(); }
+function timeItems(t) {
+  return [
+    { label: 'Put the cursor here', key: 'Click', act: () => setCursor(t) },
+    { label: 'Put the marker here', key: 'Shift+click', act: () => { S.marker = Math.round(t); draw(); } },
+  ];
+}
+function rowMenu(i, t, x, y) {
+  const r = S.rows[i]; if (!r) return;
+  if (!isSel(i)) { S.anchor = null; S.sel = i; } renderRows();
+  // Below a collapsed group means after the rows it hides, so the new row shows.
+  const v = visible(), below = v[v.indexOf(i) + 1] ?? S.rows.length;
+  const common = [
+    { label: 'Add a group above', act: () => addRowAt('group', i) },
+    { label: 'Add a group below', act: () => addRowAt('group', below) },
+    { label: 'Add a blank row above', act: () => addRowAt('blank', i) },
+    { label: 'Add a blank row below', act: () => addRowAt('blank', below) },
+  ];
+  if (!r.v) {
+    openMenu(x, y, [
+      ...(t != null ? [...timeItems(t), '-'] : []),
+      r.kind === 'group' ? { label: 'Rename the group…', act: () => openRowPop(i, $(`.nrow[data-i="${i}"]`)) } : null,
+      r.kind === 'group' ? { label: r.collapsed ? `Show the group (${groupSize(i)} signals)` : 'Collapse the group', act: () => toggleGroup(i) } : null,
+      ...common, '-',
+      { label: 'Remove this row', key: 'Delete', danger: true, act: () => removeRow(i) },
+    ], r.kind === 'group' ? 'Group: ' + r.text : 'Blank row');
+    return;
+  }
+  const at = t != null ? t : S.cursor;
+  const val = at != null ? fmt(valueAt(r.v, at), r.v.width, r.radix) : null;
+  openMenu(x, y, [
+    ...(t != null ? [...timeItems(t), '-'] : []),
+    r.v.width > 1 ? { html: `<div class="lbl">Show values as</div><div class="seg">${RADIX.map(([k, n]) => `<button data-radix="${k}" class="${r.radix === k ? 'on' : ''}">${n}</button>`).join('')}</div>`,
+      click: (e) => { const b = e.target.closest('[data-radix]'); if (!b) return false; r.radix = b.dataset.radix; renderRows(); } } : null,
+    { html: `<div class="lbl">Color</div><div class="swatches">${[1, 2, 3, 4, 5, 6].map((c) => `<button data-color="${c}" style="--c:var(--s${c})" class="${r.color === c ? 'on' : ''}" aria-label="Color ${c}"></button>`).join('')}</div>`,
+      click: (e) => { const b = e.target.closest('[data-color]'); if (!b) return false; r.color = +b.dataset.color; renderRows(); } },
+    '-', ...common, '-',
+    ...(isClockable(r.v) ? [clockItem(r.v.path), '-'] : []),
+    { label: 'Copy the name', act: () => copyText(r.v.path) },
+    { label: val != null ? `Copy the value (${val.length > 14 ? val.slice(0, 13) + '…' : val})` : 'Copy the value', disabled: val == null, act: () => copyText(val) },
+    '-',
+    { label: 'Hide this signal', key: 'Delete', danger: true, act: () => removeRow(i) },
+  ], r.v.path + (r.v.range ? ' ' + r.v.range : ''));
+}
+function timeMenu(t, x, y) {
+  openMenu(x, y, [
+    ...timeItems(t), '-',
+    { label: 'Zoom in here', key: 'Wheel', act: () => zoom(0.5, t) },
+    { label: 'Zoom out here', act: () => zoom(2, t) },
+    { label: 'Show the whole run', key: 'F', act: () => setView(0, S.wave.end) },
+    '-',
+    { label: 'Add a group', act: () => addRowAt('group', S.rows.length) },
+    { label: 'Add a blank row', act: () => addRowAt('blank', S.rows.length) },
+    '-',
+    { label: 'Reset the view', act: () => resetLayout() },
+    '-',
+    ...EXPORT_ITEMS(),
+  ], fmtAt(Math.round(t)));
+}
+// Use a 1-bit signal as the clock (and count its cycles): in a row's menu and the signal list's.
+function clockItem(path) {
+  return counting() && S.clock === path
+    ? { label: 'Used as clock', disabled: true, act: () => {} }
+    : { label: 'Use as clock', act: () => pickClock(path) };
+}
+function treeMenu(e) {
+  const v = e.target.closest('.var'), sc = e.target.closest('.scope-h');
+  if (v) {
+    const shown = S.rows.some((r) => r.v && r.v.path === v.dataset.path);
+    const x = varByPath().get(v.dataset.path);
+    // The clock can be chosen here too, even while its row is hidden.
+    openMenu(e.clientX, e.clientY, [
+      { label: shown ? 'Hide this signal' : 'Show this signal', act: () => toggleVar(v.dataset.path) },
+      ...(isClockable(x) ? ['-', clockItem(x.path)] : []),
+    ], v.dataset.path);
+  } else if (sc) {
+    const p = sc.dataset.scope, vars = S.wave.vars.filter((x) => x.path.split('.').slice(0, -1).join('.') === p && x.type !== 'parameter');
+    const shown = new Set(S.rows.filter((r) => r.v).map((r) => r.v.path));
+    openMenu(e.clientX, e.clientY, [
+      { label: `Show all ${vars.length} signals`, disabled: vars.every((x) => shown.has(x.path)), act: () => { insertSignals(inOrder(vars).filter((x) => !shown.has(x.path))); renderRows(); } },
+      { label: 'Hide all its signals', disabled: !vars.some((x) => shown.has(x.path)), act: () => { S.rows = S.rows.filter((r) => !r.v || !vars.includes(r.v)); S.anchor = null; S.sel = -1; renderRows(); } },
+    ], p);
+  } else return false;
+}
+document.addEventListener('contextmenu', (e) => {
+  if (e.target.closest('input, textarea, .pop, .dialog')) return;   // the browser's menu, for Paste
+  e.preventDefault();
+  const x = e.clientX, y = e.clientY;
+  if (e.target.closest('#tree')) { treeMenu(e); return; }
+  if (e.target.closest('.cols.head > div')) {
+    openMenu(x, y, [
+      { label: valHidden() ? 'Show the Value column' : 'Hide the Value column', act: () => showVal(valHidden()) },
+      { label: 'Reset column widths', act: resetWidths },
+    ]);
+    return;
+  }
+  const rowEl = e.target.closest('.nrow, .vrow');
+  if (rowEl) { rowMenu(+rowEl.dataset.i, null, x, y); return; }
+  if (e.target === waves) {
+    const rect = waves.getBoundingClientRect(), i = rowAtY(y - rect.top);
+    const t = snapAt(x - rect.left, y - rect.top, e.altKey).t;
+    if (S.rows[i]) rowMenu(i, t, x, y); else timeMenu(t, x, y);
+    return;
+  }
+  if (e.target === ruler || e.target.closest('.wavecol, .rows')) {
+    const rect = waves.getBoundingClientRect(); timeMenu(timeAtX(Math.max(0, x - rect.left)), x, y); return;
+  }
+  closeMenu();
+});
+
+/* ---------- More room for the waves ---------- */
+// Per-viewer conveniences, kept in this browser only.
+const store = { get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} } };
+const COL = { name: { prop: '--name-w', def: 210, min: 80, max: 520 }, val: { prop: '--val-w', def: 92, min: 0, max: 300 } };
+const STRIP = 18;   // the width of a hidden Value column's strip
+function setCol(col, w) {
+  const c = COL[col];
+  w = Math.round(Math.max(c.min, Math.min(c.max, w)));
+  if (col === 'val' && w < 28) w = 0;   // dragged almost to nothing: hidden
+  document.documentElement.style.setProperty(c.prop, (col === 'val' && w === 0 ? STRIP : w) + 'px');
+  if (col === 'val') {
+    $('#app').classList.toggle('val-hidden', w === 0);
+    // Too narrow for even a cut title: only the chevron stays.
+    $('#app').classList.toggle('val-narrow', w > 0 && w < 44);
+  }
+  store.set('wv.' + col, String(w));
+}
+const valHidden = () => $('#app').classList.contains('val-hidden');
+// The width the Value column comes back at: its width before it was hidden.
+function rememberVal(w) { if (w >= 28) store.set('wv.valLast', String(Math.round(w))); }
+function showVal(on) {
+  if (!on && !valHidden()) rememberVal(colWidth('val'));
+  setCol('val', on ? +(store.get('wv.valLast') || COL.val.def) : 0);
+}
+function resetWidths() { setCol('name', COL.name.def); setCol('val', COL.val.def); }
+function colWidth(col) {
+  if (col === 'val' && valHidden()) return 0;
+  const w = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(COL[col].prop));
+  return Number.isNaN(w) ? COL[col].def : w;
+}
+$('#valOpen').onclick = () => showVal(true);
+$('#valClose').onclick = () => showVal(false);
+$('#vals').addEventListener('click', () => { if (valHidden()) showVal(true); });
+for (const col of ['name', 'val']) { const w = store.get('wv.' + col); if (w != null) setCol(col, +w); }
+document.querySelectorAll('.grip').forEach((g) => {
+  const col = g.dataset.col;
+  g.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const x0 = e.clientX, w0 = colWidth(col); g.classList.add('active');
+    if (col === 'val') rememberVal(w0); g.setPointerCapture(e.pointerId);
+    const move = (ev) => setCol(col, w0 + ev.clientX - x0);
+    const up = () => { g.classList.remove('active'); g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); };
+    g.addEventListener('pointermove', move); g.addEventListener('pointerup', up);
+  });
+  g.addEventListener('dblclick', (e) => { e.stopPropagation(); setCol(col, COL[col].def); });
+});
+function setBrowser(shown) {
+  $('#app').classList.toggle('no-browser', !shown);
+  const b = $('#sideBtn'); b.classList.toggle('on', shown); b.setAttribute('aria-pressed', String(shown));
+  b.title = shown ? 'Hide the signal list, for more room (S)' : 'Show the signal list (S)';
+  b.setAttribute('aria-label', shown ? 'Hide the signal list' : 'Show the signal list');
+  store.set('wv.browser', shown ? '1' : '0');
+}
+setBrowser(store.get('wv.browser') !== '0');
+// Hints for people new to the viewer (the mouse hints at the bottom, the
+// one under the signal list), which experienced users may hide (R47): a
+// per-user choice, kept in the browser, not in the view.
+function hintsShown() { return !$('#app').classList.contains('no-hints'); }
+function setHints(on) {
+  $('#app').classList.toggle('no-hints', !on); store.set('wv.hints', on ? '1' : '0');
+  placeHelp();
+}
+setHints(store.get('wv.hints') !== '0');
+$('#sideBtn').onclick = () => setBrowser($('#app').classList.contains('no-browser'));
+
+function placeGrips() {
+  const head = document.querySelector('.cols.head'), status = $('#status'), viewer = $('#viewer');
+  viewer.style.setProperty('--grips-top', head.offsetTop + 'px');
+  viewer.style.setProperty('--grips-bottom', (viewer.clientHeight - status.offsetTop) + 'px');
+}
+new ResizeObserver(() => { placeGrips(); draw(); }).observe($('#wavecol'));
+new ResizeObserver(placeGrips).observe($('#viewer'));
+placeGrips();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+new MutationObserver(() => draw()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+if (document.fonts) document.fonts.ready.then(draw);
+if (DATA) load();
+})();
+</script>
+</body>
+</html>

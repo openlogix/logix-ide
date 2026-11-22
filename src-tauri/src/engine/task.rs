@@ -1216,7 +1216,7 @@ mod tests {
     /// Verify, Upload, Run Tests, Show Diagram and Auto Format against a
     /// real engine, on the alhambra-ii blinky example (no board
     /// needed: Upload fails with `connect_board` unless one is plugged in;
-    /// Simulate isn't run, since it opens GTKWave):
+    /// not Simulate):
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_IDE_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_engine_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
@@ -1616,6 +1616,9 @@ mod tests {
         assert!(capture(Task::Test, None, blinky, "test.txt").await.ok);
         let diagram = capture(Task::Diagram, None, blinky, "diagram.txt").await;
         std::fs::write(out.join("diagram.html"), diagram.diagram_page.unwrap()).unwrap();
+        // The Waveforms window's page (the docs' waveforms screenshot).
+        let simulated = capture(Task::Simulate, Some("main_tb.v"), blinky, "simulate.txt").await;
+        std::fs::write(out.join("waveforms.html"), simulated.wave_page.unwrap()).unwrap();
     }
 
     #[test]

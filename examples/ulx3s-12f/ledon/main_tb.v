@@ -1,6 +1,6 @@
 // Testbench for main.v.
 // Run it in batch mode with Run Tests, or view the signals
-// in GTKWave with Simulate.
+// over time with Simulate.
 
 // Checks that 'actual_val' equals 'expected_val'. On a mismatch, reports
 // an error with both values. Run Tests stops at the first error; Simulate

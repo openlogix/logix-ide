@@ -13,7 +13,7 @@ pub enum Task {
     Upload,
     /// Run one or all testbenches.
     Test,
-    /// Simulate one testbench and open GTKWave.
+    /// Simulate one testbench and show it in the Waveforms window.
     Simulate,
     /// Show Diagram: draw the design (every module) for the Diagram
     /// window.

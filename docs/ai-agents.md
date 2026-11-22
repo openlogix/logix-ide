@@ -77,8 +77,9 @@ IDE project, follow these.
   `[variant]` (how the board is connected and programmed) and `[serial]`
   (the Serial Monitor's speed). Change only what you need, and keep its
   other lines. Don't add a `logix.json`.
-- **GTKWave layouts** are named `<testbench>.gtkw`, next to the testbench,
-  such as `main_tb.gtkw`.
+- **Waveform views** are named `<testbench>.view`, next to the testbench,
+  such as `main_tb.view`. Logix IDE's Waveforms window writes them; leave
+  them as they are.
 - **Folders starting with `_` are generated**, such as `_build`: build
   into `_build` inside the project, and never put sources there.
 - **File names** have no spaces.
