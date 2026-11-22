@@ -5,6 +5,10 @@ Code, works on the same project: it edits files, adds and deletes them,
 builds, tests and programs the board, and you see its changes as it makes
 them.
 
+To see it at work, follow [Tutorial: a mood light, with an AI
+agent](ai-tutorial.md): the agent designs and tests a mood light for the
+iCESugar v1.5 while you watch in Logix IDE.
+
 ## Working side by side
 
 - **Your changes reach the agent.** Logix IDE saves a saved project's

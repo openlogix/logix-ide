@@ -73,6 +73,10 @@ const HELP_LINKS: &[Option<(&str, &str)>] = &[
         "https://openlogix.github.io/logix-ide/testbenches/",
     )),
     Some((
+        "Using an AI Agent",
+        "https://openlogix.github.io/logix-ide/ai-agents/",
+    )),
+    Some((
         "Troubleshooting",
         "https://openlogix.github.io/logix-ide/troubleshooting/",
     )),
