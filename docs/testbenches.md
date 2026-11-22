@@ -20,9 +20,12 @@ error, and the line that failed is marked in the editor.
 
 ## Simulate
 
-The **Simulate** button ![Simulate button](images/icon-simulate.png){ .toolbar-icon } runs the testbench that's open
-(or the project's only one) and shows its signals in the **Waveforms**
-window. The testbench runs to the end even when a check fails, and the window
+The **Simulate** button ![Simulate button](images/icon-simulate.png){ .toolbar-icon } runs a testbench and shows its signals in the **Waveforms**
+window. Which one: the testbench that's open; else the open file's own
+testbench (`main_tb.v` for `main.v`); else the project's only one; else the
+one you simulated last. If none of these picks one, Simulate asks which
+testbench to run, and runs it again next time. Hover over the button to see
+which one it will run. The testbench runs to the end even when a check fails, and the window
 opens zoomed in around the first failure, with the check's message above the
 signals, so you can see what led up to it.
 
