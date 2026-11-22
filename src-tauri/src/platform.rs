@@ -517,8 +517,6 @@ pub fn write_logix_readme(data_dir: &Path, home_variable_set: bool) -> Result<()
 mod tests {
     use super::*;
 
-    // GTKWave on Linux runs through the OSS CAD Suite's loader, so its
-    // process is named ld-linux-x86-64; its command line names it.
     #[test]
     fn shell_paths_are_quoted_only_when_needed() {
         let p = Platform::MacosArm64;

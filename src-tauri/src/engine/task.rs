@@ -1216,7 +1216,7 @@ mod tests {
     /// Verify, Upload, Run Tests, Show Diagram and Auto Format against a
     /// real engine, on the alhambra-ii blinky example (no board
     /// needed: Upload fails with `connect_board` unless one is plugged in;
-    /// Simulate isn't run, since it opens GTKWave):
+    /// not Simulate):
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_IDE_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_engine_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]

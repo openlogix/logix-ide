@@ -7,8 +7,7 @@
 //! start (local time) and process ID, `<yyyymmdd>-<hhmmss>-<pid>`, and writes
 //! `ide.log` there after a separator line. The programs it starts log
 //! into the same folder, named by their chain: the engine
-//! `ide.engine.log` (`--log-folder`, `--log-name`, and its
-//! GTKWave `ide.engine.gtkwave.log`), Verible's language server
+//! `ide.engine.log` (`--log-folder`, `--log-name`), Verible's language server
 //! `ide.verible-verilog-ls.log` (`child_file`). Old session folders
 //! are deleted by the engine's `clean_logs` tool once the engine runs
 //! (`commands::setup`), so the policy is the engine's, the same for every

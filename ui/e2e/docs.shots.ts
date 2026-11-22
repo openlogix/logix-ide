@@ -122,8 +122,8 @@ test("waveforms", async ({ page }) => {
   await page.goto("/e2e/fixtures/waveforms.html?theme=light");
   await expect(page.locator(".nrow")).toHaveCount(2);
   await page.locator(".scope-h", { hasText: "dut" }).click();
-  await page.locator('.var[data-path="main_tb.dut.counter"]').click();
-  await page.locator('.var[data-path="main_tb.dut.green_on"]').click();
+  await page.locator('.var[data-path="main_tb.dut.counter"] .chk').click();
+  await page.locator('.var[data-path="main_tb.dut.green_on"] .chk').click();
   const box = (await page.locator("#waves").boundingBox())!;
   await page.mouse.click(box.x + box.width * 0.62, box.y + 45);
   await page.mouse.move(box.x + box.width * 0.62, box.y + 200);

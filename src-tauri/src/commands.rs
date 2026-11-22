@@ -473,7 +473,7 @@ async fn example_doc(
 ) -> Result<ProjectDoc, UserError> {
     // Written out to a scratch folder, replaced by the next example: the
     // project's files are loaded from there, and its other files (e.g. a
-    // GTKWave layout) are copied from there on the first save.
+    // data file) are copied from there on the first save.
     let dst = platform::current_implemented()?
         .data_dir()?
         .join("_scratch")
@@ -1375,8 +1375,8 @@ pub async fn new_project(board: Option<String>) -> Result<ProjectDoc, UserError>
 
 /// A board's Bare Minimum project (Examples): its pins and a design that
 /// does nothing yet, generated for every catalog board (`examples.rs`,
-/// `BARE_MINIMUM`), as a new, unsaved project; its other files, such as its
-/// GTKWave layout, are copied on the first save, as an example's.
+/// `BARE_MINIMUM`), as a new, unsaved project; its other files, such as a
+/// data file, are copied on the first save, as an example's.
 #[tauri::command]
 pub async fn open_bare_minimum(board: String) -> Result<ProjectDoc, UserError> {
     if !examples::has_bare_minimum(&board) {
