@@ -28,15 +28,15 @@ module main_tb;
   );
 
   // Models of the first pattern counter and BRAM address counter.
-  reg [31:0] counter1 = 32'h1234_5678;
+  reg [31:0] counter1 = 32'h0;
   reg [7:0] bram_addr1 = 8'h00;
 
   // The LEDs after the warm-up, and whether they changed since.
-  reg [7:0] first_leds;
+  reg [7:0] first_leds = 8'd0;
   reg leds_changed = 0;
 
   // Loop index for the checks.
-  integer i;
+  integer i = 0;
 
   // The test sequence.
   initial begin

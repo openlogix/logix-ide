@@ -97,6 +97,21 @@ readability wins.
 - Time constants, such as a counter's width, are parameters, so the
   testbench can make them small.
 - Outputs the design doesn't use, such as other LEDs, are held off.
+- **Every register starts at 0** (the user's rule, 2026-11-22), in its
+  declaration (`reg [7:0] count = 8'd0;`), and the design is written so
+  that 0 is its resting state: some FPGAs, such as the iCE40, can only
+  start a register at 0 (the build fakes other values with hidden
+  inverters). A value that must rest at 1, such as a serial line that
+  idles high, is made by logic from registers at 0 (`assign tx = ready ?
+  1'b1 : bits[0];`), or stored the other way round (a button's "pressed",
+  not its pin level). The first file that does this says why, once, in a
+  comment. No reset: the FPGA loads these values when it starts. This is
+  for the design only, not testbenches.
+- **No reads past the end** of a constant or a memory, even when the value
+  isn't used then: an index that runs past the end (such as a character
+  counter after the last character) goes back to the start instead, so no
+  signal of the design is ever x in a simulation, where beginners take red
+  x for errors.
 - FPGA primitives only where needed (an internal oscillator, or what an
   `ai_hints` line asks for), each in a module of its own file only when
   that makes `main.v` clearer.
@@ -121,6 +136,9 @@ with both values.
   (half period in ns, rounded to the picosecond).
 - `$dumpvars(0, main_tb)` first, and `$finish` last, after
   `$display("End of simulation")`.
+- Every variable declared in the module (not inside a task) starts with
+  a value that makes sense for it, any value (only the design's registers
+  must start at 0), so none shows as x at the start of the waveform.
 - Checks for what the example promises, each with a comment.
 - A comment showing where the user adds their own checks.
 

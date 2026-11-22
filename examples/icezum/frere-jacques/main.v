@@ -31,7 +31,7 @@ module main (
 
   //-- The multiplexers' channel selects.
   reg [5:0] sel = 0;
-  reg [5:0] sel2 = 60;  // One bar behind.
+  wire [5:0] sel2 = sel - 6'd4;  // One bar (4 notes) behind, wrapping around.
 
   //-- The note duration timer.
   wire clk_dur;
@@ -234,8 +234,7 @@ module main (
   always @(posedge sys_clk) begin
     clk_dur_prev <= clk_dur;
     if (clk_dur && !clk_dur_prev) begin
-      sel  <= sel + 1;
-      sel2 <= sel2 + 1;
+      sel <= sel + 1;
     end
   end
 

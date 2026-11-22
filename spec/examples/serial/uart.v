@@ -63,13 +63,17 @@ module uart_tx #(
 
   // The bits still to send. Bit 0 is the one on the line now. A new byte is
   // loaded as {stop bit, 8 data bits, start bit}, and each bit time it
-  // shifts right by one, filling with 1s, so the line ends up high (idle).
-  reg [9:0] bits = 10'b11_1111_1111;
+  // shifts right by one. Like every register here, it starts at 0: some
+  // FPGAs, such as the iCE40, can only start a register at 0.
+  reg [9:0] bits = 10'd0;
   reg [3:0] bits_left = 4'd0;       // Bits still to send. 0 = idle.
   reg [15:0] cycles_left = 16'd0;   // Clock cycles left in the current bit.
 
-  assign tx = bits[0];
   assign ready = (bits_left == 4'd0);
+
+  // The line: high while idle (before the first byte too), else the bit
+  // being sent.
+  assign tx = ready ? 1'b1 : bits[0];
 
   always @(posedge clk) begin
     if (bits_left == 4'd0) begin
@@ -81,7 +85,7 @@ module uart_tx #(
       end
     end else if (cycles_left == 16'd0) begin
       // The current bit has lasted long enough: go to the next one.
-      bits <= {1'b1, bits[9:1]};
+      bits <= {1'b0, bits[9:1]};
       bits_left <= bits_left - 4'd1;
       cycles_left <= BIT_CYCLES - 16'd1;
     end else begin
@@ -144,9 +148,12 @@ module uart_rx #(
 
   // rx comes from outside and can change at any time, not just on a clock
   // edge. Passing it through two flip-flops first (a "synchronizer") keeps
-  // the rest of the receiver safe from that.
-  reg rx_meta = 1'b1;
-  reg rx_synced = 1'b1;
+  // the rest of the receiver safe from that. They start at 0, like every
+  // register here (some FPGAs, such as the iCE40, can only start a register
+  // at 0), which looks like a start bit: so the receiver begins by waiting
+  // for the line to be high, below.
+  reg rx_meta = 1'b0;
+  reg rx_synced = 1'b0;
   always @(posedge clk) begin
     rx_meta <= rx;
     rx_synced <= rx_meta;
@@ -154,13 +161,13 @@ module uart_rx #(
 
   // The receiver's steps. It reads each bit in the middle of its time,
   // where the signal is most stable.
-  localparam WAIT_START = 3'd0;  // Line high: waiting for it to go low (a start bit).
-  localparam CHECK_START = 3'd1; // Half a bit later: still low? Then it's a real start bit.
-  localparam READ_DATA = 3'd2;   // Reading the 8 data bits.
-  localparam CHECK_STOP = 3'd3;  // Reading the stop bit: it must be 1.
-  localparam WAIT_HIGH = 3'd4;   // After a bad stop bit: waiting for the line to go high.
+  localparam WAIT_HIGH = 3'd0;   // At first, and after a bad stop bit: wait for a high line.
+  localparam WAIT_START = 3'd1;  // Line high: waiting for it to go low (a start bit).
+  localparam CHECK_START = 3'd2; // Half a bit later: still low? Then it's a real start bit.
+  localparam READ_DATA = 3'd3;   // Reading the 8 data bits.
+  localparam CHECK_STOP = 3'd4;  // Reading the stop bit: it must be 1.
 
-  reg [2:0] step = WAIT_START;
+  reg [2:0] step = WAIT_HIGH;
   reg [15:0] cycles_left = 16'd0;  // Clock cycles until the next read of the line.
   reg [2:0] bit_number = 3'd0;     // Which data bit is read next (0 to 7).
   reg [7:0] bits = 8'd0;           // The data bits read so far.
@@ -171,6 +178,9 @@ module uart_rx #(
     error <= 1'b0;
 
     case (step)
+      WAIT_HIGH:
+        if (rx_synced == 1'b1) step <= WAIT_START;
+
       WAIT_START:
         if (rx_synced == 1'b0) begin
           step <= CHECK_START;
@@ -216,8 +226,8 @@ module uart_rx #(
           step <= WAIT_HIGH;
         end
 
-      default:  // WAIT_HIGH
-        if (rx_synced == 1'b1) step <= WAIT_START;
+      default:  // No other steps: start over.
+        step <= WAIT_HIGH;
     endcase
   end
 

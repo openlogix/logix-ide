@@ -132,7 +132,7 @@ module uart_tb;
     end
   endtask
 
-  reg [7:0] got;
+  reg [7:0] got = 8'd0;  // The last byte read from the transmitter.
 
   initial begin
     $dumpvars(0, uart_tb);

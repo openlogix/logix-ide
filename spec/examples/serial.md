@@ -64,7 +64,9 @@ a heading comment (`// ---- ... ----` style, as the files in `serial/`):
   also come before it, sent only when a character was received since the
   last greeting (`typed`), so it starts on a new line after the echoes.
   The text is one `localparam` with both, and `char_number` starts at 0
-  (after typing) or 2 (otherwise).
+  (after typing) or 2 (otherwise); after the last character it goes back
+  to 0, so it never points past the text (COMMON.md, No reads past the
+  end).
 - **Quiet time:** `quiet_cycles` counts clock cycles and starts over on
   every character received; at `QUIET_CYCLES` (a parameter of `main`, 5
   seconds of the clock by default, such as `60_000_000` at 12 MHz) it starts

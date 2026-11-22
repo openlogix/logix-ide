@@ -25,7 +25,7 @@ module main_tb;
   main dut (.leds(leds));
 
   // Loop index for the checks.
-  integer i;
+  integer i = 0;
 
   // The test sequence.
   initial begin
