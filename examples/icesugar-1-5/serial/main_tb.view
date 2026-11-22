@@ -17,7 +17,7 @@
     {
       "signal": "main_tb.uart_tx",
       "show_as": "bin",
-      "color": 2
+      "color": 3
     },
     {
       "group": "Receiving"
@@ -25,12 +25,12 @@
     {
       "signal": "main_tb.dut.rx_valid",
       "show_as": "bin",
-      "color": 3
+      "color": 4
     },
     {
       "signal": "main_tb.dut.rx_data",
       "show_as": "ascii",
-      "color": 3
+      "color": 5
     },
     {
       "group": "Sending"
@@ -38,22 +38,22 @@
     {
       "signal": "main_tb.dut.tx_valid",
       "show_as": "bin",
-      "color": 4
+      "color": 6
     },
     {
       "signal": "main_tb.dut.tx_ready",
       "show_as": "bin",
-      "color": 4
+      "color": 1
     },
     {
       "signal": "main_tb.dut.tx_data",
       "show_as": "ascii",
-      "color": 4
+      "color": 2
     },
     {
       "signal": "main_tb.dut.echo_waiting",
       "show_as": "bin",
-      "color": 4
+      "color": 3
     },
     {
       "signal": "main_tb.dut.echo_char",
@@ -71,22 +71,22 @@
     {
       "signal": "main_tb.dut.sending_greeting",
       "show_as": "bin",
-      "color": 5
+      "color": 6
     },
     {
       "signal": "main_tb.dut.typed",
       "show_as": "bin",
-      "color": 5
+      "color": 1
     },
     {
       "signal": "main_tb.dut.char_number",
       "show_as": "dec",
-      "color": 5
+      "color": 2
     },
     {
       "signal": "main_tb.dut.greeting_char",
       "show_as": "ascii",
-      "color": 5
+      "color": 3
     }
   ]
 }
