@@ -7,37 +7,27 @@
 //!
 //! The page is the engine's, as is, kept in memory and served on the
 //! `logix-wave` scheme (the build folder is cleared before each task). It
-//! gets no Tauri access: the functions the page calls when it has a host
-//! (`window.logixWaveSaveView`, `logixWaveSaveFile`, `logixWaveOpenSource`)
-//! are defined here as POST requests to its own address, which `serve`
-//! answers: a saved view becomes a `wave-view` event to the main window (a
-//! project file, as an edit), an image goes through a save dialog, and a
-//! source line becomes a `wave-open-source` event, only for a file of the
+//! gets no Tauri access: it asks through the page contract,
+//! `window.logixHost` (`page_host.rs`, shared with the Diagram window),
+//! which `serve` answers: the view (`writeDeclared("view", …)`) becomes a
+//! `wave-view` event to the main window (a project file, as an edit), an
+//! image (`saveAs`) goes through a save dialog, and a source line
+//! (`openSource`) becomes a `wave-open-source` event, only for a file of the
 //! project.
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::sync::Mutex;
 
-use base64::Engine as _;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
-use tauri_plugin_dialog::DialogExt;
+
+use crate::page_host::{self, Call, Request};
 
 /// The scheme the pages are served on.
 pub const SCHEME: &str = "logix-wave";
 /// Window labels start with this.
 const LABEL_PREFIX: &str = "wave-";
-
-/// Defines the page's host functions (the engine's tool API, simulate
-/// tool, The waveform viewer) as POST requests to its own address,
-/// `/<label>/<what>`.
-const INIT_SCRIPT: &str = "(function () {\
-  const post = (what, body) => fetch(location.pathname.replace(/\\/+$/, '') + '/' + what, { method: 'POST', body: JSON.stringify(body) }).catch(() => {});\
-  window.logixWaveSaveView = (view) => post('save-view', view);\
-  window.logixWaveSaveFile = (name, mime, data) => post('save-file', { name, mime, data });\
-  window.logixWaveOpenSource = (file, line) => post('open-source', { file, line });\
-})();";
 
 /// A window's page and what it may do.
 struct Page {
@@ -135,7 +125,7 @@ pub fn show(
         .title(title)
         .inner_size(1100.0, 700.0)
         .min_inner_size(520.0, 320.0)
-        .initialization_script(INIT_SCRIPT)
+        .initialization_script(page_host::SCRIPT)
         // The page's own drag and drop (reordering rows): Tauri's file-drop
         // handling would take every drag as a file drop, with a "+" cursor
         // and no drop for the page (the user's report, 2026-11-21).
@@ -148,46 +138,10 @@ pub fn show(
     Ok(())
 }
 
-/// What a request to the scheme asks: the page, or one of its host calls.
-#[derive(Debug, PartialEq)]
-enum Request<'a> {
-    Page(&'a str),
-    Call(&'a str, &'a str),
-}
-
-fn parse(path: &str) -> Request<'_> {
-    let path = path.trim_start_matches('/');
-    let path = path.split(['?', '#']).next().unwrap_or("");
-    match path.split_once('/') {
-        Some((label, what)) if !what.is_empty() => Request::Call(label, what),
-        _ => Request::Page(path.trim_end_matches('/')),
-    }
-}
-
-#[derive(Deserialize)]
-struct FileRequest {
-    name: String,
-    mime: String,
-    data: String,
-}
-
-#[derive(Deserialize)]
-struct SourceRequest {
-    file: String,
-    line: Option<u32>,
-}
-
 /// The scheme's handler: a window's page (GET), or what its page asks
-/// (POST to `/<label>/save-view`, `save-file` or `open-source`).
+/// through `window.logixHost` (POST to `/<label>/<call>`, `page_host.rs`).
 pub fn serve(app: &AppHandle, path: &str, body: &[u8]) -> tauri::http::Response<Vec<u8>> {
-    let respond = |status: u16, body: Vec<u8>| {
-        tauri::http::Response::builder()
-            .status(status)
-            .header("Content-Type", "text/html; charset=utf-8")
-            .body(body)
-            .expect("a valid response")
-    };
-    let (label, what) = match parse(path) {
+    let (label, what) = match page_host::request(path) {
         Request::Page(label) => {
             let html = PAGES
                 .lock()
@@ -195,8 +149,8 @@ pub fn serve(app: &AppHandle, path: &str, body: &[u8]) -> tauri::http::Response<
                 .as_ref()
                 .and_then(|p| p.get(label).map(|page| page.html.clone()));
             return match html {
-                Some(h) => respond(200, h.into_bytes()),
-                None => respond(404, b"No waveform.".to_vec()),
+                Some(h) => page_host::respond(200, h.into_bytes()),
+                None => page_host::respond(404, b"No waveform.".to_vec()),
             };
         }
         Request::Call(label, what) => (label, what),
@@ -208,14 +162,14 @@ pub fn serve(app: &AppHandle, path: &str, body: &[u8]) -> tauri::http::Response<
         .and_then(|p| p.get(label))
         .map(|p| (p.key.clone(), p.files.clone(), p.view_file.clone()));
     let Some((key, files, view_name)) = page else {
-        return respond(404, Vec::new());
+        return page_host::respond(404, Vec::new());
     };
     let main = app.get_webview_window("main");
-    match what {
-        "save-view" => {
-            // The view as the page gives it, pretty-printed for people
-            // reading the project's files.
-            let text = serde_json::from_slice::<serde_json::Value>(body)
+    match page_host::call(what, body) {
+        // The one file the engine declared for this page: the testbench's
+        // view, pretty-printed for people reading the project's files.
+        Ok(Call::WriteDeclared { id, text }) if id == "view" => {
+            let text = serde_json::from_str::<serde_json::Value>(&text)
                 .ok()
                 .filter(serde_json::Value::is_object)
                 .and_then(|v| serde_json::to_string_pretty(&v).ok());
@@ -233,75 +187,26 @@ pub fn serve(app: &AppHandle, path: &str, body: &[u8]) -> tauri::http::Response<
                 _ => crate::log!("Waveforms: ignored a view that isn't a JSON object"),
             }
         }
-        "open-source" => match serde_json::from_slice::<SourceRequest>(body) {
-            Ok(r) if files.contains(&r.file) => {
-                crate::log!("Waveforms: open {}:{:?}", r.file, r.line);
-                if let Some(main) = main {
-                    let _ = main.emit(
-                        "wave-open-source",
-                        OpenSource {
-                            key,
-                            file: r.file,
-                            line: r.line.unwrap_or(1).max(1),
-                        },
-                    );
-                    let _ = main.set_focus();
-                }
-            }
-            _ => crate::log!("Waveforms: ignored a request to open a file outside the project"),
-        },
-        "save-file" => match serde_json::from_slice::<FileRequest>(body) {
-            Ok(r) => save_file(app, label, r),
-            Err(e) => crate::log!("Waveforms: ignored a file to save: {e}"),
-        },
-        other => crate::log!("Waveforms: ignored {other:?}"),
-    }
-    respond(204, Vec::new())
-}
-
-/// The bytes of a file the page saves: SVG's text, or PNG's base64.
-fn file_bytes(r: &FileRequest) -> Option<Vec<u8>> {
-    if r.mime == "image/png" {
-        base64::engine::general_purpose::STANDARD
-            .decode(&r.data)
-            .ok()
-    } else {
-        Some(r.data.clone().into_bytes())
-    }
-}
-
-/// Only a plain file name, never a path.
-fn safe_name(name: &str) -> String {
-    let n: String = name
-        .chars()
-        .filter(|c| !matches!(c, '/' | '\\' | ':'))
-        .collect();
-    if n.trim().is_empty() || n.starts_with('.') {
-        "waveforms".into()
-    } else {
-        n
-    }
-}
-
-/// Asks where to save an image of the view, then writes it.
-fn save_file(app: &AppHandle, label: &str, r: FileRequest) {
-    let Some(bytes) = file_bytes(&r) else {
-        crate::log!("Waveforms: an image that can't be decoded");
-        return;
-    };
-    let mut dialog = app.dialog().file().set_file_name(safe_name(&r.name));
-    if let Some(w) = app.get_webview_window(label) {
-        dialog = dialog.set_parent(&w);
-    }
-    dialog.save_file(move |picked| {
-        let Some(path) = picked.and_then(|p| p.into_path().ok()) else {
-            return;
-        };
-        match std::fs::write(&path, &bytes) {
-            Ok(()) => crate::log!("Waveforms: saved {}", path.display()),
-            Err(e) => crate::log!("Waveforms: couldn't save {}: {e}", path.display()),
+        Ok(Call::WriteDeclared { id, .. }) => {
+            crate::log!("Waveforms: ignored a write of {id:?}, which isn't declared")
         }
-    });
+        Ok(Call::OpenSource { file, line }) if files.contains(&file) => {
+            crate::log!("Waveforms: open {file}:{line}");
+            if let Some(main) = main {
+                let _ = main.emit("wave-open-source", OpenSource { key, file, line });
+                let _ = main.set_focus();
+            }
+        }
+        Ok(Call::OpenSource { .. }) => {
+            crate::log!("Waveforms: ignored a request to open a file outside the project")
+        }
+        Ok(Call::SaveAs { name, mime, data }) => {
+            page_host::save_as(app, label, "Waveforms", &name, &mime, &data)
+        }
+        Ok(Call::OpenUrl(url)) => page_host::open_url("Waveforms", &url),
+        Err(e) => crate::log!("Waveforms: ignored a request: {e}"),
+    }
+    page_host::respond(204, Vec::new())
 }
 
 /// Every open waveform window.
@@ -338,14 +243,7 @@ mod tests {
     }
 
     #[test]
-    fn requests_are_the_page_or_its_calls() {
-        assert_eq!(parse("/wave-1"), Request::Page("wave-1"));
-        assert_eq!(parse("/wave-1/"), Request::Page("wave-1"));
-        assert_eq!(parse("/wave-1?theme=dark"), Request::Page("wave-1"));
-        assert_eq!(
-            parse("/wave-1/save-view"),
-            Request::Call("wave-1", "save-view")
-        );
+    fn page_addresses() {
         let expected = if cfg!(windows) {
             "http://logix-wave.localhost/wave-1"
         } else {
@@ -358,26 +256,6 @@ mod tests {
     fn view_files_follow_the_testbench() {
         assert_eq!(view_file("main_tb.v"), "main_tb.view");
         assert_eq!(view_file("uart_tb.sv"), "uart_tb.view");
-    }
-
-    #[test]
-    fn images_are_text_or_base64_and_named_plainly() {
-        let svg = FileRequest {
-            name: "a.svg".into(),
-            mime: "image/svg+xml".into(),
-            data: "<svg/>".into(),
-        };
-        assert_eq!(file_bytes(&svg).unwrap(), b"<svg/>");
-        let png = FileRequest {
-            name: "a.png".into(),
-            mime: "image/png".into(),
-            data: "iVBORw0KGgo=".into(),
-        };
-        assert_eq!(&file_bytes(&png).unwrap()[..4], b"\x89PNG");
-        assert_eq!(safe_name("../../etc/x.png"), "waveforms");
-        assert_eq!(safe_name("dir/x.png"), "dirx.png");
-        assert_eq!(safe_name(".hidden"), "waveforms");
-        assert_eq!(safe_name("main_tb.svg"), "main_tb.svg");
     }
 
     #[test]
