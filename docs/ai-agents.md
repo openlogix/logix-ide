@@ -105,7 +105,8 @@ Then watch. A good agent:
   out from the clock; a table of each letter's dots and dashes; and a
   small state machine that turns the LED on for a dot (1 unit) or a dash
   (3 units) and off for the gaps (1 unit inside a letter, 3 between
-  letters, 7 between words).
+  letters, 7 between words). Every register starts at 0, as the project's
+  `AGENTS.md` asks.
 - **tests before trusting.** It writes a testbench with a much shorter
   unit, so it runs in a moment, that measures every on and off time,
   turns them back into letters with its own table and checks that it
@@ -136,7 +137,9 @@ in the output.
 ### 4. See the dots and dashes
 
 Once the tests pass, choose **Simulate** in Logix IDE. The Waveforms
-window opens on the testbench's run.
+window opens on the testbench's run. (Hover over **Simulate** to see which
+testbench it runs: the open one, else the open file's own. If the agent
+wrote several and none is open, Simulate asks which.)
 
 1. In **Signals in the file**, tick the LED signal and the testbench's
    decoded text (the agent names them; ask it which they are). The LED
@@ -243,6 +246,16 @@ IDE project, follow these.
 - **Folders starting with `_` are generated**, such as `_build`: build
   into `_build` inside the project, and never put sources there.
 - **File names** have no spaces.
+- **Designs start every register at 0** in its declaration and rest at 0:
+  some FPGAs, such as the iCE40, can only start a register at 0. A value
+  that must rest at 1, such as a serial line that idles high, is made by
+  logic, or stored the other way round. No reset unless the design needs
+  one (a PLL's lock, a restart button).
+- **No x in a simulation:** never read past the end of a constant or a
+  memory (a character counter goes back to the start after the last
+  character), and give every variable a testbench declares at module level
+  a starting value. People take a red x in the Waveforms window for an
+  error.
 
 When building with Logix Engine, send the project folder as
 `source_folder`, `main` as `top_module`, the project's source files

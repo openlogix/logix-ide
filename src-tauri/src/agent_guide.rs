@@ -46,6 +46,11 @@ logix.json):
   lines.
 - Folders starting with `_` are generated: build into `_build`.
 
+Write designs that start every register at 0 and rest at 0 (some FPGAs, such
+as the iCE40, can only start a register at 0), never read past the end of a
+constant or memory, and give testbench variables a starting value, so no
+signal shows as x in a simulation.
+
 The full model: {link}
 "
     )
