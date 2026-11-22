@@ -268,6 +268,7 @@ const handlers: {
   menu?: (id: MenuId) => void;
   output?: (line: string) => void;
   finishSetup?: () => void;
+  finishUpdates?: () => void;
   waveView?: (view: { key: string; name: string; text: string }) => void;
   waveOpenSource?: (at: { key: string; file: string; line: number }) => void;
   projectFilesChanged?: (change: { dir: string; names: string[] }) => void;
@@ -326,7 +327,7 @@ const fake = {
   /** The window's title state last set (`setDocumentState`). */
   documentState: null as { name: string; dirty: boolean } | null,
   /** The last task's project (its build key), as the Waveforms window's events name it. */
-  lastRun: null as { key: string } | null,
+  lastRun: null as { key: string; task?: string; target?: string | null } | null,
   /** The text System Info's Copy copied last (`copyText`). */
   copiedText: null as string | null,
   /** The path Copy Project Folder Path copied last (`copyProjectPath`). */
@@ -395,6 +396,9 @@ const fake = {
   saves: [] as { files: string[]; removed: string[] }[],
   /** Ends a setup held at the engine's package download (`/?engineSetup`). */
   finishSetup: () => handlers.finishSetup?.(),
+  /** Check for Updates waits at 42% while this is set, until finishUpdates(). */
+  holdUpdates: false,
+  finishUpdates: () => handlers.finishUpdates?.(),
   /** The Waveforms window saved its view (as the real backend's "wave-view" event). */
   waveView: (view: { key: string; name: string; text: string }) => handlers.waveView?.(view),
   /** A source line asked for in the Waveforms window ("wave-open-source"). */
@@ -781,7 +785,7 @@ export const backend: typeof Real.backend = {
   ) => {
     fake.taskVariant = variant;
     fake.taskBoardsFolder = sourceDir;
-    fake.lastRun = { key };
+    fake.lastRun = { key, task, target };
     // As the IDE's backend: a file with problems stops the task, its
     // problems in the console at line and column.
     const own = fakeProjectBoards(boardsOnDisk(sourceDir), sourceDir, _projectDir != null);
@@ -1001,10 +1005,18 @@ export const backend: typeof Real.backend = {
   openNewerIdePage: async () => {
     fake.newerPageOpened++;
   },
-  checkForUpdates: async () => {
-    // As the real one: the engine's progress in the console, then what
-    // changed.
-    handlers.output?.("Downloading logix-catalog 2026.11.30...");
+  checkForUpdates: async (onProgress) => {
+    // As the real one: the engine's progress, a console line per package
+    // and its percentage for the status bar, then what changed. With
+    // `__fake.holdUpdates`, it waits at 42% until `__fake.finishUpdates()`.
+    const message = "Downloading logix-catalog 2026.11.30";
+    handlers.output?.(`${message}...`);
+    for (const percent of [0, 42]) {
+      onProgress({ kind: "progress", message, percent });
+      await pause(5);
+    }
+    if (fake.holdUpdates) await new Promise<void>((resolve) => (handlers.finishUpdates = resolve));
+    onProgress({ kind: "progress", message, percent: 100 });
     catalogRelease = "2026.11.30";
     return ["Updated logix-catalog to 2026.11.30."];
   },

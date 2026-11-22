@@ -61,6 +61,14 @@
   import SystemInfoDialog from "./lib/SystemInfoDialog.svelte";
   import BuildReportDialog from "./lib/BuildReport.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
+  import TestbenchPicker from "./lib/TestbenchPicker.svelte";
+  import {
+    loadSimulated,
+    saveSimulated,
+    simulateChoice,
+    simulateTitle,
+    type SimulateChoice,
+  } from "./lib/simulateChoice";
   import PreferencesDialog from "./lib/PreferencesDialog.svelte";
   import ConfirmDialog from "./lib/ConfirmDialog.svelte";
   import {
@@ -307,7 +315,7 @@
    */
   function notice(...lines: string[]) {
     log(...lines);
-    if (startedUp && !running && !activity && !uploadAsking && !devicePicker) log("Ready.");
+    if (startedUp && !running && !activity && !uploadAsking && !devicePicker && !testbenchPicker) log("Ready.");
   }
 
   /** A tool's line, which may replace its redraw line (progress). */
@@ -910,6 +918,12 @@
    * at the end. Logix IDE also checks on its own every 24 hours, before an
    * operation; this checks now.
    */
+  /**
+   * What Check for Updates downloads now, and its percentage, for the
+   * status bar (as setup's: the user's report, 2026-11-22).
+   */
+  let updateStep = $state<{ message: string; percent: number | null } | null>(null);
+
   async function checkForUpdates() {
     if (!ready) {
       fileError = "The FPGA tools aren't ready yet.";
@@ -918,7 +932,11 @@
     showOutput("command");
     log("Checking for updates…");
     try {
-      const changes = await during("Checking for updates…", () => backend.checkForUpdates());
+      const changes = await during("Checking for updates…", () =>
+        backend.checkForUpdates((e) => {
+          if (e.kind === "progress") updateStep = { message: e.message, percent: e.percent ?? null };
+        }),
+      );
       // The last line is the status, which finish() writes too (in green):
       // the others go to the output here, so none shows twice.
       log(...changes.slice(0, -1));
@@ -926,6 +944,7 @@
     } catch (e) {
       commandFailed(e);
     } finally {
+      updateStep = null;
       systemInfoRefresh++;
     }
   }
@@ -1369,12 +1388,25 @@
     jumpTo(at.file, at.line);
   }
 
-  /** The testbench to simulate: the open one, or the project's only one. */
-  function simulationTestbench(p: WorkingProject): string | null {
-    if (isTestbench(activeFile)) return activeFile;
-    const all = testbenches(p);
-    return all.length === 1 ? all[0] : null;
+  /**
+   * The testbench simulated last in this run's project (`key`, its build
+   * key), and for a saved project in the web view's storage: Simulate runs
+   * it again when nothing else picks one (simulateChoice.ts).
+   */
+  let simulatedLast = $state<{ key: string; testbench: string } | null>(null);
+  /** What Simulate does now, for the toolbar, the menus and runTask. */
+  function simulationChoice(p: WorkingProject): SimulateChoice {
+    const key = buildKey(p);
+    const last =
+      simulatedLast?.key === key ? simulatedLast.testbench : p.dir ? loadSimulated(p.dir) : null;
+    return simulateChoice(
+      p.files.map((f) => f.name),
+      activeFile,
+      last,
+    );
   }
+  /** Several testbenches and none picked: Simulate asks which one. */
+  let testbenchPicker = $state<string[] | null>(null);
 
   /**
    * Runs a build, upload, test or simulation. `testbench` picks a single
@@ -1408,12 +1440,21 @@
       return;
     }
     if (task === "simulate") {
-      testbench ??= simulationTestbench(p);
       if (!testbench) {
-        fileError =
-          "Open the testbench you want to simulate, then choose Simulate again.";
-        return;
+        const choice = simulationChoice(p);
+        if (choice.kind === "none") {
+          fileError =
+            "This project has no testbenches. Testbench file names end with _tb.v or _tb.sv.";
+          return;
+        }
+        if (choice.kind === "ask") {
+          testbenchPicker = choice.testbenches;
+          return;
+        }
+        testbench = choice.testbench;
       }
+      simulatedLast = { key: buildKey(p), testbench };
+      if (p.dir) saveSimulated(p.dir, testbench);
     }
     fileError = null;
     running = task;
@@ -1669,6 +1710,8 @@
    * (each with its line comment), Run Tests with testbenches, Simulate
    * with one to run.
    */
+  /** Simulate's choice now (null without a project). */
+  const simulation = $derived(project ? simulationChoice(project) : null);
   const menuState = $derived<MenuState>({
     project: project !== null,
     formattable: project !== null && isHdlSource(activeFile),
@@ -1676,7 +1719,7 @@
       project !== null && (isHdlSource(activeFile) || pinCommentToken(activeFile) !== null),
     definition: project !== null && lsp !== null && isHdlSource(activeFile),
     testbenches: project !== null && testbenches(project).length > 0,
-    simulate: project !== null && simulationTestbench(project) !== null,
+    simulate: project !== null && testbenches(project).length > 0,
     testbenchOpen: project !== null && isTestbench(activeFile),
     variantMenus: variantMenus(currentBoardInfo, currentVariant),
   });
@@ -2629,6 +2672,17 @@
   />
 {/if}
 
+{#if testbenchPicker}
+  <TestbenchPicker
+    testbenches={testbenchPicker}
+    onChoose={(name) => {
+      testbenchPicker = null;
+      runTask("simulate", name);
+    }}
+    onClose={() => (testbenchPicker = null)}
+  />
+{/if}
+
 {#if devicePicker}
   <DevicePicker
     boardName={boardName(devicePicker.board)}
@@ -2734,7 +2788,7 @@
       onclick={() => runTask("test")}><Icon name="test" /></button
     >
     <button
-      title="Simulate: run the open testbench and show its signals"
+      title={simulateTitle(simulation ?? { kind: "none" })}
       class:busy={running === "simulate"}
       disabled={!canRun || !menuState.simulate}
       onclick={() => runTask("simulate")}><Icon name="simulate" /></button
@@ -3089,6 +3143,17 @@
           {#if taskStep.percent != null}
             <progress value={taskStep.percent / 100} max="1"></progress>
           {/if}
+        {:else if updateStep && activity}
+          <!-- Check for Updates: what downloads, as setup shows it. -->
+          <span class="setup-detail"
+            >{updateStep.message}{updateStep.percent != null
+              ? ` ${updateStep.percent}%`
+              : ""}</span
+          >
+          <progress
+            value={updateStep.percent != null ? updateStep.percent / 100 : undefined}
+            max="1"
+          ></progress>
         {:else if settingUp && !activity && !running}
           {#if setupDetail}
             <span class="setup-detail">{setupDetail}</span>

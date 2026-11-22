@@ -128,11 +128,16 @@ module main #(
       quiet_cycles <= quiet_cycles + 28'd1;
     end
 
-    // The greeting: move to the next character each time one is sent, and
-    // stop after the last.
+    // The greeting: move to the next character each time one is sent. After
+    // the last, stop, and go back to the start, so char_number never points
+    // past the end of the text (greeting_char would read nothing there).
     if (char_sent && !echo_waiting) begin
-      if (char_number == LAST) sending_greeting <= 1'b0;
-      char_number <= char_number + 5'd1;
+      if (char_number == LAST) begin
+        sending_greeting <= 1'b0;
+        char_number <= FIRST;
+      end else begin
+        char_number <= char_number + 5'd1;
+      end
     end
   end
 

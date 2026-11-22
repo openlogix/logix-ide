@@ -15,10 +15,10 @@ module main #(
   always @(posedge sys_clk) if (sys_rst) rst_cnt <= rst_cnt + 1;
 
   // Counts clocks from 0 to DIV-1.
-  reg [31:0] counter;
+  reg [31:0] counter = 32'd0;
 
   // The LEDs, one-hot. leds[0] is on after reset.
-  reg [ 5:0] leds;
+  reg [ 5:0] leds = 6'd0;
 
   // Move the lit LED to the next one every DIV clocks.
   always @(posedge sys_clk)

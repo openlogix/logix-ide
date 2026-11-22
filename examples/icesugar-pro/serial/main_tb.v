@@ -111,8 +111,10 @@ module main_tb;
     end
   endtask
 
-  integer started;
-  integer typed;
+  // When the greeting started and when typing began, in clock cycles (0
+  // until then).
+  integer started = 0;
+  integer typed = 0;
 
   initial begin
     $dumpvars(0, main_tb);

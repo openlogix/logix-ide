@@ -135,8 +135,8 @@ pub struct MenuState {
     pub definition: bool,
     /// The project has testbenches (Run Tests).
     pub testbenches: bool,
-    /// There's a testbench to simulate: the open tab is one, or the project
-    /// has exactly one (Simulate).
+    /// The project has a testbench to simulate (Simulate; the UI picks it or
+    /// asks which one: `simulateChoice.ts`).
     pub simulate: bool,
     /// The open tab is a testbench: the editor's right-click menu adds Run
     /// Test and Simulate Test (hidden otherwise, to keep it short).

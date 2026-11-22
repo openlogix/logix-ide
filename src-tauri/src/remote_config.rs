@@ -42,6 +42,12 @@ const PRODUCT: &str = "logix-ide";
 const RAW_BASE: &str = "https://raw.githubusercontent.com";
 /// Where release files are downloaded from.
 const RELEASE_BASE: &str = "https://github.com";
+/// GitHub's API, for the release list `newest` is resolved from.
+const API_BASE: &str = "https://api.github.com";
+/// A dependency's `release` that stands for its repo's newest release when
+/// the config is read (the website repo's `CLAUDE.md`, Remote updates; only
+/// outside prod, which the shared check enforces).
+pub const NEWEST: &str = "newest";
 /// The diagnostic override (as Apio's): the `https://` URL of a version
 /// folder, such as a pull request's on its branch, or a local folder, read
 /// instead of the regular one. A bad value is an error, never a fallback.
@@ -431,7 +437,8 @@ fn entry(name: &str, dep: &serde_json::Value, needs_file: bool) -> Result<Entry>
             bail!("{name}: repo must be owner/name, not {repo:?}");
         }
         let release = field("release")?;
-        if !is_date_tag(&release) {
+        // A dependency may follow the newest release; latest names a tag.
+        if !is_date_tag(&release) && !(needs_file && release == NEWEST) {
             bail!("{name}: release must be yyyy-mm-dd, not {release:?}");
         }
         let file = match fields.get("file") {
@@ -501,6 +508,19 @@ pub fn file_name(entry: &Entry, platform: &str) -> String {
         .file
         .replace("${PLATFORM}", platform)
         .replace("${YYYYMMDD}", &entry.release.replace('-', ""))
+}
+
+/// The tag `newest` stands for, from GitHub's release list (JSON): the
+/// newest date-tagged release, stable or pre-release, not drafts.
+pub fn newest_tag(list: &str) -> Option<String> {
+    let releases: Vec<serde_json::Value> = serde_json::from_str(list).ok()?;
+    releases
+        .iter()
+        .filter(|r| r["draft"] != serde_json::Value::Bool(true))
+        .filter_map(|r| r["tag_name"].as_str())
+        .filter(|t| is_date_tag(t))
+        .max()
+        .map(str::to_string)
 }
 
 /// The SHA-256 that a `SHA256SUMS` text gives `file`.
@@ -603,7 +623,12 @@ pub async fn fetch(source: &ConfigSource, platform: &str) -> Result<Cached> {
         )
     })?;
     let mut deps = BTreeMap::new();
-    for (name, entry) in entries {
+    for (name, mut entry) in entries {
+        if entry.release == NEWEST {
+            let url = format!("{API_BASE}/repos/{}/releases?per_page=30", entry.repo);
+            entry.release = newest_tag(&get_text(&client, &url).await?)
+                .ok_or_else(|| anyhow!("{name}: {} has no releases", entry.repo))?;
+        }
         let file = file_name(&entry, platform);
         let base = format!(
             "{RELEASE_BASE}/{}/releases/download/{}",
@@ -879,6 +904,26 @@ mod tests {
     }
 
     #[test]
+    fn a_dependency_may_follow_the_newest_release() {
+        let e = parse(&CONFIG.replacen("2026-11-12", "newest", 1)).unwrap();
+        assert_eq!(e["logix-engine"].release, "newest");
+        assert_eq!(e["logix-ide-examples"].release, "2026-11-12");
+    }
+
+    #[test]
+    fn newest_is_the_newest_dated_release_not_a_draft() {
+        let list = r#"[
+            {"tag_name": "2026-11-21", "draft": false, "prerelease": false},
+            {"tag_name": "2026-11-23", "draft": true, "prerelease": true},
+            {"tag_name": "2026-11-22", "draft": false, "prerelease": true},
+            {"tag_name": "v1.0", "draft": false, "prerelease": false}
+        ]"#;
+        assert_eq!(newest_tag(list).as_deref(), Some("2026-11-22"));
+        assert_eq!(newest_tag("[]"), None);
+        assert_eq!(newest_tag("not json"), None);
+    }
+
+    #[test]
     fn bad_configs_are_refused() {
         for (from, to, why) in [
             ("2026-11-12", "latest", "release"),
@@ -904,6 +949,12 @@ mod tests {
             (
                 "\"release\": \"2026-11-17\"",
                 "\"release\": \"soon\"",
+                "latest: release",
+            ),
+            // latest names a tag, never newest.
+            (
+                "\"release\": \"2026-11-17\"",
+                "\"release\": \"newest\"",
                 "latest: release",
             ),
             ("\"dependencies\": {", "\"deps\": {", "unknown key deps"),

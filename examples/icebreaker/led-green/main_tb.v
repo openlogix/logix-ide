@@ -29,7 +29,7 @@ module main_tb;
   );
 
   // Loop index for the checks.
-  integer i;
+  integer i = 0;
 
   // The test sequence.
   initial begin

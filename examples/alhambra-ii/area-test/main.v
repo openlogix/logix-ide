@@ -36,13 +36,15 @@ module main (
     output wire [7:0] leds      // Active high.
 );
 
-  // Pattern generation counters
-  reg [31:0] counter1 = 32'h1234_5678;
-  reg [31:0] counter2 = 32'h8765_4321;
-  reg [31:0] counter3 = 32'hABCD_EF01;
-  reg [31:0] counter4 = 32'hFEDC_BA10;
-  reg [31:0] counter5 = 32'h55AA_55AA;
-  reg [31:0] counter6 = 32'hAA55_AA55;
+  // Pattern generation counters: all start at 0 (some FPGAs, such as the
+  // iCE40, can only start a register at 0); their different steps keep
+  // them apart.
+  reg [31:0] counter1 = 32'h0;
+  reg [31:0] counter2 = 32'h0;
+  reg [31:0] counter3 = 32'h0;
+  reg [31:0] counter4 = 32'h0;
+  reg [31:0] counter5 = 32'h0;
+  reg [31:0] counter6 = 32'h0;
 
   // BRAM address counters (reduced to 8 bits)
   reg [ 7:0] bram_addr1 = 8'h0;
