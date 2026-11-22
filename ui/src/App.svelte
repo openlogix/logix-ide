@@ -2792,17 +2792,17 @@
           {/if}
           <div class="start-actions">
             <button onclick={() => exclusive(newProject)}>
-              <span class="start-icon"><Icon name="new" size={26} /></span>
+              <span class="start-icon"><Icon name="new" size={36} /></span>
               <span class="start-title">New Project</span>
               <span class="start-hint">An empty design for your board</span>
             </button>
             <button onclick={() => exclusive(openProject)}>
-              <span class="start-icon"><Icon name="open" size={26} /></span>
+              <span class="start-icon"><Icon name="open" size={36} /></span>
               <span class="start-title">Open Project…</span>
               <span class="start-hint">A project folder on this computer</span>
             </button>
             <button disabled={examplesLoaded && examples.length === 0} onclick={showExamples}>
-              <span class="start-icon"><Icon name="example" size={26} /></span>
+              <span class="start-icon"><Icon name="example" size={36} /></span>
               <span class="start-title">Examples…</span>
               <span class="start-hint">Blinky and more, ready to build</span>
             </button>
@@ -3438,9 +3438,11 @@
     opacity: 0.5;
     cursor: default;
   }
+  /* Large enough to read at a glance (the user's request, 2026-11-21: they
+     were 26 px). */
   .start-icon {
     display: flex;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     color: var(--accent);
   }
   .start-title {
