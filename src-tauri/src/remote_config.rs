@@ -239,6 +239,22 @@ pub fn choose_channel(
     })
 }
 
+/// The console line that names a channel other than prod, at startup, so
+/// a developer or tester sees it at a glance.
+/// None for prod, which almost every user is on, and for a channel set
+/// with `LOGIX_IDE_CHANNEL`, which setup names already.
+pub fn channel_line(channel: &Channel) -> Option<String> {
+    if channel.name == "prod" || channel.how == CHANNEL_VARIABLE {
+        return None;
+    }
+    let why = match channel.how.as_str() {
+        "local build" => " (a local build)",
+        "default" => " (this release isn't on a channel yet)",
+        _ => "",
+    };
+    Some(format!("Using the release channel {}{why}.", channel.name))
+}
+
 /// One dependency in a config, as written.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Entry {
@@ -792,6 +808,31 @@ pub fn utc_time(secs: u64) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn names_channels_other_than_prod() {
+        let line = |name: &str, how: &str| {
+            channel_line(&Channel {
+                name: name.into(),
+                how: how.into(),
+                file: channel_file(name),
+            })
+        };
+        assert_eq!(line("prod", "listed"), None);
+        assert_eq!(line("dev", CHANNEL_VARIABLE), None);
+        assert_eq!(
+            line("dev", "local build").as_deref(),
+            Some("Using the release channel dev (a local build).")
+        );
+        assert_eq!(
+            line("dev", "default").as_deref(),
+            Some("Using the release channel dev (this release isn't on a channel yet).")
+        );
+        assert_eq!(
+            line("beta", "listed").as_deref(),
+            Some("Using the release channel beta.")
+        );
+    }
+
     use super::*;
 
     const CONFIG: &str = r#"// What Logix IDE on config 001 uses.
