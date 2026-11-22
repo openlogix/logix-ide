@@ -8,7 +8,7 @@ them.
 ![You, Logix IDE and the agent share one project folder; each has its own Logix Engine, and one at a time uses the board](images/ai-side-by-side.svg)
 
 This page explains how that works and how to set up the agent, then walks
-you through a [tutorial](#tutorial-a-mood-light) in which the agent designs
+you through a [tutorial](#tutorial-a-morse-code-beacon) in which the agent designs
 real hardware while you watch. The last sections are the project's rules,
 for the agent.
 
@@ -46,28 +46,26 @@ Code; then restart Claude Code (`/exit`, then `claude`). Steps 1 and 2 of
 [Logix Engine's tutorial](https://www.openlogix.org/logix-engine/tutorial-claude-code/)
 show it in detail.
 
-## Tutorial: a mood light
+## Tutorial: a Morse code beacon
 
 In this tutorial the agent designs real hardware for you while you watch
-in Logix IDE. You describe a mood light for the iCESugar v1.5's RGB LED in
-plain words; the agent writes the Verilog and the tests, finds and fixes
-its own mistakes, and you check its work in Logix IDE's waveforms, then
-upload it and set colors from the Serial Monitor. It takes about 30
-minutes.
+in Logix IDE. You ask, in plain words, for your board's LED to blink a
+message in Morse code; the agent works out your board's clock and LED,
+writes the Verilog and a testbench that reads the blinks back into text,
+finds and fixes its own mistakes, and you check its work in Logix IDE's
+waveforms, then upload it and watch the LED spell the message. It takes
+about 20 minutes.
 
-You need an [iCESugar v1.5](https://www.openlogix.org/logix-catalog/boards/)
-and its USB-C cable (any board with an LED and a serial port works, with
-small changes to the words), Logix IDE, installed and started once (see
-the [Tutorial](tutorial.md) if it's new to you), and the agent, set up as
-above.
+You need a board with an LED (almost every board Logix IDE supports has
+one; the steps show the iCESugar v1.5) and its USB cable, Logix IDE,
+installed and started once (see the [Tutorial](tutorial.md) if it's new to
+you), and the agent, set up as above.
 
-### 1. Start from the serial example
+### 1. Make a project
 
-The agent works best from a design that already talks to the computer.
-
-1. In Logix IDE, choose **File > Examples…**, pick the **iCESugar v1.5**,
-   then **serial**, and choose **New Project**.
-2. Choose **File > Save Project As…** and name it `mood-light`. Logix IDE
+1. In Logix IDE, pick your board in the toolbar, then choose
+   **File > New Project**.
+2. Choose **File > Save Project As…** and name it `morse-beacon`. Logix IDE
    also writes `AGENTS.md` into the folder, the few rules an agent needs
    for a Logix IDE project.
 3. Choose **Project > Copy Project Folder Path**.
@@ -84,12 +82,13 @@ Keep Logix IDE and the terminal side by side, so you see both.
 Paste this into the agent, or write it in your own words:
 
 ```text
-This is a Logix IDE project for the iCESugar v1.5. Turn it into a mood
-light: when I type a color such as #FF8000 and Enter in the Serial
-Monitor, the RGB LED fades smoothly to that color in about half a second.
-Anything that isn't # and six hex digits leaves the color as it is.
+This is a Logix IDE project. Make the board's LED blink HELLO FPGA in
+Morse code, over and over, at about 10 words a minute. Put the beacon in
+its own module, so I can reuse it.
 
-Write the testbench first, in main_tb.v, then the design, and run the
+Write the testbench first: it should read the LED's blinks back into
+text, the way a person who knows Morse would, with its own Morse table,
+and check every dot, dash and gap. Then write the design and run the
 tests until they pass. Then build it and tell me how much of the FPGA it
 uses. Don't upload: I'll do that.
 ```
@@ -97,18 +96,21 @@ uses. Don't upload: I'll do that.
 Then watch. A good agent:
 
 - **reads the board before writing for it.** It asks its Logix Engine
-  about the iCESugar v1.5 and finds that the RGB LED isn't on plain pins:
-  it's on the FPGA's RGB LED driver, which a design must drive through the
-  `SB_RGBA_DRV` cell. That's in the board's data for AI agents, not
-  something you had to know.
-- **plans the hardware.** Three 8-bit brightness levels, one per color; a
-  PWM counter that turns each color on for its share of the time; a slow
-  step that moves each level one notch toward the color you typed, so it
-  fades instead of jumping; and a small reader that collects `#` and six
-  hex digits from the serial line.
-- **tests before trusting.** It writes `main_tb.v` to type `#FF8000` into
-  the design, the way the Serial Monitor would, and checks that the
-  levels reach 255, 128 and 0, and that a typo changes nothing.
+  about your board and finds what you didn't have to know: the clock's
+  frequency, which pin the LED is on, and whether it lights when that pin
+  is 0 or 1. On the iCESugar v1.5 the LED is an RGB LED on the FPGA's RGB
+  LED driver, which a design must drive through the `SB_RGBA_DRV` cell;
+  that's in the board's data for AI agents.
+- **plans the hardware.** A timer that ticks once per Morse unit, worked
+  out from the clock; a table of each letter's dots and dashes; and a
+  small state machine that turns the LED on for a dot (1 unit) or a dash
+  (3 units) and off for the gaps (1 unit inside a letter, 3 between
+  letters, 7 between words).
+- **tests before trusting.** It writes a testbench with a much shorter
+  unit, so it runs in a moment, that measures every on and off time,
+  turns them back into letters with its own table and checks that it
+  reads `HELLO FPGA HELLO FPGA`. A wrong letter or a gap of the wrong
+  length fails the test.
 
 In Logix IDE, the new and changed files show up in their tabs as the agent
 writes them. You can read along, or keep typing yourself: Logix IDE saves
@@ -118,32 +120,30 @@ your changes so the agent sees them too.
 
 The agent's first try often fails a test, and that's the interesting
 part: it reads the failure, finds the cause, and fixes it. For example, a
-testbench that types `"#FF8000\r"` never sends Enter, because Verilog-2005
-has no `\r` escape; the color never changes, the test says "Expected
-16744448, got 0", and the agent rewrites Enter as `\015`. Or the fade
-overshoots by one step and never settles.
+gap one unit too short fails with "an off time of 24 cycles: not a gap of
+1, 3 or 7 units", and a mistake in the table with "expected HELLO FPGA
+HELLO FPGA, got SELLO FPGA SELLO FPGA": the H came out as an S.
 
 You can watch the same failure in Logix IDE: choose **Run Tests**. A
-failing check is marked at its line in `main_tb.v`, and its message is in
-the output.
+failing check is marked at its line in the testbench, and its message is
+in the output.
 
 !!! tip "Ask why"
     Ask the agent to explain what it changed and why, in a sentence or
     two. Reading its reasons is the fastest way to learn the design, and
     to notice when it's wrong.
 
-### 4. See the fade
+### 4. See the dots and dashes
 
 Once the tests pass, choose **Simulate** in Logix IDE. The Waveforms
 window opens on the testbench's run.
 
-1. In **Signals in the file**, open `dut` and tick `target`, `red`,
-   `green` and `blue`.
-2. Right-click `red` and choose **Show as analog (a line)**; do the same
-   for `green`. The levels draw as ramps: red climbs to the top, green to
-   half, as the fade promised.
-3. Right-click `target` and choose **Hex** under **Show values as**: it
-   reads `FF8000` after Enter.
+1. In **Signals in the file**, tick the LED signal and the testbench's
+   decoded text (the agent names them; ask it which they are). The LED
+   row shows the message as short and long pulses.
+2. Right-click the text and choose **ASCII** under **Show values as**: it
+   spells the message one letter at a time, each one right after its
+   dots and dashes.
 
 Logix IDE saves this view with the project, so it's there next time.
 
@@ -152,37 +152,36 @@ Logix IDE saves this view with the project, so it's there next time.
 Now give the agent a harder job, one that changes how the design works:
 
 ```text
-At low levels the LED brightens too fast and then barely changes. Make
-the fade look even to the eye, with a gamma table, and keep the tests
-passing. Then add a "rainbow" command that cycles through the colors
-until I type another one, with a test for it.
+After each HELLO FPGA, send a number that counts up: HELLO FPGA 1,
+HELLO FPGA 2, and so on, up to 99, then start again at 1. Keep the tests
+passing, and add a test for 9 to 10 and for 99 back to 1.
 ```
 
-A good agent explains that eyes see brightness on a curve, adds a table
-that maps each level to a PWM value, updates the testbench, and runs
-everything again. Choose **Project > Show Diagram** in Logix IDE to see
-how its new parts connect, and **Project > Board Utilization…** to see
-what they cost.
+A good agent adds a counter in decimal digits, sends its digits with the
+digits' Morse codes, and teaches the testbench to read them. Choose
+**Project > Show Diagram** in Logix IDE to see how its new parts connect,
+and **Project > Board Utilization…** to see what they cost.
 
 ### 6. Try it on the board
 
-1. Connect the iCESugar v1.5 (and no other iCESugar board).
+1. Connect your board.
 2. In Logix IDE, choose **Upload**.
-3. Open **Tools > Serial Monitor**, type `#FF8000` and press Enter. The
-   LED fades to orange. Try `#0000FF`, `#202020` and `rainbow`.
+3. Watch the LED: three long flashes are an O, four short ones an H. If
+   you don't read Morse, compare it with the waveform, or point a phone's
+   Morse code reader app at it.
 
 Only one program at a time can use the board: if the agent is to upload
-or read the serial port itself, choose **Disconnect** in the Serial
-Monitor first, and don't upload from both at once.
+to it itself, don't upload from both at once.
 
 ### Make it yours
 
 Some ideas to ask the agent for:
 
-- Use the iCESugar v1.5's DIP switches to pick four favorite colors.
-- Send back `OK #FF8000` after each color, so the Serial Monitor shows
-  what the light is doing.
-- A slow "breathing" mode, or a fade speed you set with `/` and a number.
+- Your own message, or a faster speed you set with a parameter.
+- On a board with a button: send SOS while it's held.
+- On a board with several LEDs: light one more LED for each letter sent,
+  as a progress bar.
+- On an RGB LED: a different color for each word.
 
 Whatever you ask, ask for a test first, and look at the waveform before
 the board: that's where hardware bugs are easiest to see.
