@@ -842,18 +842,34 @@ test("Tab indents in the editor", async ({ page }) => {
 
 test("file commands are enabled only where they work", async ({ page }) => {
   await start(page);
-  type Fake = { menuState: Record<string, boolean> | null };
+  type Fake = {
+    menuState: Record<string, boolean> | null;
+    lastRun: { task?: string; target?: string | null } | null;
+  };
   const menuState = () =>
     page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.menuState);
+  const lastRun = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.lastRun);
   const runTests = page.getByTitle(/^Run tests/);
   const simulate = page.getByTitle(/^Simulate/);
-  // Blinky: main.v open, one testbench.
-  await expect.poll(menuState).toMatchObject({ formattable: true, testbenches: true, simulate: true });
+  // Blinky: main.v open, one testbench. Module Diagram works from the menu
+  // bar too, on the module at the cursor (the user's report, 2026-11-22:
+  // only right-click menus had it).
+  await expect.poll(menuState).toMatchObject({
+    formattable: true,
+    testbenches: true,
+    simulate: true,
+    testbenchOpen: false,
+    moduleOpen: true,
+  });
   await expect(runTests).toBeEnabled();
   await expect(simulate).toBeEnabled();
-  // A testbench: its own Run Test in the editor's right-click menu.
+  await menu(page, "show-module-diagram");
+  await expect.poll(lastRun).toMatchObject({ task: "diagram", target: null });
+  await expect(page.locator(".status-text")).not.toContainText("…");
+  // A testbench: its own Run Test, from the menu bar or its right-click
+  // menus; no Module Diagram.
   await tab(page, "main_tb.v").click();
-  await expect.poll(menuState).toMatchObject({ testbenchOpen: true });
+  await expect.poll(menuState).toMatchObject({ testbenchOpen: true, moduleOpen: false });
   await menu(page, "run-this-test");
   await expect(page.locator(".status-text")).toContainText("Tests passed");
   // A pin file: Comment/Uncomment with its own line comment, but no Auto
@@ -863,6 +879,8 @@ test("file commands are enabled only where they work", async ({ page }) => {
     formattable: false,
     comment: true,
     definition: false,
+    testbenchOpen: false,
+    moduleOpen: false,
   });
   const first = page.locator(".cm-line", { hasText: "set_io sys_clk" });
   const before = (await first.textContent()) ?? "";
@@ -891,6 +909,7 @@ test("file commands are enabled only where they work", async ({ page }) => {
     testbenches: false,
     simulate: false,
     testbenchOpen: false,
+    moduleOpen: false,
   });
 });
 

@@ -249,7 +249,8 @@ name, instead of long wires, and fixed values as labels with the value.
 After each **Verify**, the open diagram is drawn again.
 
 To see one module, right-click in its code, or on its file's tab, and choose
-**Module Diagram**: the diagram starts at that module, with the modules it uses. A
+**Module Diagram** (or, with the cursor in it, choose **Project > Module
+Diagram**): the diagram starts at that module, with the modules it uses. A
 diagram shows three levels of modules below where it starts; to see a deeper
 one, use **Module Diagram** on it.
 
