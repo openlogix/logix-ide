@@ -309,6 +309,18 @@ const fake = {
     .filter(Boolean),
   /** The USB devices Tools > Connected Devices lists (`scanDevices`); one iCESugar v1.5 by default. */
   usb: null as Real.UsbDevice[] | null,
+  /** A newer Logix IDE for the banner (`newerIdeNotice`); `?newerIde` sets one. */
+  newerIde: (new URLSearchParams(location.search).has("newerIde")
+    ? {
+        version: "2026.12.01",
+        current: "2026.11.22",
+        url: "https://github.com/openlogix/logix-ide/releases/tag/2026-12-01",
+      }
+    : null) as Real.NewerIde | null,
+  /** How many times the banner was dismissed (`dismissNewerIde`). */
+  newerDismissed: 0,
+  /** How many times the banner's Download opened the page (`openNewerIdePage`). */
+  newerPageOpened: 0,
   /** The folder Show Project Folder showed last (`showProjectFolder`). */
   shownFolder: null as string | null,
   /** The window's title state last set (`setDocumentState`). */
@@ -979,6 +991,15 @@ export const backend: typeof Real.backend = {
   },
   showProjectFolder: async (dir) => {
     fake.shownFolder = dir;
+  },
+  newerIdeNotice: async () => fake.newerIde,
+  dismissNewerIde: async () => {
+    fake.newerDismissed++;
+    // As the real one: it stays away for a week.
+    fake.newerIde = null;
+  },
+  openNewerIdePage: async () => {
+    fake.newerPageOpened++;
   },
   checkForUpdates: async () => {
     // As the real one: the engine's progress in the console, then what

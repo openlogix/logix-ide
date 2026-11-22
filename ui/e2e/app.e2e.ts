@@ -1067,6 +1067,27 @@ test("no banner without developer settings", async ({ page }) => {
   await expect(page.getByText("developer configuration")).toHaveCount(0);
 });
 
+test("a newer Logix IDE shows a banner with Download and Dismiss", async ({ page }) => {
+  type Fake = { newerDismissed: number; newerPageOpened: number };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  await page.goto("/?newerIde");
+  await expect(output(page)).toContainText("Ready.");
+  const banner = page.getByRole("status").filter({ hasText: "is available" });
+  await expect(banner).toContainText("Logix IDE 2026.12.01 is available (you have 2026.11.22).");
+  await banner.getByRole("button", { name: "Download…" }).click();
+  await expect.poll(async () => (await fake()).newerPageOpened).toBe(1);
+  // Download leaves it, so it can be found again; Dismiss hides it.
+  await expect(banner).toBeVisible();
+  await banner.getByRole("button", { name: "Dismiss" }).click();
+  await expect(banner).toHaveCount(0);
+  expect((await fake()).newerDismissed).toBe(1);
+});
+
+test("no newer-version banner when this is the newest", async ({ page }) => {
+  await start(page);
+  await expect(page.getByText("is available")).toHaveCount(0);
+});
+
 test("Check for Updates shows the progress and what changed", async ({ page }) => {
   await start(page);
   await menu(page, "check-for-updates");

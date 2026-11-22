@@ -45,6 +45,13 @@ pub struct Settings {
     pub show_output: Option<ShowOutput>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub auto_save: Option<bool>,
+    /// The last look for a newer Logix IDE (`newer.rs`), used for a day.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub newer_ide_check: Option<crate::newer::Check>,
+    /// When the newer-version banner was last dismissed (Unix seconds); it
+    /// stays away for a week.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub newer_ide_dismissed: Option<u64>,
     /// Unknown settings (e.g. from a newer version) are kept.
     #[serde(flatten)]
     extra: serde_json::Map<String, serde_json::Value>,

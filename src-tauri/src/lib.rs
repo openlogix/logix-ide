@@ -8,6 +8,7 @@ mod examples;
 mod language_server;
 pub mod logging;
 mod menu;
+mod newer;
 mod outcome;
 mod package;
 mod platform;
@@ -158,6 +159,9 @@ pub fn run() {
             commands::app_info,
             commands::system_info,
             commands::check_for_updates,
+            commands::newer_ide_notice,
+            commands::dismiss_newer_ide,
+            commands::open_newer_ide_page,
             commands::copy_text,
             commands::setup,
             commands::run_task,
