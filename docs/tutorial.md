@@ -74,7 +74,7 @@ Downloading Logix Engine 2026.11.12...
 Downloaded Logix Engine 2026.11.12.
 Downloading logix-core 2026.11.11...
 Downloaded logix-core 2026.11.11.
-117 examples available.
+127 examples available.
 Ready.
 ```
 
@@ -265,15 +265,15 @@ Open the settings to change how Logix IDE works:
 
 === "macOS"
 
-    Choose **Logix IDE > Settings…** (Command-,).
+    Choose **Logix IDE > Settings…**.
 
 === "Windows"
 
-    Choose **File > Settings…** (Ctrl+,).
+    Choose **File > Settings…**.
 
 === "Linux"
 
-    Choose **File > Settings…** (Ctrl+,).
+    Choose **File > Settings…**.
 
 The settings are:
 
@@ -284,6 +284,8 @@ The settings are:
   hide it.
 - **Show lint warnings on Verify**: turn it off to skip the design check.
 - **Check code while typing**: mark syntax errors as you type.
+- **Save changes automatically**: on by default; once a project is saved,
+  your changes are saved as you work.
 
 ## If something goes wrong
 

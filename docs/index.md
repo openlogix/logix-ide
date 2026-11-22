@@ -26,13 +26,13 @@ its first start.
 - **Upload** it to your board; Logix IDE shows when it's connected.
 - **Test** it with testbenches, and **simulate** it to see the signals over
   time.
-- **Learn** from more than 110 examples for over 80 boards.
+- **Learn** from more than 120 examples for over 80 boards.
 - **See** your design as a diagram.
 
 ## Platforms
 
-Logix IDE runs on **macOS with Apple Silicon** and on **Windows (x64)**. Linux
-is planned.
+Logix IDE runs on **macOS with Apple Silicon**, **Windows (x64)** and
+**Linux (x64)**.
 
 ## Next steps
 

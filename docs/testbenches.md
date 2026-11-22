@@ -53,8 +53,7 @@ In the Waveforms window:
 
 What you choose is kept: the window saves it as the testbench's view
 (`main_tb.view` for `main_tb.v`), part of your project, and the next
-simulation opens the same way. Undo (⌘Z, Ctrl+Z on Windows and Linux) goes
-back step by step. The view has no tab: you change it only in the Waveforms
+simulation opens the same way. Undo goes back step by step. The view has no tab: you change it only in the Waveforms
 window.
 
 ## Writing a testbench

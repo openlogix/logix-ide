@@ -40,6 +40,7 @@ import sugarBlinkyTb from "../../examples/icesugar-1-5/blinky/main_tb.v?raw";
 import sugarBlinkyPins from "../../examples/icesugar-1-5/blinky/pinout.pcf?raw";
 import sugarBareMain from "../../examples/icesugar-1-5/bare-minimum/main.v?raw";
 import sugarBarePins from "../../examples/icesugar-1-5/bare-minimum/pinout.pcf?raw";
+import sugarBareTb from "../../examples/icesugar-1-5/bare-minimum/main_tb.v?raw";
 import packageJson from "../../package.json";
 
 const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }) as unknown as Real.Board);
@@ -240,6 +241,7 @@ function bareDoc(board: string): ProjectDoc {
       board === DEFAULT_BOARD
         ? [
             { name: "main.v", text: sugarBareMain },
+            { name: "main_tb.v", text: sugarBareTb },
             { name: "pinout.pcf", text: sugarBarePins },
           ]
         : [

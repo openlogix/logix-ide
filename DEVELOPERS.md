@@ -33,8 +33,8 @@ the reason in the AI spec or in the prompt.
 
 ## Setting up a development machine
 
-Development happens on a **Mac with Apple Silicon**, the only platform
-Logix IDE supports so far.
+Development happens on a **Mac with Apple Silicon**. Logix IDE also runs on
+Windows (x64) and Linux (x64); CI builds and tests them.
 
 1. **Xcode Command Line Tools** (compilers, git):
 
@@ -210,8 +210,11 @@ now.
 ### Examples
 
 The examples are in `examples/<board>/<name>/`, each a Logix IDE project with
-a `logix-ide.toml` holding its board and description. They're Logix IDE's own,
-maintained here: edit them in place.
+a `logix-ide.toml` holding its board, a one-line summary and optional notes.
+The standard ones (every board's `blinky`, `bare-minimum`, `serial` and
+`serial-debug`) are written by an AI from [`spec/examples/`](spec/examples/README.md):
+change the spec and write them again, never edit them by hand. The others
+are maintained here: edit them in place.
 
 Logix IDE doesn't read this folder: it downloads the `logix-ide-examples`
 package that its remote config names. Each pre-release packs this folder

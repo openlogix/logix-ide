@@ -97,7 +97,7 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   // New Project: the board's pins and an empty design, not blinky.
   await start.getByRole("button", { name: "New Project" }).click();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
-  await expect(tab(page, "main_tb.v")).toHaveCount(0);
+  await expect(tab(page, "main_tb.v")).toBeVisible();
   await expect(page.locator(".cm-content")).toContainText("assign uart_tx = 1'b1;");
   await expect(output(page)).toContainText(/New project\.\s*Ready\./);
   // Close Project: back to the start screen, with the recent projects.
@@ -147,9 +147,9 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   // The start screen's output: Logix IDE's own first lines (opening a project
   // clears them).
   await page.goto("/");
-  await expect(output(page)).toContainText("117 examples available.");
+  await expect(output(page)).toContainText("127 examples available.");
   await start(page);
-  await expect(output(page)).not.toContainText("117 examples available.");
+  await expect(output(page)).not.toContainText("127 examples available.");
   // Logix Engine's 81 boards, grouped by FPGA family. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();
@@ -784,7 +784,7 @@ test("opens a board's bare-minimum from the examples", async ({ page }) => {
   await dialog.getByRole("button", { name: "New Project" }).click();
   await expect(dialog).toBeHidden();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
-  await expect(tab(page, "main_tb.v")).toHaveCount(0);
+  await expect(tab(page, "main_tb.v")).toBeVisible();
   await expect(page.locator(".cm-content")).toContainText("assign uart_tx = 1'b1;");
   await expect(status(page)).toHaveText("Opened bare-minimum for iCESugar v1.5.");
   // Like every command, its output ends with the result, then "Ready.".
@@ -871,8 +871,11 @@ test("file commands are enabled only where they work", async ({ page }) => {
   await expect(first).toHaveText(`# ${before}`);
   await menu(page, "toggle-comment");
   await expect(first).toHaveText(before);
-  // A new project has no testbench: no Run Tests or Simulate.
+  // A project without a testbench: no Run Tests or Simulate. (A new
+  // project has one, as every Bare Minimum: delete it.)
   await menu(page, "new");
+  await tab(page, "main_tb.v").click({ button: "right" });
+  await page.getByRole("menu").getByRole("menuitem", { name: "Delete…" }).click();
   await expect(tab(page, "main_tb.v")).toHaveCount(0);
   await expect.poll(menuState).toMatchObject({
     formattable: true,
