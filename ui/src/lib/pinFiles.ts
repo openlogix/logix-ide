@@ -1,27 +1,10 @@
-// Pin constraint files in the editor: each format's line comment, for
-// Comment/Uncomment (⌘/) and for coloring comments.
+// Pin constraint files in the editor: each format's line comment (Logix
+// Engine's `constraint_comment`, see formats.ts), for Comment/Uncomment (⌘/)
+// and for coloring comments. These formats have no block comments the tools
+// all accept, so only line comments are used.
 
 import { StreamLanguage } from "@codemirror/language";
-
-/**
- * The line comment of a pin file format: `#` for PCF (iCE40), LPF (ECP5)
- * and XDC (Xilinx, Tcl), `//` for CST (Gowin). Null for other files.
- * These formats have no block comments the tools all accept, so only line
- * comments are used.
- */
-export function pinCommentToken(file: string): "#" | "//" | null {
-  const ext = /\.([^./\\]+)$/.exec(file)?.[1].toLowerCase();
-  switch (ext) {
-    case "pcf":
-    case "lpf":
-    case "xdc":
-      return "#";
-    case "cst":
-      return "//";
-    default:
-      return null;
-  }
-}
+import { pinComment } from "./formats";
 
 const languages = new Map<string, StreamLanguage<unknown>>();
 
@@ -31,7 +14,7 @@ const languages = new Map<string, StreamLanguage<unknown>>();
  * files that aren't pin files.
  */
 export function pinLanguage(file: string): StreamLanguage<unknown> | null {
-  const token = pinCommentToken(file);
+  const token = pinComment(file);
   if (!token) return null;
   let language = languages.get(token);
   if (!language) {

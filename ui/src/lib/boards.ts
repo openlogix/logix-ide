@@ -106,12 +106,6 @@ export function boardGroups(
   return groups;
 }
 
-/** A board's FPGA for people, e.g. "Lattice iCE40 ICE40HX4K-TQ144 (8k)"; "" if unknown. */
-export function fpgaLabel(b: Board): string {
-  if (!b.fpga) return "";
-  return `${b.familyLabel} ${b.fpga.partNumber}${b.fpga.size ? ` (${b.fpga.size})` : ""}`;
-}
-
 /**
  * One point of a board-change note: the change itself (the first point),
  * or one of its implications, all risky (shown in red: the user's

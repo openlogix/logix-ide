@@ -16,6 +16,7 @@ import type {
   MenuId,
   ProjectDoc,
   ProjectFile,
+  TaskEvent,
   TaskOutcome,
   VersionEntry,
 } from "../src/lib/backend";
@@ -28,10 +29,10 @@ import catalog from "./fixtures/catalog.json";
 import fpgaFamilies from "./fixtures/fpgas.json";
 import { configurationOf, resolve } from "../src/lib/variants";
 import { boardsProblemLines } from "../src/lib/boards";
-import verifyOutput from "./fixtures/verify.txt?raw";
-import verifyErrorOutput from "./fixtures/verify-error.txt?raw";
-import testOutput from "./fixtures/test.txt?raw";
-import diagramOutput from "./fixtures/diagram.txt?raw";
+import verifyOutput from "./fixtures/verify.json";
+import verifyErrorOutput from "./fixtures/verify-error.json";
+import testOutput from "./fixtures/test.json";
+import diagramOutput from "./fixtures/diagram.json";
 import verifyReport from "./fixtures/verify-report.json";
 // The iCESugar v1.5's Blinky and Bare Minimum, as Logix IDE ships them
 // (the default board: the fixtures are captured for it).
@@ -165,7 +166,7 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
       ...like,
       id: b.id!,
       description: b.name ?? b.id!,
-      fpga: sameFpga ?? { id: b.fpga_id!, partNumber: b.fpga_id!.toUpperCase(), size: "" },
+      fpga: sameFpga ?? { id: b.fpga_id!, partNumber: b.fpga_id!.toUpperCase(), size: "", label: b.fpga_id!.toUpperCase() },
       dimensions: dims,
       configurations: b.variants!.map((v) => ({
         when: { connection: v.selector.connection, memory: v.selector.memory },
@@ -180,7 +181,36 @@ function fakeBoards(boards: Record<string, unknown>): Real.Board[] {
     };
   });
 }
-const outputLines = (text: string) => text.replace(/\n$/, "").split("\n");
+/** A console line, as the backend streams it (`TaskEvent` "line"). */
+type Line = Extract<TaskEvent, { kind: "line" }>;
+/** The console's events as `capture_fixtures` recorded them from Logix Engine. */
+const outputLines = (events: unknown) => events as Line[];
+/** A line of Logix IDE's or the engine's own. */
+const plain = (line: string): Line => ({ kind: "line", line });
+
+/**
+ * The files Logix Engine reads for a task (its `checked_files`): the
+ * design files, the testbenches for Run Tests and Simulate, and the pin
+ * file for builds.
+ */
+function checkedFiles(files: ProjectFile[], task: string): string[] {
+  const builds = task === "build" || task === "upload" || task === "report";
+  const tests = task === "test" || task === "simulate";
+  return files
+    .map((f) => f.name)
+    .filter((n) =>
+      /_tb\.s?v$/i.test(n) ? tests : /\.s?vh?$/i.test(n) ? true : /\.(pcf|lpf|cst|xdc)$/i.test(n) ? builds : false,
+    );
+}
+
+/** The file formats, as Logix Engine gives them (`file_formats`). */
+const FILE_FORMATS: Real.FileFormats = {
+  source: ["v", "sv"],
+  include: ["vh", "svh"],
+  pins: FPGA_FAMILIES.flatMap((f) =>
+    f.pinExtension && f.pinComment ? [{ extension: f.pinExtension, comment: f.pinComment }] : [],
+  ).filter((p, i, all) => all.findIndex((q) => q.extension === p.extension) === i),
+};
 
 const BLINKY_MAIN = `module main (
     input sys_clk,
@@ -266,7 +296,7 @@ let preferences: Real.Preferences = {
 
 const handlers: {
   menu?: (id: MenuId) => void;
-  output?: (line: string) => void;
+  output?: (event: TaskEvent) => void;
   finishSetup?: () => void;
   finishUpdates?: () => void;
   waveView?: (view: { key: string; name: string; text: string }) => void;
@@ -361,7 +391,7 @@ const fake = {
   /** An engine error the next driver change fails with (`{message, details}`). */
   driverError: null as { message: string; details: string } | null,
   /** Devices that can't be opened yet (`list_devices` `unreachable`). */
-  unreachable: [] as (Omit<Real.UnreachableDevice, "driver" | "who" | "fix"> & { driver: RawDriver | null; who?: string; fix?: string })[],
+  unreachable: [] as (Omit<Real.UnreachableDevice, "driver" | "who" | "fix" | "note" | "rank"> & { driver: RawDriver | null; who?: string; fix?: string })[],
   /** While set, Install Driver waits for it, as for Windows' prompt. */
   driverHold: null as Promise<void> | null,
   /** The status texts Upload sent while installing a driver. */
@@ -543,6 +573,45 @@ function engineDevice<T extends { label: string; boards: { board: string }[]; dr
   return { ...d, who, driver: d.driver ? engineDriver(d.driver, who) : null };
 }
 
+/**
+ * Logix Engine's words and order for a device list asked about `board`
+ * (as its list_devices gives them): each device's `rank` (those that may be
+ * the board, then those that may be other boards, then the rest, devices
+ * before unreachable ones within each), `other_boards` (with a strong
+ * match, only the board when the device may be it) and an unreachable
+ * device's `note`.
+ */
+function engineList<U extends Omit<Real.UsbDevice, "otherBoards" | "rank">, L extends Omit<Real.UnreachableDevice, "note" | "rank">>(
+  usb: U[],
+  unreachable: L[],
+  board: string | null,
+): Real.Devices {
+  const name = (id: string) => BOARDS.find((b) => b.id === id)?.description ?? id;
+  const ids = (d: { boards: { board: string }[] }) => d.boards.map((b) => b.board);
+  const group = (d: { boards: { board: string }[] }) =>
+    board !== null && ids(d).includes(board) ? 0 : ids(d).length > 0 ? 1 : 2;
+  const all = [...usb.map((d, i) => ({ d, locked: 0, i })), ...unreachable.map((d, i) => ({ d, locked: 1, i }))];
+  const order = [...all].sort((a, b) => group(a.d) - group(b.d) || a.locked - b.locked || a.i - b.i);
+  const rank = (d: object) => order.findIndex((x) => x.d === d);
+  return {
+    usb: usb.map((d) => {
+      const rest = ids(d).filter((b) => !d.likelyBoards.includes(b));
+      const strong = d.boards.some((b) => b.level === "strong");
+      return { ...d, otherBoards: strong ? rest.filter((b) => b === board) : rest, rank: rank(d) };
+    }),
+    unreachable: unreachable.map((u) => {
+      const boards = ids(u);
+      const note =
+        board !== null && boards.includes(board)
+          ? `This may be your ${name(board)}: it has the same USB IDs. ${u.fix}`
+          : boards.length === 1
+            ? `This may be an FPGA board, the ${name(boards[0])}: it has its USB IDs. ${u.fix}`
+            : `This may be an FPGA board: ${boards.length} boards have its USB IDs. ${u.fix}`;
+      return { ...u, note, rank: rank(u) };
+    }),
+  };
+}
+
 /** Logix Engine's question when other devices have the same USB IDs (its data.consent). */
 function sameIdsConsent(lead: string): Real.Consent {
   return {
@@ -578,6 +647,8 @@ const icesugarDevice: Real.UsbDevice = {
   release: "0100",
   boards: [{ board: "icesugar-1-5", level: "strong" }],
   likelyBoards: ["icesugar-1-5"],
+  otherBoards: [],
+  rank: 0,
   buildMatch: "strong", driver: null, who: "the iCESugar v1.5",
   // The DAPLink's one serial port, the board's UART.
   serialPorts: [
@@ -604,6 +675,8 @@ const alhambraDevice: Real.UsbDevice = {
     { board: "alchitry-au", level: "weak" },
   ],
   likelyBoards: ["alhambra-ii"],
+  otherBoards: [],
+  rank: 0,
   buildMatch: "strong", driver: null, who: "USB device (0403:6010)",
   // The FTDI chip's two channels: programming, then the UART.
   serialPorts: [
@@ -617,7 +690,7 @@ const unlisten = async () => () => {};
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function buildOutcome(files: ProjectFile[], board: string): {
-  lines: string[];
+  lines: Line[];
   outcome: TaskOutcome;
 } {
   const main = files.find((f) => f.name === "main.v")?.text ?? "";
@@ -645,7 +718,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
         cancelled: false,
         seconds: 0.5,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       },
     };
   }
@@ -672,7 +745,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
        
         seconds: 0.5,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       },
     };
   }
@@ -687,9 +760,15 @@ function buildOutcome(files: ProjectFile[], board: string): {
     };
     return {
       lines: [
-        "\x1b[2m$ verilator_bin --lint-only --quiet main.v\x1b[0m",
-        "\x1b[2m$ yosys -q -p 'synth_ice40 -top main' -DSYNTHESIZE main.v\x1b[0m",
-        `\x1b[31mmain.v:${bad + 1}: ERROR: syntax error\x1b[0m`,
+        plain("\x1b[2m$ verilator_bin --lint-only --quiet main.v\x1b[0m"),
+        plain("\x1b[2m$ yosys -q -p 'synth_ice40 -top main' -DSYNTHESIZE main.v\x1b[0m"),
+        // Logix Engine gives the place the line names, for a link.
+        {
+          kind: "line",
+          line: `\x1b[31mmain.v:${bad + 1}: ERROR: syntax error\x1b[0m`,
+          tool: "yosys",
+          location: { file: "main.v", line: bad + 1 },
+        },
       ],
       outcome: {
         ok: false,
@@ -700,7 +779,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
        
         seconds: 0.4,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       },
     };
   }
@@ -716,7 +795,7 @@ function buildOutcome(files: ProjectFile[], board: string): {
        
       seconds: 1.2,
       action: null,
-      devices: [], driverDevice: null, sameIds: null,
+      devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
     },
   };
 }
@@ -760,6 +839,7 @@ export const backend: typeof Real.backend = {
   },
 
   getBoards: async () => BOARDS,
+  fileFormats: async () => FILE_FORMATS,
   getFpgaFamilies: async () => FPGA_FAMILIES,
 
   getExamples: async () => ({
@@ -794,10 +874,12 @@ export const backend: typeof Real.backend = {
       return {
         ok: false, diagnostics: own.problem.diagnostics, testbenches: [], report: null,
         cancelled: false, seconds: 0.1, action: null, devices: [], driverDevice: null, sameIds: null,
+        checkedFiles: [],
       };
     }
-    const onLine = (line: string) => onEvent({ kind: "line", line });
+    const onLine = (line: string) => onEvent(plain(line));
     const { lines: buildLines, outcome } = buildOutcome(files, board);
+    outcome.checkedFiles = checkedFiles(files, task);
     let lines = buildLines;
     if (outcome.ok && (task === "test" || task === "simulate")) {
       lines = outputLines(testOutput);
@@ -823,14 +905,15 @@ export const backend: typeof Real.backend = {
     const phases = task === "build" || task === "upload" || task === "report";
     onEvent({ kind: "progress", message: phase, percent: null });
     for (const line of lines) {
-      onLine(line);
+      onEvent(line);
       await pause(5);
     }
     const fits = fake.uploadDevices ?? [icesugarDevice];
     if (phases && task === "upload" && outcome.ok && !device && fits.length > 1) {
-      // The engine's list_devices for the build found several devices.
-      const message = `${fits.length} connected devices could be this board. Choose one to upload to.`;
-      onLine(`\x1b[31m${message}\x1b[0m`);
+      // The engine's list_devices for the build found several devices:
+      // its status says so.
+      const name = BOARDS.find((b) => b.id === board)?.description ?? board;
+      const message = `${fits.length} connected devices could be the ${name}. Choose the one to program.`;
       return {
         ...outcome,
         ok: false,
@@ -906,12 +989,13 @@ export const backend: typeof Real.backend = {
 
   formatFile: async (name, text) => {
     handlers.output?.(
-      `\x1b[2m$ verible-verilog-format --nofailsafe_success --inplace ${name}\x1b[0m`,
+      plain(`\x1b[2m$ verible-verilog-format --nofailsafe_success --inplace ${name}\x1b[0m`),
     );
     return {
       ok: true,
       text: text.replace(/[ \t]+$/gm, ""),
       diagnostics: [],
+      checkedFiles: [name],
     };
   },
 
@@ -1010,7 +1094,7 @@ export const backend: typeof Real.backend = {
     // and its percentage for the status bar, then what changed. With
     // `__fake.holdUpdates`, it waits at 42% until `__fake.finishUpdates()`.
     const message = "Downloading logix-catalog 2026.11.30";
-    handlers.output?.(`${message}...`);
+    handlers.output?.(plain(`${message}...`));
     for (const percent of [0, 42]) {
       onProgress({ kind: "progress", message, percent });
       await pause(5);
@@ -1125,13 +1209,15 @@ export const backend: typeof Real.backend = {
   },
   chooseFolderDialog: async () => "/Users/you/fpga",
 
-  scanDevices: async (_folder, _saved, board) => ({
-    usb: (fake.usb ?? [icesugarDevice]).map((d) => engineDevice(d as typeof d & { driver: RawDriver | null }, board)),
-    unreachable: fake.unreachable.map((u) => ({
-      ...engineDevice(u as typeof u & { driver: RawDriver | null }, board),
-      fix: u.fix || engineFix(u.driver),
-    })),
-  }),
+  scanDevices: async (_folder, _saved, board) =>
+    engineList(
+      (fake.usb ?? [icesugarDevice]).map((d) => engineDevice(d as typeof d & { driver: RawDriver | null }, board)),
+      fake.unreachable.map((u) => ({
+        ...engineDevice(u as typeof u & { driver: RawDriver | null }, board),
+        fix: u.fix || engineFix(u.driver),
+      })),
+      board,
+    ),
   installDeviceDriver: async (_folder, _saved, device, allowSameIds, board, onEvent) => {
     const listed = [...(fake.usb ?? []), ...fake.unreachable].find((d) => d.id === device);
     const who = listed ? engineWho(listed.label, listed.boards.map((b) => b.board), board) : device;

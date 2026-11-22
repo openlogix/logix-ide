@@ -1,0 +1,29 @@
+[
+  {
+    "kind": "line",
+    "line": "\u001b[2m$ iverilog -g2012 -o ~/.logix/build/_build/main_tb.out -DLOGIX_SIM=0 -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/ide/dev/engine-data/packages/logix-core/2026-11-22/oss-cad-suite/share/yosys/ice40 ~/.logix/ide/dev/engine-data/packages/logix-core/2026-11-22/oss-cad-suite/share/yosys/ice40/cells_sim.v main.v main_tb.v\u001b[0m"
+  },
+  {
+    "kind": "line",
+    "line": "\u001b[2m$ vvp -i ~/.logix/build/_build/main_tb.out -dumpfile=~/.logix/build/_build/main_tb.vcd\u001b[0m"
+  },
+  {
+    "kind": "line",
+    "line": "VCD info: dumpfile _build/main_tb.vcd opened for output.",
+    "tool": "vvp"
+  },
+  {
+    "kind": "line",
+    "line": "End of simulation",
+    "tool": "vvp"
+  },
+  {
+    "kind": "line",
+    "line": "main_tb.v:40: $finish called at 2625021 (1ps)",
+    "tool": "vvp",
+    "location": {
+      "file": "main_tb.v",
+      "line": 40
+    }
+  }
+]

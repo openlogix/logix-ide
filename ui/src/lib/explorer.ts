@@ -369,7 +369,7 @@ export function detailsOf(m: Model, ref: Ref): Details | null {
             ),
           },
           ...(b.requires?.length
-            ? [{ title: "Every design must", kind: "lines" as const, lines: b.requires.map(requirementText) }]
+            ? [{ title: "Every design must", kind: "lines" as const, lines: b.requires.map((q) => str(q.text)) }]
             : []),
           { title: "Resources", kind: "resources", rows: resourceRows(b), empty: "Not described yet." },
           ...(aiHintLines(b).length ? [{ title: "AI hints", kind: "lines" as const, lines: aiHintLines(b) }] : []),
@@ -397,33 +397,7 @@ export function detailsOf(m: Model, ref: Ref): Details | null {
 
 // ---- Resources ----
 
-type Json = Record<string, unknown>;
-
 const str = (v: unknown) => (v === null || v === undefined ? "" : String(v));
-const pinList = (v: unknown) => (Array.isArray(v) ? v.map((p) => (p === null ? "–" : str(p))).join(", ") : str(v));
-
-const TYPE_LABEL: Record<string, [string, string]> = {
-  clock: ["Clock", "Clocks"],
-  leds: ["LED", "LEDs"],
-  rgb_led: ["RGB LED", "RGB LEDs"],
-  led_matrix: ["LED matrix", "LED matrix"],
-  buttons: ["Button", "Buttons"],
-  switches: ["Switch", "Switches"],
-  uart: ["UART", "UART"],
-  pmod: ["PMOD", "PMOD"],
-  header: ["Header", "Header"],
-  unclassified: ["Other pins", "Other pins"],
-};
-
-/** What a requirement asks, in words. */
-export function requirementText(q: Json): string {
-  if (q.type === "drive") {
-    const pins = Array.isArray(q.pins) ? q.pins.map(str).join(", ") : "";
-    return `Drive ${str(q.name)} (${pins}) ${str(q.level)}${q.why ? `: ${str(q.why)}` : ""}`;
-  }
-  if (q.type === "setup") return str(q.text);
-  return str(q.text ?? q.type);
-}
 
 /**
  * A board's `ai_hints`, the board's own first, then each resource's in the
@@ -438,40 +412,16 @@ export function aiHintLines(b: Pick<Board, "aiHints" | "resources">): string[] {
 
 /**
  * A board's resources as rows, in the engine's order (by type, clocks
- * first; Logix Engine's docs/tool-api.md): the type in words, the pins
- * (labeled where a type has several kinds, such as a UART's TX and RX),
- * and notes (frequency, active level, I/O standard, requirements, notes).
+ * first; Logix Engine's docs/tool-api.md), in Logix Engine's words: the type
+ * (`type_label`), the pins, labeled where a type has several kinds, such as
+ * a UART's TX and RX (`pins_text`), and the notes: frequency, active level,
+ * I/O standard, requirements and notes (`notes_text`).
  */
 export function resourceRows(b: Pick<Board, "resources">): ResourceRow[] {
-  return Object.entries(b.resources ?? {})
-    .map(([name, raw]) => {
-      const r = raw as Json;
-      const t = str(r.type);
-      const many = Array.isArray(r.pins) && r.pins.length > 1;
-      const type = TYPE_LABEL[t]?.[many ? 1 : 0] ?? t;
-      const labeled = (fields: [string, string][]) =>
-        fields
-          .filter(([f]) => r[f] !== undefined)
-          .map(([f, l]) => `${l} ${str(r[f])}`)
-          .join(", ");
-      let pins: string;
-      if (t === "clock") pins = str(r.pin);
-      else if (t === "rgb_led") pins = labeled([["red", "R"], ["green", "G"], ["blue", "B"]]);
-      else if (t === "uart") pins = labeled([["tx", "TX"], ["rx", "RX"], ["rts", "RTS"], ["cts", "CTS"]]);
-      else if (t === "led_matrix") {
-        const colors = (r.colors ?? {}) as Json;
-        const c = [["red", "R"], ["green", "G"], ["blue", "B"]]
-          .filter(([k]) => colors[k] !== undefined)
-          .map(([k, l]) => `${l} ${str(colors[k])}`);
-        pins = [pinList(r.leds), c.join(", ")].filter(Boolean).join("; ");
-      } else pins = pinList(r.pins);
-      const notes = [
-        t === "clock" && r.mhz !== undefined ? `${str(r.mhz)} MHz` : "",
-        r.active ? `active ${str(r.active)}` : "",
-        str(r.io_standard),
-        ...(Array.isArray(r.requires) ? r.requires.map((q) => `Needs: ${requirementText(q as Json)}`) : []),
-        str(r.user_notes),
-      ].filter(Boolean);
-      return { name, type, pins, notes: notes.join(". ") };
-    });
+  return Object.entries(b.resources ?? {}).map(([name, r]) => ({
+    name,
+    type: str(r.type_label ?? r.type),
+    pins: str(r.pins_text),
+    notes: str(r.notes_text),
+  }));
 }

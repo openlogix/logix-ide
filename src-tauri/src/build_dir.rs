@@ -10,10 +10,6 @@ use anyhow::{Context, Result};
 
 use crate::project::{self, ProjectFile, RESERVED_NAMES};
 
-/// Pin constraint file extensions. The first one in the project is the
-/// build's constraint file.
-pub const CONSTRAINT_EXTENSIONS: &[&str] = &["pcf", "lpf", "cst", "xdc"];
-
 /// Records which project the folder was prepared for.
 const KEY_FILE: &str = ".logix-build-key";
 /// The engine's output folder, kept between builds.
@@ -56,15 +52,10 @@ pub fn constraint_file_name(names: &[String]) -> Option<&str> {
         .find(|n| is_constraint_file(n))
 }
 
+/// A pin constraint file of any FPGA family's format (Logix Engine's
+/// `constraint_extension`s, `formats`).
 fn is_constraint_file(name: &str) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| {
-            CONSTRAINT_EXTENSIONS
-                .iter()
-                .any(|c| c.eq_ignore_ascii_case(e))
-        })
+    crate::formats::current().is_pin_file(name)
 }
 
 /// Fills `root` with the project's files and the project folder's other

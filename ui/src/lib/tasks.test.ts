@@ -16,11 +16,11 @@ const warn = (file: string, line: number): Diagnostic => ({
 
 describe("outcomeText", () => {
   it("reports success with time and warnings", () => {
-    expect(outcomeText("build", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 1.62, action: null, devices: [], driverDevice: null, sameIds: null })).toBe(
+    expect(outcomeText("build", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 1.62, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] })).toBe(
       "Build succeeded in 1.6 s.",
     );
     expect(
-      outcomeText("build", { ok: true, diagnostics: [warn("a.pcf", 3)], report: null, cancelled: false, testbenches: [], seconds: 2, action: null, devices: [], driverDevice: null, sameIds: null }),
+      outcomeText("build", { ok: true, diagnostics: [warn("a.pcf", 3)], report: null, cancelled: false, testbenches: [], seconds: 2, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] }),
     ).toBe("Build succeeded in 2.0 s, 1 warning.");
   });
 
@@ -32,7 +32,7 @@ describe("outcomeText", () => {
         report: null, cancelled: false, testbenches: [],
         seconds: 0.4,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       }),
     ).toBe("Build failed.");
     expect(
@@ -42,7 +42,7 @@ describe("outcomeText", () => {
         report: null, cancelled: false, testbenches: [],
         seconds: 1,
         action: "connect_board",
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       }),
     ).toBe("Upload failed: No Alhambra II is connected. Connect the Alhambra II by USB, then retry.");
     // A board file: the output lists its problems, so only the folder.
@@ -53,7 +53,7 @@ describe("outcomeText", () => {
         report: null, cancelled: false, testbenches: [],
         seconds: 0,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       }),
     ).toBe("Build failed: the project's boards folder has problems.");
     // In a saved project, the engine names it by its full path.
@@ -64,10 +64,10 @@ describe("outcomeText", () => {
         report: null, cancelled: false, testbenches: [],
         seconds: 0,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       }),
     ).toBe("Build failed: the project's boards folder has problems.");
-    expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 1, action: null, devices: [], driverDevice: null, sameIds: null })).toBe(
+    expect(outcomeText("upload", { ok: false, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 1, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] })).toBe(
       "Upload failed. See the output below.",
     );
   });
@@ -93,7 +93,7 @@ describe("test results", () => {
   ];
   it("summarizes passing tests", () => {
     expect(
-      outcomeText("test", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [benches[0]], seconds: 4.3, action: null, devices: [], driverDevice: null, sameIds: null }),
+      outcomeText("test", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [benches[0]], seconds: 4.3, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] }),
     ).toBe("Tests passed (1 testbench) in 4.3 s.");
   });
   it("names the first failure", () => {
@@ -104,23 +104,23 @@ describe("test results", () => {
         report: null, cancelled: false, testbenches: benches,
         seconds: 1,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       }),
     ).toBe("Test failed.");
   });
   it("lists each testbench", () => {
     expect(
-      testbenchLines({ ok: false, diagnostics: [], report: null, cancelled: false, testbenches: benches, seconds: 1, action: null, devices: [], driverDevice: null, sameIds: null }),
+      testbenchLines({ ok: false, diagnostics: [], report: null, cancelled: false, testbenches: benches, seconds: 1, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] }),
     ).toEqual(["✓ main_tb.v passed", "✗ alu_tb.v failed"]);
   });
   it("names the Waveforms window after simulating", () => {
     expect(
-      outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 0.3, action: null, devices: [], driverDevice: null, sameIds: null }),
+      outcomeText("simulate", { ok: true, diagnostics: [], report: null, cancelled: false, testbenches: [], seconds: 0.3, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] }),
     ).toBe("Simulation done in 0.3 s. The Waveforms window shows the signals.");
   });
   it("says the Waveforms window shows a failing testbench too", () => {
     const failure = { severity: "error" as const, file: "main_tb.v", line: 52, column: null, message: "Assertion failed" };
-    const outcome = { ok: false, diagnostics: [failure], report: null, cancelled: false, seconds: 0.3, action: null, devices: [], driverDevice: null, sameIds: null };
+    const outcome = { ok: false, diagnostics: [failure], report: null, cancelled: false, seconds: 0.3, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] };
     expect(
       outcomeText("simulate", { ...outcome, testbenches: [{ name: "main_tb.v", passed: false }] }),
     ).toBe("The testbench failed. The Waveforms window shows where.");
@@ -152,7 +152,7 @@ describe("build report in the status", () => {
         },
         seconds: 2.4,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       }),
     ).toBe("Build succeeded in 2.4 s. Uses 0.4% of logic cells, max clock 194.4 MHz.");
   });
@@ -169,7 +169,7 @@ describe("stopped tasks", () => {
         cancelled: true,
         seconds: 3,
         action: null,
-        devices: [], driverDevice: null, sameIds: null,
+        devices: [], driverDevice: null, sameIds: null, checkedFiles: [],
       }),
     ).toBe("Upload stopped.");
   });

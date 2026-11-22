@@ -1,6 +1,6 @@
 <!--
   Tools > Connected Devices: the USB devices connected, the likely FPGA
-  boards first (`orderedDevices`), each a collapsible group (open when it
+  boards first (Logix Engine's `rank`, `orderedDevices`), each a collapsible group (open when it
   may be a board), with the boards it may be as bullet lists in two
   collapsible groups: Matching boards (its most likely boards, open) and Other
   possible boards (weaker ones, closed). Board names select the board. A
@@ -79,7 +79,7 @@
 
   /** The groups of a device: the boards are sorted by name among others. */
   function groupsOf(d: UsbDevice) {
-    const { matches, others } = deviceBoardGroups(d, board);
+    const { matches, others } = deviceBoardGroups(d);
     return {
       matches,
       others: [...others].sort((a, b) => boardName(a).localeCompare(boardName(b))),
@@ -145,7 +145,7 @@
       {:else if !devices}
         <p class="muted">Scanning…</p>
       {:else}
-        {@const listed = orderedDevices(devices, board)}
+        {@const listed = orderedDevices(devices)}
         <h3>USB devices</h3>
         {#if listed.length === 0}
           <p class="muted">

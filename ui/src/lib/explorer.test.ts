@@ -1,19 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { Board, Example, FpgaFamily } from "./backend";
-import { aiHintLines, buildModel, detailsOf, listGroups, resourceRows, requirementText, type Details } from "./explorer";
+import { aiHintLines, buildModel, detailsOf, listGroups, resourceRows, type Details } from "./explorer";
 
 const families: FpgaFamily[] = [
   {
     id: "ice40",
     label: "Lattice iCE40",
     pinExtension: "pcf",
+    pinComment: "#",
     fpgas: [
-      { id: "ice40hx4k-tq144-8k", partNumber: "ICE40HX4K-TQ144", size: "8k" },
-      { id: "ice40up5k-sg48", partNumber: "ICE40UP5K-SG48", size: "5k" },
-      { id: "ice40lp1k-cm36", partNumber: "ICE40LP1K-CM36", size: "1k" },
+      { id: "ice40hx4k-tq144-8k", partNumber: "ICE40HX4K-TQ144", size: "8k", label: "ICE40HX4K-TQ144 (8k)" },
+      { id: "ice40up5k-sg48", partNumber: "ICE40UP5K-SG48", size: "5k", label: "ICE40UP5K-SG48 (5k)" },
+      { id: "ice40lp1k-cm36", partNumber: "ICE40LP1K-CM36", size: "1k", label: "ICE40LP1K-CM36 (1k)" },
     ],
   },
-  { id: "gw5a", label: "Gowin GW5A", pinExtension: "cst", fpgas: [{ id: "gw5a-25", partNumber: "GW5A-25", size: "25k" }] },
+  { id: "gw5a", label: "Gowin GW5A", pinExtension: "cst", pinComment: "//", fpgas: [{ id: "gw5a-25", partNumber: "GW5A-25", size: "25k", label: "GW5A-25 (25k)" }] },
 ];
 
 const board = (id: string, description: string, fpga: string, extra: Partial<Board> = {}): Board => ({
@@ -23,10 +24,11 @@ const board = (id: string, description: string, fpga: string, extra: Partial<Boa
   familyLabel: "Lattice iCE40",
   familyOrder: 0,
   pinExtension: "pcf",
+  pinComment: "#",
   dimensions: [],
   configurations: [{ when: {}, label: "USB · Flash", tested: true }],
   custom: false,
-  fpga: { id: fpga, partNumber: fpga.toUpperCase(), size: "8k" },
+  fpga: { id: fpga, partNumber: fpga.toUpperCase(), size: "8k", label: `Lattice iCE40 ${fpga.toUpperCase()} (8k)` },
   ...extra,
 });
 
@@ -40,7 +42,7 @@ const boards = [
   }),
   board("kefir", "Kéfir I", "ice40hx4k-tq144-8k"),
   board("icebreaker", "iCEBreaker", "ice40up5k-sg48", {
-    requires: [{ type: "drive", name: "flash_cs", pins: ["16"], level: "high" }],
+    requires: [{ type: "drive", name: "flash_cs", pins: ["16"], level: "high", text: "Drive flash_cs (16) high" }],
   }),
   board("mine", "My Board", "ice40up5k-sg48", { custom: true, aiHints: ["A board hint."] }),
 ];
@@ -173,28 +175,18 @@ describe("detailsOf", () => {
 });
 
 describe("resources", () => {
-  it("words each type, its pins and notes, in the engine's order", () => {
+  it("shows each resource in Logix Engine's words, in the engine's order", () => {
     const rows = resourceRows({
       resources: {
-        clk: { type: "clock", pin: "35", mhz: 12, requires: [{ type: "setup", text: "Close J1." }] },
-        led: { type: "leds", pins: ["11"], active: "low" },
-        leds: { type: "leds", pins: ["11", "37"], active: "low", io_standard: "LVCMOS33" },
-        rgb: { type: "rgb_led", red: "41", green: "39", blue: "40", active: "low" },
-        uart: { type: "uart", tx: "9", rx: "6" },
-        j1: { type: "header", pins: ["1", null, "3"] },
-        m: { type: "led_matrix", leds: ["a", "b"], colors: { red: "r", blue: "b" }, user_notes: "Seven LEDs." },
+        clk: { type: "clock", pin: "35", mhz: 12, type_label: "Clock", pins_text: "35", notes_text: "12 MHz. Needs: Close J1." },
+        rgb: { type: "rgb_led", red: "41", type_label: "RGB LED", pins_text: "R 41, G 39, B 40", notes_text: "Active low" },
         odd: { type: "newtype", pins: ["7"] },
       },
     });
     expect(rows.map((r) => [r.name, r.type, r.pins, r.notes])).toEqual([
       ["clk", "Clock", "35", "12 MHz. Needs: Close J1."],
-      ["led", "LED", "11", "active low"],
-      ["leds", "LEDs", "11, 37", "active low. LVCMOS33"],
-      ["rgb", "RGB LED", "R 41, G 39, B 40", "active low"],
-      ["uart", "UART", "TX 9, RX 6", ""],
-      ["j1", "Header", "1, –, 3", ""],
-      ["m", "LED matrix", "a, b; R r, B b", "Seven LEDs."],
-      ["odd", "newtype", "7", ""],
+      ["rgb", "RGB LED", "R 41, G 39, B 40", "Active low"],
+      ["odd", "newtype", "", ""],
     ]);
     expect(resourceRows({})).toEqual([]);
   });
@@ -211,12 +203,5 @@ describe("resources", () => {
       }),
     ).toEqual(["Board hint.", "rgb_led: Use the driver.", "rgb_led: 1 turns it on.", "clk: Clock hint."]);
     expect(aiHintLines({})).toEqual([]);
-  });
-
-  it("words requirements", () => {
-    expect(requirementText({ type: "drive", name: "wifi_gpio0", pins: ["L2"], level: "high", why: "Or the ESP32 resets the board." })).toBe(
-      "Drive wifi_gpio0 (L2) high: Or the ESP32 resets the board.",
-    );
-    expect(requirementText({ type: "setup", text: "Close J1." })).toBe("Close J1.");
   });
 });

@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { setFileFormats } from "./formats";
+import { ENGINE_FORMATS } from "./testFormats";
 import {
   fileGroups,
   matches,
@@ -7,6 +9,9 @@ import {
   shortcutLabel,
   visit,
 } from "./fileList";
+
+// Which files are pin files, as Logix Engine says (formats.ts).
+beforeAll(() => setFileFormats(ENGINE_FORMATS));
 
 const FILES = [
   "main.v",

@@ -34,6 +34,16 @@ pub struct UsbDevice {
     /// The boards it most likely is, by the engine (none when its matches
     /// are only weak).
     pub likely_boards: Vec<String>,
+    /// The other boards worth naming after those, by the engine
+    /// (`other_boards`: with a strong match, only the selected board when
+    /// the device may be it, since dozens of boards sharing a USB chip are
+    /// noise).
+    pub other_boards: Vec<String>,
+    /// Its place in one list of the devices and the unreachable ones
+    /// together, 0 first, by the engine (`rank`: those that may be the
+    /// selected board first, then those that may be other boards, then the
+    /// rest), for Tools > Connected Devices.
+    pub rank: u32,
     /// With a build folder: how well it matches the build's board in the
     /// build's variant.
     pub build_match: Option<MatchLevel>,
@@ -200,6 +210,12 @@ pub struct UnreachableDevice {
     pub who: String,
     /// What to do, for people, by the engine.
     pub fix: String,
+    /// What it may be and what to do, for people, by the engine (`note`,
+    /// ending with `fix`): "This may be your Alhambra II: it has the same
+    /// USB IDs. …".
+    pub note: String,
+    /// As for `UsbDevice`.
+    pub rank: u32,
     /// As for `UsbDevice`: on Windows, the driver it needs and has.
     pub driver: Option<Driver>,
     /// The boards whose USB IDs it has (all weak: its names can't be read
@@ -208,10 +224,28 @@ pub struct UnreachableDevice {
 }
 
 /// What `list_devices` found.
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct DeviceList {
     pub devices: Vec<UsbDevice>,
     pub unreachable: Vec<UnreachableDevice>,
+    /// With a board or a build folder: whether that board is connected, in
+    /// the engine's words.
+    pub status: Option<DeviceStatus>,
+    /// The project's boards folder's problems, when it has any (the devices
+    /// are then matched against the catalog's boards only).
+    pub custom_boards_problem: Option<super::catalog::BoardsProblem>,
+}
+
+/// The engine's `status`: whether the board asked about is connected
+/// (`code`: connected, several, unreachable or not_connected), a sentence
+/// for people naming it, more lines for people (for not_connected: what is
+/// connected, and tips about the cable and power), and the action code.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct DeviceStatus {
+    pub code: String,
+    pub message: String,
+    pub hints: Vec<String>,
+    pub action: Option<String>,
 }
 
 /// The connected USB devices, with the boards they may be: the catalog's
@@ -261,14 +295,9 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                 .as_array()
                 .map(|boards| boards.iter().map(parse_board).collect())
                 .unwrap_or_default(),
-            likely_boards: d["likely_boards"]
-                .as_array()
-                .map(|l| {
-                    l.iter()
-                        .filter_map(|b| b.as_str().map(String::from))
-                        .collect()
-                })
-                .unwrap_or_default(),
+            likely_boards: strings(&d["likely_boards"]),
+            other_boards: strings(&d["other_boards"]),
+            rank: rank(d),
             build_match: MatchLevel::parse(&d["build_match"]),
             who: text(d, "who"),
             driver: parse_driver(&d["driver"]),
@@ -308,6 +337,8 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                     action: d["action"]["code"].as_str().unwrap_or("").to_string(),
                     who: text(d, "who"),
                     fix: text(d, "fix"),
+                    note: text(d, "note"),
+                    rank: rank(d),
                     driver: parse_driver(&d["driver"]),
                     boards: d["boards"]
                         .as_array()
@@ -317,10 +348,30 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
                 .collect()
         })
         .unwrap_or_default();
+    let s = &result["status"];
+    let status = s.is_object().then(|| DeviceStatus {
+        code: text(s, "code"),
+        message: text(s, "message"),
+        hints: strings(&s["hints"]),
+        action: s["action"]["code"].as_str().map(String::from),
+    });
+    let problem = &result["custom_boards_problem"];
     Ok(DeviceList {
         devices,
         unreachable,
+        status,
+        custom_boards_problem: problem
+            .is_object()
+            .then(|| super::catalog::BoardsProblem::from_error(problem)),
     })
+}
+
+/// A device's `rank` (the engine always gives one; last without it).
+fn rank(d: &Value) -> u32 {
+    d["rank"]
+        .as_u64()
+        .and_then(|r| u32::try_from(r).ok())
+        .unwrap_or(u32::MAX)
 }
 
 /// The engine's action code for a device that needs a driver first.
@@ -614,5 +665,34 @@ mod tests {
         assert_eq!(list.unreachable[0].boards[0].board, "icestick");
         assert_eq!(list.unreachable[0].boards[0].level, MatchLevel::Weak);
         assert!(parse_devices(&json!({})).is_err());
+        assert_eq!(list.status, None);
+    }
+
+    #[test]
+    fn reads_the_engines_order_status_and_words() {
+        let list = parse_devices(&json!({
+            "devices": [{"id": "a", "kind": "usb", "label": "A", "vid": "0403", "pid": "6010",
+                         "likely_boards": ["alhambra-ii"], "other_boards": ["icestick"], "rank": 1}],
+            "unreachable": [{"id": "b", "label": "USB device (0403:6014)", "vid": "0403", "pid": "6014",
+                             "fix": "Install its driver.", "rank": 0,
+                             "note": "This may be your iCEstick: it has the same USB IDs. Install its driver."}],
+            "status": {"code": "not_connected", "message": "The iCEstick isn't connected.",
+                       "hints": ["Connected USB devices:", "  • A"],
+                       "action": {"code": "connect_board", "description": "Connect it."}},
+            "custom_boards_problem": {"category": "request", "message": "The boards folder has problems.",
+                                      "diagnostics": [{"file": "boards/x.json", "line": 2, "severity": "error", "text": "Trailing comma."}]}
+        }))
+        .unwrap();
+        assert_eq!(list.devices[0].other_boards, ["icestick"]);
+        assert_eq!((list.devices[0].rank, list.unreachable[0].rank), (1, 0));
+        assert!(list.unreachable[0]
+            .note
+            .starts_with("This may be your iCEstick"));
+        let status = list.status.unwrap();
+        assert_eq!(status.code, "not_connected");
+        assert_eq!(status.hints.len(), 2);
+        assert_eq!(status.action.as_deref(), Some("connect_board"));
+        let problem = list.custom_boards_problem.unwrap();
+        assert_eq!(problem.diagnostics[0].line, Some(2));
     }
 }

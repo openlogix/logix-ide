@@ -6,16 +6,18 @@
 <title>Logix Waveforms</title>
 <!-- Written by Logix Engine's simulate tool (docs/tool-api.md, "The
      waveform viewer"). Self-contained: it needs no network and nothing
-     installed. Hosts can embed it in an iframe or a window of their own:
-     ?theme=light|dark sets the theme, and it accepts
-     {type: "logix-wave:theme", theme}. It posts
-     {type: "logix-wave:open-source", file, line} when a signal's name or a
-     failure is double-clicked or clicked, and {type: "logix-wave:view", view}
-     with the view (the .view file's JSON) after every change, so a host saves
-     it. A host that loads it directly can define
-     window.logixWaveOpenSource(file, line) and window.logixWaveSaveView(view)
-     instead. Save as image posts {type: "logix-wave:save-file", name, mime,
-     data} (SVG text, or PNG as base64), or calls window.logixWaveSaveFile. With no host, as in a browser, the view isn't saved: there's no Save view button (the user's decision, 2026-11-21, until a clear use for one). -->
+     installed. A host showing it in a window of its own offers the page
+     contract, window.logixHost (docs/tool-api.md, Logix Viewer): the view
+     goes to writeDeclared("view", text) after every change, images to
+     saveAs(name, mime, data), and a signal's or a failure's place in the
+     source to openSource(file, line). In an iframe, it posts the same as
+     messages to its parent instead: {type: "logix-wave:view", view},
+     {type: "logix-wave:save-file", name, mime, data} and
+     {type: "logix-wave:open-source", file, line}, and accepts
+     {type: "logix-wave:theme", theme}. ?theme=light|dark sets the theme.
+     With no host, as in a browser, the view isn't saved: there's no Save
+     view button (the user's decision, 2026-11-21, until a clear use for
+     one). -->
 <style>
 /* Layout: a one-screen tool. Header bar; signal browser on the left; the viewer on the right as three aligned columns (name, value at cursor, waves) under one time ruler. */
 :root {
@@ -71,7 +73,6 @@ button { font: inherit; color: inherit; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 600; }
 .btn svg { width: 15px; height: 15px; }
 .icon-btn { width: 30px; padding: 0; justify-content: center; }
-.browser-toggle { display: none; }
 
 /* Browser */
 .browser { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
@@ -105,7 +106,7 @@ button { font: inherit; color: inherit; }
 .btns button { border: 0; background: none; height: 26px; min-width: 28px; padding: 0 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; color: var(--fg); }
 .btns button:hover:not(:disabled) { background: var(--panel); }
 .btns button:disabled { opacity: .35; cursor: default; }
-.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 12px; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 12px; align-items: start; }
 .keys kbd { font-family: var(--mono); font-size: 11px; background: var(--soft); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; white-space: nowrap; justify-self: start; }
 /* A group row is a group's title: gray in the Signal column only, as the
    board picker's family headings, and an arrow that folds the group. */
@@ -114,6 +115,11 @@ button { font: inherit; color: inherit; }
 .nrow .fold svg { width: 16px; height: 16px; display: block; margin: auto; }
 .nrow .fold { border: 0; background: none; color: var(--group-fg); width: 24px; height: 24px; margin-left: -6px; padding: 0; cursor: pointer; font-size: 17px; line-height: 24px; border-radius: 5px; flex: none; }
 .nrow .fold:hover { background: var(--soft); color: var(--fg); }
+/* A bus's fold arrow shows its bits (R58); the bits sit indented under it. */
+.nrow .fold.bits { width: 18px; height: 20px; margin: 0 -4px 0 -8px; color: var(--muted); }
+.nrow .fold.bits svg { width: 13px; height: 13px; }
+.nrow.bit { padding-left: 30px; }
+.nrow.bit .nm { color: var(--muted); }
 .nrow .hidden-n { font-weight: 400; font-family: var(--mono); font-size: 11px; }
 .nrow.group .nm { font-family: var(--font); font-weight: 600; font-size: 12px; color: var(--group-fg); letter-spacing: .02em; }
 .nrow.blank .nm { color: var(--muted); font-size: 11px; opacity: 0; }
@@ -122,6 +128,12 @@ button { font: inherit; color: inherit; }
 .btns button svg { width: 15px; height: 15px; }
 /* Undo and redo, next to the testbench's name where they're easy to find, a size up. */
 .btns.undo button { height: 30px; min-width: 34px; }
+/* Time or Cycles: one choice of two, shown as one outlined control with the
+   chosen half filled (the user's request, 2026-11-22: two plain buttons
+   didn't read as a one-of choice). */
+.btns.tb { background: var(--panel); border: 1px solid var(--line); padding: 2px; gap: 0; }
+.btns.tb button { border-radius: 5px; color: var(--muted); }
+.btns.tb button.on, .btns.tb button.on:hover { background: var(--accent); color: #fff; box-shadow: none; }
 .btns.undo button svg { width: 19px; height: 19px; }
 .fail-chip { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--fail) 45%, transparent); background: color-mix(in srgb, var(--fail) 10%, transparent); color: var(--fail); font-weight: 600; cursor: pointer; }
 .fail-chip[hidden] { display: none; }
@@ -206,6 +218,12 @@ button { font: inherit; color: inherit; }
 .ctx .it:disabled { opacity: .4; cursor: default; background: none; }
 .ctx .it .k { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 11px; }
 .ctx .it.danger { color: var(--x); }
+/* A menu item that's on or off, drawn as a checkbox (the user's request, 2026-11-22). */
+.ctx .it.chk { gap: 9px; }
+.ctx .it .box { flex: none; width: 14px; height: 14px; border: 1.5px solid var(--muted); border-radius: 3px; display: grid; place-items: center; }
+.ctx .it[aria-checked="true"] .box { background: var(--accent); border-color: var(--accent); }
+.ctx .it .box svg { width: 10px; height: 10px; visibility: hidden; }
+.ctx .it[aria-checked="true"] .box svg { visibility: visible; }
 .ctx .sep { height: 1px; background: var(--line); margin: 4px 6px; }
 .ctx .sub { padding: 4px 10px 6px; display: flex; flex-direction: column; gap: 5px; }
 .ctx .sub .lbl { font-size: 11px; color: var(--muted); }
@@ -275,8 +293,6 @@ button { font: inherit; color: inherit; }
   .browser { position: fixed; z-index: 45; top: 60px; bottom: 12px; left: max(16px, env(safe-area-inset-left, 0px)); width: min(280px, calc(100% - 32px)); box-shadow: 0 16px 40px rgba(0,0,0,.25); }
   .app:not(.show-browser) .browser { display: none; }
   .app.no-browser.show-browser .browser { display: flex; }
-  .side-btn { display: none; }
-  .browser-toggle { display: inline-flex; }
   .status .help, .btn .txt, .file { display: none; }
   .nrow .sc { display: none; }
 }
@@ -311,7 +327,6 @@ button { font: inherit; color: inherit; }
     <button class="fail-chip" id="failChip" hidden title="Show the first failed check"><span class="dot"></span><span id="failText">Failed check</span></button>
     <!-- Kept together, so they wrap as one group in a narrow window. -->
     <div class="right">
-      <button class="btn browser-toggle" id="browserToggle" aria-label="Show signals">Signals</button>
       <button class="btn" id="imageBtn" title="Copy or save the waves, to share: a picture, a spreadsheet or a web page">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/><circle cx="15.5" cy="8.5" r="1.5"/></svg><span class="txt">Export</span>
       </button>
@@ -383,14 +398,19 @@ const PAGE = (() => {
 const $ = (s) => document.querySelector(s);
 const S = { wave: null, file: '', rows: [], start: 0, end: 1, cursor: null, anchor: null, clock: null, edges: [], cycles: false, marker: null, sel: -1, rowH: 30, grid: true, theme: 'auto', marks: [] };
 // The data the engine wrote into the page.
-const DATA = {"waveform":"main_tb.vcd","testbench":"main_tb.v","view_file":"main_tb.view","vcd":"$date\n\tSat Nov 21 19:07:53 2026\n$end\n$version\n\tIcarus Verilog\n$end\n$timescale\n\t1ps\n$end\n$scope module main_tb $end\n$var wire 3 ! rgb_led [2:0] $end\n$var reg 1 \" sys_clk $end\n$scope module dut $end\n$var wire 3 # rgb_led [2:0] $end\n$var wire 1 \" sys_clk $end\n$var wire 1 $ green_on $end\n$var parameter 32 % N $end\n$var reg 4 & counter [3:0] $end\n$upscope $end\n$scope task cycles $end\n$var integer 32 ' n [31:0] $end\n$upscope $end\n$upscope $end\n$enddefinitions $end\n$comment Show the parameter values. $end\n$dumpall\nb100 %\n$end\n#0\n$dumpvars\nbx '\nb0 &\n0$\nb111 #\n0\"\nb111 !\n$end\n#1000\nb1000 '\n#41667\nb1 &\n1\"\n#83334\n0\"\n#125001\nb10 &\n1\"\n#166668\n0\"\n#208335\nb11 &\n1\"\n#250002\n0\"\n#291669\nb100 &\n1\"\n#333336\n0\"\n#375003\nb101 &\n1\"\n#416670\n0\"\n#458337\nb110 &\n1\"\n#500004\n0\"\n#541671\nb111 &\n1\"\n#583338\n0\"\n#625005\nb101 !\nb101 #\n1$\nb1000 &\n1\"\n#666672\n0\"\n#708339\nb1001 &\n1\"\n#750006\n0\"\n#791673\nb1010 &\n1\"\n#833340\n0\"\n#875007\nb1011 &\n1\"\n#916674\n0\"\n#958341\nb1100 &\n1\"\n#1000008\n0\"\n#1041675\nb1101 &\n1\"\n#1083342\n0\"\n#1125009\nb1110 &\n1\"\n#1166676\n0\"\n#1208343\nb1111 &\n1\"\n#1250010\n0\"\n#1291677\nb111 !\nb111 #\n0$\nb0 &\n1\"\n#1292677\nb10000 '\n#1333344\n0\"\n#1375011\nb1 &\n1\"\n#1416678\n0\"\n#1458345\nb10 &\n1\"\n#1500012\n0\"\n#1541679\nb11 &\n1\"\n#1583346\n0\"\n#1625013\nb100 &\n1\"\n#1666680\n0\"\n#1708347\nb101 &\n1\"\n#1750014\n0\"\n#1791681\nb110 &\n1\"\n#1833348\n0\"\n#1875015\nb111 &\n1\"\n#1916682\n0\"\n#1958349\nb101 !\nb101 #\n1$\nb1000 &\n1\"\n#2000016\n0\"\n#2041683\nb1001 &\n1\"\n#2083350\n0\"\n#2125017\nb1010 &\n1\"\n#2166684\n0\"\n#2208351\nb1011 &\n1\"\n#2250018\n0\"\n#2291685\nb1100 &\n1\"\n#2333352\n0\"\n#2375019\nb1101 &\n1\"\n#2416686\n0\"\n#2458353\nb1110 &\n1\"\n#2500020\n0\"\n#2541687\nb1111 &\n1\"\n#2583354\n0\"\n#2625021\nb111 !\nb111 #\n0$\nb0 &\n1\"\n","truncated":null,"order":["main_tb.sys_clk","main_tb.rgb_led"],"declarations":{"main_tb.rgb_led":{"file":"main_tb.v","line":13},"main_tb.sys_clk":{"file":"main_tb.v","line":12}},"failures":[],"failure_count":0,"view":null,"focus":null};
-// Hosted: in a host's window or iframe, which saves the view and opens sources.
-const hosted = window.parent !== window || typeof window.logixWaveSaveView === 'function';
-function toHost(msg, fn, ...args) {
-  if (typeof window[fn] === 'function') window[fn](...args);
-  else if (window.parent !== window) window.parent.postMessage(msg, '*');
+const DATA = {"waveform":"main_tb.vcd","testbench":"main_tb.v","view_file":"main_tb.view","vcd":"$date\n\tSun Nov 22 14:51:25 2026\n$end\n$version\n\tIcarus Verilog\n$end\n$timescale\n\t1ps\n$end\n$scope module main_tb $end\n$var wire 3 ! rgb_led [2:0] $end\n$var reg 1 \" sys_clk $end\n$scope module dut $end\n$var wire 3 # rgb_led [2:0] $end\n$var wire 1 \" sys_clk $end\n$var wire 1 $ green_on $end\n$var parameter 32 % N $end\n$var reg 4 & counter [3:0] $end\n$upscope $end\n$scope task cycles $end\n$var integer 32 ' n [31:0] $end\n$upscope $end\n$upscope $end\n$enddefinitions $end\n$comment Show the parameter values. $end\n$dumpall\nb100 %\n$end\n#0\n$dumpvars\nbx '\nb0 &\n0$\nb111 #\n0\"\nb111 !\n$end\n#1000\nb1000 '\n#41667\nb1 &\n1\"\n#83334\n0\"\n#125001\nb10 &\n1\"\n#166668\n0\"\n#208335\nb11 &\n1\"\n#250002\n0\"\n#291669\nb100 &\n1\"\n#333336\n0\"\n#375003\nb101 &\n1\"\n#416670\n0\"\n#458337\nb110 &\n1\"\n#500004\n0\"\n#541671\nb111 &\n1\"\n#583338\n0\"\n#625005\nb101 !\nb101 #\n1$\nb1000 &\n1\"\n#666672\n0\"\n#708339\nb1001 &\n1\"\n#750006\n0\"\n#791673\nb1010 &\n1\"\n#833340\n0\"\n#875007\nb1011 &\n1\"\n#916674\n0\"\n#958341\nb1100 &\n1\"\n#1000008\n0\"\n#1041675\nb1101 &\n1\"\n#1083342\n0\"\n#1125009\nb1110 &\n1\"\n#1166676\n0\"\n#1208343\nb1111 &\n1\"\n#1250010\n0\"\n#1291677\nb111 !\nb111 #\n0$\nb0 &\n1\"\n#1292677\nb10000 '\n#1333344\n0\"\n#1375011\nb1 &\n1\"\n#1416678\n0\"\n#1458345\nb10 &\n1\"\n#1500012\n0\"\n#1541679\nb11 &\n1\"\n#1583346\n0\"\n#1625013\nb100 &\n1\"\n#1666680\n0\"\n#1708347\nb101 &\n1\"\n#1750014\n0\"\n#1791681\nb110 &\n1\"\n#1833348\n0\"\n#1875015\nb111 &\n1\"\n#1916682\n0\"\n#1958349\nb101 !\nb101 #\n1$\nb1000 &\n1\"\n#2000016\n0\"\n#2041683\nb1001 &\n1\"\n#2083350\n0\"\n#2125017\nb1010 &\n1\"\n#2166684\n0\"\n#2208351\nb1011 &\n1\"\n#2250018\n0\"\n#2291685\nb1100 &\n1\"\n#2333352\n0\"\n#2375019\nb1101 &\n1\"\n#2416686\n0\"\n#2458353\nb1110 &\n1\"\n#2500020\n0\"\n#2541687\nb1111 &\n1\"\n#2583354\n0\"\n#2625021\nb111 !\nb111 #\n0$\nb0 &\n1\"\n","truncated":null,"order":["main_tb.sys_clk","main_tb.rgb_led"],"declarations":{"main_tb.rgb_led":{"file":"main_tb.v","line":13},"main_tb.sys_clk":{"file":"main_tb.v","line":12}},"failures":[],"failure_count":0,"view":null,"focus":null};
+// The page's host: window.logixHost (the page contract, version 1) in a
+// host's own window, such as Logix IDE's or Logix Viewer's; messages to the
+// parent in an iframe; nothing in a plain browser. Hosted: the view is
+// saved and sources can be opened.
+const host = () => (window.logixHost && window.logixHost.version >= 1 ? window.logixHost : null);
+const inFrame = window.parent !== window;
+const hosted = !!host() || inFrame;
+function openSource(file, line) {
+  if (!file) return;
+  if (host()) host().openSource(file, line);
+  else if (inFrame) window.parent.postMessage({ type: 'logix-wave:open-source', file, line }, '*');
 }
-function openSource(file, line) { if (file) toHost({ type: 'logix-wave:open-source', file, line }, 'logixWaveOpenSource', file, line); }
 // Theme: ?theme=, a host's message, else the system's.
 function setTheme(t) {
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
@@ -573,6 +593,28 @@ function risingEdges(v) {
   return out;
 }
 const isClockable = (v) => v && v.width === 1;
+// Whether a 1-bit signal looks like a clock, so the menus offer to count its
+// cycles (the user's rule, 2026-11-22: offering it on any 1-bit signal, such
+// as a serial line, left unclear what it did and whether it made sense):
+// named like clk with two rising edges, or toggling steadily: at least four
+// rising edges, four in five periods within 10% of the usual one. Any other
+// 1-bit signal can still be picked from the clock picker's Other signals.
+const CLOCK_NAME = /(^|_)(clk|clock)(_|$|\d)/i;
+const clockLike = new Map();
+function looksLikeClock(v) {
+  if (!isClockable(v)) return false;
+  if (clockLike.has(v.id)) return clockLike.get(v.id);
+  const e = risingEdges(v);
+  let ok = false;
+  if (CLOCK_NAME.test(v.name)) ok = e.length >= 2;
+  else if (e.length >= 4) {
+    const periods = []; for (let k = 1; k < e.length; k++) periods.push(e[k] - e[k - 1]);
+    const usual = [...periods].sort((a, b) => a - b)[periods.length >> 1];
+    ok = periods.filter((d) => Math.abs(d - usual) <= usual * 0.1).length >= periods.length * 0.8;
+  }
+  clockLike.set(v.id, ok);
+  return ok;
+}
 function setClock(path) {
   const v = path && varByPath().get(path);
   S.clock = isClockable(v) ? path : null;
@@ -606,15 +648,15 @@ function fmtAt(t) {
 function suggestClock() {
   let best = null;
   for (const v of S.wave.vars) {
-    if (!isClockable(v)) continue;
+    if (!looksLikeClock(v)) continue;
     const n = risingEdges(v).length; if (n < 4) continue;
-    const score = (/(^|_)(clk|clock)(_|$|\d)/i.test(v.name) ? 1e9 : 0) + n - v.path.split('.').length;
+    const score = (CLOCK_NAME.test(v.name) ? 1e9 : 0) + n - v.path.split('.').length;
     if (!best || score > best.score) best = { path: v.path, score };
   }
   return best && best.path;
 }
 const canCount = () => !!S.clock && S.edges.length > 1;
-// Chooses the clock and counts its cycles (the picker, Use as clock).
+// Chooses the clock and counts its cycles (the picker, Count cycles of).
 function pickClock(path) {
   const was = [S.clock, S.edges, S.cycles];
   setClock(path);
@@ -623,7 +665,7 @@ function pickClock(path) {
 }
 // The switch: Time or Cycles of the clock.
 function setCycles(on) {
-  if (on && !canCount()) { toast('This run has no clock to count: right-click a 1-bit signal, Use as clock.'); return; }
+  if (on && !canCount()) { toast('This run has no clock to count: choose a signal in the clock picker, Other signals.'); return; }
   S.cycles = on; renderRows();
 }
 // The picker's list: the likely clocks, 1-bit signals that toggle, a name
@@ -631,9 +673,9 @@ function setCycles(on) {
 function clockCandidates() {
   const out = [];
   for (const v of S.wave.vars) {
-    if (!isClockable(v)) continue;
-    const n = risingEdges(v).length; if (n < 2 && v.path !== S.clock) continue;
-    out.push({ path: v.path, score: (/(^|_)(clk|clock)(_|$|\d)/i.test(v.name) ? 1e9 : 0) + n - v.path.split('.').length });
+    if (!isClockable(v) || (!looksLikeClock(v) && v.path !== S.clock)) continue;
+    const n = risingEdges(v).length;
+    out.push({ path: v.path, score: (CLOCK_NAME.test(v.name) ? 1e9 : 0) + n - v.path.split('.').length });
   }
   out.sort((x, y) => y.score - x.score);
   const top = out.slice(0, 8).map((c) => c.path);
@@ -641,11 +683,22 @@ function clockCandidates() {
   return top;
 }
 function clockMenu(x, y) {
+  const likely = clockCandidates();
   openMenu(x, y, [
-    ...clockCandidates().map((p) => ({ label: (p === S.clock ? '✓ ' : '\u2003') + shortName(p), act: () => pickClock(p) })),
+    ...likely.map((p) => ({ label: (p === S.clock ? '✓ ' : '\u2003') + shortName(p), act: () => pickClock(p) })),
     '-',
-    { label: 'Any 1-bit signal: right-click it, Use as clock', disabled: true, act: () => {} },
+    { label: 'Other signals…', act: () => otherClockMenu(x, y, likely) },
   ], 'Clock');
+}
+// Any other 1-bit signal with two rising edges, the most edges first: for
+// counting the cycles of a signal that doesn't look like a clock, such as a
+// strobe.
+function otherClockMenu(x, y, likely) {
+  const others = S.wave.vars.filter((v) => isClockable(v) && !likely.includes(v.path))
+    .map((v) => ({ v, n: risingEdges(v).length })).filter((o) => o.n >= 2)
+    .sort((a, b) => b.n - a.n).slice(0, 40);
+  if (!others.length) { toast('No other 1-bit signal rises twice: there is nothing else to count.'); return; }
+  openMenu(x, y, others.map((o) => ({ label: shortName(o.v.path), key: `${o.n} edges`, act: () => pickClock(o.v.path) })), 'Count the cycles of');
 }
 // The toolbar's switch and picker, as the state is.
 function renderTimeBase() {
@@ -655,14 +708,98 @@ function renderTimeBase() {
   const pick = $('#clockPick');
   $('#clockName').textContent = S.clock ? shortName(S.clock) : 'No clock';
   pick.classList.toggle('idle', !counting());
-  pick.title = S.clock ? `Clock: ${S.clock}. Choose another clock.` : 'No clock found. Right-click a 1-bit signal: Use as clock.';
+  pick.title = S.clock ? `Clock: ${S.clock}. Choose another clock.` : 'No clock found. Choose a signal: Other signals.';
 }
 $('#tbTime').addEventListener('click', () => setCycles(false));
 $('#tbCycles').addEventListener('click', () => setCycles(true));
 $('#clockPick').addEventListener('click', (e) => { const r = e.currentTarget.getBoundingClientRect(); clockMenu(r.left, r.bottom + 4); });
 
 /* ---------- Rows and browser ---------- */
-const varByPath = () => new Map(S.wave.vars.map((v) => [v.path, v]));
+// Signals by path; a bus's bits too (main_tb.q[3]), for views that show them.
+class VarMap extends Map { get(p) { return super.get(p) || bitByPath(this, p); } }
+const varByPath = () => new VarMap(S.wave.vars.map((v) => [v.path, v]));
+// A bus's bit as a 1-bit signal of its own (R58: the user's request,
+// 2026-11-21, as GTKWave shows a bus's bits), with its values taken from
+// the bus's, so it draws, exports and snaps like any signal. k counts from
+// the least significant bit; the label follows the declared range.
+const BITS = new Map();
+function bitLabel(v, k) {
+  const m = /\[(-?\d+):(-?\d+)\]/.exec(v.range || '');
+  if (!m) return k;
+  const msb = +m[1], lsb = +m[2];
+  return lsb <= msb ? lsb + k : lsb - k;
+}
+function bitVar(v, k) {
+  const id = v.id + '#' + k;
+  if (BITS.has(id)) return BITS.get(id);
+  const label = bitLabel(v, k);
+  const b = { id, type: 'wire', width: 1, name: `${v.name}[${label}]`, range: '', path: `${v.path}[${label}]`, bitOf: v.path, bitK: k };
+  const d = S.wave.data.get(v.id), out = { t: [], v: [] };
+  for (let j = 0; j < d.t.length; j++) {
+    const val = d.v[j][0] === 'r' ? 'x' : norm(d.v[j], v.width)[v.width - 1 - k];
+    if (out.v.length && out.v[out.v.length - 1] === val) continue;
+    out.t.push(d.t[j]); out.v.push(val);
+  }
+  S.wave.data.set(id, out); BITS.set(id, b);
+  return b;
+}
+function bitByPath(map, p) {
+  const m = /^(.*)\[(-?\d+)\]$/.exec(p || '');
+  const v = m && map.get(m[1]);
+  if (!v || v.width < 2 || v.name.includes('[')) return undefined;
+  for (let k = 0; k < v.width; k++) if (String(bitLabel(v, k)) === m[2]) return bitVar(v, k);
+  return undefined;
+}
+// Shows a bus's bits under it, most significant first, or hides them again.
+const MAX_BITS = 64;
+function toggleBits(i) {
+  const r = S.rows[i]; if (!r || !r.v || r.v.width < 2 || r.v.bitOf) return;
+  // A row shows its bits or an analog line, not both (the user's rules,
+  // 2026-11-22): showing the bits turns analog off.
+  if (!r.expanded && r.analog) r.analog = false;
+  if (r.expanded) {
+    let n = 0; while (S.rows[i + 1 + n] && S.rows[i + 1 + n].v && S.rows[i + 1 + n].v.bitOf === r.v.path) n++;
+    S.rows.splice(i + 1, n); r.expanded = false;
+  } else {
+    if (r.v.width > MAX_BITS) { toast(`Showing the bits works for up to ${MAX_BITS} bits; this signal has ${r.v.width}.`); return; }
+    const bits = [];
+    for (let k = r.v.width - 1; k >= 0; k--) bits.push({ kind: 'signal', v: bitVar(r.v, k), radix: 'bin', color: r.color });
+    S.rows.splice(i + 1, 0, ...bits); r.expanded = true;
+  }
+  S.anchor = null; S.sel = i; renderRows(); commit();
+}
+
+// An analog row draws its values as a line, three rows tall (R59: the
+// user's request, 2026-11-21, as GTKWave's analog formats).
+const ANALOG_ROWS = 3;
+const rowHeight = (r) => (r && r.v && r.analog ? S.rowH * ANALOG_ROWS : S.rowH);
+// Where each shown row is: its index in S.rows, its top and its height.
+function layout() {
+  let y = 0;
+  return visible().map((i) => { const h = rowHeight(S.rows[i]), o = { i, y, h }; y += h; return o; });
+}
+// A value as a number for the analog line: reals as they are, vectors
+// unsigned, or signed when the row shows signed values; null for x and z.
+function analogNumber(val, w, radix) {
+  if (val == null) return null;
+  if (val[0] === 'r') return +val.slice(1);
+  const bits = norm(val, w);
+  if (/[xz]/.test(bits)) return null;
+  let n = BigInt('0b' + bits);
+  if (radix === 'signed' && bits[0] === '1') n -= 1n << BigInt(w);
+  return Number(n);
+}
+// The range the line spans: the values the run has.
+const RANGES = new Map();
+function analogRange(r) {
+  const key = r.v.id + '|' + r.radix;
+  if (RANGES.has(key)) return RANGES.get(key);
+  const d = S.wave.data.get(r.v.id); let lo = Infinity, hi = -Infinity;
+  for (const val of d.v) { const n = analogNumber(val, r.v.width, r.radix); if (n == null || !isFinite(n)) continue; if (n < lo) lo = n; if (n > hi) hi = n; }
+  if (lo === Infinity) { lo = 0; hi = 1; }
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const out = { lo, hi }; RANGES.set(key, out); return out;
+}
 function row(i) { return S.rows[i]; }
 // A signal's name as the rows show it (sys_clk, dut.clk), without the
 // testbench's own name; the full path is on hover.
@@ -691,7 +828,7 @@ function visible() {
 // How many signals a group has (its blank rows aren't counted).
 function groupSize(i) { let n = 0; for (let j = i + 1; j < S.rows.length && S.rows[j].kind !== 'group'; j++) if (S.rows[j].v) n++; return n; }
 // The row (an index into S.rows) at a height in the rows area, or -1.
-function rowAtY(y) { const v = visible()[Math.floor(y / S.rowH)]; return v == null ? -1 : v; }
+function rowAtY(y) { const o = layout().find((o) => y >= o.y && y < o.y + o.h); return o ? o.i : -1; }
 function toggleGroup(i) {
   const r = S.rows[i]; if (!r || r.kind !== 'group') return;
   r.collapsed = !r.collapsed;
@@ -708,9 +845,34 @@ function clockBadge(path) {
   return counting() ? CLOCK_BADGE
     : CLOCK_BADGE.replace('class="clk-badge"', 'class="clk-badge idle"').replace(/title="[^"]*"/, 'title="The clock. Cycles, in the toolbar, counts its cycles."');
 }
+// A bus's bits are part of its row, not rows of their own (the user's
+// rule, 2026-11-22): they sit right under their expanded bus, in order,
+// in its color, and nothing goes between them. Puts every bit back there
+// (after a load, an undo or a removal), dropping bits whose bus is gone.
+function bitsInPlace() {
+  const sel = S.rows[S.sel], anchor = S.anchor != null ? S.rows[S.anchor] : null;
+  const out = [];
+  for (const r of S.rows) {
+    if (r.v && r.v.bitOf) continue;
+    out.push(r);
+    if (!r.v || !r.expanded) continue;
+    if (r.v.width < 2 || r.v.width > MAX_BITS || r.analog) { r.expanded = false; continue; }
+    for (let k = r.v.width - 1; k >= 0; k--) {
+      const v = bitVar(r.v, k), old = S.rows.find((x) => x.v === v);
+      out.push(Object.assign(old || { kind: 'signal', v, radix: 'bin' }, { color: r.color, analog: false }));
+    }
+  }
+  if (out.length === S.rows.length && out.every((r, i) => r === S.rows[i])) return;
+  S.rows = out; S.sel = sel ? out.indexOf(sel) : -1;
+  S.anchor = anchor && out.includes(anchor) ? out.indexOf(anchor) : null;
+}
+const isBit = (i) => !!(S.rows[i] && S.rows[i].v && S.rows[i].v.bitOf);
+// The bus row a bit row belongs to.
+function busOf(i) { while (i > 0 && isBit(i)) i--; return i; }
 function renderRows() {
+  bitsInPlace();
   document.documentElement.style.setProperty('--row-h', S.rowH + 'px');
-  $('#names').innerHTML = visible().map((i) => { const r = S.rows[i]; return !r.v ? `<div class="nrow ${r.kind} ${isSel(i) ? 'sel' : ''}" draggable="true" data-i="${i}" style="--c:var(--muted)">${r.kind === 'group' ? `<button class="fold" data-i="${i}" aria-expanded="${!r.collapsed}" title="${r.collapsed ? 'Show' : 'Hide'} the ${groupSize(i)} signals of this group"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="${r.collapsed ? 'M6 3.5 10.5 8 6 12.5' : 'M3.5 6 8 10.5 12.5 6'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}<span class="nm">${r.kind === 'group' ? esc(r.text) + (r.collapsed ? ` <span class="hidden-n">(${groupSize(i)})</span>` : '') : 'blank row'}</span></div>` : `<div class="nrow ${isSel(i) ? 'sel' : ''}" draggable="true" data-i="${i}" style="--c:var(--s${r.color})" title="${esc(r.v.path)}"><span class="dot"></span><span class="nm">${rowLabel(r.v)}${clockBadge(r.v.path)}</span></div>`; }).join('');
+  $('#names').innerHTML = visible().map((i) => { const r = S.rows[i]; return !r.v ? `<div class="nrow ${r.kind} ${isSel(i) ? 'sel' : ''}" draggable="true" data-i="${i}" style="--c:var(--muted)">${r.kind === 'group' ? `<button class="fold" data-i="${i}" aria-expanded="${!r.collapsed}" title="${r.collapsed ? 'Show' : 'Hide'} the ${groupSize(i)} signals of this group"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="${r.collapsed ? 'M6 3.5 10.5 8 6 12.5' : 'M3.5 6 8 10.5 12.5 6'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}<span class="nm">${r.kind === 'group' ? esc(r.text) + (r.collapsed ? ` <span class="hidden-n">(${groupSize(i)})</span>` : '') : 'blank row'}</span></div>` : `<div class="nrow ${isSel(i) ? 'sel' : ''} ${r.v.bitOf ? 'bit' : ''}" draggable="${!r.v.bitOf}" data-i="${i}" style="--c:var(--s${r.color});${r.analog ? `height:${rowHeight(r)}px` : ''}" title="${esc(r.v.path)}">${r.v.width > 1 && !r.v.bitOf ? `<button class="fold bits" data-bits="${i}" aria-expanded="${!!r.expanded}" title="${r.expanded ? 'Hide' : 'Show'} each bit (${r.v.width})"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="${r.expanded ? 'M3.5 6 8 10.5 12.5 6' : 'M6 3.5 10.5 8 6 12.5'}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>` : ''}<span class="dot"></span><span class="nm">${rowLabel(r.v)}${clockBadge(r.v.path)}</span></div>`; }).join('');
   $('#empty').hidden = S.rows.length > 0;
   renderValues(); renderTree(); renderTimeBase(); draw();
 }
@@ -720,7 +882,7 @@ function renderValues() {
     if (!r.v) return `<div class="vrow ${r.kind} ${isSel(i) ? 'sel' : ''}" data-i="${i}"></div>`;
     const val = S.cursor == null ? null : valueAt(r.v, S.cursor);
     const text = esc(fmt(val, r.v.width, r.radix));
-    return `<div class="vrow ${isSel(i) ? 'sel' : ''} ${isX(val) ? 'xv' : ''}" data-i="${i}" style="--c:var(--s${r.color})" title="${text}"><bdi dir="ltr">${text}</bdi></div>`;
+    return `<div class="vrow ${isSel(i) ? 'sel' : ''} ${isX(val) ? 'xv' : ''}" data-i="${i}" style="--c:var(--s${r.color});${r.analog ? `height:${rowHeight(r)}px` : ''}" title="${text}"><bdi dir="ltr">${text}</bdi></div>`;
   }).join('');
 }
 function renderTree() {
@@ -750,7 +912,7 @@ function inOrder(vars) {
 // selected), and the last one added becomes the selection, so picking a
 // group row, then ticking signals, builds a group in place.
 function insertSignals(vars) {
-  let at = S.sel >= 0 ? S.sel + 1 : S.rows.length;
+  let at = S.sel < 0 ? S.rows.length : S.rows[S.sel].v ? busOf(S.sel) + blockLen(busOf(S.sel)) : S.sel + 1;
   for (const v of vars) { S.rows.splice(at, 0, sigRow(v, S.rows.length)); S.anchor = null; S.sel = at; at++; }
 }
 function toggleVar(path) {
@@ -817,7 +979,7 @@ function draw() {
   pill(S.cursor, C.accent, '');
 
   // Waves
-  const shown = visible(), H = Math.max(shown.length * S.rowH, 1);
+  const shown = layout(), H = Math.max(shown.reduce((h, o) => h + o.h, 0), 1);
   const ctx = sizeCanvas(waves, W, H);
   ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
   if (S.grid) {
@@ -826,14 +988,44 @@ function draw() {
   }
   ctx.font = `500 11.5px ${mono}`; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   const endX = X(S.wave.end);
-  shown.forEach((i, pos) => {
-    const r = S.rows[i], y0 = pos * S.rowH;
-    if (isSel(i)) { ctx.fillStyle = C.sel; ctx.fillRect(0, y0, W, S.rowH); }
-    ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(0, y0 + S.rowH - .5); ctx.lineTo(W, y0 + S.rowH - .5); ctx.stroke();
+  shown.forEach(({ i, y: y0, h: RH }) => {
+    const r = S.rows[i];
+    if (isSel(i)) { ctx.fillStyle = C.sel; ctx.fillRect(0, y0, W, RH); }
+    ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(0, y0 + RH - .5); ctx.lineTo(W, y0 + RH - .5); ctx.stroke();
     if (!r.v) return;
     const color = tok(css, '--s' + r.color);
-    const pad = Math.max(5, S.rowH * .2), hi = y0 + pad, lo = y0 + S.rowH - pad, mid = (hi + lo) / 2;
+    const pad = Math.max(5, S.rowH * .2), hi = y0 + pad, lo = y0 + RH - pad, mid = (hi + lo) / 2;
     const d = S.wave.data.get(r.v.id);
+    if (r.analog) {
+      // The values as a step line across the row, scaled to the run's
+      // range (printed at the row's left), x and z as gaps (R59).
+      const { lo: vmin, hi: vmax } = analogRange(r), Y = (n) => lo - (n - vmin) / (vmax - vmin) * (lo - hi);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      let a = Math.max(idx(d.t, S.start), 0), prevY = null;
+      ctx.beginPath();
+      for (; a < d.t.length && d.t[a] <= S.end; a++) {
+        const t1 = Math.max(d.t[a], S.start), t2 = Math.min(a + 1 < d.t.length ? d.t[a + 1] : S.wave.end, S.wave.end);
+        const x1 = X(t1), x2 = Math.min(X(t2), endX), n = analogNumber(d.v[a], r.v.width, r.radix);
+        if (n == null) {
+          ctx.stroke(); ctx.beginPath(); prevY = null;
+          ctx.fillStyle = C.x; ctx.globalAlpha = .12; ctx.fillRect(x1, hi, Math.max(x2 - x1, 1), lo - hi); ctx.globalAlpha = 1;
+          continue;
+        }
+        const y = Y(n);
+        if (prevY == null) ctx.moveTo(x1, y); else ctx.lineTo(x1, y);
+        ctx.lineTo(x2, y); prevY = y;
+      }
+      ctx.stroke();
+      // The scale, over the line, on the row's background.
+      ctx.font = `500 10px ${mono}`; ctx.textAlign = 'left';
+      for (const [n, y] of [[vmax, hi + 6], [vmin, lo - 6]]) {
+        const txt = String(+n.toPrecision(6)), w = ctx.measureText(txt).width;
+        ctx.fillStyle = isSel(i) ? C.sel : C.bg; ctx.globalAlpha = .85; ctx.fillRect(2, y - 7, w + 6, 14); ctx.globalAlpha = 1;
+        ctx.fillStyle = C.muted; ctx.fillText(txt, 5, y);
+      }
+      ctx.font = `500 11.5px ${mono}`; ctx.textAlign = 'center';
+      return;
+    }
     let k = Math.max(idx(d.t, S.start), 0);
     let denseA = null, denseB = null, prevLevel = null;
     const flushDense = () => {
@@ -966,7 +1158,13 @@ function snapAt(x, y, alt) {
   return best ? { t: best.t, snapped: true } : { t, snapped: false };
 }
 waves.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; drag = { x: e.clientX, s: S.start, e: S.end, moved: false }; waves.setPointerCapture(e.pointerId); });
+// A pan always ends, even when something else took the button's release
+// (a menu, a window switch).
+const endPan = () => { drag = null; waves.style.cursor = ''; };
+waves.addEventListener('pointercancel', endPan);
+waves.addEventListener('lostpointercapture', () => { if (drag && drag.moved) endPan(); });
 waves.addEventListener('pointermove', (e) => {
+  if (drag && e.buttons === 0) endPan();
   const rect = waves.getBoundingClientRect(), x = e.clientX - rect.left, y = e.clientY - rect.top;
   if (drag && (drag.moved || Math.abs(e.clientX - drag.x) > 3)) {
     drag.moved = true; hideTip();
@@ -1022,7 +1220,7 @@ function scaleTip(t) {
   if (counting()) return `<b>Clock cycles</b> of <code>${esc(clockName())}</code><div>Counted on its rising edges; cycle 0 is the first.</div><div>At the pointer: ${esc(at)}</div><div class="how">Time, in the toolbar: back to time. The clock picker: another clock.</div>`;
   return `<b>Time</b>, in ${esc(unitFor()[0])}<div>At the pointer: ${esc(at)}</div><div class="how">${S.clock
     ? `Cycles, in the toolbar: count the cycles of <code>${esc(clockName())}</code> instead.`
-    : 'This run has no clock to count. Right-click a 1-bit signal: Use as clock.'}</div>`;
+    : 'This run has no clock to count. Choose a signal in the clock picker: Other signals.'}</div>`;
 }
 ruler.addEventListener('pointermove', (e) => {
   const r = ruler.getBoundingClientRect(), x = e.clientX - r.left, W = r.width;
@@ -1046,14 +1244,23 @@ ruler.addEventListener('click', (e) => { const r = ruler.getBoundingClientRect()
 // Shift+click would also select text in the browser: rows only.
 $('#names').addEventListener('mousedown', (e) => { if (e.shiftKey) e.preventDefault(); });
 $('#names').addEventListener('mousemove', () => $('#names').classList.remove('after-drop'));
+// Shows the selection without rebuilding the list: a rebuild between the
+// two clicks of a double-click, or as a drag starts, replaces the row under
+// the pointer, and WebKit then drops the double-click (opening a signal's
+// declaration, R27) or the drag (the user's reports, 2026-11-22).
+function showSelection() {
+  document.querySelectorAll('#names .nrow').forEach((n) => n.classList.toggle('sel', isSel(+n.dataset.i)));
+  renderValues(); draw();
+}
 $('#names').addEventListener('click', (e) => {
+  const fold = e.target.closest('.fold.bits'); if (fold) { toggleBits(+fold.dataset.bits); return; }
   const rowEl = e.target.closest('.nrow'); if (!rowEl) return;
   const i = +rowEl.dataset.i;
   // Shift+click: the range from the selected row to this one (R46).
-  if (e.shiftKey && S.sel >= 0) { if (S.anchor == null) S.anchor = S.sel; S.sel = i; renderRows(); return; }
+  if (e.shiftKey && S.sel >= 0) { if (S.anchor == null) S.anchor = S.sel; S.sel = i; showSelection(); return; }
   S.anchor = null; S.sel = i;
   if (S.rows[i] && S.rows[i].kind === 'group') toggleGroup(i);
-  else renderRows();
+  else showSelection();
 });
 // Double-click a signal's name: its declaration, in hosts that can (R27).
 $('#names').addEventListener('dblclick', (e) => {
@@ -1062,22 +1269,28 @@ $('#names').addEventListener('dblclick', (e) => {
   if (r && r.v && S.decl[r.v.path]) openSource(S.decl[r.v.path].file, S.decl[r.v.path].line);
 });
 let dragRow = null;
-$('#names').addEventListener('dragstart', (e) => { const el = e.target.closest('.nrow'); if (!el) return; dragRow = +el.dataset.i; if (!isSel(dragRow)) { S.anchor = null; S.sel = dragRow; renderRows(); } e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', ''); } catch (_) {} });
+$('#names').addEventListener('dragstart', (e) => { const el = e.target.closest('.nrow'); if (!el || isBit(+el.dataset.i)) { e.preventDefault(); return; } dragRow = +el.dataset.i;
+  // Selects the row in place: redrawing the list would replace the row being
+  // dragged, and WebKit then cancels the drag (only a selected row could be
+  // dragged; the user's report, 2026-11-22).
+  if (!isSel(dragRow)) { S.anchor = null; S.sel = dragRow; showSelection(); }
+  e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', ''); } catch (_) {} });
 // Where a dragged row goes, from the pointer's height: the upper half of a
 // row drops above it, the lower half below it (below a collapsed group's
 // hidden rows), and the empty space under the last row at the end.
 function dropAt(y) {
-  const v = visible(), top = $('#names').getBoundingClientRect().top;
-  const k = Math.floor((y - top) / S.rowH);
+  const L = layout(), v = L.map((o) => o.i), top = $('#names').getBoundingClientRect().top;
+  const yy = y - top, found = L.findIndex((o) => yy >= o.y && yy < o.y + o.h);
+  const k = found >= 0 ? found : (yy < 0 ? -1 : L.length);
   if (k >= v.length) return { at: S.rows.length, el: v.length ? v[v.length - 1] : null, below: true };
-  const t = v[Math.max(0, k)], below = (y - top) - Math.max(0, k) * S.rowH >= S.rowH / 2;
+  const o = L[Math.max(0, k)], t = o.i, below = yy - o.y >= o.h / 2;
   return { at: below ? t + blockLen(t) : t, el: t, below };
 }
 function clearDrop() { document.querySelectorAll('.nrow.drop, .nrow.drop-below').forEach((n) => n.classList.remove('drop', 'drop-below')); }
 $('#rows').addEventListener('dragover', (e) => {
   if (dragRow == null) return; e.preventDefault(); clearDrop();
   // The line shows where the rows will land, after landing()'s rule.
-  const sp = selSpan(), from = dragRow, inSpan = sp && from >= sp.lo && from < sp.end;
+  const sp = editSpan(), from = dragRow, inSpan = sp && from >= sp.lo && from < sp.end;
   const lo = inSpan ? sp.lo : from, len = inSpan ? sp.end - sp.lo : blockLen(from);
   const at = landing(lo, len, dropAt(e.clientY).at), v = visible();
   const before = v.find((x) => x >= at), after = [...v].reverse().find((x) => x < at);
@@ -1170,7 +1383,12 @@ function viewData() {
   o.time_base = counting() ? 'cycles' : 'time'; if (S.clock) o.clock = S.clock;
   return o;
 }
-function saveToHost() { if (hosted) toHost({ type: 'logix-wave:view', view: viewData() }, 'logixWaveSaveView', viewData()); }
+// The view to the host, as the .view file's text (pretty-printed, for
+// people reading the project's files).
+function saveToHost() {
+  if (host()) host().writeDeclared('view', JSON.stringify(viewData(), null, 2) + '\n');
+  else if (inFrame) window.parent.postMessage({ type: 'logix-wave:view', view: viewData() }, '*');
+}
 let toastTimer = null;
 function toast(text) {
   const t = $('#toast'); t.textContent = text; t.hidden = false;
@@ -1201,7 +1419,9 @@ function load() {
     const rows = v.rows.map(deserRow).filter(Boolean);
     if (rows.length) S.rows = rows;
     if (v.row_height) S.rowH = v.row_height;
-    S.cursor = v.cursor ?? null; S.marker = v.marker ?? null;
+    // A cursor or marker past the run's end (a shorter run since) is dropped.
+    const inRun = (t) => (Number.isFinite(t) && t >= 0 && t <= w.end ? t : null);
+    S.cursor = inRun(v.cursor); S.marker = inRun(v.marker);
     if (v.view) { S.start = v.view.from; S.end = v.view.to; }
     if (v.clock) {
       setClock(v.clock);
@@ -1277,12 +1497,23 @@ function defaultRows() {
   return paths.map((p) => map.get(p)).filter(Boolean).map(sigRow);
 }
 function serRow(r) {
-  if (r.v) return { signal: r.v.path, show_as: r.radix, color: r.color };
+  if (r.v) return Object.assign({ signal: r.v.path, show_as: r.radix, color: r.color }, r.expanded ? { expanded: true } : {}, r.analog ? { analog: true } : {});
   return r.kind === 'group' ? (r.collapsed ? { group: r.text, collapsed: true } : { group: r.text }) : { blank: true };
 }
+// A saved row, or null for one this run can't show: a signal that's gone
+// (the testbench changed since), or anything the viewer never writes. A
+// format or color it doesn't know becomes the default.
 function deserRow(o) {
-  if (o.signal) { const v = varByPath().get(o.signal); return v && { kind: 'signal', v, radix: o.show_as || 'hex', color: o.color || 1 }; }
-  if (o.group != null) return { kind: 'group', text: String(o.group), collapsed: !!o.collapsed };
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return null;
+  if (typeof o.signal === 'string') {
+    const v = varByPath().get(o.signal); if (!v) return null;
+    const radix = RADIX.some(([k]) => k === o.show_as) ? o.show_as : sigRow(v, 0).radix;
+    const color = Number.isInteger(o.color) && o.color >= 1 && o.color <= 6 ? o.color : 1;
+    // Analog is for buses and reals (R59), bits for buses (R58).
+    const analog = !!o.analog && (v.width > 1 || v.type === 'real');
+    return { kind: 'signal', v, radix, color, expanded: !!o.expanded && v.width > 1, analog };
+  }
+  if (typeof o.group === 'string') return { kind: 'group', text: o.group, collapsed: !!o.collapsed };
   if (o.blank) return { kind: 'blank' };
   return null;
 }
@@ -1346,9 +1577,8 @@ $('#tree').addEventListener('click', (e) => {
   if (s) { const p = s.dataset.scope; S.openScopes.has(p) ? S.openScopes.delete(p) : S.openScopes.add(p); renderTree(); }
 });
 $('#search').addEventListener('input', renderTree);
-$('#browserToggle').onclick = () => $('#app').classList.toggle('show-browser');
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closePop(); $('#overlay').hidden = true; $('#app').classList.remove('show-browser'); return; }
+  if (e.key === 'Escape') { closePop(); $('#overlay').hidden = true; if ($('#app').classList.contains('show-browser')) { $('#app').classList.remove('show-browser'); $('#sideBtn').classList.remove('on'); } return; }
   if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.target.closest('input, textarea')) {
     const k = e.key.toLowerCase();
     if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
@@ -1369,8 +1599,8 @@ document.addEventListener('keydown', (e) => {
   else if ((k === 'ArrowDown' || k === 'ArrowUp') && S.rows.length && e.shiftKey && S.sel >= 0) { const v = visible(), at = v.indexOf(S.sel); if (S.anchor == null) S.anchor = S.sel; S.sel = v[Math.max(0, Math.min(v.length - 1, at + (k === 'ArrowDown' ? 1 : -1)))]; renderRows(); }
   else if ((k === 'ArrowDown' || k === 'ArrowUp') && S.rows.length) { const v = visible(), at = v.indexOf(S.sel); S.anchor = null; S.sel = v[Math.max(0, Math.min(v.length - 1, at < 0 ? 0 : at + (k === 'ArrowDown' ? 1 : -1)))]; renderRows(); }
   else if (k === 'm' || k === 'M') { S.marker = S.cursor; draw(); }
-  else if (k === 's' || k === 'S') setBrowser($('#app').classList.contains('no-browser'));
-  else if ((k === 'Delete' || k === 'Backspace') && S.sel >= 0) { const sp = selSpan(); S.rows.splice(sp.lo, sp.end - sp.lo); S.anchor = null; S.sel = -1; renderRows(); }
+  else if (k === 's' || k === 'S') toggleBrowser();
+  else if ((k === 'Delete' || k === 'Backspace') && S.sel >= 0) { if (!editSpan()) return; removeSelection(); }
   else return;
   e.preventDefault();
 });
@@ -1406,7 +1636,7 @@ class SvgCtx {
 function viewSvg() {
   const css = getComputedStyle(document.documentElement), tok = (n) => css.getPropertyValue(n).trim();
   const nameW = $('#names').offsetWidth, valW = $('#vals').offsetWidth, W = $('#wavecol').clientWidth;
-  const shownRows = visible(), left = nameW + valW, H = 30 + shownRows.length * S.rowH, mono = tok('--mono') || 'monospace';
+  const shownRows = layout(), left = nameW + valW, H = 30 + shownRows.reduce((h, o) => h + o.h, 0), mono = tok('--mono') || 'monospace';
   const recs = [];
   EXPORT = { ctx: (c) => { const r = new SvgCtx(left, c === ruler ? 0 : 30); recs.push(r); return r; } };
   // No hover line or selected row in the image: only what the view shows.
@@ -1415,9 +1645,9 @@ function viewSvg() {
   const out = [`<rect width="${left + W}" height="${H}" fill="${tok('--panel')}"/>`,
     `<text x="10" y="15" fill="${tok('--muted')}" dominant-baseline="central" style="font:600 11px ${esc(mono)}">SIGNAL</text>`];
   if (valW > 20) out.push(`<text x="${left - 12}" y="15" fill="${tok('--muted')}" text-anchor="end" dominant-baseline="central" style="font:600 11px ${esc(mono)}">VALUE</text>`);
-  shownRows.forEach((i, k) => {
-    const r = S.rows[i], y = 30 + k * S.rowH + S.rowH / 2, color = r.v ? tok('--s' + r.color) : tok('--group-fg');
-    if (r.kind === 'group') out.push(`<rect x="0" y="${30 + k * S.rowH}" width="${nameW}" height="${S.rowH}" fill="${tok('--group-bg')}"/>`);
+  shownRows.forEach(({ i, y: top, h }) => {
+    const r = S.rows[i], y = 30 + top + h / 2, color = r.v ? tok('--s' + r.color) : tok('--group-fg');
+    if (r.kind === 'group') out.push(`<rect x="0" y="${30 + top}" width="${nameW}" height="${h}" fill="${tok('--group-bg')}"/>`);
     const label = r.v ? r.v.path.split('.').slice(1).join('.') + (r.v.range && !r.v.name.includes('[') ? r.v.range : '') : r.kind === 'group' ? r.text : '';
     out.push(`<text x="10" y="${y}" fill="${r.v ? tok('--fg') : color}" dominant-baseline="central" style="font:${r.v ? '' : '600 '}12px ${esc(mono)}">${esc(label)}</text>`);
     if (r.v && valW > 20 && S.cursor != null) out.push(`<text x="${left - 12}" y="${y}" fill="${color}" text-anchor="end" dominant-baseline="central" style="font:500 12px ${esc(mono)}">${esc(fmt(valueAt(r.v, S.cursor), r.v.width, r.radix))}</text>`);
@@ -1427,7 +1657,8 @@ function viewSvg() {
   return { svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${left + W}" height="${H}" viewBox="0 0 ${left + W} ${H}">${out.join('')}</svg>`, w: left + W, h: H };
 }
 function saveFile(name, mime, data) {
-  if (hosted) { toHost({ type: 'logix-wave:save-file', name, mime, data }, 'logixWaveSaveFile', name, mime, data); return; }
+  if (host()) { host().saveAs(name, mime, data); return; }
+  if (inFrame) { window.parent.postMessage({ type: 'logix-wave:save-file', name, mime, data }, '*'); return; }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type: mime }));
   a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -1592,8 +1823,11 @@ function openMenu(x, y, items, title) {
     if (!it) continue;
     if (it === '-') { el.insertAdjacentHTML('beforeend', '<div class="sep"></div>'); continue; }
     if (it.html) { const d = document.createElement('div'); d.className = 'sub'; d.innerHTML = it.html; d.addEventListener('click', (e) => { if (it.click(e) !== false) closeMenu(); }); el.appendChild(d); continue; }
-    const b = document.createElement('button'); b.className = 'it' + (it.danger ? ' danger' : ''); b.setAttribute('role', 'menuitem');
-    b.innerHTML = `<span>${esc(it.label)}</span>${it.key ? `<span class="k">${esc(it.key)}</span>` : ''}`;
+    // An item with `checked` is a checkbox: on or off, its label the same either way.
+    const box = it.checked != null;
+    const b = document.createElement('button'); b.className = 'it' + (it.danger ? ' danger' : '') + (box ? ' chk' : ''); b.setAttribute('role', box ? 'menuitemcheckbox' : 'menuitem');
+    if (box) b.setAttribute('aria-checked', String(!!it.checked));
+    b.innerHTML = `${box ? '<span class="box"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M2 5.2 4.1 7.3 8 2.8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' : ''}<span>${esc(it.label)}</span>${it.key ? `<span class="k">${esc(it.key)}</span>` : ''}`;
     b.disabled = !!it.disabled;
     b.addEventListener('click', () => { closeMenu(); it.act(); });
     el.appendChild(b);
@@ -1628,11 +1862,22 @@ function selSpan() {
   const lo = Math.min(a, S.sel), hi = Math.max(a, S.sel);
   return { lo, end: hi + blockLen(hi) };
 }
-function isSel(i) { const sp = selSpan(); return !!sp && i >= sp.lo && i < sp.end; }
+// The selected rows as moves and removals take them: a bit's bus with all
+// its bits; null when only bits of one bus are selected (they can't be
+// moved or removed alone).
+function editSpan() {
+  const sp = selSpan(); if (!sp) return null;
+  const lo = busOf(sp.lo), last = busOf(sp.end - 1);
+  if (lo === last && isBit(sp.lo)) return null;
+  return { lo, end: last + blockLen(last) };
+}
+function isSel(i) { const sp = editSpan() || selSpan(); return !!sp && i >= sp.lo && i < sp.end; }
 // A row and what moves with it: a collapsed group takes its hidden rows
 // along, and stays collapsed (the user's request, 2026-11-21).
 function blockLen(i) {
-  const r = S.rows[i]; if (!r || r.kind !== 'group' || !r.collapsed) return 1;
+  const r = S.rows[i];
+  if (r && r.v && r.expanded) { let n = 1; while (isBit(i + n)) n++; return n; }
+  if (!r || r.kind !== 'group' || !r.collapsed) return 1;
   let j = i + 1; while (j < S.rows.length && S.rows[j].kind !== 'group') j++;
   return j - i;
 }
@@ -1641,6 +1886,8 @@ function blockLen(i) {
 // moved group (a group runs to the next group's row). Above the first group
 // any place goes. Other moves land where asked.
 function landing(lo, len, at) {
+  // Never between a bus's bits: above the bus (the user's rule, 2026-11-22).
+  if (at != null && isBit(at)) at = busOf(at);
   if (at == null || at >= S.rows.length || S.rows[at].kind === 'group') return at;
   if (!S.rows.slice(lo, lo + len).some((r) => r.kind === 'group' && r.collapsed)) return at;
   let g = at - 1; while (g >= 0 && S.rows[g].kind !== 'group') g--;
@@ -1662,19 +1909,25 @@ function moveSpan(lo, len, at) {
 // Moves row `from` with its block (a collapsed group's hidden rows); a row
 // of the selected range moves the whole range.
 function moveBlockTo(from, at) {
-  const sp = selSpan();
+  const sp = editSpan();
   if (sp && from >= sp.lo && from < sp.end) { moveSpan(sp.lo, sp.end - sp.lo, at); return; }
   S.anchor = null; S.sel = from; moveSpan(from, blockLen(from), at);
 }
 // Alt+Up and Alt+Down: the selected rows past the next shown row, a
 // collapsed group as one.
 function moveRow(i, d) {
-  const sp = selSpan(); if (!sp) return;
+  const sp = editSpan(); if (!sp) return;
   const v = visible();
-  if (d < 0) { const k = v.indexOf(sp.lo); if (k > 0) moveSpan(sp.lo, sp.end - sp.lo, v[k - 1]); return; }
+  if (d < 0) { const k = v.indexOf(sp.lo); if (k > 0) moveSpan(sp.lo, sp.end - sp.lo, busOf(v[k - 1])); return; }
   const n = v.find((x) => x >= sp.end); if (n != null) moveSpan(sp.lo, sp.end - sp.lo, n + blockLen(n));
 }
-function removeRow(i) { S.rows.splice(i, 1); S.anchor = null; S.sel = -1; renderRows(); }
+// Removes the selected rows, a bus with its bits (Delete, and the menu of
+// several rows).
+function removeSelection() {
+  const sp = editSpan(); if (!sp) return;
+  S.rows.splice(sp.lo, sp.end - sp.lo); S.anchor = null; S.sel = -1; renderRows();
+}
+function removeRow(i) { S.rows.splice(i, S.rows[i] && S.rows[i].v ? blockLen(i) : 1); S.anchor = null; S.sel = -1; renderRows(); }
 function timeItems(t) {
   return [
     { label: 'Put the cursor here', key: 'Click', act: () => setCursor(t) },
@@ -1684,13 +1937,18 @@ function timeItems(t) {
 function rowMenu(i, t, x, y) {
   const r = S.rows[i]; if (!r) return;
   if (!isSel(i)) { S.anchor = null; S.sel = i; } renderRows();
+  // A right-click in a selection of several rows acts on all of them (the
+  // user's rule, 2026-11-22): its menu has only what applies to them all.
+  const sp = editSpan();
+  const chosen = sp ? S.rows.slice(sp.lo, sp.end).filter((x) => !(x.v && x.v.bitOf)) : [];
+  if (chosen.length > 1) { selectionMenu(chosen, t, x, y); return; }
   // Below a collapsed group means after the rows it hides, so the new row shows.
-  const v = visible(), below = v[v.indexOf(i) + 1] ?? S.rows.length;
+  const v = visible(), below = v[v.indexOf(i) + 1] ?? S.rows.length, after = Math.max(below, i + blockLen(i));
   const common = [
     { label: 'Add a group above', act: () => addRowAt('group', i) },
-    { label: 'Add a group below', act: () => addRowAt('group', below) },
+    { label: 'Add a group below', act: () => addRowAt('group', after) },
     { label: 'Add a blank row above', act: () => addRowAt('blank', i) },
-    { label: 'Add a blank row below', act: () => addRowAt('blank', below) },
+    { label: 'Add a blank row below', act: () => addRowAt('blank', after) },
   ];
   if (!r.v) {
     openMenu(x, y, [
@@ -1704,19 +1962,55 @@ function rowMenu(i, t, x, y) {
   }
   const at = t != null ? t : S.cursor;
   const val = at != null ? fmt(valueAt(r.v, at), r.v.width, r.radix) : null;
+  const copyItems = [
+    { label: 'Copy the name', act: () => copyText(r.v.path) },
+    { label: val != null ? `Copy the value (${val.length > 14 ? val.slice(0, 13) + '…' : val})` : 'Copy the value', disabled: val == null, act: () => copyText(val) },
+  ];
+  if (r.v.bitOf) {
+    // A bit is part of its bus's row: it follows the bus, so its menu only
+    // reads it (the user's rule, 2026-11-22).
+    const bus = busOf(i);
+    openMenu(x, y, [
+      ...(t != null ? [...timeItems(t), '-'] : []),
+      ...(looksLikeClock(r.v) ? [clockItem(r.v.path), '-'] : []),
+      ...copyItems, '-',
+      { label: `Show each bit (${S.rows[bus].v.width})`, checked: true, act: () => toggleBits(bus) },
+    ], r.v.path);
+    return;
+  }
   openMenu(x, y, [
     ...(t != null ? [...timeItems(t), '-'] : []),
     r.v.width > 1 ? { html: `<div class="lbl">Show values as</div><div class="seg">${RADIX.map(([k, n]) => `<button data-radix="${k}" class="${r.radix === k ? 'on' : ''}">${n}</button>`).join('')}</div>`,
       click: (e) => { const b = e.target.closest('[data-radix]'); if (!b) return false; r.radix = b.dataset.radix; renderRows(); } } : null,
+    // Checkboxes, each turning the other off: a row shows its bits or a line.
+    r.v.width > 1 ? { label: `Show each bit (${r.v.width})`, checked: !!r.expanded, act: () => toggleBits(i) } : null,
+    r.v.width > 1 || r.v.type === 'real' ? { label: 'Show as analog (a line)', checked: !!r.analog, act: () => { r.analog = !r.analog; renderRows(); commit(); } } : null,
     { html: `<div class="lbl">Color</div><div class="swatches">${[1, 2, 3, 4, 5, 6].map((c) => `<button data-color="${c}" style="--c:var(--s${c})" class="${r.color === c ? 'on' : ''}" aria-label="Color ${c}"></button>`).join('')}</div>`,
       click: (e) => { const b = e.target.closest('[data-color]'); if (!b) return false; r.color = +b.dataset.color; renderRows(); } },
     '-', ...common, '-',
-    ...(isClockable(r.v) ? [clockItem(r.v.path), '-'] : []),
-    { label: 'Copy the name', act: () => copyText(r.v.path) },
-    { label: val != null ? `Copy the value (${val.length > 14 ? val.slice(0, 13) + '…' : val})` : 'Copy the value', disabled: val == null, act: () => copyText(val) },
+    ...(looksLikeClock(r.v) ? [clockItem(r.v.path), '-'] : []),
+    ...copyItems,
     '-',
     { label: 'Hide this signal', key: 'Delete', danger: true, act: () => removeRow(i) },
   ], r.v.path + (r.v.range ? ' ' + r.v.range : ''));
+}
+// The menu of several selected rows: formats and colors for all their
+// signals, and removing them all; what reads or changes one signal (its
+// cycles, its name and value, its bits, analog) is on a single row's menu.
+function selectionMenu(chosen, t, x, y) {
+  const sigs = chosen.filter((r) => r.v), buses = sigs.filter((r) => r.v.width > 1);
+  const radix = buses.length && buses.every((r) => r.radix === buses[0].radix) ? buses[0].radix : null;
+  const color = sigs.length && sigs.every((r) => r.color === sigs[0].color) ? sigs[0].color : null;
+  const all = sigs.length === chosen.length;
+  openMenu(x, y, [
+    ...(t != null ? [...timeItems(t), '-'] : []),
+    buses.length ? { html: `<div class="lbl">Show values as</div><div class="seg">${RADIX.map(([k, n]) => `<button data-radix="${k}" class="${radix === k ? 'on' : ''}">${n}</button>`).join('')}</div>`,
+      click: (e) => { const b = e.target.closest('[data-radix]'); if (!b) return false; for (const r of buses) r.radix = b.dataset.radix; renderRows(); } } : null,
+    sigs.length ? { html: `<div class="lbl">Color</div><div class="swatches">${[1, 2, 3, 4, 5, 6].map((c) => `<button data-color="${c}" style="--c:var(--s${c})" class="${color === c ? 'on' : ''}" aria-label="Color ${c}"></button>`).join('')}</div>`,
+      click: (e) => { const b = e.target.closest('[data-color]'); if (!b) return false; for (const r of sigs) r.color = +b.dataset.color; renderRows(); } } : null,
+    '-',
+    { label: all ? 'Hide these signals' : 'Remove these rows', key: 'Delete', danger: true, act: removeSelection },
+  ], all ? `${sigs.length} signals` : `${chosen.length} rows`);
 }
 function timeMenu(t, x, y) {
   openMenu(x, y, [
@@ -1736,8 +2030,8 @@ function timeMenu(t, x, y) {
 // Use a 1-bit signal as the clock (and count its cycles): in a row's menu and the signal list's.
 function clockItem(path) {
   return counting() && S.clock === path
-    ? { label: 'Used as clock', disabled: true, act: () => {} }
-    : { label: 'Use as clock', act: () => pickClock(path) };
+    ? { label: `Counting cycles of ${shortName(path)}`, disabled: true, act: () => {} }
+    : { label: `Count cycles of ${shortName(path)}`, act: () => pickClock(path) };
 }
 function treeMenu(e) {
   const v = e.target.closest('.var'), sc = e.target.closest('.scope-h');
@@ -1747,7 +2041,7 @@ function treeMenu(e) {
     // The clock can be chosen here too, even while its row is hidden.
     openMenu(e.clientX, e.clientY, [
       { label: shown ? 'Hide this signal' : 'Show this signal', act: () => toggleVar(v.dataset.path) },
-      ...(isClockable(x) ? ['-', clockItem(x.path)] : []),
+      ...(looksLikeClock(x) ? ['-', clockItem(x.path)] : []),
     ], v.dataset.path);
   } else if (sc) {
     const p = sc.dataset.scope, vars = S.wave.vars.filter((x) => x.path.split('.').slice(0, -1).join('.') === p && x.type !== 'parameter');
@@ -1847,7 +2141,25 @@ function setHints(on) {
   placeHelp();
 }
 setHints(store.get('wv.hints') !== '0');
-$('#sideBtn').onclick = () => setBrowser($('#app').classList.contains('no-browser'));
+// The signal list's button: in a wide window it shows or hides the list
+// beside the waves; in a narrow one, where the list is hidden for room, it
+// opens the list over the waves (the same button in both, the user's
+// choice, 2026-11-22, over a separate Signals button).
+const narrow = window.matchMedia('(max-width: 760px)');
+function toggleBrowser() {
+  if (narrow.matches) {
+    const open = $('#app').classList.toggle('show-browser');
+    $('#sideBtn').classList.toggle('on', open);
+  } else {
+    setBrowser($('#app').classList.contains('no-browser'));
+  }
+}
+narrow.addEventListener('change', () => {
+  $('#app').classList.remove('show-browser');
+  $('#sideBtn').classList.toggle('on', !narrow.matches && !$('#app').classList.contains('no-browser'));
+});
+if (narrow.matches) $('#sideBtn').classList.remove('on');
+$('#sideBtn').onclick = toggleBrowser;
 
 function placeGrips() {
   const head = document.querySelector('.cols.head'), status = $('#status'), viewer = $('#viewer');

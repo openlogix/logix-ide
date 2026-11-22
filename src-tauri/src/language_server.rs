@@ -1,19 +1,16 @@
-//! Verible's Verilog language server (from Logix Engine's `verible`
-//! package; see `engine::program_path`), for live
+//! Verible's Verilog language server (from Logix Engine's `logix-core`
+//! package, run as `get_engine_info`'s `language_server` says: its
+//! command, arguments and environment; `engine::language_server`), for live
 //! errors and other editor help while typing. Logix IDE relays the language
 //! server protocol (LSP) between the server and the editor's LSP client:
 //! this module only frames messages; the UI speaks the protocol.
 
-use std::path::Path;
+use crate::engine::ServerCommand;
 use std::process::Stdio;
 
 use anyhow::{bail, Context, Result};
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
-
-/// Server options: only syntax errors (Verible's style rules would flood
-/// beginners; Verify's lint catches design problems), plus hover info.
-const SERVER_ARGS: &[&str] = &["--ruleset=none", "--lsp_enable_hover=true"];
 
 /// A running language server. Dropping it stops the server.
 pub struct LanguageServer {
@@ -22,20 +19,23 @@ pub struct LanguageServer {
 }
 
 impl LanguageServer {
-    /// Starts the server at `exe`. Each message from the server (JSON,
+    /// Starts the server as the engine gives it (`server`: the program,
+    /// its arguments and environment). Each message from the server (JSON,
     /// without headers) goes to `on_message`; `on_exit` is called once
     /// when the server stops.
-    pub fn start<M, E>(exe: &Path, on_message: M, on_exit: E) -> Result<Self>
+    pub fn start<M, E>(server: &ServerCommand, on_message: M, on_exit: E) -> Result<Self>
     where
         M: Fn(String) + Send + 'static,
         E: FnOnce() + Send + 'static,
     {
         // Its messages, in this session's log folder (logging.rs).
+        let exe = &server.command;
         let stderr =
             crate::logging::open_child("verible-verilog-ls", &format!("{} started", exe.display()))
                 .map_or_else(Stdio::null, Stdio::from);
         let mut cmd = Command::new(exe);
-        cmd.args(SERVER_ARGS)
+        cmd.args(&server.args)
+            .envs(&server.env)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(stderr)
@@ -134,7 +134,12 @@ mod tests {
     #[ignore]
     async fn real_language_server() {
         use std::sync::{Arc, Mutex};
-        let exe = std::path::PathBuf::from(std::env::var("LOGIX_IDE_TEST_VERIBLE_LS").unwrap());
+        // As Logix Engine's get_engine_info gives it (language_server).
+        let exe = ServerCommand {
+            command: std::env::var("LOGIX_IDE_TEST_VERIBLE_LS").unwrap().into(),
+            args: vec!["--ruleset=none".into(), "--lsp_enable_hover=true".into()],
+            env: Default::default(),
+        };
         let received = Arc::new(Mutex::new(Vec::<String>::new()));
         let sink = received.clone();
         let mut server =

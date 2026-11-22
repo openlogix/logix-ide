@@ -147,9 +147,9 @@ test("starts up with the tools ready and the boards listed", async ({ page }) =>
   // The start screen's output: Logix IDE's own first lines (opening a project
   // clears them).
   await page.goto("/");
-  await expect(output(page)).toContainText("117 examples available.");
+  await expect(output(page)).toContainText("127 examples available.");
   await start(page);
-  await expect(output(page)).not.toContainText("117 examples available.");
+  await expect(output(page)).not.toContainText("127 examples available.");
   // Logix Engine's 81 boards, grouped by FPGA family. Only the current
   // board's group starts expanded; searching shows matches in all groups.
   await boardButton(page).click();

@@ -5,6 +5,7 @@ mod diagram_window;
 mod download;
 mod engine;
 mod examples;
+mod formats;
 mod language_server;
 pub mod logging;
 mod menu;
@@ -188,6 +189,7 @@ pub fn run() {
             commands::set_preferences,
             commands::choose_folder_dialog,
             commands::format_file,
+            commands::file_formats,
             commands::get_boards,
             commands::get_fpga_families,
             commands::project_boards,

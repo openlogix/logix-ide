@@ -29,6 +29,10 @@ pub struct Board {
     /// engine's catalog, so the UI can tell which pin file is used. `None`
     /// when the engine doesn't say.
     pub pin_extension: Option<String>,
+    /// What starts a comment line in those pin files (`#`, or `//` for
+    /// Gowin's `.cst`), from the engine's `constraint_comment`, for
+    /// Comment/Uncomment. `None` when the engine doesn't say.
+    pub pin_comment: Option<String>,
     /// The board's choices for programming it, such as the connection or
     /// the memory, in the order to show them. Empty for most boards.
     pub dimensions: Vec<Dimension>,
@@ -67,6 +71,9 @@ pub struct Fpga {
     pub part_number: String,
     /// The device size, such as "8k".
     pub size: String,
+    /// The FPGA for people, by the engine: its family, part number and
+    /// size, such as "Lattice iCE40 ICE40HX4K-TQ144 (8k)".
+    pub label: String,
 }
 
 /// A board's variant: dimension values by dimension id, e.g.
@@ -143,6 +150,8 @@ pub struct FpgaFamily {
     /// The extension of its pin files, such as "cst". `None` when the
     /// engine doesn't say.
     pub pin_extension: Option<String>,
+    /// What starts a comment line in its pin files, such as "//".
+    pub pin_comment: Option<String>,
     /// Its FPGAs, by part number.
     pub fpgas: Vec<Fpga>,
 }
@@ -353,6 +362,7 @@ pub(super) fn parse_families(catalog: &Value) -> Vec<FpgaFamily> {
                 id: id.clone(),
                 part_number: f["part_number"].as_str().unwrap_or(id).to_string(),
                 size: f["size"].as_str().unwrap_or("").to_string(),
+                label: f["label"].as_str().unwrap_or(id).to_string(),
             });
         }
     }
@@ -363,12 +373,14 @@ pub(super) fn parse_families(catalog: &Value) -> Vec<FpgaFamily> {
             let i = &info[id.as_str()];
             let label = i["label"].as_str().unwrap_or(&id).to_string();
             let pin_extension = i["constraint_extension"].as_str().map(String::from);
+            let pin_comment = i["constraint_comment"].as_str().map(String::from);
             (
                 i["order"].as_u64().unwrap_or(u64::MAX),
                 FpgaFamily {
                     id,
                     label,
                     pin_extension,
+                    pin_comment,
                     fpgas,
                 },
             )
@@ -396,6 +408,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 id: fpga_id.to_string(),
                 part_number: part.to_string(),
                 size: fpga_def["size"].as_str().unwrap_or("").to_string(),
+                label: fpga_def["label"].as_str().unwrap_or(part).to_string(),
             });
             let dimensions = serde_json::from_value(b["dimensions"].clone()).unwrap_or_default();
             let configurations = b["variants"]
@@ -418,6 +431,7 @@ pub(super) fn parse_boards(catalog: &Value) -> Result<Vec<Board>> {
                 family_label: info["label"].as_str().unwrap_or(&family).to_string(),
                 family_order: info["order"].as_u64().map_or(u32::MAX, |o| o as u32),
                 pin_extension: info["constraint_extension"].as_str().map(String::from),
+                pin_comment: info["constraint_comment"].as_str().map(String::from),
                 family,
                 dimensions,
                 configurations,
@@ -556,7 +570,8 @@ mod tests {
             },
             "fpgas": {
                 "ice40hx4k-tq144-8k": {
-                    "family": "ice40", "part_number": "ICE40HX4K-TQ144", "size": "8k"},
+                    "family": "ice40", "part_number": "ICE40HX4K-TQ144", "size": "8k",
+                    "label": "Lattice iCE40 ICE40HX4K-TQ144 (8k)"},
                 "lfe5u-25f": {
                     "family": "ecp5", "part_number": "LFE5U-25F-6BG256C", "size": "25k"},
             },
@@ -569,6 +584,7 @@ mod tests {
                 id: "ice40hx4k-tq144-8k".into(),
                 part_number: "ICE40HX4K-TQ144".into(),
                 size: "8k".into(),
+                label: "Lattice iCE40 ICE40HX4K-TQ144 (8k)".into(),
             })
         );
         // A custom board's FPGA: a catalog FPGA too.
@@ -605,7 +621,7 @@ mod tests {
             },
             "families": {
                 "ice40": {"label": "Lattice iCE40", "order": 0},
-                "gw2a": {"label": "Gowin GW2A", "order": 3, "constraint_extension": "cst"},
+                "gw2a": {"label": "Gowin GW2A", "order": 3, "constraint_extension": "cst", "constraint_comment": "//"},
             },
         });
         let families = parse_families(&catalog);
@@ -627,6 +643,7 @@ mod tests {
         assert_eq!(families[1].fpgas[0].id, "a");
         assert_eq!(families[1].fpgas[0].size, "18k");
         assert_eq!(families[1].pin_extension.as_deref(), Some("cst"));
+        assert_eq!(families[1].pin_comment.as_deref(), Some("//"));
         assert_eq!(families[2].pin_extension, None);
     }
 
@@ -642,7 +659,7 @@ mod tests {
                 "other": {"family": "newfamily"},
             },
             "families": {
-                "artix7": {"label": "Xilinx Artix-7", "short_label": "Artix-7", "constraint_extension": "xdc", "order": 5, "toolchain": "openxc7"},
+                "artix7": {"label": "Xilinx Artix-7", "short_label": "Artix-7", "constraint_extension": "xdc", "constraint_comment": "#", "order": 5, "toolchain": "openxc7"},
             },
         });
         let boards = parse_boards(&catalog).unwrap();
@@ -655,6 +672,7 @@ mod tests {
             ),
             ("Xilinx Artix-7", 5, Some("xdc"))
         );
+        assert_eq!(arty.pin_comment.as_deref(), Some("#"));
         // A family the engine doesn't describe: its ID, last, no extension.
         let odd = boards.iter().find(|b| b.id == "odd").unwrap();
         assert_eq!(

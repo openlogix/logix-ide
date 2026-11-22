@@ -67,6 +67,11 @@ pub struct TaskOutcome {
     /// UI: the backend shows it in the waveform window.
     #[serde(skip)]
     pub wave_page: Option<String>,
+    /// The files the engine read and checked (its `checked_files`, or a
+    /// design error's `data.checked_files`), so the UI replaces exactly
+    /// those files' earlier problems with these (a pin file's problems stay
+    /// after Run Tests, which never reads it). Empty when no tool ran.
+    pub checked_files: Vec<String>,
 }
 
 /// A device that needs a driver before Upload can program it.
@@ -95,13 +100,17 @@ pub enum TaskEvent {
     /// A console line (may contain ANSI colors). `tool` is the program that
     /// printed it (None for the IDE's and engine's own lines); `redraw`
     /// means the tool prints over it: the console replaces it with that
-    /// tool's next line, as a terminal does.
+    /// tool's next line, as a terminal does; `location` is the place in a
+    /// project file the line names, by the engine (`logix/output`'s
+    /// `location`), so the console makes it a link.
     Line {
         line: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         tool: Option<String>,
         #[serde(skip_serializing_if = "std::ops::Not::not")]
         redraw: bool,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        location: Option<Location>,
     },
     /// The current phase, such as "Placing and routing", and its
     /// percentage when known (status bar).
@@ -173,22 +182,16 @@ pub struct Clock {
     pub fmax_mhz: f64,
 }
 
-/// Drops repeated reports of the same problem (e.g. lint and the build
-/// both flagging one line), keeping the first.
-pub fn dedup(diags: Vec<Diagnostic>) -> Vec<Diagnostic> {
-    let mut kept: Vec<Diagnostic> = Vec::new();
-    for d in diags {
-        let repeat = kept.iter().any(|k| {
-            k.severity == d.severity
-                && k.file == d.file
-                && k.line == d.line
-                && (d.file.is_some() || k.message == d.message)
-        });
-        if !repeat {
-            kept.push(d);
-        }
-    }
-    kept
+/// A place in one of the request's files that a tool's output line names,
+/// as Logix Engine gives it (`logix/output`'s `location`): the file named
+/// as diagnostics name files, the line and, when the line gives one, the
+/// column (both from 1).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Location {
+    pub file: String,
+    pub line: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub column: Option<u32>,
 }
 
 impl TaskEvent {
@@ -198,6 +201,7 @@ impl TaskEvent {
             line,
             tool: None,
             redraw: false,
+            location: None,
         }
     }
 }
