@@ -1,0 +1,36 @@
+// What Logix IDE on config 001 uses on the dev channel (Remote updates, in the
+// website repo's CLAUDE.md): every Logix IDE release that isn't promoted, and
+// local builds, while this file exists; without it they use
+// prod-channel.jsonc. Every such Logix IDE reads this file from main, so a
+// change here reaches them without a Logix IDE release, and never reaches
+// prod. Change it only by pull request, saying why in a comment; the tests run
+// with what it names. It may name pre-releases: a release a config names is
+// kept. Delete it once a promotion has caught prod-channel.jsonc up.
+{
+  "$schema": "https://www.openlogix.org/schemas/logix-remote-config-v1.json",
+  "dependencies": {
+    // Logix Engine, which builds, tests and programs the board, and downloads
+    // its own FPGA tools and board catalog (its own remote config).
+    // 2026-11-22: the waveform viewer's bus bits and analog rows (R58, R59),
+    // bits that belong to their bus's row, Count cycles only for clock-like
+    // signals, menus that act on a whole selection (R60), dragging any row;
+    // the diagram page's new look; MCP instructions pointing agents to
+    // www.openlogix.org/llms.txt; list_devices' USB release.
+    "logix-engine": {
+      "repo": "openlogix/logix-engine",
+      "release": "2026-11-22",
+      "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
+    },
+
+    // Logix IDE's examples (File > Examples, and each board's Bare Minimum),
+    // packed by this repo's pre-release workflow (scripts/pack-examples.py).
+    // 2026-11-22: waveform views for every serial and serial-debug testbench;
+    // registers that start at 0 and no x in a simulation (the org's rule for
+    // generated HDL code), with uart.v's receiver waiting for an idle line.
+    "logix-ide-examples": {
+      "repo": "openlogix/logix-ide",
+      "release": "2026-11-22",
+      "file": "logix-ide-examples-${YYYYMMDD}.tgz"
+    }
+  }
+}
