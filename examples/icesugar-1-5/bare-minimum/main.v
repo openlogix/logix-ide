@@ -21,7 +21,7 @@ module main (
   // Your logic goes here.
 
   // The RGB LED driver. The board wires red to its RGB1 pad, green to
-  // RGB2 and blue to RGB0. A PWM input of 1 lights that color.
+  // RGB0 and blue to RGB2. A PWM input of 1 lights that color.
 `ifdef SYNTHESIZE
   SB_RGBA_DRV #(
     .CURRENT_MODE("0b1"),       // Half current mode.
@@ -31,12 +31,12 @@ module main (
   ) driver (
     .CURREN(1'b1),    // Current reference on.
     .RGBLEDEN(1'b1),  // Driver on.
-    .RGB0PWM(blue_on),
+    .RGB0PWM(green_on),
     .RGB1PWM(red_on),
-    .RGB2PWM(green_on),
-    .RGB0(rgb_led[2]),
+    .RGB2PWM(blue_on),
+    .RGB0(rgb_led[1]),
     .RGB1(rgb_led[0]),
-    .RGB2(rgb_led[1])
+    .RGB2(rgb_led[2])
   );
 `else
   // Simulation only: the driver pulls a color's pad low to light it.
