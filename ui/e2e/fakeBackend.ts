@@ -41,6 +41,11 @@ import sugarBlinkyPins from "../../examples/icesugar-1-5/blinky/pinout.pcf?raw";
 import sugarBareMain from "../../examples/icesugar-1-5/bare-minimum/main.v?raw";
 import sugarBarePins from "../../examples/icesugar-1-5/bare-minimum/pinout.pcf?raw";
 import sugarBareTb from "../../examples/icesugar-1-5/bare-minimum/main_tb.v?raw";
+import sugarSerialMain from "../../examples/icesugar-1-5/serial/main.v?raw";
+import sugarSerialUart from "../../examples/icesugar-1-5/serial/uart.v?raw";
+import sugarSerialTb from "../../examples/icesugar-1-5/serial/main_tb.v?raw";
+import sugarSerialUartTb from "../../examples/icesugar-1-5/serial/uart_tb.v?raw";
+import sugarSerialPins from "../../examples/icesugar-1-5/serial/pinout.pcf?raw";
 import packageJson from "../../package.json";
 
 const BOARDS: Real.Board[] = catalog.boards.map((b) => ({ ...b, custom: false }) as unknown as Real.Board);
@@ -225,6 +230,25 @@ function blinkyDoc(board: string): ProjectDoc {
           { name: "main_tb.v", text: BLINKY_TB },
           { name: "pinout.pcf", text: "set_io sys_clk 49\nset_io led 45\n" },
         ],
+    board,
+    variant: {},
+    serialBaud: null,
+  };
+}
+
+/** The iCESugar v1.5's real serial example (its views left out). */
+function serialDoc(board: string): ProjectDoc {
+  return {
+    dir: null,
+    templateDir: `/fake/examples/${board}/serial`,
+    name: "serial",
+    files: [
+      { name: "main.v", text: sugarSerialMain },
+      { name: "uart.v", text: sugarSerialUart },
+      { name: "main_tb.v", text: sugarSerialTb },
+      { name: "uart_tb.v", text: sugarSerialUartTb },
+      { name: "pinout.pcf", text: sugarSerialPins },
+    ],
     board,
     variant: {},
     serialBaud: null,
@@ -770,7 +794,9 @@ export const backend: typeof Real.backend = {
   }),
 
   openBareMinimum: async (board) => bareDoc(board),
-  openExample: async (board) => blinkyDoc(board),
+  // The iCESugar v1.5's serial example as it is; every other example is blinky.
+  openExample: async (board, name) =>
+    board === DEFAULT_BOARD && name === "serial" ? serialDoc(board) : blinkyDoc(board),
 
   runTask: async (
     task,

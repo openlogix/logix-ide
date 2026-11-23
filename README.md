@@ -13,7 +13,7 @@
 [![ide-build](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/build-pre-release.yaml?branch=main&label=ide-build)](https://github.com/openlogix/logix-ide/actions/workflows/build-pre-release.yaml)
 [![ide-docs](https://img.shields.io/github/actions/workflow/status/openlogix/logix-ide/publish-docs.yaml?branch=main&label=ide-docs)](https://github.com/openlogix/logix-ide/actions/workflows/publish-docs.yaml)
 
-**[Main page](https://www.openlogix.org/ide/)** · [Docs](https://www.openlogix.org/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases) · GitHub (here)
+**[Main page](https://www.openlogix.org/ide/)** · [Docs](https://www.openlogix.org/logix-ide/) · [Download](https://github.com/openlogix/logix-ide/releases/latest) · GitHub (here)
 
 **The Arduino experience, for FPGAs.**
 
@@ -97,8 +97,8 @@ earns your trust:
   published.
 - **Made by the Apio maintainer.** Logix IDE is made by the main maintainer of
   [Apio](https://github.com/FPGAwars/apio), the open source FPGA toolchain
-  whose tools and examples Logix IDE builds on, with one goal: making FPGAs
-  accessible and fun for everyone.
+  whose tools Logix IDE builds on, and some of whose examples it started
+  from, with one goal: making FPGAs accessible and fun for everyone.
 
 **Why the extra step on macOS and Windows, then?** Apple and Microsoft ask app
 makers to pay to "sign" their apps. Logix IDE isn't signed that way yet, so
