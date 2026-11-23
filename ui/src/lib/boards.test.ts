@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { boardChangeNote, boardGroups, boardsProblemLines, fpgaLabel, groupByFamily } from "./boards";
+import { boardChangeNote, boardGroups, boardsProblemLines, groupByFamily } from "./boards";
 import type { Board, BoardComparison } from "./backend";
 
 const boards: Board[] = [
-  { id: "alhambra-ii", description: "Alhambra II", family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", family: "artix7", familyLabel: "Xilinx Artix-7", familyOrder: 5, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "colorlight", description: "ColorLight 5A-75B", family: "ecp5", familyLabel: "Lattice ECP5", familyOrder: 1, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "icebreaker", description: "iCEBreaker", family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "mystery", description: "Mystery Board", family: "", familyLabel: "Other", familyOrder: 99, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
-  { id: "tang", description: "Tang Nano 9K", family: "gw1n", familyLabel: "Gowin GW1N", familyOrder: 2, pinExtension: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "alhambra-ii", description: "Alhambra II", family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0, pinExtension: null, pinComment: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "arty", description: "Arty A7 (Xilinx, Artix7)", family: "artix7", familyLabel: "Xilinx Artix-7", familyOrder: 5, pinExtension: null, pinComment: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "colorlight", description: "ColorLight 5A-75B", family: "ecp5", familyLabel: "Lattice ECP5", familyOrder: 1, pinExtension: null, pinComment: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "icebreaker", description: "iCEBreaker", family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0, pinExtension: null, pinComment: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "mystery", description: "Mystery Board", family: "", familyLabel: "Other", familyOrder: 99, pinExtension: null, pinComment: null, dimensions: [], configurations: [], custom: false, fpga: null },
+  { id: "tang", description: "Tang Nano 9K", family: "gw1n", familyLabel: "Gowin GW1N", familyOrder: 2, pinExtension: null, pinComment: null, dimensions: [], configurations: [], custom: false, fpga: null },
 ];
 
 const summary = (recent: string[], q: string, list: Board[] = boards) =>
@@ -71,10 +71,10 @@ describe("boardGroups", () => {
 });
 
 describe("FPGAs", () => {
-  const hx4k = { id: "ice40hx4k-tq144-8k", partNumber: "ICE40HX4K-TQ144", size: "8k" };
+  const hx4k = { id: "ice40hx4k-tq144-8k", partNumber: "ICE40HX4K-TQ144", size: "8k", label: "Lattice iCE40 ICE40HX4K-TQ144 (8k)" };
   const withFpga: Board[] = [
     { ...boards[0], fpga: hx4k },
-    { ...boards[3], fpga: { id: "ice40up5k-sg48", partNumber: "ICE40UP5K-SG48", size: "5k" } },
+    { ...boards[3], fpga: { id: "ice40up5k-sg48", partNumber: "ICE40UP5K-SG48", size: "5k", label: "Lattice iCE40 ICE40UP5K-SG48 (5k)" } },
     { ...boards[0], id: "kefir", description: "Kefir", fpga: hx4k },
     ...boards.slice(4),
   ];
@@ -82,11 +82,6 @@ describe("FPGAs", () => {
   it("finds boards by their FPGA's part number or ID, though it isn't shown", () => {
     expect(summary([], "up5k", withFpga)).toEqual(["Lattice iCE40: icebreaker"]);
     expect(summary([], "ICE40HX4K-TQ144", withFpga)).toEqual(["Lattice iCE40: alhambra-ii,kefir"]);
-  });
-
-  it("names the FPGA for people", () => {
-    expect(fpgaLabel(withFpga[0])).toBe("Lattice iCE40 ICE40HX4K-TQ144 (8k)");
-    expect(fpgaLabel(boards[4])).toBe("");
   });
 });
 

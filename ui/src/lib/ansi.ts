@@ -6,7 +6,7 @@ export interface Segment {
   text: string;
   /** Inline CSS for the segment, or "" for plain text. */
   style: string;
-  /** A "file:line" reference the console can jump to. */
+  /** The place in a project file the line names (Logix Engine's `location`), for the console to jump to. */
   link?: { file: string; line: number };
 }
 
@@ -128,30 +128,28 @@ export function parseAnsi(line: string): Segment[] {
 }
 
 /**
- * "file.v:12" style references to source and pin files: a bare file name
- * (not part of a longer path), a colon, and a line number.
+ * Makes the place a tool's line names, as Logix Engine gives it (the
+ * `location` of a `logix/output` line), a link: the "file:line" text in the
+ * line, or else the whole line. Logix IDE never reads paths out of the
+ * text itself; lines without a location get no link.
  */
-const FILE_LINE =
-  /(?<![\w/.\\-])([\w.-]+\.(?:s?vh?|pcf|lpf|cst|xdc)):(\d+)/gi;
-
-/** Splits segments further so "file:line" references become links. */
-export function addLinks(segments: Segment[]): Segment[] {
+export function addLink(segments: Segment[], location?: { file: string; line: number }): Segment[] {
+  if (!location) return segments;
+  const link = { file: location.file, line: location.line };
+  const text = segments.map((s) => s.text).join("");
+  const at = text.indexOf(`${location.file}:${location.line}`);
+  const [start, end] = at < 0 ? [0, text.length] : [at, at + `${location.file}:${location.line}`.length];
   const result: Segment[] = [];
+  let pos = 0;
   for (const seg of segments) {
-    let pos = 0;
-    for (const m of seg.text.matchAll(FILE_LINE)) {
-      if (m.index! > pos) {
-        result.push({ text: seg.text.slice(pos, m.index), style: seg.style });
-      }
-      result.push({
-        text: m[0],
-        style: seg.style,
-        link: { file: m[1], line: Number(m[2]) },
-      });
-      pos = m.index! + m[0].length;
-    }
-    if (pos < seg.text.length) {
-      result.push({ text: seg.text.slice(pos), style: seg.style });
+    const from = pos;
+    const to = pos + seg.text.length;
+    pos = to;
+    // The parts of this segment before, inside and after the link's span.
+    const cuts = [from, Math.min(Math.max(start, from), to), Math.min(Math.max(end, from), to), to];
+    for (let k = 0; k < 3; k++) {
+      const part = seg.text.slice(cuts[k] - from, cuts[k + 1] - from);
+      if (part) result.push(k === 1 ? { ...seg, text: part, link } : { ...seg, text: part });
     }
   }
   return result;

@@ -64,6 +64,7 @@ export function groupExamples(
         familyLabel: "Other",
         familyOrder: Number.MAX_SAFE_INTEGER,
         pinExtension: null,
+        pinComment: null,
         dimensions: [],
         configurations: [],
         custom: false,

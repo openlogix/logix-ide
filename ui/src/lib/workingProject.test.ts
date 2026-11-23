@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+import { setFileFormats } from "./formats";
+import { ENGINE_FORMATS } from "./testFormats";
 import type { ProjectDoc } from "./backend";
 import {
   fileRole,
@@ -21,6 +23,8 @@ import {
   changedFiles,
   applyDiskChanges,
 } from "./workingProject";
+
+beforeAll(() => setFileFormats(ENGINE_FORMATS));
 
 const savedDoc: ProjectDoc = {
   dir: "/p/blinky",

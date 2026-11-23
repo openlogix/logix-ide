@@ -17,6 +17,7 @@ const plain: Board = {
   description: "Alhambra II",
   family: "ice40", familyLabel: "Lattice iCE40", familyOrder: 0,
   pinExtension: "pcf",
+  pinComment: "#",
   custom: false,
   fpga: null,
   // Every board has both standard dimensions; one value each is no choice.
@@ -44,6 +45,7 @@ const stick: Board = {
   description: "Stick",
   family: "ecp5", familyLabel: "Lattice ECP5", familyOrder: 1,
   pinExtension: "lpf",
+  pinComment: "#",
   custom: false,
   fpga: null,
   dimensions: [

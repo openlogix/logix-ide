@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Diagnostic } from "./backend";
-import { afterCommand, afterEdit, allProblems, problemCount, tabMarks, taskReads } from "./problems";
+import { afterCommand, afterEdit, allProblems, problemCount, tabMarks } from "./problems";
 
 const d = (file: string | null, severity: "error" | "warning" = "error"): Diagnostic => ({
   severity,
@@ -10,35 +10,19 @@ const d = (file: string | null, severity: "error" | "warning" = "error"): Diagno
   message: `${severity} in ${file}`,
 });
 
-describe("taskReads", () => {
-  it("pin files are read only by Verify and Upload", () => {
-    expect(taskReads("build", "pins")).toBe(true);
-    expect(taskReads("upload", "otherPins")).toBe(true);
-    expect(taskReads("test", "pins")).toBe(false);
-    expect(taskReads("diagram", "pins")).toBe(false);
-  });
-  it("testbenches only by Run Tests and Simulate", () => {
-    expect(taskReads("test", "testbench")).toBe(true);
-    expect(taskReads("simulate", "testbench")).toBe(true);
-    expect(taskReads("build", "testbench")).toBe(false);
-  });
-  it("the rest by every task", () => {
-    for (const task of ["build", "upload", "test", "simulate", "diagram"] as const) {
-      expect(taskReads(task, "main")).toBe(true);
-      expect(taskReads(task, "design")).toBe(true);
-    }
-  });
-});
-
 describe("afterCommand", () => {
   it("replaces the problems of the files the command read, keeps the others", () => {
+    // Run Tests reads main.v and main_tb.v (Logix Engine's checked_files), never the pin file.
     const earlier = [d("pins.pcf"), d("main.v"), d(null)];
     const found = [d("main.v", "warning")];
-    const after = afterCommand(earlier, found, (f) => f !== "pins.pcf");
+    const after = afterCommand(earlier, found, ["main.v", "main_tb.v"]);
     expect(after).toEqual([d("pins.pcf"), d("main.v", "warning")]);
   });
   it("a successful command clears the files it read", () => {
-    expect(afterCommand([d("pins.pcf")], [], () => true)).toEqual([]);
+    expect(afterCommand([d("pins.pcf")], [], ["main.v", "pins.pcf"])).toEqual([]);
+  });
+  it("a command that read nothing keeps every file's problems", () => {
+    expect(afterCommand([d("main.v")], [], [])).toEqual([d("main.v")]);
   });
 });
 

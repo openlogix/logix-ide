@@ -156,6 +156,8 @@ pub async fn check_for_updates(
     let mut changes = updated.lines;
     let running = slot.clone().expect("set above");
     drop(slot);
+    // The engine's lines when its packages changed; none when they're up
+    // to date, so the status below is Logix IDE's own, about everything.
     changes.extend(engine::check_for_updates(&running, log.clone(), progress).await?);
     changes.extend(engine::newer_ide_lines(log).await);
     if changes.is_empty() {
@@ -327,9 +329,18 @@ impl From<project::Project> for ProjectDoc {
 /// through their own channel) to the console, as `tool-output` events:
 /// Auto Format's.
 fn console_log(app: &AppHandle) -> impl Fn(String) + Send + Sync + Clone + 'static {
+    let events = console_events(app);
+    move |line| events(outcome::TaskEvent::line(line))
+}
+
+/// Console lines as `TaskEvent`s on `tool-output` (lines only), so a tool's
+/// line keeps its tool, redraw flag and location (Auto Format).
+fn console_events(app: &AppHandle) -> impl Fn(outcome::TaskEvent) + Send + Sync + Clone + 'static {
     let app = app.clone();
-    move |line| {
-        let _ = app.emit("tool-output", line);
+    move |event| {
+        if matches!(event, outcome::TaskEvent::Line { .. }) {
+            let _ = app.emit("tool-output", event);
+        }
     }
 }
 
@@ -407,6 +418,26 @@ async fn build_catalog(engine: &engine::Engine) -> anyhow::Result<Catalog> {
     let engine::Catalog { boards, families } = engine::catalog(engine)
         .await
         .context("Couldn't get the list of boards.")?;
+    // Which files are sources, includes and pin files, by the engine, in
+    // place of the built-in copy used until now (formats.rs).
+    let (source, include) = engine::hdl_extensions(engine).await.unwrap_or_else(|e| {
+        crate::log!("Logix Engine's file formats: {e:#}");
+        Default::default()
+    });
+    let pins = families
+        .iter()
+        .filter_map(|f| {
+            Some(crate::formats::PinFormat {
+                extension: f.pin_extension.clone()?,
+                comment: f.pin_comment.clone()?,
+            })
+        })
+        .collect();
+    crate::formats::set(crate::formats::FileFormats {
+        source,
+        include,
+        pins,
+    });
     // Examples for boards the engine doesn't support can't be built.
     let all = examples::all();
     let total = all.len();
@@ -423,6 +454,14 @@ async fn build_catalog(engine: &engine::Engine) -> anyhow::Result<Catalog> {
         families,
         examples,
     })
+}
+
+/// Which files are Verilog sources, includes and pin files, with each pin
+/// file format's line comment: Logix Engine's, once it has answered, else
+/// the built-in copy (formats.rs), for the tabs and Comment/Uncomment.
+#[tauri::command]
+pub fn file_formats() -> crate::formats::FileFormats {
+    crate::formats::current()
 }
 
 #[tauri::command]
@@ -801,7 +840,7 @@ pub async fn lsp_start(app: AppHandle, state: State<'_, AppState>) -> Result<(),
     }
     let number = STARTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let engine = ready_engine(&state).await?;
-    let exe = engine::program_path(&engine, "verible", "verible-verilog-ls")
+    let server = engine::language_server(&engine)
         .await
         .context("Couldn't find the Verilog language server.")?;
     let on_message = {
@@ -825,7 +864,8 @@ pub async fn lsp_start(app: AppHandle, state: State<'_, AppState>) -> Result<(),
             });
         }
     };
-    let server = crate::language_server::LanguageServer::start(&exe, on_message, on_exit)
+    let exe = server.command.clone();
+    let server = crate::language_server::LanguageServer::start(&server, on_message, on_exit)
         .context("Couldn't start the Verilog language server.")?;
     crate::log!("Language server started: {}", exe.display());
     *slot = Some((number, server));
@@ -866,8 +906,8 @@ pub struct Devices {
     unreachable: Vec<engine::UnreachableDevice>,
 }
 
-/// The connected USB devices, for Tools > Connected Devices and hints when
-/// Upload can't find the board.
+/// The connected USB devices, for Tools > Connected Devices, in the
+/// engine's order for one list (`rank`), with its words for each.
 #[tauri::command]
 pub async fn scan_devices(
     state: State<'_, AppState>,
@@ -877,15 +917,13 @@ pub async fn scan_devices(
 ) -> Result<Devices, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
-    let board = board.as_deref();
-    // A custom boards file with problems: the devices without its boards
-    // (the board list shows its problems).
-    let list = match engine::list_devices(&engine, file.as_ref(), board).await {
-        Ok(list) => Ok(list),
-        Err(_) if file.is_some() => engine::list_devices(&engine, None, board).await,
-        Err(e) => Err(e),
-    }
-    .context("Couldn't list the connected devices.")?;
+    // A boards folder with problems: the engine lists the devices matched
+    // against the catalog only, and gives the problems in
+    // `custom_boards_problem`, which Logix IDE leaves to the boards folder's
+    // own check (`project_boards`), as for every device scan.
+    let list = engine::list_devices(&engine, file.as_ref(), board.as_deref())
+        .await
+        .context("Couldn't list the connected devices.")?;
     Ok(Devices {
         usb: list.devices,
         unreachable: list.unreachable,
@@ -1000,14 +1038,9 @@ pub async fn connected_devices(
 ) -> Result<Vec<engine::ConnectedDevice>, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
-    // The project's boards first, as the engine matched them; a file with
-    // problems counts as none here (the board list shows its problems).
-    let usable = engine::project_boards(&engine, file.as_ref())
-        .await
-        .ok()
-        .and_then(Result::ok)
-        .is_some();
-    let file = if usable { file } else { None };
+    // The project's boards too, as the engine matched them; with problems
+    // in the folder, the catalog's only (`custom_boards_problem`, left to
+    // the boards folder's own check, which shows them).
     let list = engine::list_devices(&engine, file.as_ref(), None)
         .await
         .context("Couldn't list the connected devices.")?;
@@ -1069,12 +1102,7 @@ pub async fn serial_ports(
 ) -> Result<Vec<SerialChoice>, UserError> {
     let engine = ready_engine(&state).await?;
     let file = boards_file(folder.as_deref(), saved);
-    let usable = engine::project_boards(&engine, file.as_ref())
-        .await
-        .ok()
-        .and_then(Result::ok)
-        .is_some();
-    let file = if usable { file } else { None };
+    // As in connected_devices: a boards folder with problems still lists.
     let list = engine::list_devices(&engine, file.as_ref(), board.as_deref())
         .await
         .context("Couldn't list the serial ports.")?;
@@ -1259,6 +1287,8 @@ pub struct FormatResult {
     /// The formatted text, if formatting succeeded.
     text: Option<String>,
     diagnostics: Vec<outcome::Diagnostic>,
+    /// The files the engine checked (`checked_files`): the file.
+    checked_files: Vec<String>,
 }
 
 /// Formats one file's text with the engine's `format` (Verible) in a
@@ -1291,7 +1321,7 @@ pub async fn format_file(
         build_dir::prepare_single(&root, &file).context("Couldn't prepare formatting.")
     })
     .await??;
-    let outcome = engine::format_file(&engine, &dir, &name, console_log(&app))
+    let outcome = engine::format_file(&engine, &dir, &name, console_events(&app))
         .await
         .context("Couldn't run Logix Engine.")?;
     let text = if outcome.ok {
@@ -1308,6 +1338,7 @@ pub async fn format_file(
         ok: outcome.ok,
         text,
         diagnostics: outcome.diagnostics,
+        checked_files: outcome.checked_files,
     })
 }
 

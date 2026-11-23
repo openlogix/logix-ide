@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addLinks, parseAnsi } from "./ansi";
+import { addLink, parseAnsi } from "./ansi";
 
 describe("parseAnsi", () => {
   it("passes plain text through", () => {
@@ -42,34 +42,39 @@ describe("parseAnsi", () => {
   });
 });
 
-describe("addLinks", () => {
-  const links = (line: string) =>
-    addLinks(parseAnsi(line))
+describe("addLink", () => {
+  const links = (line: string, location?: { file: string; line: number }) =>
+    addLink(parseAnsi(line), location)
       .filter((s) => s.link)
-      .map((s) => `${s.link!.file}:${s.link!.line}`);
+      .map((s) => `${s.text} -> ${s.link!.file}:${s.link!.line}`);
 
-  it("finds file:line references to project-style files", () => {
-    expect(links("main.v:7: ERROR: syntax error")).toEqual(["main.v:7"]);
-    expect(links("%Warning-WIDTH: main.v:8:15: Operator")).toEqual(["main.v:8"]);
-    expect(links("*** ASSERTION FAILED at main_tb.v:52: expected")).toEqual([
-      "main_tb.v:52",
+  it("links the place Logix Engine gives", () => {
+    expect(links("main.v:7: ERROR: syntax error", { file: "main.v", line: 7 })).toEqual([
+      "main.v:7 -> main.v:7",
     ]);
-    expect(links("bad.sv: bad.sv:4:1-3: syntax error")).toEqual(["bad.sv:4"]);
+    expect(
+      links("%Warning-WIDTH: rtl/uart.v:8:15: Operator", { file: "rtl/uart.v", line: 8 }),
+    ).toEqual(["rtl/uart.v:8 -> rtl/uart.v:8"]);
   });
 
-  it("ignores full paths and other files", () => {
-    expect(links("/opt/yosys/share/cells_sim.v:10: x")).toEqual([]);
-    expect(links("Took 1.25 seconds")).toEqual([]);
-    expect(links("notes.txt:3")).toEqual([]);
+  it("links the whole line when its text doesn't show the place", () => {
+    expect(links("ERROR at line 7", { file: "main.v", line: 7 })).toEqual([
+      "ERROR at line 7 -> main.v:7",
+    ]);
+  });
+
+  it("reads no paths out of lines without a location", () => {
+    expect(links("main.v:7: ERROR: syntax error")).toEqual([]);
   });
 
   it("keeps the text and colors around a link", () => {
-    const segs = addLinks(parseAnsi("\x1b[31mmain.v:7: bad\x1b[0m"));
+    const segs = addLink(parseAnsi("\x1b[31mmain.v:7: bad\x1b[0m"), { file: "main.v", line: 7 });
     expect(segs.map((s) => s.text).join("")).toBe("main.v:7: bad");
     expect(segs[0]).toEqual({
       text: "main.v:7",
       style: "color:var(--ansi-1)",
       link: { file: "main.v", line: 7 },
     });
+    expect(segs[1]).toEqual({ text: ": bad", style: "color:var(--ansi-1)" });
   });
 });

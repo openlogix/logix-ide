@@ -70,10 +70,6 @@ pub fn custom_boards_stamp(folder: &Path) -> Option<String> {
     Some(parts.join("|"))
 }
 
-/// Extensions of files shown as editor tabs: Verilog/SystemVerilog sources
-/// and headers, and the pin constraint formats of the supported boards.
-pub const EDITABLE_EXTENSIONS: &[&str] = &["v", "sv", "vh", "svh", "pcf", "lpf", "cst", "xdc"];
-
 /// Waveform views (`.view`: what the waveform viewer shows for a testbench,
 /// in place of GTKWave's `.gtkw` layouts, Milestone 5) are project files
 /// like the sources: loaded, held in memory, unsaved when they change and
@@ -161,29 +157,18 @@ pub fn project_name(dir: &Path) -> String {
         .unwrap_or_else(|| dir.display().to_string())
 }
 
-/// Whether a file with this name is shown as an editor tab: sources and
-/// pin files (not custom-boards.json, which is edited outside Logix IDE).
+/// Whether a file with this name is shown as an editor tab: Verilog
+/// sources and includes, and pin files of any FPGA family's format, by
+/// Logix Engine (`formats`; not board files, which are edited outside
+/// Logix IDE).
 pub fn is_editable(name: &str) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| {
-            EDITABLE_EXTENSIONS
-                .iter()
-                .any(|x| x.eq_ignore_ascii_case(e))
-        })
+    let formats = crate::formats::current();
+    formats.is_hdl(name) || formats.is_pin_file(name)
 }
 
 /// Whether a file is Verilog or SystemVerilog source (what Auto Format takes).
 pub fn is_hdl_source(name: &str) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| {
-            ["v", "sv", "vh", "svh"]
-                .iter()
-                .any(|x| x.eq_ignore_ascii_case(e))
-        })
+    crate::formats::current().is_hdl(name)
 }
 
 /// Whether `name` is a plain Verilog identifier (e.g. a module name).
@@ -216,7 +201,8 @@ pub fn check_new_file_name(name: &str, existing: &[String]) -> Result<(), String
     if !is_editable(name) {
         return Err(format!(
             "Use one of these extensions: {}.",
-            EDITABLE_EXTENSIONS
+            crate::formats::current()
+                .extensions()
                 .iter()
                 .map(|e| format!(".{e}"))
                 .collect::<Vec<_>>()
@@ -769,26 +755,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn pin_files_are_the_engines_formats() {
-        // Every board in the engine's catalog (the UI tests' recorded copy)
-        // has a pin file kind Logix IDE offers, and Logix IDE offers no other kind.
-        let fixture: serde_json::Value =
-            serde_json::from_str(include_str!("../../ui/e2e/fixtures/catalog.json")).unwrap();
-        let mut used: Vec<&str> = fixture["boards"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter_map(|b| b["pinExtension"].as_str())
-            .collect();
-        used.sort();
-        used.dedup();
-        let mut offered = crate::build_dir::CONSTRAINT_EXTENSIONS.to_vec();
-        offered.sort();
-        assert_eq!(used, offered);
-        for ext in offered {
-            assert!(EDITABLE_EXTENSIONS.contains(&ext), "{ext}");
-        }
+    fn pin_files_of_other_tools_are_refused() {
         assert!(check_new_file_name("pins.pdc", &[]).is_err());
+        assert!(check_new_file_name("pins.cst", &[]).is_ok());
     }
 
     const NO_VARIANT: &Variant = &Variant::new();

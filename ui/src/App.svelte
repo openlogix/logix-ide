@@ -14,6 +14,7 @@
     type UsbDevice,
     type TaskOutcome,
     type TaskEvent,
+    type Location,
     type UploadDriver,
     type Driver,
     NO_DRIVER,
@@ -39,7 +40,6 @@
     allProblems,
     problemCount,
     tabMarks,
-    taskReads,
     type LiveProblems,
   } from "./lib/problems";
   import type { LSPClient } from "@codemirror/lsp-client";
@@ -75,16 +75,14 @@
     type ConfirmContent,
     CONFIRM_SAME_IDS,
     confirmContent,
-    deviceSummaryLines,
     type DriverWork,
     driverWorkEnd,
-    isBoardNotFound,
     needsDeviceChoice,
     needsDriver,
     UNDO_WHERE,
   } from "./lib/devices";
   import Icon from "./lib/Icon.svelte";
-  import { pinCommentToken } from "./lib/pinFiles";
+  import { pinComment, setFileFormats } from "./lib/formats";
   import {
     addFile,
     buildKey,
@@ -115,7 +113,7 @@
     type WorkingProject,
   } from "./lib/workingProject";
   import { Redraws } from "./lib/redraw";
-  import { addLinks, parseAnsi, type Segment } from "./lib/ansi";
+  import { addLink, parseAnsi, type Segment } from "./lib/ansi";
   import { BARE_MINIMUM, examplesSummary, type ExampleEntry } from "./lib/examples";
   import SerialMonitor from "./lib/SerialMonitor.svelte";
   import FileList from "./lib/FileList.svelte";
@@ -318,11 +316,20 @@
     if (startedUp && !running && !activity && !uploadAsking && !devicePicker && !testbenchPicker) log("Ready.");
   }
 
-  /** A tool's line, which may replace its redraw line (progress). */
-  function logToolLine(line: string, tool: string, redraw: boolean) {
+  /**
+   * A tool's line, which may replace its redraw line (progress), with the
+   * place it names (Logix Engine's `location`), which becomes a link.
+   */
+  function logToolLine(line: string, tool: string, redraw: boolean, location?: Location) {
     const { replace, final } = redraws.toolLine(line, tool, redraw);
     if (final.length) sendToLogFile(final);
-    return show([line], replace);
+    return show([line], replace, location);
+  }
+
+  /** A console line from a task or Auto Format (`TaskEvent` "line"). */
+  function logLineEvent(event: Extract<TaskEvent, { kind: "line" }>) {
+    if (event.tool) logToolLine(event.line, event.tool, !!event.redraw, event.location);
+    else log(event.line);
   }
 
   /** Clears the console. */
@@ -340,11 +347,11 @@
    * unplugged board's programmer) froze the window, Stop included (the
    * user's report, 2026-11-14).
    */
-  let shownQueue: { line: string; replace: boolean }[] = [];
+  let shownQueue: { line: string; replace: boolean; location?: Location }[] = [];
   let shownFlush: Promise<void> | null = null;
 
-  function show(lines: string[], replaceLast: boolean): Promise<void> {
-    lines.forEach((line, i) => shownQueue.push({ line, replace: replaceLast && i === 0 }));
+  function show(lines: string[], replaceLast: boolean, location?: Location): Promise<void> {
+    lines.forEach((line, i) => shownQueue.push({ line, replace: replaceLast && i === 0, location }));
     shownFlush ??= new Promise((resolve) => setTimeout(resolve, 30)).then(flushShown);
     return shownFlush;
   }
@@ -357,15 +364,15 @@
     const atBottom =
       !el || el.scrollHeight - el.scrollTop - el.clientHeight < 20;
     // Only the lines that will stay are parsed.
-    const next: (string | Segment[])[] = consoleLines.slice();
-    for (const { line, replace } of queue) {
+    const next: ({ line: string; location?: Location } | Segment[])[] = consoleLines.slice();
+    for (const { line, replace, location } of queue) {
       if (replace) next.pop();
-      next.push(line);
+      next.push({ line, location });
       if (next.length > 2 * MAX_CONSOLE_LINES) next.splice(0, next.length - MAX_CONSOLE_LINES);
     }
     consoleLines = next
       .slice(-MAX_CONSOLE_LINES)
-      .map((l) => (typeof l === "string" ? addLinks(parseAnsi(l)) : l));
+      .map((l) => (Array.isArray(l) ? l : addLink(parseAnsi(l.line), l.location)));
     if (atBottom) {
       await tick();
       el?.scrollTo({ top: el.scrollHeight });
@@ -475,6 +482,8 @@
           backend.getExamples(),
         ]);
         catalogBoards = boardList;
+        // Logix Engine's file formats, now that it has answered.
+        setFileFormats(await backend.fileFormats());
         recentBoards = await backend.recentBoards();
         examples = exampleList.examples;
         // Printed when setup is done (runSetup), not here: the list may
@@ -838,9 +847,12 @@
     problemWords = new Map([...fileProblems.keys()].map((f) => [f, problemCount(all, f)]));
   }
 
-  /** A command's result: replaces the problems of the files it read. */
-  function showCommandProblems(found: Diagnostic[], reads: (file: string) => boolean) {
-    commandProblems = afterCommand(commandProblems, found, reads);
+  /**
+   * A command's result: replaces the problems of the files it read
+   * (`checked`, Logix Engine's `checked_files`).
+   */
+  function showCommandProblems(found: Diagnostic[], checked: string[]) {
+    commandProblems = afterCommand(commandProblems, found, checked);
     showProblems();
   }
 
@@ -973,11 +985,12 @@
     try {
       const result = await backend.formatFile(file, before);
       if (project !== p) return; // Another project was opened meanwhile.
-      // Old markers in this file no longer match its lines.
-      const onlyThis = (name: string) => name === file;
+      // Old markers in this file no longer match its lines: it's the file
+      // Logix Engine checked.
+      const checked = result.checkedFiles;
       if (!result.ok || result.text === null) {
         showOutput("error");
-        showCommandProblems(result.diagnostics, onlyThis);
+        showCommandProblems(result.diagnostics, checked);
         const first = firstLocated(result.diagnostics);
         const why = first ?? result.diagnostics[0];
         status = {
@@ -993,11 +1006,11 @@
           kind: "error",
         };
       } else if (result.text === before) {
-        showCommandProblems([], onlyThis);
+        showCommandProblems([], checked);
         status = { text: "No changes necessary for Auto Format.", kind: "ok" };
       } else {
         editor?.replaceText(file, result.text);
-        showCommandProblems([], onlyThis);
+        showCommandProblems([], checked);
         status = { text: "Auto Format finished.", kind: "ok" };
       }
     } catch (e) {
@@ -1343,15 +1356,6 @@
     else declined(`${ask.cancelled} Nothing was uploaded: choose Upload again when you're ready.`);
   }
 
-  /** After Upload couldn't find the board: say what is connected. */
-  async function logConnectedDevices() {
-    try {
-      log("", ...deviceSummaryLines(await backend.scanDevices(boardsFolder, boardsSaved, namingBoard())));
-    } catch {
-      // Only a hint; the upload error is already shown.
-    }
-  }
-
   /** Upload's device picker, while several devices fit the board. */
   let devicePicker = $state<{ board: string; devices: UsbDevice[] } | null>(null);
 
@@ -1482,10 +1486,7 @@
         variant,
         task === "upload" ? device : null,
         (event) => {
-          if (event.kind === "line") {
-            if (event.tool) logToolLine(event.line, event.tool, !!event.redraw);
-            else log(event.line);
-          }
+          if (event.kind === "line") logLineEvent(event);
           else if (event.kind === "status")
             status = { text: event.text ?? runningText(task), kind: "info" };
           else taskStep = { message: event.message, percent: event.percent };
@@ -1509,14 +1510,6 @@
         buildReport = { report: outcome.report, title: `${p.name} · ${boardName} · ${when}` };
         if (task === "report" && outcome.ok) buildReportOpen = true;
       }
-      if (
-        task === "upload" &&
-        !outcome.ok &&
-        !outcome.cancelled &&
-        isBoardNotFound(outcome)
-      ) {
-        await logConnectedDevices();
-      }
       if (task === "upload" && needsDriver(outcome)) {
         // Not a failure: Upload goes on once the user agrees to the driver
         // or udev rule (asked once this run is over, so Upload can run
@@ -1537,9 +1530,7 @@
         status = { text: "Choose the device to upload to.", kind: "info" };
         return;
       }
-      showCommandProblems(outcome.diagnostics, (file) =>
-        taskReads(task, fileRole(file, mainFile(p), pinExtension)),
-      );
+      showCommandProblems(outcome.diagnostics, outcome.checkedFiles);
       if (!outcome.ok && !outcome.cancelled) showOutput("error");
       status = {
         text: outcomeText(task, outcome),
@@ -1718,7 +1709,7 @@
     project: project !== null,
     formattable: project !== null && isHdlSource(activeFile),
     comment:
-      project !== null && (isHdlSource(activeFile) || pinCommentToken(activeFile) !== null),
+      project !== null && (isHdlSource(activeFile) || pinComment(activeFile) !== null),
     definition: project !== null && lsp !== null && isHdlSource(activeFile),
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && testbenches(project).length > 0,
@@ -2535,7 +2526,9 @@
 
   $effect(() => {
     const unlisten = [
-      backend.onToolOutput((line) => log(line)),
+      backend.onToolOutput((event) => {
+        if (event.kind === "line") logLineEvent(event);
+      }),
       backend.onLspClosed(onLspClosed),
       backend.onWaveView(onWaveView),
       backend.onWaveOpenSource(onDiagramOpenSource),
@@ -2566,6 +2559,9 @@
 
   onMount(async () => {
     await loadPrefs();
+    // Which files are sources and pin files, before the project's tabs
+    // show: the backend's built-in copy until Logix Engine answers.
+    setFileFormats(await backend.fileFormats());
     try {
       homeBoard = await backend.lastBoard();
       homeVariant = await backend.lastVariant();

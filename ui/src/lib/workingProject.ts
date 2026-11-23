@@ -3,6 +3,7 @@
 // after); changes made on disk by other programs come in through
 // applyDiskChanges.
 import type { ProjectDoc, Variant } from "./backend";
+import { isHdlSource, isInclude, isPinFile } from "./formats";
 
 /** The main file of new projects. */
 export const MAIN_FILE = "main.v";
@@ -126,10 +127,9 @@ export function findFile(p: WorkingProject, name: string): OpenFile | undefined 
   return p.files.find((f) => f.name === name);
 }
 
-/** Whether a file is Verilog or SystemVerilog source (what Auto Format handles). */
-export function isHdlSource(name: string): boolean {
-  return /\.s?vh?$/i.test(name);
-}
+// Whether a file is Verilog or SystemVerilog source (what Auto Format
+// handles), by Logix Engine's extensions (formats.ts).
+export { isHdlSource };
 
 /** Whether a file is a testbench (`*_tb.v` or `*_tb.sv`), as Logix IDE names them. */
 export function isTestbench(name: string): boolean {
@@ -161,9 +161,6 @@ export function isBoardFile(file: string): boolean {
   return file.endsWith(".json") && (file.startsWith(`${CUSTOM_BOARDS_FOLDER}/`) || file.includes(`/${CUSTOM_BOARDS_FOLDER}/`));
 }
 
-/** Pin constraint file extensions (as `CONSTRAINT_EXTENSIONS` in `build_dir.rs`). */
-const PIN_FILE = /\.(pcf|lpf|cst|xdc)$/i;
-
 /**
  * The role of the project file `name`; `main` is the project's main file
  * and `pinExtension` the board's pin file extension (e.g. "pcf"; null if
@@ -177,13 +174,13 @@ export function fileRole(
 ): FileRole {
   if (name === main) return "main";
   if (isTestbench(name)) return "testbench";
-  if (PIN_FILE.test(name)) {
+  if (isPinFile(name)) {
     const ext = name.slice(name.lastIndexOf(".") + 1).toLowerCase();
     return pinExtension === null || ext === pinExtension.toLowerCase()
       ? "pins"
       : "otherPins";
   }
-  if (/\.s?vh$/i.test(name)) return "include";
+  if (isInclude(name)) return "include";
   return "design";
 }
 

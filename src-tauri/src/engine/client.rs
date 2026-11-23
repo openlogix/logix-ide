@@ -65,6 +65,11 @@ pub struct OutputLine {
     /// progress bars do): the console replaces it with the tool's next line.
     #[serde(default)]
     pub redraw: bool,
+    /// The place in a project file the line names (`output` lines only),
+    /// for a link in the console. The engine finds it, so the IDE never
+    /// reads paths out of the text.
+    #[serde(default)]
+    pub location: Option<crate::outcome::Location>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -510,7 +515,7 @@ mod tests {
     /// The engine's messages, as it sends them (one JSON-RPC message per
     /// line).
     const PROGRESS: &str = r#"{"jsonrpc":"2.0","method":"notifications/progress","params":{"message":"Placing and routing","progress":100.0,"progressToken":3,"total":300.0}}"#;
-    const OUTPUT: &str = r#"{"jsonrpc":"2.0","method":"logix/output","params":{"kind":"output","level":"error","request_id":3,"text":"main.v:25: ERROR: syntax error","tool":"yosys"}}"#;
+    const OUTPUT: &str = r#"{"jsonrpc":"2.0","method":"logix/output","params":{"kind":"output","level":"error","request_id":3,"text":"main.v:25: ERROR: syntax error","tool":"yosys","location":{"file":"main.v","line":25}}}"#;
     const RESULT: &str = r#"{"jsonrpc":"2.0","id":3,"result":{"content":[]}}"#;
 
     /// Listeners that record what they get, in order, as text.
@@ -541,6 +546,7 @@ mod tests {
             .unwrap()
         };
         assert_eq!(line("message").kind, OutputKind::Message);
+        assert_eq!(line("message").location, None);
         // A kind added to the engine later still shows.
         assert_eq!(line("hint").kind, OutputKind::Other);
     }
@@ -555,6 +561,8 @@ mod tests {
         let got = got.lock().unwrap();
         assert_eq!(got.len(), 2);
         assert!(got[0].starts_with("OutputLine { tool: \"yosys\", kind: Output, level: Error"));
+        assert!(got[0]
+            .contains("location: Some(Location { file: \"main.v\", line: 25, column: None })"));
         assert_eq!(
             got[1],
             "Progress { message: Some(\"Placing and routing\"), percent: None }"

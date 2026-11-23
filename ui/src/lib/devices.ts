@@ -1,9 +1,8 @@
 import { type Consent, type Devices, type MatchLevel, type TaskOutcome, type UnreachableDevice, type UsbDevice } from "./backend";
 
-/** True if Upload failed because the board wasn't found on USB. */
-export function isBoardNotFound(outcome: TaskOutcome): boolean {
-  return outcome.action === "connect_board";
-}
+// The helpers that turn Logix Engine's device lists into what Logix IDE
+// shows. The engine words and orders them (`status`, `note`, `rank`,
+// `likely_boards`, `other_boards`, the driver texts); these only lay them out.
 
 /** True if Upload found several devices that fit and the user must pick one. */
 export function needsDeviceChoice(outcome: TaskOutcome): boolean {
@@ -34,20 +33,14 @@ export function matchLabel(level: MatchLevel | null): string {
 
 /**
  * The boards a device may be, as Tools > Connected Devices lists them, in
- * two collapsible groups: `matches`, the boards it most likely is (the
- * engine's `likely_boards`); and `others`, the rest. With a strong match, the weaker ones would only be noise
- * (the user's decision), so `others` then holds only the selected board,
- * when the device fits it.
+ * two collapsible groups, both Logix Engine's (for the board the scan
+ * named): `matches`, the boards it most likely is (`likely_boards`); and
+ * `others`, the other boards worth naming (`other_boards`: with a strong
+ * match, only the selected board when the device fits it, since dozens of
+ * boards sharing a USB chip would only be noise, the user's decision).
  */
-export function deviceBoardGroups(
-  d: UsbDevice,
-  selected: string | null,
-): { matches: string[]; others: string[] } {
-  const matches = d.likelyBoards;
-  const rest = d.boards.map((b) => b.board).filter((b) => !matches.includes(b));
-  const strong = d.boards.some((b) => b.level === "strong");
-  const others = strong ? rest.filter((b) => b === selected) : rest;
-  return { matches, others };
+export function deviceBoardGroups(d: UsbDevice): { matches: string[]; others: string[] } {
+  return { matches: d.likelyBoards, others: d.otherBoards };
 }
 
 /**
@@ -123,76 +116,40 @@ export type ListedDevice =
   | { kind: "usb"; device: UsbDevice }
   | { kind: "unreachable"; device: UnreachableDevice };
 
-/** The boards a listed device may be, by ID. */
-function listedBoards(d: ListedDevice): string[] {
-  return d.device.boards.map((b) => b.board);
-}
-
 /**
- * Every device in one list, the likely FPGA boards first (the user's
- * request, 2026-11-14: a board with no driver yet was listed last, after
- * the keyboard and mouse): first those that may be the selected board, then
- * those that may be other boards, then the rest. The engine's order is
- * kept within each group.
+ * Every device in one list, in Logix Engine's order (`rank`): the likely
+ * FPGA boards first (the user's request, 2026-11-14: a board with no
+ * driver yet was listed last, after the keyboard and mouse), those that may
+ * be the selected board, then those that may be other boards, then the
+ * rest.
  */
-export function orderedDevices(devices: Devices, selected: string | null): ListedDevice[] {
+export function orderedDevices(devices: Devices): ListedDevice[] {
   const all: ListedDevice[] = [
     ...devices.usb.map((device) => ({ kind: "usb" as const, device })),
     ...devices.unreachable.map((device) => ({ kind: "unreachable" as const, device })),
   ];
-  const rank = (d: ListedDevice) => {
-    const boards = listedBoards(d);
-    if (selected !== null && boards.includes(selected)) return 0;
-    return boards.length > 0 ? 1 : 2;
-  };
-  return all
-    .map((d, i) => ({ d, i }))
-    .sort((a, b) => rank(a.d) - rank(b.d) || a.i - b.i)
-    .map(({ d }) => d);
+  return all.sort((a, b) => a.device.rank - b.device.rank);
 }
 
 /**
  * What Connected Devices says about a device it can't open yet (its names
- * can't be read): that it may be an FPGA board, the selected one when its
- * USB IDs fit, and what to do.
+ * can't be read): Logix Engine's `note` ("This may be your Alhambra II: it
+ * has the same USB IDs. …"), saying which board that is in Logix IDE when
+ * it's the one selected in the toolbar.
  */
 export function unreachableNote(
   u: UnreachableDevice,
   selected: string | null,
   boardName: (id: string) => string,
 ): string {
-  const boards = u.boards.map((b) => b.board);
-  const fix = u.fix;
-  if (selected !== null && boards.includes(selected))
-    return `This may be your ${boardName(selected)} (the board selected in the toolbar): it has the same USB IDs. ${fix}`;
-  if (boards.length === 1)
-    return `This may be an FPGA board, the ${boardName(boards[0])}: it has its USB IDs. ${fix}`;
-  return `This may be an FPGA board: ${boards.length} boards have its USB IDs. ${fix}`;
+  if (selected === null || !u.boards.some((b) => b.board === selected)) return u.note;
+  const yours = `your ${boardName(selected)}`;
+  return u.note.replace(yours, `${yours} (the board selected in the toolbar)`);
 }
 
 /** What a device that can't be opened lacks, after its name: Logix Engine's tag ("no udev rule yet", "no driver yet"). */
 export function lockedTag(u: UnreachableDevice): string {
   return u.driver?.tag ?? "can't be opened";
-}
-
-/** Console lines listing what's connected, with tips when nothing is. */
-export function deviceSummaryLines(devices: Devices): string[] {
-  const locked = devices.unreachable.map((u) => `  • ${u.label} can't be opened. ${u.fix}`);
-  if (devices.usb.length === 0) {
-    return [
-      "No USB devices are connected.",
-      ...locked,
-      "Tips: check that the board is plugged in and powered, and try another cable",
-      "(some USB cables only charge and don't carry data).",
-    ];
-  }
-  return [
-    "Connected USB devices:",
-    ...devices.usb.map((d) => `  • ${d.label}`),
-    ...locked,
-    "If your board isn't listed, check the cable and power.",
-    "If it's listed, check that the board selected in the toolbar matches it.",
-  ];
 }
 
 /**
@@ -229,7 +186,7 @@ export function devicesReport(
     `Selected board: ${selected === null ? "none" : `${boardName(selected)} (${selected})`}`,
     "",
   ];
-  const listed = orderedDevices(devices, selected);
+  const listed = orderedDevices(devices);
   if (listed.length === 0) out.push("No USB devices.");
   for (const [i, item] of listed.entries()) {
     const d = item.device;
@@ -240,7 +197,7 @@ export function devicesReport(
     if (item.kind === "usb") out.push(...deviceDetails(item.device).map((l) => `  ${l}`));
     if (d.driver) out.push(`  ${d.driver.state}`);
     if (item.kind === "usb") {
-      const { matches, others } = deviceBoardGroups(item.device, selected);
+      const { matches, others } = deviceBoardGroups(item.device);
       if (matches.length > 0) out.push(`  Matching boards: ${names(matches)}`);
       if (others.length > 0) out.push(`  Other possible boards: ${names(others)}`);
       if (matches.length + others.length === 0) out.push("  Not a board Logix IDE knows.");

@@ -27,7 +27,7 @@ pub use devices::{
     DeviceList, Driver, DriverInstall, UnreachableDevice, UsbDevice,
 };
 pub use format::format_file;
-pub use info::program_path;
+pub use info::{hdl_extensions, language_server, ServerCommand};
 pub use setup::{
     check_for_updates, download_missing, newer_ide_lines, newer_ide_release, start as start_engine,
     update_if_due,

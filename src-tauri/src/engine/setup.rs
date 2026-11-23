@@ -424,8 +424,10 @@ fn newer_lines(latest: Option<&remote_config::Entry>, own: &str) -> Vec<String> 
 
 /// Help > Check for Updates, after `update_if_due(.., true)`: asks the
 /// running engine to check its own packages now (`check_updates`), with its
-/// progress, and returns one line per package whose release changed, in
-/// the words the user knows.
+/// progress, and returns what changed, in the engine's words (its
+/// `summary`: "Updated logix-catalog to 2026.11.30."); none when nothing
+/// did, so Logix IDE's own "Everything is up to date." covers its engine
+/// and examples too.
 pub async fn check_for_updates(
     engine: &Engine,
     log: impl Fn(String) + Send + Sync + 'static,
@@ -450,22 +452,27 @@ pub async fn check_for_updates(
         .context(MSG_PACKAGES)?
         .map_err(|e| tool_error("check_updates", &e))
         .context(MSG_PACKAGES)?;
-    Ok(update_lines(&out))
+    Ok(update_summary(&out))
 }
 
-/// `check_updates`' `updates`, as lines such as "Updated logix-catalog to
-/// 2026.11.24.": packages by their names, as the engine gives them (the
-/// org's rule, 2026-11-15), and versions as yyyy.mm.dd.
-fn update_lines(out: &Value) -> Vec<String> {
-    out["updates"]
-        .as_array()
+/// `check_updates`' `summary` when a package changed (`updates` or
+/// `downloaded`); none otherwise, when the summary only says the packages
+/// are up to date.
+fn update_summary(out: &Value) -> Vec<String> {
+    let changed = |key: &str| out[key].as_array().is_some_and(|l| !l.is_empty());
+    if changed("updates") || changed("downloaded") {
+        strings(&out["summary"])
+    } else {
+        Vec::new()
+    }
+}
+
+/// A list of texts, such as the engine's `summary`.
+fn strings(v: &Value) -> Vec<String> {
+    v.as_array()
         .into_iter()
         .flatten()
-        .filter_map(|u| {
-            let to = u["to"].as_str()?;
-            let what = u["name"].as_str()?;
-            Some(format!("Updated {what} to {to}."))
-        })
+        .filter_map(|s| s.as_str().map(String::from))
         .collect()
 }
 
@@ -487,19 +494,10 @@ where
         .context(MSG_PACKAGES)?
         .map_err(|e| tool_error("download_packages", &e))
         .context(MSG_PACKAGES)?;
-    for name in downloaded_packages(&out) {
-        let version = out["packages"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .find(|p| p["name"] == name.as_str())
-            .and_then(|p| p["version"].as_str());
-        emit(SetupEvent::Log {
-            line: match version {
-                Some(v) => format!("Downloaded {name} {v}."),
-                None => format!("Downloaded {name}."),
-            },
-        });
+    // What it downloaded, in the engine's words ("Downloaded logix-core
+    // 2026.11.10."); nothing when everything was there.
+    for line in strings(&out["summary"]) {
+        emit(SetupEvent::Log { line });
     }
     Ok(())
 }
@@ -635,16 +633,6 @@ enum DownloadProgress {
 /// lines only).
 fn no_progress(_: DownloadProgress) {}
 
-/// The names `download_packages` lists as downloaded.
-fn downloaded_packages(out: &Value) -> Vec<String> {
-    out["downloaded"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(|p| p.as_str().map(String::from))
-        .collect()
-}
-
 /// Turns the engine's progress into setup events: the downloading stage
 /// when the first phase starts (nothing when there's nothing to download;
 /// the status bar says it can take a few minutes, the console doesn't),
@@ -680,22 +668,19 @@ mod tests {
     use std::sync::{Arc, Mutex};
 
     #[test]
-    fn lists_downloaded_packages_and_updates() {
-        let out = json!({"downloaded": ["logix-core"], "packages": []});
-        assert_eq!(downloaded_packages(&out), vec!["logix-core"]);
-        assert!(downloaded_packages(&json!({})).is_empty());
+    fn shows_the_engines_summary_when_something_changed() {
         let out = json!({"updates": [
             {"name": "logix-catalog", "from": "2026.11.24", "to": "2026.11.30"},
-            {"name": "logix-core", "to": "2026.12.01"},
-        ]});
+        ], "downloaded": ["logix-catalog"], "summary": ["Updated logix-catalog to 2026.11.30."]});
         assert_eq!(
-            update_lines(&out),
-            vec![
-                "Updated logix-catalog to 2026.11.30.",
-                "Updated logix-core to 2026.12.01."
-            ]
+            update_summary(&out),
+            ["Updated logix-catalog to 2026.11.30."]
         );
-        assert!(update_lines(&json!({"updates": []})).is_empty());
+        let out = json!({"updates": [], "downloaded": ["logix-core"], "summary": ["Downloaded logix-core 2026.12.01."]});
+        assert_eq!(update_summary(&out), ["Downloaded logix-core 2026.12.01."]);
+        // Nothing changed: Logix IDE says it, for everything.
+        let out = json!({"updates": [], "downloaded": [], "summary": ["Logix Engine's packages are up to date."]});
+        assert!(update_summary(&out).is_empty());
     }
 
     #[test]

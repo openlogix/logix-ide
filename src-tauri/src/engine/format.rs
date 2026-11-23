@@ -18,24 +18,22 @@ pub struct FormatOutcome {
     pub ok: bool,
     /// Why it couldn't be formatted, such as a syntax error.
     pub diagnostics: Vec<Diagnostic>,
+    /// The files the engine checked (`checked_files`): the file.
+    pub checked_files: Vec<String>,
 }
 
 /// Formats `folder/file` in place, with Verible's lines in the console
-/// (`on_line`).
+/// (`on_event`, with their locations for links).
 pub async fn format_file<F>(
     engine: &Engine,
     folder: &Path,
     file: &str,
-    on_line: F,
+    on_event: F,
 ) -> Result<FormatOutcome>
 where
-    F: Fn(String) + Send + Sync + Clone + 'static,
+    F: Fn(TaskEvent) + Send + Sync + Clone + 'static,
 {
-    let console = Console::new(move |event| {
-        if let TaskEvent::Line { line, .. } = event {
-            on_line(line)
-        }
-    });
+    let console = Console::new(on_event);
     let options = CallOptions {
         on_output: Some(console.sink()),
         ..Default::default()
@@ -54,5 +52,11 @@ where
     Ok(FormatOutcome {
         ok: done["passed"] == true,
         diagnostics: diagnostics(&done["diagnostics"]),
+        checked_files: done["checked_files"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter_map(|f| f.as_str().map(String::from))
+            .collect(),
     })
 }

@@ -1,17 +1,21 @@
-import { describe, expect, it } from "vitest";
-import { pinCommentToken, pinLanguage } from "./pinFiles";
+import { beforeAll, describe, expect, it } from "vitest";
+import { pinComment, setFileFormats } from "./formats";
+import { pinLanguage } from "./pinFiles";
+import { ENGINE_FORMATS } from "./testFormats";
+
+beforeAll(() => setFileFormats(ENGINE_FORMATS));
 
 describe("pin file comments", () => {
-  it("uses each format's line comment", () => {
-    expect(pinCommentToken("pinout.pcf")).toBe("#");
-    expect(pinCommentToken("Pins.LPF")).toBe("#");
-    expect(pinCommentToken("arty.xdc")).toBe("#");
-    expect(pinCommentToken("tang.cst")).toBe("//");
+  it("uses each format's line comment, as Logix Engine gives it", () => {
+    expect(pinComment("pinout.pcf")).toBe("#");
+    expect(pinComment("Pins.LPF")).toBe("#");
+    expect(pinComment("arty.xdc")).toBe("#");
+    expect(pinComment("tang.cst")).toBe("//");
   });
   it("leaves other files alone", () => {
-    expect(pinCommentToken("main.v")).toBeNull();
-    expect(pinCommentToken("notes.txt")).toBeNull();
-    expect(pinCommentToken("pcf")).toBeNull();
+    expect(pinComment("main.v")).toBeNull();
+    expect(pinComment("notes.txt")).toBeNull();
+    expect(pinComment("pcf")).toBeNull();
     expect(pinLanguage("main.v")).toBeNull();
   });
   it("shares one language per comment kind", () => {

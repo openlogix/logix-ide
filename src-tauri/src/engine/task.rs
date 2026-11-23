@@ -1,6 +1,7 @@
 //! Verify, Upload, Run Tests, Simulate and Show Diagram with the engine, in
-//! a prepared build folder (see `build_dir`): Verify is `lint` (unless
-//! turned off) then `build`; Upload is `build` then `program_board`; the
+//! a prepared build folder (see `build_dir`): Verify is `build` with
+//! `lint` (unless turned off: the engine lints first and merges the
+//! problems); Upload is `build`, `list_devices` then `program_board`; the
 //! others are `test`, `simulate` and `diagram`. The tools' live output goes to
 //! the console and the engine's phases to the status bar.
 
@@ -15,7 +16,7 @@ use tokio_util::sync::CancellationToken;
 use super::client::{CallOptions, Engine, OutputKind, OutputLevel, OutputLine, ToolResult};
 use super::phase_sink;
 use crate::outcome::{
-    dedup, BuildReport, Clock, Diagnostic, Resource, Severity, Task, TaskEvent, TaskOutcome,
+    BuildReport, Clock, Diagnostic, Resource, Severity, Task, TaskEvent, TaskOutcome,
     TestbenchResult,
 };
 use crate::project;
@@ -34,11 +35,23 @@ const UDEV_RULE: &str = "udev-rule";
 pub const SELECT_DEVICE: &str = "select_device";
 
 /// Upload's device from the devices that fit the build: the only one, or
-/// else the error to report (as the engine's errors look) and, with
-/// several, the candidates.
+/// else the error to report (as the engine's errors look, with the
+/// engine's `status` message and action: the host picks, the engine words
+/// it) and, with several, the candidates.
 fn pick_device(
     list: &super::DeviceList,
 ) -> std::result::Result<String, (Value, Vec<super::UsbDevice>)> {
+    // The engine's words for what it found ("The Alhambra II isn't
+    // connected. …"), with its action code; not the action's description,
+    // which repeats the message for people.
+    let status = |code: Option<&str>| {
+        let s = list.status.as_ref();
+        json!({
+            "category": "setup",
+            "message": s.map_or("", |s| s.message.as_str()),
+            "action": {"code": code.or(s.and_then(|s| s.action.as_deref()))},
+        })
+    };
     match list.devices.as_slice() {
         [one] => Ok(one.id.clone()),
         // Windows: a board Windows gave another driver (such as FTDI's) can
@@ -50,29 +63,8 @@ fn pick_device(
         {
             Ok(u.id.clone())
         }
-        [] => {
-            let error = match list.unreachable.first() {
-                Some(u) => json!({
-                    "category": "setup",
-                    "message": format!("The board was found but can't be opened. {}", u.fix),
-                    "action": {"code": u.action},
-                }),
-                None => json!({
-                    "category": "setup",
-                    "message": "The board isn't connected. Connect it by USB, then Upload again.",
-                    "action": {"code": "connect_board"},
-                }),
-            };
-            Err((error, Vec::new()))
-        }
-        several => Err((
-            json!({
-                "category": "setup",
-                "message": format!("{} connected devices could be this board. Choose one to upload to.", several.len()),
-                "action": {"code": SELECT_DEVICE},
-            }),
-            several.to_vec(),
-        )),
+        [] => Err((status(None), Vec::new())),
+        several => Err((status(Some(SELECT_DEVICE)), several.to_vec())),
     }
 }
 
@@ -101,7 +93,7 @@ fn driver_needed(list: &super::DeviceList, id: &str) -> Option<crate::outcome::D
 
 /// What `choose_device` decided: the device, with the list it came from.
 enum Choice {
-    Device(String, super::DeviceList),
+    Device(String, Box<super::DeviceList>),
     /// The outcome says why Upload can't go on.
     Stop,
     Cancelled,
@@ -155,15 +147,14 @@ pub fn build_folder(source_folder: &Path) -> PathBuf {
     source_folder.join("_build")
 }
 
-/// The design files: Verilog and SystemVerilog sources, without
-/// testbenches and include files (the engine finds those itself).
+/// The design files: Verilog and SystemVerilog sources (Logix Engine's
+/// `hdl_extensions` `source`, `formats`), without testbenches and include
+/// files (the engine finds those itself).
 fn design_files(files: &[String]) -> Vec<String> {
+    let formats = crate::formats::current();
     files
         .iter()
-        .filter(|f| {
-            let lower = f.to_ascii_lowercase();
-            (lower.ends_with(".v") || lower.ends_with(".sv")) && !project::is_testbench(f)
-        })
+        .filter(|f| formats.is_source(f) && !project::is_testbench(f))
         .cloned()
         .collect()
 }
@@ -193,6 +184,7 @@ pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOu
         driver_device: None,
         same_ids: None,
         wave_page: None,
+        checked_files: Vec::new(),
     }
 }
 
@@ -211,6 +203,7 @@ fn new_outcome() -> TaskOutcome {
         driver_device: None,
         same_ids: None,
         wave_page: None,
+        checked_files: Vec::new(),
     }
 }
 
@@ -262,7 +255,6 @@ where
         outcome.ok = false;
         outcome.cancelled = true;
     }
-    outcome.diagnostics = dedup(outcome.diagnostics);
     outcome.seconds = started.elapsed().as_secs_f64();
     Ok(outcome)
 }
@@ -305,7 +297,7 @@ where
         self.build_folder.to_string_lossy().into_owned()
     }
 
-    /// Verify (lint, then build) or Upload (build, then program the board).
+    /// Verify (build with lint) or Upload (build, then program the board).
     async fn build(
         &self,
         task: Task,
@@ -316,51 +308,32 @@ where
             outcome.diagnostics.push(error(NO_CONSTRAINT_FILE));
             return Ok(true);
         };
-        if task == Task::Build && input.lint {
-            let result = self
-                .call(
-                    "lint",
-                    json!({
-                        "board": input.board,
-                        "board_variant": input.board_variant,
-                        "custom_boards_folder": self.custom_boards_folder,
-                        "display_paths": self.display_paths,
-                        "top_module": TOP_MODULE,
-                        "source_folder": self.folder,
-                        "source_files": self.sources,
-                    }),
-                )
-                .await?;
-            match result {
-                // Lint fails for warnings too, so its result never stops
-                // the build; only the build decides success.
-                Ok(lint) => outcome
-                    .diagnostics
-                    .extend(diagnostics(&lint["diagnostics"])),
-                Err(e) if is_cancelled(&e) => return Ok(false),
-                Err(e) => self.line(red(&format!("Lint: {}", message(&e)))),
-            }
-        }
-
+        // Verify lints first, in the same call: the engine runs Verilator,
+        // never lets its result stop the build, and merges both tools'
+        // problems without repeats (`diagnostics`).
         let result = self
             .call(
                 "build",
                 json!({
                     "board": input.board,
                     "board_variant": input.board_variant,
-                        "custom_boards_folder": self.custom_boards_folder,
-                        "display_paths": self.display_paths,
+                    "custom_boards_folder": self.custom_boards_folder,
+                    "display_paths": self.display_paths,
                     "top_module": TOP_MODULE,
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "constraint_file": constraint_file,
                     "build_folder": self.build_folder(),
+                    "lint": task == Task::Build && input.lint,
                 }),
             )
             .await?;
         match result {
             Ok(build) => {
-                outcome.diagnostics.extend(diagnostics(&build["warnings"]));
+                outcome
+                    .diagnostics
+                    .extend(diagnostics(&build["diagnostics"]));
+                outcome.checked_files = strings(&build["checked_files"]);
                 outcome.report = Some(report(input.family, &build));
                 outcome.ok = true;
             }
@@ -443,15 +416,10 @@ where
                     }),
                 )
                 .await?;
+            // The engine's own message line says what was programmed and
+            // where the design went ("Programmed the flash of the …").
             match result {
-                Ok(done) => {
-                    let device = &done["device"];
-                    let name = device["product"]
-                        .as_str()
-                        .or(device["manufacturer"].as_str())
-                        .unwrap_or("the board");
-                    self.line(format!("Programmed {name}."));
-                }
+                Ok(_) => {}
                 Err(e) if is_cancelled(&e) => return Ok(false),
                 Err(e) => self.failed(outcome, &e),
             }
@@ -489,13 +457,27 @@ where
             }
         };
         if let Some(id) = chosen {
-            return Ok(Choice::Device(id.to_string(), list));
+            return Ok(Choice::Device(id.to_string(), Box::new(list)));
+        }
+        if list.status.is_none() {
+            anyhow::bail!(
+                "This Logix Engine doesn't say whether the board is connected: update it with Help > Check for Updates."
+            );
         }
         match pick_device(&list) {
-            Ok(id) => Ok(Choice::Device(id, list)),
+            Ok(id) => Ok(Choice::Device(id, Box::new(list))),
             Err((error, candidates)) => {
                 self.failed(outcome, &error);
                 outcome.devices = candidates;
+                // What is connected, and tips about the cable and power, a
+                // line each, as the engine words them (its `hints`).
+                let hints = list.status.map(|s| s.hints).unwrap_or_default();
+                if !hints.is_empty() {
+                    self.line(String::new());
+                    for hint in hints {
+                        self.line(hint);
+                    }
+                }
                 Ok(Choice::Stop)
             }
         }
@@ -538,6 +520,7 @@ where
                 for tb in test["testbenches"].as_array().into_iter().flatten() {
                     self.testbench_result(tb, outcome);
                 }
+                outcome.checked_files = strings(&test["checked_files"]);
                 outcome.ok = test["passed"] == true;
             }
             Err(e) if is_cancelled(&e) => return Ok(false),
@@ -571,7 +554,8 @@ where
                     "build_folder": self.build_folder(),
                     "testbench_file": testbench,
                     "view_file": crate::wave_window::view_file(testbench),
-                    "open_viewer": false,
+                    // Logix IDE shows the page in its own window.
+                    "open": false,
                 }),
             )
             .await?;
@@ -580,8 +564,9 @@ where
                 let mut tb = sim.clone();
                 tb["file"] = json!(testbench);
                 self.testbench_result(&tb, outcome);
+                outcome.checked_files = strings(&sim["checked_files"]);
                 outcome.ok = sim["passed"] == true;
-                let Some(file) = sim["viewer_file"].as_str() else {
+                let Some(file) = sim["page_file"].as_str() else {
                     anyhow::bail!(
                         "This Logix Engine has no waveform viewer: update it with Help > Check for Updates."
                     );
@@ -600,7 +585,7 @@ where
     }
 
     /// Show Diagram: the engine draws every module of the design and
-    /// writes its page (`diagram/diagram.html`), for the Diagram window.
+    /// writes its page (`page_file`), for the Diagram window.
     pub async fn diagram(&self, input: &TaskInput<'_>, outcome: &mut TaskOutcome) -> Result<bool> {
         let result = self
             .call(
@@ -614,6 +599,8 @@ where
                     "source_folder": self.folder,
                     "source_files": self.sources,
                     "build_folder": self.build_folder(),
+                    // Logix IDE shows the page in its own window.
+                    "open": false,
                 }),
             )
             .await?;
@@ -622,9 +609,10 @@ where
                 outcome
                     .diagnostics
                     .extend(diagnostics(&diagram["diagnostics"]));
+                outcome.checked_files = strings(&diagram["checked_files"]);
                 let file = diagram["page_file"]
                     .as_str()
-                    .unwrap_or("diagram/diagram.html");
+                    .context("Logix Engine's diagram has no page_file")?;
                 let path = self.build_folder.join(file);
                 let page = tokio::fs::read_to_string(&path)
                     .await
@@ -640,17 +628,18 @@ where
 
     /// Records one testbench's result (from `test`, or `simulate`'s
     /// result with its `file`): passed or not, its problems, and why it
-    /// ended if it didn't end itself.
+    /// ended if it didn't end itself (the engine's `ending_text`, for a run
+    /// it stopped at a limit or one that never called `$finish`).
     fn testbench_result(&self, tb: &Value, outcome: &mut TaskOutcome) {
         let name = tb["file"].as_str().unwrap_or("").to_string();
         let passed = tb["passed"] == true;
         outcome.diagnostics.extend(diagnostics(&tb["diagnostics"]));
-        if let Some(note) = ending_note(&name, tb["ending"].as_str().unwrap_or("")) {
-            self.line(red(&note));
+        if let Some(note) = tb["ending_text"].as_str() {
+            self.line(red(note));
             if !passed {
                 outcome.diagnostics.push(Diagnostic {
                     file: Some(name.clone()),
-                    ..error(&note)
+                    ..error(note)
                 });
             }
         }
@@ -664,21 +653,13 @@ where
     }
 }
 
-/// Why a testbench run ended, when the engine stopped it or it ran out of
-/// things to simulate (`ending` in the engine's test results).
-fn ending_note(testbench: &str, ending: &str) -> Option<String> {
-    match ending {
-        "timeout" => Some(format!(
-            "{testbench} was stopped because it ran too long. Does it end with $finish?"
-        )),
-        "sim_time_limit" => Some(format!(
-            "{testbench} was stopped at its simulation time limit. Does it end with $finish?"
-        )),
-        "no_finish" => Some(format!(
-            "{testbench} ended without calling $finish, which usually means it stopped early by mistake."
-        )),
-        _ => None,
-    }
+/// A list of texts, such as the engine's `checked_files`.
+fn strings(v: &Value) -> Vec<String> {
+    v.as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|s| s.as_str().map(String::from))
+        .collect()
 }
 
 fn is_cancelled(error: &Value) -> bool {
@@ -710,6 +691,10 @@ fn failed(outcome: &mut TaskOutcome, error: &Value, line: &impl Fn(String)) {
             .iter()
             .any(|d| d.severity == Severity::Error);
     outcome.diagnostics.extend(found);
+    // A design error names the files it read, as a result does.
+    if let Some(files) = error["data"]["checked_files"].as_array() {
+        outcome.checked_files = strings(&Value::Array(files.clone()));
+    }
     if !has_error {
         outcome.diagnostics.push(self::error(&message(error)));
     }
@@ -875,6 +860,7 @@ where
             line: text,
             tool: output.then_some(line.tool),
             redraw: output && line.redraw,
+            location: line.location,
         });
     }
 }
@@ -886,24 +872,51 @@ mod tests {
 
     #[test]
     fn upload_picks_the_only_device_or_asks() {
-        let list = |devices: serde_json::Value| {
-            super::super::devices::parse_devices(&json!({ "devices": devices })).unwrap()
+        // The engine's status, as list_devices gives it with a build folder.
+        let status = |code: &str, message: &str, action: &str| {
+            json!({"code": code, "message": message, "hints": ["Connected USB devices:"],
+                   "action": {"code": action, "description": "For agents."}})
+        };
+        let list = |devices: serde_json::Value, status: serde_json::Value| {
+            super::super::devices::parse_devices(&json!({ "devices": devices, "status": status }))
+                .unwrap()
         };
         let dev = |id: &str| json!({"id": id, "kind": "usb", "vid": "0403", "pid": "6010", "build_match": "strong"});
-        assert_eq!(pick_device(&list(json!([dev("a")]))).unwrap(), "a");
+        let connected = status("connected", "The Alhambra II is connected.", "");
+        assert_eq!(
+            pick_device(&list(json!([dev("a")]), connected)).unwrap(),
+            "a"
+        );
 
-        let (err, candidates) = pick_device(&list(json!([dev("a"), dev("b")]))).unwrap_err();
+        let several = status(
+            "several",
+            "2 connected devices could be the Alhambra II. Choose the one to program.",
+            "",
+        );
+        let (err, candidates) =
+            pick_device(&list(json!([dev("a"), dev("b")]), several)).unwrap_err();
         assert_eq!(err["action"]["code"], SELECT_DEVICE);
         assert_eq!(candidates.len(), 2);
 
-        let (err, candidates) = pick_device(&list(json!([]))).unwrap_err();
+        let none = status(
+            "not_connected",
+            "The Alhambra II isn't connected. Connect it by USB, then try again.",
+            "connect_board",
+        );
+        let (err, candidates) = pick_device(&list(json!([]), none)).unwrap_err();
         assert_eq!(err["action"]["code"], "connect_board");
+        // The engine's message, without its action's description.
+        assert_eq!(err["action"]["description"], Value::Null);
+        assert_eq!(
+            err["message"],
+            "The Alhambra II isn't connected. Connect it by USB, then try again."
+        );
         assert!(candidates.is_empty());
 
         let locked = super::super::devices::parse_devices(&json!({"devices": [], "unreachable": [
             {"vid": "0403", "pid": "6010", "action": {"code": "fix_device_permissions", "description": "For agents."},
              "fix": "Allow it."}
-        ]})).unwrap();
+        ], "status": status("unreachable", "The Alhambra II was found but can't be opened. Allow it.", "fix_device_permissions")})).unwrap();
         let (err, _) = pick_device(&locked).unwrap_err();
         assert_eq!(err["action"]["code"], "fix_device_permissions");
         assert!(err["message"].as_str().unwrap().contains("Allow it."));
@@ -1090,6 +1103,7 @@ mod tests {
             driver_device: None,
             same_ids: None,
             wave_page: None,
+            checked_files: Vec::new(),
         };
         let lines = Mutex::new(Vec::new());
         let e = json!({
@@ -1155,6 +1169,7 @@ mod tests {
             level,
             text: text.into(),
             redraw: false,
+            location: None,
         }
     }
 
@@ -1172,7 +1187,10 @@ mod tests {
         let console = {
             let got = got.clone();
             Console::new(move |e| {
-                if let TaskEvent::Line { line, tool, redraw } = e {
+                if let TaskEvent::Line {
+                    line, tool, redraw, ..
+                } = e
+                {
                     got.lock().unwrap().push((line, tool, redraw))
                 }
             })
@@ -1213,10 +1231,9 @@ mod tests {
         );
     }
 
-    /// Verify, Upload, Run Tests, Show Diagram and Auto Format against a
-    /// real engine, on the alhambra-ii blinky example (no board
-    /// needed: Upload fails with `connect_board` unless one is plugged in;
-    /// not Simulate):
+    /// Verify, Upload, Run Tests, Simulate, Show Diagram and Auto Format
+    /// against a real engine, on the alhambra-ii blinky example (no board
+    /// needed: Upload fails with `connect_board` unless one is plugged in):
     /// `LOGIX_DEV_ENGINE_BINARY=<logix-engine> LOGIX_IDE_TEST_ENGINE_FOLDER=<engine folder with packages> cargo test real_engine_build -- --ignored --nocapture`
     #[tokio::test]
     #[ignore]
@@ -1262,12 +1279,18 @@ mod tests {
         }
         assert!(good.ok, "{good:?}");
         assert!(good.report.as_ref().unwrap().resources.len() > 3);
+        // The files Verify read: the design and the pin file, not the
+        // testbench.
+        assert!(
+            good.checked_files.contains(&"pinout.pcf".to_string()),
+            "{good:?}"
+        );
+        assert!(!good.checked_files.contains(&"main_tb.v".to_string()));
 
-        // The language server comes from the engine's verible package.
-        let ls = super::super::program_path(&engine, "verible", "verible-verilog-ls")
-            .await
-            .unwrap();
-        assert!(ls.is_file(), "{}", ls.display());
+        // The language server, as the engine runs it.
+        let ls = super::super::language_server(&engine).await.unwrap();
+        assert!(ls.command.is_file(), "{}", ls.command.display());
+        assert!(ls.args.iter().any(|a| a == "--ruleset=none"), "{ls:?}");
 
         // A syntax error is marked at its line.
         let main = dir.join("main.v");
@@ -1282,6 +1305,13 @@ mod tests {
             .diagnostics
             .iter()
             .any(|d| d.file.as_deref() == Some("main.v") && d.line.is_some()));
+        // The design error names the files it read, and the tool's error
+        // line comes with its place, for the console's link.
+        assert!(bad.checked_files.contains(&"main.v".to_string()), "{bad:?}");
+        assert!(events.lock().unwrap().iter().any(|e| matches!(
+            e,
+            TaskEvent::Line { location: Some(l), .. } if l.file == "main.v" && l.line > 0
+        )));
 
         // Upload: builds, then looks for the board.
         std::fs::write(&main, text).unwrap();
@@ -1291,6 +1321,15 @@ mod tests {
             .unwrap();
         println!("{upload:?}");
         assert!(upload.ok || upload.action.as_deref() == Some("connect_board"));
+        // Without a board, the engine's words name it.
+        assert!(
+            upload.ok
+                || upload
+                    .diagnostics
+                    .iter()
+                    .any(|d| d.message.contains("Alhambra II")),
+            "{upload:?}"
+        );
 
         // Run Tests: all testbenches, then one that fails.
         events.lock().unwrap().clear();
@@ -1302,6 +1341,11 @@ mod tests {
         }
         println!("{test:?}");
         assert!(test.ok, "{test:?}");
+        assert!(
+            test.checked_files.contains(&"main_tb.v".to_string()),
+            "{test:?}"
+        );
+        assert!(!test.checked_files.contains(&"pinout.pcf".to_string()));
         assert_eq!(test.testbenches.len(), 1);
         assert!(test.testbenches[0].passed);
         let tb = dir.join("main_tb.v");
@@ -1326,6 +1370,13 @@ mod tests {
             .iter()
             .any(|d| d.file.as_deref() == Some("main_tb.v") && d.line.is_some()));
         std::fs::write(&tb, tb_text).unwrap();
+
+        // Simulate: the engine writes the viewer's page and opens nothing.
+        let simulated = run(&engine, Task::Simulate, &input, sink.clone(), &cancel)
+            .await
+            .unwrap();
+        assert!(simulated.ok, "{simulated:?}");
+        assert!(simulated.wave_page.is_some());
 
         // Show Diagram: the engine's page, with every module.
         input.target = None;
@@ -1363,7 +1414,7 @@ mod tests {
             "module alu(input a,output b);assign b=a;\n  endmodule\n",
         )
         .unwrap();
-        let ok = super::super::format_file(&engine, &format_dir, "alu.v", |l| println!("{l}"))
+        let ok = super::super::format_file(&engine, &format_dir, "alu.v", |l| println!("{l:?}"))
             .await
             .unwrap();
         assert!(ok.ok);
@@ -1375,7 +1426,7 @@ mod tests {
             "module x;\ninitial begin\nend end\nendmodule\n",
         )
         .unwrap();
-        let bad = super::super::format_file(&engine, &format_dir, "bad.v", |l| println!("{l}"))
+        let bad = super::super::format_file(&engine, &format_dir, "bad.v", |l| println!("{l:?}"))
             .await
             .unwrap();
         println!("{bad:?}");
@@ -1384,6 +1435,7 @@ mod tests {
             .diagnostics
             .iter()
             .any(|d| d.file.as_deref() == Some("bad.v") && d.line == Some(3)));
+        assert_eq!(bad.checked_files, ["bad.v"]);
     }
 
     /// Writes an example into `dir` and returns its project file names.
@@ -1560,8 +1612,8 @@ mod tests {
             let sink = {
                 let lines = lines.clone();
                 move |e: TaskEvent| {
-                    if let TaskEvent::Line { line, .. } = e {
-                        lines.lock().unwrap().push(line)
+                    if matches!(e, TaskEvent::Line { .. }) {
+                        lines.lock().unwrap().push(e)
                     }
                 }
             };
@@ -1588,8 +1640,22 @@ mod tests {
                 let outcome = run(engine, task, &input, sink, &CancellationToken::new())
                     .await
                     .unwrap();
-                let text: Vec<String> = lines.lock().unwrap().iter().map(|l| tidy(l)).collect();
-                std::fs::write(path, text.join("\n") + "\n").unwrap();
+                // The console's events, as the UI gets them (with each
+                // line's tool, redraw flag and location).
+                let events: Vec<TaskEvent> = lines
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .cloned()
+                    .map(|mut e| {
+                        if let TaskEvent::Line { line, .. } = &mut e {
+                            *line = tidy(line);
+                        }
+                        e
+                    })
+                    .collect();
+                std::fs::write(path, serde_json::to_string_pretty(&events).unwrap() + "\n")
+                    .unwrap();
                 outcome
             }
         };
@@ -1598,9 +1664,26 @@ mod tests {
         let broken = blinky
             .replace(FIXTURES_BROKEN, FIXTURES_BROKEN.trim_end_matches(';'))
             .leak();
+        // The boards and FPGAs, as get_boards and get_fpga_families give
+        // them, and the examples for those boards, as get_examples does.
+        let catalog = super::super::catalog(&engine).await.unwrap();
+        let all = crate::examples::all();
+        let total = all.len();
+        let examples: Vec<_> = all
+            .into_iter()
+            .filter(|e| catalog.boards.iter().any(|b| b.id == e.board))
+            .collect();
+        let hidden = total - examples.len();
+        let json = |v: serde_json::Value| serde_json::to_string_pretty(&v).unwrap() + "\n";
+        std::fs::write(
+            out.join("catalog.json"),
+            json(json!({"boards": catalog.boards, "examples": examples, "hidden": hidden})),
+        )
+        .unwrap();
+        std::fs::write(out.join("fpgas.json"), json(json!(catalog.families))).unwrap();
         // Built from scratch, so each command line is shown.
         let _ = std::fs::remove_dir_all(dir.join("_build"));
-        let verified = capture(Task::Build, None, blinky, "verify.txt").await;
+        let verified = capture(Task::Build, None, blinky, "verify.json").await;
         assert!(verified.ok);
         // Its report, as Board Utilization shows it.
         std::fs::write(
@@ -1609,27 +1692,15 @@ mod tests {
         )
         .unwrap();
         assert!(
-            !capture(Task::Build, None, broken, "verify-error.txt")
+            !capture(Task::Build, None, broken, "verify-error.json")
                 .await
                 .ok
         );
-        assert!(capture(Task::Test, None, blinky, "test.txt").await.ok);
-        let diagram = capture(Task::Diagram, None, blinky, "diagram.txt").await;
+        assert!(capture(Task::Test, None, blinky, "test.json").await.ok);
+        let diagram = capture(Task::Diagram, None, blinky, "diagram.json").await;
         std::fs::write(out.join("diagram.html"), diagram.diagram_page.unwrap()).unwrap();
         // The Waveforms window's page (the docs' waveforms screenshot).
-        let simulated = capture(Task::Simulate, Some("main_tb.v"), blinky, "simulate.txt").await;
+        let simulated = capture(Task::Simulate, Some("main_tb.v"), blinky, "simulate.json").await;
         std::fs::write(out.join("waveforms.html"), simulated.wave_page.unwrap()).unwrap();
-    }
-
-    #[test]
-    fn explains_how_a_testbench_ended() {
-        assert!(ending_note("main_tb.v", "finished").is_none());
-        assert!(ending_note("main_tb.v", "first_failure").is_none());
-        assert!(ending_note("main_tb.v", "no_finish")
-            .unwrap()
-            .contains("without calling $finish"));
-        assert!(ending_note("main_tb.v", "timeout")
-            .unwrap()
-            .starts_with("main_tb.v"));
     }
 }

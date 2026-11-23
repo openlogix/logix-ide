@@ -6,37 +6,27 @@
 //   each check replaces its file's list.
 // - command problems: what the last command found (Verify, Upload, Run
 //   Tests, Simulate, Show Diagram, Auto Format). They stay until the file
-//   is edited, or a later command that reads the file reports again.
+//   is edited, or a later command that reads the file reports again: Logix
+//   Engine says which files each command read (`checked_files`), such as
+//   the pin file only for builds.
 // The editor and the tabs show both together.
-import type { Diagnostic, Task } from "./backend";
-import type { FileRole } from "./workingProject";
+import type { Diagnostic } from "./backend";
 
 /** Problems by file, from the checks that run while typing. */
 export type LiveProblems = Map<string, Diagnostic[]>;
 
 /**
- * Whether `task` reads a file of this role, so its result replaces the
- * file's earlier command problems: pin files are read only by Verify and
- * Upload, testbenches only by Run Tests and Simulate, the rest by all.
- */
-export function taskReads(task: Task, role: FileRole): boolean {
-  if (role === "pins" || role === "otherPins")
-    return task === "build" || task === "upload" || task === "report";
-  if (role === "testbench") return task === "test" || task === "simulate";
-  return true;
-}
-
-/**
  * The command problems after a command's result: `found` replaces the
- * earlier problems of the files the command read (`reads`); the other
- * files keep theirs. Problems without a file always go.
+ * earlier problems of the files the command read (`checked`, Logix Engine's
+ * `checked_files`); the other files keep theirs. Problems without a file
+ * always go.
  */
 export function afterCommand(
   earlier: Diagnostic[],
   found: Diagnostic[],
-  reads: (file: string) => boolean,
+  checked: string[],
 ): Diagnostic[] {
-  const kept = earlier.filter((d) => d.file !== null && !reads(d.file));
+  const kept = earlier.filter((d) => d.file !== null && !checked.includes(d.file));
   return [...kept, ...found];
 }
 

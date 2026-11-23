@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   matchLabel,
   deviceBoardGroups,
-  deviceSummaryLines,
-  isBoardNotFound,
   needsDeviceChoice,
   needsDriver,
   confirmContent,
@@ -42,6 +40,8 @@ const alhambra: UsbDevice = {
   serialPorts: [],
   serialPort: null,
   likelyBoards: ["alhambra-ii"],
+  otherBoards: [],
+  rank: 0,
   buildMatch: null,
   who: "the Alhambra II",
   driver: null,
@@ -49,15 +49,10 @@ const alhambra: UsbDevice = {
 
 const outcome = (action: string | null, devices: UsbDevice[] = []): TaskOutcome => ({
   ok: false, diagnostics: [], testbenches: [], report: null,
-  cancelled: false, seconds: 1, action, devices, driverDevice: null, sameIds: null,
+  cancelled: false, seconds: 1, action, devices, driverDevice: null, sameIds: null, checkedFiles: [],
 });
 
 describe("devices", () => {
-  it("recognizes a board-not-found upload error", () => {
-    expect(isBoardNotFound(outcome("connect_board"))).toBe(true);
-    expect(isBoardNotFound(outcome(null))).toBe(false);
-  });
-
   it("asks for a device only when several fit", () => {
     expect(needsDeviceChoice(outcome("select_device", [alhambra, alhambra]))).toBe(true);
     expect(needsDeviceChoice(outcome("select_device", [alhambra]))).toBe(false);
@@ -99,15 +94,14 @@ describe("devices", () => {
       id: "usb:1-2:1d50:602b:", label: "USB device (1d50:602b)", vid: "1d50", pid: "602b",
       action: "fix_device_permissions", who: "the iCESugar v1.5",
       fix: "Add a udev rule for it, so it can be programmed and its name read.",
+      note: "This may be an FPGA board, the iCESugar v1.5: it has its USB IDs. Add a udev rule for it, so it can be programmed and its name read.",
+      rank: 0,
       driver: driver({ needed: "udev-rule", interface: null, current: null, tag: "no udev rule yet" }),
       boards: [{ board: "icesugar-1-5", level: "weak" as const }],
     };
     expect(lockedTag(locked)).toBe("no udev rule yet");
     expect(lockedTag({ ...locked, driver: null })).toBe("can't be opened");
-    expect(unreachableNote(locked, null, () => "iCESugar v1.5")).toContain(locked.fix);
-    expect(deviceSummaryLines({ usb: [], unreachable: [locked] })[1]).toBe(
-      `  • USB device (1d50:602b) can't be opened. ${locked.fix}`,
-    );
+    expect(unreachableNote(locked, null, () => "iCESugar v1.5")).toBe(locked.note);
   });
 
   it("says how long a driver change took", () => {
@@ -127,11 +121,13 @@ describe("devices", () => {
     const locked = {
       id: "usb:1-2:0403:6010", label: "USB device (0403:6010)", vid: "0403", pid: "6010",
       action: "install_drivers", who: "USB device (0403:6010)", fix: "It needs its driver first, so it can be programmed.",
+      note: "This may be your Sipeed Tang Nano 9k: it has the same USB IDs. It needs its driver first, so it can be programmed.",
+      rank: 0,
       driver: driver(),
       boards: [{ board: "alhambra-ii", level: "weak" as const }, { board: "tangnano9k", level: "weak" as const }],
     };
     const name = (id: string) => ({ "alhambra-ii": "Alhambra II", tangnano9k: "Sipeed Tang Nano 9k" })[id] ?? id;
-    const text = devicesReport({ usb: [alhambra], unreachable: [locked] }, "tangnano9k", name, {
+    const text = devicesReport({ usb: [{ ...alhambra, rank: 1 }], unreachable: [locked] }, "tangnano9k", name, {
       title: "Installing the WinUSB driver…", step: null, lines: ["Permission given."], started: 0,
       result: { text: "Installed.", kind: "ok" },
     });
@@ -158,59 +154,34 @@ describe("devices", () => {
     expect(devicesReport({ usb: [], unreachable: [] }, null, name, null)).toContain("No USB devices.");
   });
 
-  it("lists the likely FPGA boards first, the selected board's first of all", () => {
-    const mouse = { ...alhambra, id: "mouse", label: "USB Mouse", boards: [], likelyBoards: [] };
-    const other = { ...alhambra, id: "other", boards: [{ board: "icestick", level: "weak" as const }] };
+  it("lists the devices in Logix Engine's order, one list", () => {
+    const mouse = { ...alhambra, id: "mouse", label: "USB Mouse", boards: [], likelyBoards: [], rank: 2 };
+    const other = { ...alhambra, id: "other", rank: 1 };
     const locked = {
       id: "locked", label: "USB device (0403:6010)", vid: "0403", pid: "6010",
       action: "install_drivers", who: "USB device (0403:6010)", fix: "It needs its driver first, so it can be programmed.",
+      note: "This may be your Alhambra II: it has the same USB IDs. It needs its driver first, so it can be programmed.",
+      rank: 0,
       driver: driver(),
       boards: [{ board: "alhambra-ii", level: "weak" as const }, { board: "alchitry-au", level: "weak" as const }],
     };
-    const ids = (selected: string | null) =>
-      orderedDevices({ usb: [mouse, other], unreachable: [locked] }, selected).map((d) => d.device.id);
-    expect(ids("alhambra-ii")).toEqual(["locked", "other", "mouse"]);
-    expect(ids("icestick")).toEqual(["other", "locked", "mouse"]);
-    expect(ids(null)).toEqual(["other", "locked", "mouse"]);
+    expect(orderedDevices({ usb: [mouse, other], unreachable: [locked] }).map((d) => d.device.id)).toEqual([
+      "locked",
+      "other",
+      "mouse",
+    ]);
+    // The engine's note, saying which board that is in Logix IDE.
     const name = (id: string) => ({ "alhambra-ii": "Alhambra II", "alchitry-au": "Alchitry Au" })[id] ?? id;
     expect(unreachableNote(locked, "alhambra-ii", name)).toBe(
       "This may be your Alhambra II (the board selected in the toolbar): it has the same USB IDs. It needs its driver first, so it can be programmed.",
     );
-    expect(unreachableNote(locked, "icestick", name)).toContain("This may be an FPGA board: 2 boards have its USB IDs.");
-    expect(unreachableNote({ ...locked, boards: [locked.boards[0]] }, null, name)).toContain("the Alhambra II: it has its USB IDs");
-    // Elsewhere (Linux permissions), the engine's fix too.
-    expect(unreachableNote({ ...locked, driver: null, fix: "Fix the permissions." }, null, name)).toContain("Fix the permissions.");
+    expect(unreachableNote(locked, "icestick", name)).toBe(locked.note);
   });
 
-  it("splits a device's boards into the engine's likely boards and others", () => {
-    const d = {
-      ...alhambra,
-      likelyBoards: ["arty", "basys3"],
-      boards: [
-        { board: "arty", level: "possible" as const },
-        { board: "basys3", level: "possible" as const },
-        { board: "generic-a", level: "weak" as const },
-        { board: "generic-b", level: "weak" as const },
-      ],
-    };
-    expect(deviceBoardGroups(d, null)).toEqual({
-      matches: ["arty", "basys3"],
-      others: ["generic-a", "generic-b"],
-    });
-    // With a strong match, the weaker ones are left out, except the
-    // selected board when the device fits it.
-    const strong = {
-      ...d,
-      likelyBoards: ["arty"],
-      boards: [{ board: "arty", level: "strong" as const }, ...d.boards.slice(1)],
-    };
-    expect(deviceBoardGroups(strong, null)).toEqual({ matches: ["arty"], others: [] });
-    expect(deviceBoardGroups(strong, "generic-b")).toEqual({ matches: ["arty"], others: ["generic-b"] });
-    expect(deviceBoardGroups(strong, "alhambra-ii")).toEqual({ matches: ["arty"], others: [] });
-    // Only weak matches: no likely board, all others.
-    const generic = { ...alhambra, likelyBoards: [], boards: [{ board: "generic-a", level: "weak" as const }] };
-    expect(deviceBoardGroups(generic, null)).toEqual({ matches: [], others: ["generic-a"] });
-    expect(deviceBoardGroups({ ...alhambra, likelyBoards: [], boards: [] }, null)).toEqual({ matches: [], others: [] });
+
+  it("groups a device's boards as Logix Engine names them", () => {
+    const d = { ...alhambra, likelyBoards: ["arty", "basys3"], otherBoards: ["generic-a"] };
+    expect(deviceBoardGroups(d)).toEqual({ matches: ["arty", "basys3"], others: ["generic-a"] });
   });
 
   it("puts match levels in words", () => {
@@ -218,18 +189,6 @@ describe("devices", () => {
     expect(matchLabel("possible")).toBe("Possible match");
     expect(matchLabel("weak")).toBe("Weak match");
     expect(matchLabel(null)).toBe("");
-  });
-
-  it("lists connected devices or gives tips", () => {
-    expect(deviceSummaryLines({ usb: [alhambra], unreachable: [] })[1]).toBe(
-      "  • Alhambra II v1.0A (AlhambraBits, 0403:6010)",
-    );
-    const none = deviceSummaryLines({
-      usb: [],
-      unreachable: [{ id: "usb:1-3:0403:6014:", driver: null, label: "USB device (0403:6014)", vid: "0403", pid: "6014", action: "fix_device_permissions", who: "USB device (0403:6014)", fix: "Allow it.", boards: [] }],
-    });
-    expect(none[0]).toBe("No USB devices are connected.");
-    expect(none[1]).toBe("  • USB device (0403:6014) can't be opened. Allow it.");
   });
 });
 

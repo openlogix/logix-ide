@@ -15,7 +15,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import type { Board } from "./backend";
-  import { boardGroups, fpgaLabel, type BoardGroup } from "./boards";
+  import { boardGroups, type BoardGroup } from "./boards";
   import { expandGroup, expanded, toggleGroup } from "./expandedGroups.svelte";
   import Icon from "./Icon.svelte";
 
@@ -75,7 +75,7 @@
   const selected = $derived(boards.find((b) => b.id === value) ?? null);
   /** An entry's tooltip: where a custom board comes from, and its FPGA. */
   const entryTitle = (b: Board) =>
-    [b.custom ? FROM_PROJECT : null, b.fpga ? `FPGA: ${fpgaLabel(b)}` : null]
+    [b.custom ? FROM_PROJECT : null, b.fpga ? `FPGA: ${b.fpga.label}` : null]
       .filter(Boolean)
       .join("\n") || undefined;
   const label = $derived(

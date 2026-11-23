@@ -224,7 +224,9 @@ export interface FpgaFamily {
   label: string;
   /** Its pin files' extension, e.g. "cst" (null if unknown). */
   pinExtension: string | null;
-  fpgas: { id: string; partNumber: string; size: string }[];
+  /** What starts a comment line in its pin files, e.g. "//" (null if unknown). */
+  pinComment: string | null;
+  fpgas: Fpga[];
 }
 
 export interface Board {
@@ -240,6 +242,8 @@ export interface Board {
   familyOrder: number;
   /** The extension of the board's pin files, from Logix Engine, e.g. "pcf" (null if unknown). */
   pinExtension: string | null;
+  /** What starts a comment line in those pin files, from Logix Engine: "#", or "//" for Gowin's .cst (null if unknown). */
+  pinComment: string | null;
   /** How the board is programmed: Connection and Memory, for every board. */
   dimensions: Dimension[];
   /** The combinations that exist; the first is the default. */
@@ -250,10 +254,12 @@ export interface Board {
   fpga: Fpga | null;
   /**
    * What the board wires to FPGA pins, by port name, as Logix Engine gives
-   * it: each with its `type` (clock, leds, uart…) and that type's fields.
+   * it: each with its `type` (clock, leds, uart…) and that type's fields,
+   * and the engine's words for people: `type_label`, `pins_text` and
+   * `notes_text`.
    */
   resources?: Record<string, Record<string, unknown>>;
-  /** What every design for the board must do (drives and setups), as the engine gives it. */
+  /** What every design for the board must do (drives and setups), as the engine gives it, each with its `text` for people. */
   requires?: Record<string, unknown>[];
   /** The board's own hints for AI agents, and people, writing designs for it (its resources have their own `ai_hints`). */
   aiHints?: string[];
@@ -267,6 +273,20 @@ export interface Fpga {
   partNumber: string;
   /** The device size, e.g. "8k". */
   size: string;
+  /** The FPGA for people, by Logix Engine, e.g. "Lattice iCE40 ICE40HX4K-TQ144 (8k)". */
+  label: string;
+}
+
+/**
+ * Which files are Verilog sources, includes and pin files, with each pin
+ * file format's line comment: Logix Engine's (`hdl_extensions`, the
+ * families' `constraint_extension` and `constraint_comment`), or the
+ * backend's built-in copy until the engine has answered.
+ */
+export interface FileFormats {
+  source: string[];
+  include: string[];
+  pins: { extension: string; comment: string }[];
 }
 
 export interface Example {
@@ -349,6 +369,12 @@ export interface TaskOutcome {
    */
   driverDevice: DriverDevice | null;
   sameIds: Consent | null;
+  /**
+   * The files Logix Engine read and checked (its `checked_files`): their
+   * earlier problems are replaced with these; the others' stay. Empty when
+   * no tool ran.
+   */
+  checkedFiles: string[];
 }
 
 /** For Upload (Windows and Linux): install the board's driver or udev rule first, which the user agreed to. */
@@ -430,6 +456,13 @@ export interface DriverInstalled {
 }
 
 /** Streamed while a task runs: console lines, and the current phase. */
+/** A place in a project file, as Logix Engine gives it for an output line. */
+export interface Location {
+  file: string;
+  line: number;
+  column?: number;
+}
+
 export type TaskEvent =
   | {
       kind: "line";
@@ -438,6 +471,8 @@ export type TaskEvent =
       tool?: string;
       /** The tool prints over it: replace it with that tool's next line. */
       redraw?: boolean;
+      /** The place in a project file the line names, by Logix Engine, for a link. */
+      location?: Location;
     }
   | { kind: "progress"; message: string; percent: number | null }
   /**
@@ -452,6 +487,8 @@ export interface FormatResult {
   /** The formatted text, if formatting succeeded. */
   text: string | null;
   diagnostics: Diagnostic[];
+  /** The files Logix Engine checked: the file. */
+  checkedFiles: string[];
 }
 
 export interface UsbDevice {
@@ -471,6 +508,13 @@ export interface UsbDevice {
   boards: { board: string; level: MatchLevel }[];
   /** The boards it most likely is, by the engine (none when only weak matches). */
   likelyBoards: string[];
+  /**
+   * The other boards worth naming after those, by the engine (with a
+   * strong match, only the selected board when the device may be it).
+   */
+  otherBoards: string[];
+  /** Its place in one list with the unreachable devices, 0 first, by the engine. */
+  rank: number;
   /** For Upload's candidates: how well it matches the build's board. */
   buildMatch: MatchLevel | null;
   /** Logix Engine's name for it in a sentence, such as "the Alhambra II". */
@@ -529,6 +573,10 @@ export interface UnreachableDevice {
   who: string;
   /** What to do, for people, by Logix Engine. */
   fix: string;
+  /** What it may be and what to do, for people, by Logix Engine, ending with `fix`. */
+  note: string;
+  /** Its place in one list with the other devices, 0 first, by the engine. */
+  rank: number;
   /** On Windows, the driver its board needs and has. */
   driver: Driver | null;
   /** The boards whose USB IDs it has (all weak: its names can't be read yet). */
@@ -722,6 +770,9 @@ export const backend = {
 
   /** All boards, sorted by description. Needs the FPGA tools ready. */
   getBoards: (): Promise<Board[]> => invoke<Board[]>("get_boards"),
+
+  /** Which files are sources, includes and pin files (never fails). */
+  fileFormats: (): Promise<FileFormats> => invoke<FileFormats>("file_formats"),
 
   /**
    * Every FPGA Logix Engine supports, by family in the engine's order, each
@@ -1141,8 +1192,8 @@ export const backend = {
    * Tool output that isn't part of a task or setup (which report their
    * own lines): Auto Format's.
    */
-  onToolOutput: (handler: (line: string) => void): Promise<UnlistenFn> =>
-    listen<string>("tool-output", (e) => handler(e.payload)),
+  onToolOutput: (handler: (event: TaskEvent) => void): Promise<UnlistenFn> =>
+    listen<TaskEvent>("tool-output", (e) => handler(e.payload)),
 
   /** The user tried to close the window while there are unsaved changes. */
   onCloseRequested: (handler: () => void): Promise<UnlistenFn> =>
