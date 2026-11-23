@@ -1,7 +1,7 @@
 [
   {
     "kind": "line",
-    "line": "\u001b[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DLOGIX_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/ide/dev/engine-data/packages/logix-core/2026-11-22/oss-cad-suite/share/yosys/ice40 ~/.logix/ide/dev/engine-data/tmp/models-0a2b6e7c51962765.vlt ~/.logix/ide/dev/engine-data/packages/logix-core/2026-11-22/oss-cad-suite/share/yosys/ice40/cells_sim.v main.v\u001b[0m"
+    "line": "\u001b[2m$ verilator_bin --lint-only --quiet --bbox-unsup --timing -Wno-TIMESCALEMOD -Wno-MULTITOP -DSYNTHESIZE -DLOGIX_SIM=0 --top-module main -DNO_ICE40_DEFAULT_ASSIGNMENTS -I~/.logix/engine-dev/engine-data/packages/logix-core/2026-11-22/oss-cad-suite/share/yosys/ice40 ~/.logix/engine-dev/engine-data/tmp/models-34da1b9144277169.vlt ~/.logix/engine-dev/engine-data/packages/logix-core/2026-11-22/oss-cad-suite/share/yosys/ice40/cells_sim.v main.v\u001b[0m"
   },
   {
     "kind": "line",

@@ -3846,18 +3846,21 @@
         "rgb_led": {
           "type": "rgb_led",
           "red": "40",
-          "green": "41",
-          "blue": "39",
+          "green": "39",
+          "blue": "41",
           "active": "low",
           "source": {
-            "kind": "schematic",
-            "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
+            "kind": "hardware",
+            "ref": "Pin test on a real iCESugar v1.5, 2026-11-22; github.com/wuxx/icesugar/issues/65"
           },
+          "user_notes": "Boards from newer batches swap green and blue from the schematic, as listed here; older ones follow the schematic (blue 39, green 41). If blinky lights blue instead of green, yours is an older one.",
           "type_label": "RGB LED",
-          "pins_text": "R 40, G 41, B 39",
-          "notes_text": "Active low",
+          "pins_text": "R 40, G 39, B 41",
+          "notes_text": "Active low. Boards from newer batches swap green and blue from the schematic, as listed here; older ones follow the schematic (blue 39, green 41). If blinky lights blue instead of green, yours is an older one.",
           "ai_hints": [
-            "Wired to the FPGA's RGB LED driver pads: red RGB1, green RGB2, blue RGB0.",
+            "Wired to the FPGA's RGB LED driver pads: red RGB1, green RGB0, blue RGB2.",
+            "Newer batches' LED swaps green and blue from the schematic (blue 39, green 41).",
+            "Older boards follow the schematic; the maker plans to return to it (wuxx/icesugar#65).",
             "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
           ]
         },
@@ -3874,10 +3877,10 @@
             "kind": "schematic",
             "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
           },
-          "user_notes": "A 4-way DIP switch with pull-ups, on the same pins as PMOD4.",
+          "user_notes": "A 4-way DIP switch with pull-ups, S1 to S4 on pins 18 to 21, the same pins as PMOD4.",
           "type_label": "Switches",
           "pins_text": "18, 19, 20, 21",
-          "notes_text": "Active low. A 4-way DIP switch with pull-ups, on the same pins as PMOD4."
+          "notes_text": "Active low. A 4-way DIP switch with pull-ups, S1 to S4 on pins 18 to 21, the same pins as PMOD4."
         },
         "uart": {
           "type": "uart",
@@ -3953,22 +3956,76 @@
         },
         "pmod4": {
           "type": "header",
-          "pins": [
-            "21",
-            "20",
-            "19",
-            "18",
-            null,
-            null
+          "positions": {
+            "1": {
+              "power": "3.3V"
+            },
+            "2": {
+              "power": "GND"
+            },
+            "3": {
+              "net": "S1"
+            },
+            "4": {
+              "net": "S2"
+            },
+            "5": {
+              "net": "S3"
+            },
+            "6": {
+              "net": "S4"
+            },
+            "7": {
+              "pin": "21"
+            },
+            "8": {
+              "pin": "20"
+            },
+            "9": {
+              "pin": "19"
+            },
+            "10": {
+              "pin": "18"
+            },
+            "11": {
+              "power": "GND"
+            },
+            "12": {
+              "power": "3.3V"
+            }
+          },
+          "grid": [
+            [
+              "1",
+              "2",
+              "3",
+              "4",
+              "5",
+              "6"
+            ],
+            [
+              "12",
+              "11",
+              "10",
+              "9",
+              "8",
+              "7"
+            ]
           ],
           "source": {
-            "kind": "maker",
-            "ref": "github.com/wuxx/icesugar src/common/io.pcf"
+            "kind": "schematic",
+            "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf; MuseLab's iCESugar v1.5 pinout (the grid)"
           },
-          "user_notes": "A 6-pin PMOD: 4 signals, then GND and 3.3 V. Shared with the DIP switches: turn them off to use it.",
+          "requires": [
+            {
+              "type": "setup",
+              "text": "Remove PMOD4's 4 jumpers: as shipped, they connect positions 7 to 10 (pins 21 to 18) to the DIP switches."
+            }
+          ],
+          "user_notes": "Positions 3 to 6 are DIP switches S1 to S4, with 4.7k pull-ups; 7 to 10 are FPGA pins 21 to 18, with none.",
           "type_label": "Header",
-          "pins_text": "21, 20, 19, 18, –, –",
-          "notes_text": "A 6-pin PMOD: 4 signals, then GND and 3.3 V. Shared with the DIP switches: turn them off to use it."
+          "pins_text": "1: 3.3V, 2: GND, 3: S1, 4: S2, 5: S3, 6: S4, 7: 21, 8: 20, 9: 19, 10: 18, 11: GND, 12: 3.3V",
+          "notes_text": "Needs: Remove PMOD4's 4 jumpers: as shipped, they connect positions 7 to 10 (pins 21 to 18) to the DIP switches.. Positions 3 to 6 are DIP switches S1 to S4, with 4.7k pull-ups; 7 to 10 are FPGA pins 21 to 18, with none."
         },
         "unclassified": {
           "type": "unclassified",
@@ -6045,41 +6102,73 @@
         },
         "io_header_1": {
           "type": "header",
-          "pins": [
-            "28",
-            "27",
-            "26",
-            "25",
-            "23",
-            null,
-            null,
-            null
-          ],
+          "positions": {
+            "1": {
+              "pin": "28"
+            },
+            "2": {
+              "pin": "27"
+            },
+            "3": {
+              "pin": "26"
+            },
+            "4": {
+              "pin": "25"
+            },
+            "5": {
+              "pin": "23"
+            },
+            "6": {
+              "power": "3.3V"
+            },
+            "7": {
+              "power": "GND"
+            },
+            "8": {
+              "power": "GND"
+            }
+          },
           "source": {
             "kind": "maker",
-            "ref": "The maker's pin diagram and Icestudio pin file: IO0-IO4, then 3V3, GND, GND."
+            "ref": "The maker's pin diagram and Icestudio pin file: IO0-IO4, then 3V3, GND, GND. The position numbers are ours, in that order."
           },
           "type_label": "Header",
-          "pins_text": "28, 27, 26, 25, 23, –, –, –"
+          "pins_text": "1: 28, 2: 27, 3: 26, 4: 25, 5: 23, 6: 3.3V, 7: GND, 8: GND"
         },
         "io_header_2": {
           "type": "header",
-          "pins": [
-            "13",
-            "21",
-            "20",
-            "19",
-            "18",
-            null,
-            null,
-            null
-          ],
+          "positions": {
+            "1": {
+              "pin": "13"
+            },
+            "2": {
+              "pin": "21"
+            },
+            "3": {
+              "pin": "20"
+            },
+            "4": {
+              "pin": "19"
+            },
+            "5": {
+              "pin": "18"
+            },
+            "6": {
+              "power": "3.3V"
+            },
+            "7": {
+              "power": "GND"
+            },
+            "8": {
+              "power": "GND"
+            }
+          },
           "source": {
             "kind": "maker",
-            "ref": "The maker's pin diagram and Icestudio pin file: IO5-IO9, then 3V3, GND, GND."
+            "ref": "The maker's pin diagram and Icestudio pin file: IO5-IO9, then 3V3, GND, GND. The position numbers are ours, in that order."
           },
           "type_label": "Header",
-          "pins_text": "13, 21, 20, 19, 18, –, –, –"
+          "pins_text": "1: 13, 2: 21, 3: 20, 4: 19, 5: 18, 6: 3.3V, 7: GND, 8: GND"
         }
       },
       "requires": [],
