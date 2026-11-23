@@ -12,7 +12,8 @@ testbenches and shows the result of each:
 ![Run Tests: the testbench's output and its result](images/tests.png)
 
 To run just one, right-click its tab, or right-click in it in the editor,
-and choose **Run Test**. **Simulate Test** is there too.
+and choose **Run Test**. **Simulate Test** is there too. With the testbench
+open, both are also in the **Project** menu.
 
 A test fails when the testbench reports an error (`$error` or `$fatal`), or
 when it doesn't end with `$finish`. Run Tests stops a testbench at its first
@@ -53,8 +54,7 @@ In the Waveforms window:
 
 What you choose is kept: the window saves it as the testbench's view
 (`main_tb.view` for `main_tb.v`), part of your project, and the next
-simulation opens the same way. Undo (⌘Z, Ctrl+Z on Windows and Linux) goes
-back step by step. The view has no tab: you change it only in the Waveforms
+simulation opens the same way. Undo goes back step by step. The view has no tab: you change it only in the Waveforms
 window.
 
 ## Writing a testbench

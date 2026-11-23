@@ -12,7 +12,6 @@ import {
   fromDoc,
   isDirty,
   isHdlSource,
-  projectModules,
   moduleAt,
   isFileDirty,
   mainFile,
@@ -265,21 +264,6 @@ describe("isHdlSource", () => {
   });
 });
 
-
-describe("projectModules", () => {
-  it("lists design modules, main first, without testbenches", () => {
-    const p = fromDoc({
-      ...savedDoc,
-      files: [
-        { name: "main.v", text: "module main (\n);\n  counter c();\nendmodule\n" },
-        { name: "util.v", text: "// module fake\nmodule counter;\nendmodule\nmodule alu;\nendmodule\n" },
-        { name: "main_tb.v", text: "module main_tb;\nendmodule\n" },
-        { name: "pinout.pcf", text: "module nope" },
-      ],
-    });
-    expect(projectModules(p)).toEqual(["main", "alu", "counter"]);
-  });
-});
 
 describe("file roles", () => {
   it("tells what each file is for", () => {

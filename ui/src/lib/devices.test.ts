@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   matchLabel,
   deviceBoardGroups,
-  mayBeBoard,
   needsDeviceChoice,
   needsDriver,
   confirmContent,
@@ -179,12 +178,6 @@ describe("devices", () => {
     expect(unreachableNote(locked, "icestick", name)).toBe(locked.note);
   });
 
-  it("tells whether a device may be a board", () => {
-    const generic = { ...alhambra, boards: [{ board: "alchitry-au", level: "weak" as const }] };
-    expect(mayBeBoard(generic, "alchitry-au")).toBe(true);
-    expect(mayBeBoard(generic, "icestick")).toBe(false);
-    expect(mayBeBoard(generic, null)).toBe(false);
-  });
 
   it("groups a device's boards as Logix Engine names them", () => {
     const d = { ...alhambra, likelyBoards: ["arty", "basys3"], otherBoards: ["generic-a"] };

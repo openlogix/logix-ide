@@ -66,23 +66,23 @@ const HELP_PREFIX: &str = "help:";
 
 /// Help menu: (label, web page). `None` marks a separator.
 const HELP_LINKS: &[Option<(&str, &str)>] = &[
-    Some(("Logix IDE Documentation", "https://openlogix.github.io/logix-ide/")),
+    Some(("Logix IDE Documentation", "https://www.openlogix.org/logix-ide/")),
     Some(("Tutorial", "https://www.openlogix.org/logix-ide/tutorial/")),
     Some((
         "Testbenches and Simulation",
-        "https://openlogix.github.io/logix-ide/testbenches/",
+        "https://www.openlogix.org/logix-ide/testbenches/",
     )),
     Some((
         "Using an AI Agent",
-        "https://openlogix.github.io/logix-ide/ai-agents/",
+        "https://www.openlogix.org/logix-ide/ai-agents/",
     )),
     Some((
         "Troubleshooting",
-        "https://openlogix.github.io/logix-ide/troubleshooting/",
+        "https://www.openlogix.org/logix-ide/troubleshooting/",
     )),
     Some((
         "Keyboard Shortcuts",
-        "https://openlogix.github.io/logix-ide/using-logix/#keyboard-shortcuts",
+        "https://www.openlogix.org/logix-ide/using-logix/#keyboard-shortcuts",
     )),
     None,
     Some(("Logix IDE Website", "https://www.openlogix.org/ide/")),
@@ -109,6 +109,9 @@ pub const NEEDS_PROJECT: &[&str] = &[
     RUN_TESTS,
     SIMULATE,
     SHOW_DIAGRAM,
+    RUN_THIS_TEST,
+    SIMULATE_THIS_TEST,
+    SHOW_MODULE_DIAGRAM,
     BUILD_REPORT,
     STOP,
     SHOW_FOLDER,
@@ -138,9 +141,13 @@ pub struct MenuState {
     /// The project has a testbench to simulate (Simulate; the UI picks it or
     /// asks which one: `simulateChoice.ts`).
     pub simulate: bool,
-    /// The open tab is a testbench: the editor's right-click menu adds Run
-    /// Test and Simulate Test (hidden otherwise, to keep it short).
+    /// The open tab is a testbench: Run Test and Simulate Test (in the
+    /// editor's right-click menu only then, to keep it short).
     pub testbench_open: bool,
+    /// The open tab is a design file that declares a module: Module
+    /// Diagram.
+    #[serde(default)]
+    pub module_open: bool,
     /// One Tools submenu per dimension of the current board's variants,
     /// e.g. Tools > Memory ▸ Flash / RAM. Empty for most boards.
     #[serde(default)]
@@ -186,6 +193,8 @@ pub fn is_enabled(id: &str, state: &MenuState) -> bool {
         GO_TO_DEFINITION => state.definition,
         RUN_TESTS => state.testbenches,
         SIMULATE => state.simulate,
+        RUN_THIS_TEST | SIMULATE_THIS_TEST => state.testbench_open,
+        SHOW_MODULE_DIAGRAM => state.module_open,
         _ => true,
     }
 }
@@ -380,8 +389,15 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .separator()
         .item(&item(RUN_TESTS, "Run Tests", "CmdOrCtrl+Shift+T")?)
         .item(&item(SIMULATE, "Simulate", NO_KEY)?)
+        // The file commands for the open tab, under their project commands
+        // (Commands, their scope and where they are: the menu bar has every
+        // command; the user's report, 2026-11-22: only right-click menus
+        // had them).
+        .item(&item(RUN_THIS_TEST, "Run Test", NO_KEY)?)
+        .item(&item(SIMULATE_THIS_TEST, "Simulate Test", NO_KEY)?)
         .separator()
         .item(&item(SHOW_DIAGRAM, "Show Diagram", "CmdOrCtrl+Shift+D")?)
+        .item(&item(SHOW_MODULE_DIAGRAM, "Module Diagram", NO_KEY)?)
         .item(
             &MenuItemBuilder::with_id(BUILD_REPORT, "Board Utilization…")
                 .enabled(is_enabled(BUILD_REPORT, &state))
@@ -653,7 +669,14 @@ fn follows_state(id: &str) -> bool {
     NEEDS_PROJECT.contains(&id)
         || matches!(
             id,
-            AUTO_FORMAT | TOGGLE_COMMENT | GO_TO_DEFINITION | RUN_TESTS | SIMULATE
+            AUTO_FORMAT
+                | TOGGLE_COMMENT
+                | GO_TO_DEFINITION
+                | RUN_TESTS
+                | SIMULATE
+                | RUN_THIS_TEST
+                | SIMULATE_THIS_TEST
+                | SHOW_MODULE_DIAGRAM
         )
 }
 
@@ -934,6 +957,9 @@ mod tests {
             GO_TO_DEFINITION,
             RUN_TESTS,
             SIMULATE,
+            RUN_THIS_TEST,
+            SIMULATE_THIS_TEST,
+            SHOW_MODULE_DIAGRAM,
         ] {
             assert!(!is_enabled(id, &pins), "{id}");
         }
@@ -953,6 +979,7 @@ mod tests {
             testbenches: true,
             simulate: true,
             testbench_open: true,
+            module_open: true,
             variant_menus: Vec::new(),
         };
         for id in [
@@ -962,6 +989,9 @@ mod tests {
             RUN_TESTS,
             SIMULATE,
             BUILD_REPORT,
+            RUN_THIS_TEST,
+            SIMULATE_THIS_TEST,
+            SHOW_MODULE_DIAGRAM,
         ] {
             assert!(is_enabled(id, &all), "{id}");
         }

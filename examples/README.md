@@ -6,9 +6,9 @@ The examples Logix IDE offers in File > Examples. They reach users as the
 config names (`remote-config/logix-ide/`), so a fixed or new example reaches
 installed Logix IDEs without a new Logix IDE release. Each
 folder `<board>/<name>/` is a Logix IDE project: its files and a `logix-ide.toml`
-with the board and a one-line description.
+with the board, a one-line summary and optional notes.
 
-Every board's `blinky`, `bare-minimum` and `serial` are standard examples, written
+Every board's `blinky`, `bare-minimum`, `serial` and `serial-debug` (the last two on boards with a serial port) are standard examples, written
 by an AI from the spec in [`spec/examples/`](../spec/examples/README.md) and
 the board's file in [Logix Catalog](https://github.com/openlogix/logix-catalog),
 which Logix Engine serves: change the spec or the board's file, not these

@@ -80,22 +80,6 @@ export function isDirty(p: WorkingProject): boolean {
 
 
 /**
- * The modules the diagram can show: those declared in the project's
- * Verilog files, except testbenches, with "main" first.
- */
-export function projectModules(p: WorkingProject): string[] {
-  const names = new Set<string>();
-  for (const f of p.files) {
-    if (!isHdlSource(f.name) || isTestbench(f.name)) continue;
-    for (const m of f.text.matchAll(/^\s*module\s+([A-Za-z_][\w$]*)/gm)) {
-      names.add(m[1]);
-    }
-  }
-  const rest = [...names].filter((n) => n !== "main").sort();
-  return names.has("main") ? ["main", ...rest] : rest;
-}
-
-/**
  * The module the cursor at `offset` is in: the last module declared before
  * it, else the file's first one; null with none.
  */

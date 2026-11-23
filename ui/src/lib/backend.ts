@@ -659,8 +659,10 @@ export interface MenuState {
   testbenches: boolean;
   /** There's a testbench to simulate (Simulate). */
   simulate: boolean;
-  /** The open tab is a testbench (the editor menu's Run Test, Simulate Test). */
+  /** The open tab is a testbench (Run Test, Simulate Test). */
   testbenchOpen: boolean;
+  /** The open tab is a design file that declares a module (Module Diagram). */
+  moduleOpen: boolean;
   /** One Tools submenu per dimension of the board's variants. */
   variantMenus: VariantMenu[];
 }

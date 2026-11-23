@@ -31,11 +31,6 @@ export function matchLabel(level: MatchLevel | null): string {
   return { strong: "Strong match", possible: "Possible match", weak: "Weak match" }[level];
 }
 
-/** Whether a device may be the given board, at any level. */
-export function mayBeBoard(d: UsbDevice, board: string | null): boolean {
-  return board !== null && d.boards.some((b) => b.board === board);
-}
-
 /**
  * The boards a device may be, as Tools > Connected Devices lists them, in
  * two collapsible groups, both Logix Engine's (for the board the scan

@@ -1372,18 +1372,20 @@
     runTask("diagram", module === "main" ? null : module);
   }
 
-  /** The module the editor's right-click menu offers the diagram of. */
-  let menuModule: string | null = null;
-
-  /** The editor's right-click menu, with Show Diagram of the module at the cursor. */
-  function openEditorMenu() {
+  /** Module Diagram's module: in the open tab, a design file, the one at
+   * `offset` (the cursor's when null). Right-click moves the cursor to the
+   * click first, so the menu bar and the editor's menu agree. */
+  function cursorModule(offset: number | null): string | null {
     const file = project ? findFile(project, activeFile) : null;
-    const offset = editor?.cursorOffset() ?? null;
-    menuModule =
-      file && offset !== null && isHdlSource(file.name) && !isTestbench(file.name)
-        ? moduleAt(file.text, offset)
-        : null;
-    backend.showEditorMenu(menuModule);
+    const at = offset ?? editor?.cursorOffset() ?? 0;
+    return file && isHdlSource(file.name) && !isTestbench(file.name)
+      ? moduleAt(file.text, at)
+      : null;
+  }
+
+  /** The editor's right-click menu, with Module Diagram of the module at the cursor. */
+  function openEditorMenu() {
+    backend.showEditorMenu(cursorModule(null));
   }
 
   /** A block clicked in the Diagram window: its source in the editor. */
@@ -1712,6 +1714,7 @@
     testbenches: project !== null && testbenches(project).length > 0,
     simulate: project !== null && testbenches(project).length > 0,
     testbenchOpen: project !== null && isTestbench(activeFile),
+    moduleOpen: cursorModule(0) !== null,
     variantMenus: variantMenus(currentBoardInfo, currentVariant),
   });
 
@@ -2407,12 +2410,15 @@
       clearOutput();
       return;
     }
-    // The editor's right-click menu: the diagram of the module at the cursor.
+    // Module Diagram (the menu bar or the editor's right-click menu): the
+    // module at the cursor in the open tab.
     if (id === "show-module-diagram") {
-      if (project && menuModule) showDiagram(menuModule);
+      const module = cursorModule(null);
+      if (project && module) showDiagram(module);
       return;
     }
-    // The editor's right-click menu, in a testbench (as on its tab).
+    // Run Test and Simulate Test (the menu bar or the editor's right-click
+    // menu): the open testbench, as on its tab.
     if (id === "run-this-test" || id === "simulate-this-test") {
       if (project && isTestbench(activeFile)) {
         runTask(id === "run-this-test" ? "test" : "simulate", activeFile);
