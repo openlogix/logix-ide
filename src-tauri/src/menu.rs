@@ -275,6 +275,14 @@ fn recent_entries<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Vec<MenuItemK
     Ok(out)
 }
 
+/// A board option's submenu title in Tools: the engine's dimension label
+/// with "Board" in front ("Board Memory", "Board Connection"), since in the
+/// menu nothing else says whose memory it is (the user's decision,
+/// 2026-11-22; the variant panel next to the board keeps the plain label).
+pub fn variant_menu_title(label: &str) -> String {
+    format!("Board {label}")
+}
+
 /// Tools' board options (one submenu per dimension, as Arduino's board
 /// options), then a separator when there are any. No item has a shortcut,
 /// so `refresh` can replace them in place.
@@ -284,7 +292,7 @@ fn variant_entries<R: Runtime>(
 ) -> tauri::Result<Vec<MenuItemKind<R>>> {
     let mut out: Vec<MenuItemKind<R>> = Vec::new();
     for dim in &state.variant_menus {
-        let mut sub = SubmenuBuilder::new(app, &dim.label);
+        let mut sub = SubmenuBuilder::new(app, variant_menu_title(&dim.label));
         for v in &dim.values {
             sub = sub.item(
                 &CheckMenuItemBuilder::with_id(
@@ -931,6 +939,12 @@ mod tests {
             recent_labels(&dirs),
             ["blinky — IDE", "blinky — work", "counter"]
         );
+    }
+
+    #[test]
+    fn board_options_say_whose_they_are() {
+        assert_eq!(variant_menu_title("Memory"), "Board Memory");
+        assert_eq!(variant_menu_title("Connection"), "Board Connection");
     }
 
     #[test]
