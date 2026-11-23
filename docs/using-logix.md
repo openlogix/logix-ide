@@ -157,8 +157,9 @@ as **USB**, the board's own USB port) and where the design goes (**Flash**
 or **RAM**). Click it to see what each means. Many boards can be
 programmed in more than one way: through different USB adapters (such as
 the ColorLight i9 or the ButterStick), or into flash or RAM (such as the
-iCESugar-Pro or the Arty A7); for these, choose the option there or under **Tools**. The
-project remembers it.
+iCESugar-Pro or the Arty A7); for these, choose the option there or in
+**Tools > Board Connection** and **Tools > Board Memory**. The project
+remembers it.
 
 ![The ButterStick's options, open next to the board: Connection (USB bootloader, FT2232H adapter, FT232H adapter) and Memory (Flash, RAM), with a note about the bootloader](images/board-options.png)
 

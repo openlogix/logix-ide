@@ -563,7 +563,7 @@ test("a board's variant: shown next to it, changed there or in Tools, saved and 
     variant: { connection: "usb", memory: "ram" },
   });
 
-  // Tools > Memory > Flash: back to the default, stored as nothing. The
+  // Tools > Board Memory > Flash: back to the default, stored as nothing. The
   // project isn't marked unsaved for it, but Save stores it.
   await menu(page, "variant:memory:flash");
   await expect(summary).toHaveText(/^\s*USB · Flash/);
