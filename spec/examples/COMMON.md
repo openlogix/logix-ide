@@ -145,8 +145,8 @@ with both values.
 
 ## Waveform view
 
-Most examples have no `.view` file (the user's decision, 2026-11-10, for
-GTKWave's `.gtkw` layouts then): Simulate opens the waveform viewer's
+Most examples have no `.view` file (the user's decision, 2026-11-10):
+Simulate opens the waveform viewer's
 default view for the testbench, its own signals in the order it declares
 them, which the engine may improve over time. So declare the signals worth
 seeing first in the testbench, in a useful order. A view the user changes

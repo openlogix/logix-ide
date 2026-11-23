@@ -41,7 +41,7 @@ module main_tb;
     for (i = 0; i <= 40; i = i + 1) begin
       if (i > 0) @(posedge sys_clk);
       #1;
-      `EXPECT_EQ(rgb_led_n, ~{i[3], i[4], i[2]})
+      `EXPECT_EQ(rgb_led_n, ~i[4:2])
     end
 
     $display("End of simulation");

@@ -72,7 +72,8 @@ Windows (x64) and Linux (x64); CI builds and tests them.
 
 That's all. The JavaScript packages are installed by the scripts when
 needed, and Logix IDE downloads Logix Engine and the FPGA tools on its first
-run, as it does for users (into `~/.logix/ide`, about 3 GB).
+run, as it does for users (into `~/.logix/ide`: about 700 MB to download,
+about 3 GB unpacked).
 
 Optional, only for previewing the documentation site: Python 3.
 

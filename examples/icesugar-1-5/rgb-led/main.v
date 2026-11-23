@@ -16,8 +16,10 @@ module main #(
   // Count up on every clock.
   always @(posedge sys_clk) counter <= counter + 1;
 
-  // The counter's top 3 bits turn the colors on and off.
-  wire [2:0] rgb_led = {counter[N-2], counter[N-1], counter[N-3]};
+  // The counter's top 3 bits turn the colors on and off: red is the lowest
+  // of the three, so it changes fastest, and the LED counts through the
+  // colors in binary: off, red, green, yellow, blue, magenta, cyan, white.
+  wire [2:0] rgb_led = counter[N-1:N-3];
 
   // The RGB LED is active low, so invert it.
   assign rgb_led_n = ~rgb_led;
