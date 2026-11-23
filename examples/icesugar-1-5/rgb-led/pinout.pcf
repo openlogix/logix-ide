@@ -7,5 +7,5 @@ set_io sys_clk 35  # input
 
 # RGB LED, active low.
 set_io rgb_led_n[0] 40  # output, red
-set_io rgb_led_n[1] 41  # output, green
-set_io rgb_led_n[2] 39  # output, blue
+set_io rgb_led_n[1] 39  # output, green
+set_io rgb_led_n[2] 41  # output, blue
