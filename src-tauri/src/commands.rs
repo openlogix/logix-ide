@@ -1441,12 +1441,8 @@ pub async fn open_last_project() -> Result<Option<ProjectDoc>, UserError> {
     let Some(dir) = settings::load(&settings_path()?).last_project else {
         return Ok(None);
     };
-    let name = project::project_name(&dir);
-    let loaded = blocking(move || {
-        project::load(&dir)
-            .with_context(|| format!("Couldn't reopen the last project, \"{name}\"."))
-    })
-    .await??;
+    let loaded = blocking(move || project::load(&dir).context("Couldn't reopen the last project."))
+        .await??;
     Ok(Some(loaded.into()))
 }
 
