@@ -1,0 +1,6 @@
+# Pins of UPduino v3.0 used by main.v.
+
+# rgb_led: RGB LED (active low).
+set_io rgb_led[0] 41  # red
+set_io rgb_led[1] 39  # green
+set_io rgb_led[2] 40  # blue

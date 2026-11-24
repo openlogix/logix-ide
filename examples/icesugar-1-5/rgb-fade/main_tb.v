@@ -11,28 +11,24 @@
 
 module main_tb;
 
-  // Clock.
+  // The 12 MHz clock.
   reg sys_clk = 0;
-  always #5 sys_clk = ~sys_clk;
-
-  // Number of sys_clk rising edges so far.
-  integer clk_num = 0;
-  always @(posedge sys_clk) clk_num <= clk_num + 1;
+  always #41.667 sys_clk = ~sys_clk;
 
   // The RGB LED driven by the design.
-  wire [2:0] rgb_led_n;
+  wire [2:0] rgb_led;
 
   // The fade moves one step every 2 clocks, so a color rises and falls in
   // about 8,200 clocks. Each color's highest brightness is as in main.v.
-  localparam [11:0] RED_MAX = 249, GREEN_MAX = 156, BLUE_MAX = 499;
+  localparam [11:0] RED_MAX = 121, GREEN_MAX = 76, BLUE_MAX = 243;
   main #(
       .STEP(2),
       .RED_MAX(RED_MAX),
       .GREEN_MAX(GREEN_MAX),
       .BLUE_MAX(BLUE_MAX)
   ) dut (
-      .sys_clk  (sys_clk),
-      .rgb_led_n(rgb_led_n)
+      .sys_clk(sys_clk),
+      .rgb_led(rgb_led)
   );
 
   // The color of the fade now (0 red, 1 green, 2 blue), its highest duty:
@@ -53,7 +49,7 @@ module main_tb;
   endfunction
 
   // The test sequence: 4 fades, red, green, blue, red again. Every clock:
-  // the LED is off or on in the fade's color only, on exactly while the
+  // the LED is off or lit in the fade's color only, lit exactly while the
   // PWM counter is below the duty, and the duty rises, then falls, never
   // above the color's highest. Each fade reaches exactly its highest.
   initial begin
@@ -74,14 +70,17 @@ module main_tb;
         falling = 0;
         fades = fades + 1;
       end
-      if (rgb_led_n !== 3'b111) `EXPECT_EQ(rgb_led_n, ~(3'b001 << color))
-      `EXPECT_EQ(rgb_led_n !== 3'b111, dut.pwm < dut.duty)
+      if (rgb_led !== 3'b111) `EXPECT_EQ(rgb_led, ~(3'b001 << color))
+      `EXPECT_EQ(rgb_led !== 3'b111, dut.pwm < dut.duty)
       if (dut.duty > top) $error("duty %0d is above the color's highest, %0d", dut.duty, top);
       if (dut.duty < last) falling = 1;
-      if (falling && dut.duty > last) $error("duty rose from %0d to %0d while falling", last, dut.duty);
+      if (falling && dut.duty > last)
+        $error("duty rose from %0d to %0d while falling", last, dut.duty);
       if (dut.duty > peak) peak = dut.duty;
       last = dut.duty;
     end
+
+    // Add your own checks here.
 
     $display("End of simulation");
     $finish;

@@ -1,0 +1,9 @@
+# Pins of VSDSquadron FPGA Mini used by main.v.
+
+# sys_clk: 12 MHz clock.
+set_io sys_clk 20
+
+# rgb_led: RGB LED (active low).
+set_io rgb_led[0] 41  # red
+set_io rgb_led[1] 39  # green
+set_io rgb_led[2] 40  # blue

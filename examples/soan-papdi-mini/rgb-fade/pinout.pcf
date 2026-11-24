@@ -1,0 +1,9 @@
+# Pins of Soan-Papdi-Mini used by main.v.
+
+# sys_clk: 12 MHz clock.
+set_io sys_clk 35
+
+# rgb_led: RGB LED (active low).
+set_io rgb_led[0] 39  # red
+set_io rgb_led[1] 40  # green
+set_io rgb_led[2] 41  # blue

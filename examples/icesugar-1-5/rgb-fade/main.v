@@ -1,8 +1,8 @@
-// Fades the RGB LED up and down, one color at a time: red, green, blue,
-// red, and so on. Each color rises from off to its highest brightness and
-// falls back to off, and the LED moves to the next color each time it's
-// off. Blue goes up to about 12% of full power; red and green, which
-// look brighter at the same power, go less high, so the three look
+// rgb-fade for the iCESugar v1.5: fades the RGB LED in and out, one color at
+// a time: red, then green, then blue, then red again. Each color rises
+// from off to its highest brightness and falls back to off, and the LED
+// moves to the next color each time it's off. Red and green, which look
+// brighter at the same power, go less high than blue, so the three look
 // alike. The fade follows a 2.5 gamma curve (gamma.v), so it looks even
 // to the eye from off to the top.
 //
@@ -11,25 +11,25 @@
 // shows the PWM and the fade.
 
 // The LED is switched with 12-bit pulse width modulation: on for 'duty'
-// of every 4096 clocks, about 2,900 times a second, far too fast to see.
-// STEP sets the speed: the fade moves one step every STEP clocks, 4,094
-// steps up and down per color. With the default STEP = 11724 and a 12MHz
-// clock, each color rises and falls in about 4 seconds. The testbench
-// uses a small STEP to run quickly.
+// of every 4096 clocks, about 2,930 times a second, far too fast to
+// see. STEP sets the speed: the fade moves one step every STEP clocks,
+// 4,094 steps up and down per color. With the default STEP = 11724 and
+// the 12 MHz clock, each color rises and falls in about 4 seconds. The
+// testbench uses a small STEP to run quickly.
 //
 // RED_MAX, GREEN_MAX and BLUE_MAX are each color's highest brightness, in
 // PWM steps out of 4096: 2048 is 50%, 1024 is 25%. Tune red and green by
 // eye until they look as bright as blue. To look X times as bright, all
-// three take X^2.5 times the power (the gamma): they were 512, 320 and
-// 1024, and 0.75^2.5 = 0.487 of those made the LED look 25% dimmer.
+// three take X^2.5 times the power (the gamma): 0.75^2.5 = 0.49 times
+// the power looks 25% dimmer.
 module main #(
     parameter integer STEP = 11724,
-    parameter [11:0] RED_MAX = 249,
-    parameter [11:0] GREEN_MAX = 156,
-    parameter [11:0] BLUE_MAX = 499
+    parameter [11:0] RED_MAX = 121,
+    parameter [11:0] GREEN_MAX = 76,
+    parameter [11:0] BLUE_MAX = 243
 ) (
-    input        sys_clk,   // 12MHz clock
-    output [2:0] rgb_led_n  // RGB LED, active low. [0]=red, [1]=green, [2]=blue.
+    input        sys_clk,  // 12 MHz clock
+    output [2:0] rgb_led   // RGB LED: [0] red, [1] green, [2] blue, lit when 0.
 );
 
   // The PWM counter: the LED is on while it's below the duty.
@@ -77,15 +77,41 @@ module main #(
 
   // The color's highest brightness, and the duty: the curve scaled to it,
   // so at the top it's the color's highest.
-  wire [11:0] color_max = (color == 0) ? RED_MAX : (color == 1) ? GREEN_MAX : BLUE_MAX;
+  wire [11:0] color_max = (color == 0) ? RED_MAX :
+                          (color == 1) ? GREEN_MAX : BLUE_MAX;
   wire [23:0] product = curve * color_max;
   wire [11:0] duty = product[23:12];  // curve * color_max / 4096
 
-  // The LED is on for 'duty' of the 4096 PWM steps, in its color.
-  wire       on = pwm < duty;
-  wire [2:0] rgb_led = on ? (3'b001 << color) : 3'b000;
+  // Each color's PWM: on while the counter is below the duty, in the
+  // fade's color only.
+  wire on = pwm < duty;
+  wire red_on = on && color == 0;
+  wire green_on = on && color == 1;
+  wire blue_on = on && color == 2;
 
-  // The RGB LED is active low, so invert it.
-  assign rgb_led_n = ~rgb_led;
+  // The RGB LED driver. The board wires the LED to the driver's pads:
+  // red to RGB1, green to RGB0, blue to RGB2.
+  // A PWM input of 1 lights that color; the pads sink the lowest current,
+  // 2 mA, plenty for an indicator LED.
+`ifdef SYNTHESIZE
+  SB_RGBA_DRV #(
+      .CURRENT_MODE("0b1"),  // Half current: the lowest settings.
+      .RGB0_CURRENT("0b000001"),
+      .RGB1_CURRENT("0b000001"),
+      .RGB2_CURRENT("0b000001")
+  ) rgb_driver (
+      .CURREN  (1'b1),  // Current reference on.
+      .RGBLEDEN(1'b1),  // Driver on.
+      .RGB0PWM (green_on),
+      .RGB1PWM (red_on),
+      .RGB2PWM (blue_on),
+      .RGB0    (rgb_led[1]),
+      .RGB1    (rgb_led[0]),
+      .RGB2    (rgb_led[2])
+  );
+`else
+  // Simulation only: each pad low (lit) while its color's PWM is 1.
+  assign rgb_led = ~{blue_on, green_on, red_on};
+`endif
 
 endmodule

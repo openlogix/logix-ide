@@ -1,11 +1,9 @@
-# Constraint file of the rgb-fade example for the iCESugar 1.5 board.
-# It assigns the design's signals to FPGA pins, and lists only
-# the pins that this example uses.
+# Pins of iCESugar v1.5 used by main.v.
 
-# Clock (12MHz).
-set_io sys_clk 35  # input
+# sys_clk: 12 MHz clock.
+set_io sys_clk 35
 
-# RGB LED, active low.
-set_io rgb_led_n[0] 40  # output, red
-set_io rgb_led_n[1] 39  # output, green
-set_io rgb_led_n[2] 41  # output, blue
+# rgb_led: RGB LED (active low).
+set_io rgb_led[0] 40  # red
+set_io rgb_led[1] 39  # green
+set_io rgb_led[2] 41  # blue
