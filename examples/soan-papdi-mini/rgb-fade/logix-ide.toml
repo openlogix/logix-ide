@@ -1,0 +1,3 @@
+# Logix IDE project settings.
+board = "soan-papdi-mini"
+summary = "Fades the RGB LED in and out, red, green, blue, evenly to the eye."

@@ -1,0 +1,6 @@
+# Logix IDE project settings.
+board = "vsdsquadron-fm"
+summary = "Fades the RGB LED in and out, red, green, blue, evenly to the eye."
+notes = [
+  "Boards of the first revision (serial number 20241201_J) have a 25 MHz clock, so their fade is about twice as fast.",
+]

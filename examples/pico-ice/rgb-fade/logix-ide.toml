@@ -1,0 +1,6 @@
+# Logix IDE project settings.
+board = "pico-ice"
+summary = "Fades the RGB LED in and out, red, green, blue, evenly to the eye."
+notes = [
+  "No clock works as shipped: the design uses the FPGA's internal oscillator, at 12 MHz.",
+]

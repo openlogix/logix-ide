@@ -1,0 +1,6 @@
+# Logix IDE project settings.
+board = "upduino31"
+summary = "Fades the RGB LED in and out, red, green, blue, evenly to the eye."
+notes = [
+  "The board's 12 MHz clock needs a jumper (R16): the design uses the FPGA's internal oscillator instead, at 12 MHz.",
+]

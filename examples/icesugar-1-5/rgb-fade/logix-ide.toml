@@ -1,0 +1,6 @@
+# Logix IDE project settings.
+board = "icesugar-1-5"
+summary = "Fades the RGB LED in and out, red, green, blue, evenly to the eye."
+notes = [
+  "On boards from older batches, green and blue are swapped, so the fade goes red, blue, green.",
+]
