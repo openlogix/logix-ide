@@ -13,7 +13,7 @@
   // installers differ by platform, and nothing downloads it.
   "latest": {
     "repo": "openlogix/logix-ide",
-    "release": "2026-11-21"
+    "release": "2026-11-24"
   },
   "dependencies": {
     // Logix Engine, which builds, tests and programs the board, and downloads
@@ -31,9 +31,12 @@
     // driver and udev texts Logix IDE shows, the new remote config files,
     // check_updates' newer_engine, and the waveform viewer in place of
     // GTKWave (Milestone 5: simulate's viewer, open_waveform).
+    // 2026-11-24, the launch (Milestone 6): the waveform and diagram pages'
+    // one look and host, places in their hover boxes, a board's boundary
+    // fields, and tool output on Windows (icesprog's lines).
     "logix-engine": {
       "repo": "openlogix/logix-engine",
-      "release": "2026-11-21",
+      "release": "2026-11-24",
       "file": "logix-engine-${PLATFORM}-${YYYYMMDD}.tgz"
     },
 
@@ -42,9 +45,12 @@
     // Pinned at the first promotion, 2026-11-13.
     // 2026-11-21, a promotion: the serial and serial-debug examples, on the
     // boards with a UART.
+    // 2026-11-24, the launch (Milestone 6): the standard examples rewritten
+    // for catalog 2026.11.23, the new rgb-fade on boards with an RGB LED, the
+    // serial examples' waveform views, and the iCESugar v1.5's LED pins.
     "logix-ide-examples": {
       "repo": "openlogix/logix-ide",
-      "release": "2026-11-21",
+      "release": "2026-11-24",
       "file": "logix-ide-examples-${YYYYMMDD}.tgz"
     }
   }

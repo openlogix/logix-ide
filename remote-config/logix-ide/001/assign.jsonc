@@ -15,5 +15,9 @@
   // Serial Monitor and the serial examples, many files (Go to File), auto
   // save and folder watching for AI agents, and Check for Updates telling of
   // a newer Logix IDE.
-  "prod": ["2026-11-12", "2026-11-15", "2026-11-17", "2026-11-21"]
+  // 2026-11-24: the public launch (Milestone 6): the banner telling of a
+  // newer Logix IDE, Board Memory and Board Connection, Using an AI Agent,
+  // the standard examples rewritten (rgb-fade new), and a deleted project
+  // folder no longer blocking Close and Open.
+  "prod": ["2026-11-12", "2026-11-15", "2026-11-17", "2026-11-21", "2026-11-24"]
 }
