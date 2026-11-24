@@ -219,11 +219,17 @@ pub fn check_new_file_name(name: &str, existing: &[String]) -> Result<(), String
 }
 
 /// Loads the project in `dir`.
+/// Errors name the folder by its full path, so a project that moved or was
+/// deleted can be found (the user's report, 2026-11-24: a deleted folder
+/// was reported as "The folder \"blinky\" isn't a Logix IDE project").
 pub fn load(dir: &Path) -> Result<Project> {
+    if !dir.is_dir() {
+        bail!("The project folder {} no longer exists.", dir.display());
+    }
     let Some(main) = MAIN_FILES.iter().find(|m| dir.join(m).is_file()) else {
         bail!(
-            "The folder \"{}\" isn't a Logix IDE project: it has no main.v or main.sv.",
-            project_name(dir)
+            "The folder {} isn't a Logix IDE project: it has no main.v or main.sv.",
+            dir.display()
         );
     };
     let mut names = Vec::new();
@@ -872,8 +878,23 @@ mod tests {
     #[test]
     fn load_rejects_folder_without_main() {
         let tmp = tempfile::tempdir().unwrap();
-        let err = load(tmp.path()).unwrap_err();
-        assert!(err.to_string().contains("isn't a Logix IDE project"));
+        let err = load(tmp.path()).unwrap_err().to_string();
+        assert!(err.contains("isn't a Logix IDE project"));
+        assert!(
+            err.contains(&tmp.path().display().to_string()),
+            "the full path: {err}"
+        );
+    }
+
+    #[test]
+    fn load_says_a_missing_folder_is_gone_with_its_full_path() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("blinky");
+        let err = load(&dir).unwrap_err().to_string();
+        assert_eq!(
+            err,
+            format!("The project folder {} no longer exists.", dir.display())
+        );
     }
 
     #[test]
