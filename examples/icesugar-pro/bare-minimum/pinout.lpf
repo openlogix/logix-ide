@@ -8,3 +8,9 @@ FREQUENCY PORT "sys_clk" 25 MHZ;
 # led: LED (active low).
 LOCATE COMP "led" SITE "A11";
 IOBUF PORT "led" IO_TYPE=LVCMOS33;
+
+# uart: USB serial port, through the on-board iCELink.
+LOCATE COMP "uart_tx" SITE "B9";
+IOBUF PORT "uart_tx" IO_TYPE=LVCMOS33;
+LOCATE COMP "uart_rx" SITE "A9";
+IOBUF PORT "uart_rx" IO_TYPE=LVCMOS33;

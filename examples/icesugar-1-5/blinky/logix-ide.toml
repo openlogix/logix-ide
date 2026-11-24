@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "icesugar-1-5"
 summary = "Blinks the RGB LED in green about once a second."
+notes = ["Boards from older batches follow the schematic, with green and blue swapped: if the LED blinks blue instead of green, yours is an older one."]

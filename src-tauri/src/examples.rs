@@ -207,7 +207,9 @@ mod tests {
             blinky.summary,
             "Blinks the RGB LED in green about once a second."
         );
-        assert!(blinky.notes.is_empty());
+        // Its note, from the RGB LED's user_notes (older batches light blue).
+        assert_eq!(blinky.notes.len(), 1);
+        assert!(blinky.notes[0].contains("blinks blue instead of green"));
         // Every example has a one-line summary; qualifiers are notes.
         assert!(list
             .iter()
