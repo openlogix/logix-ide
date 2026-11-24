@@ -394,6 +394,9 @@ const fake = {
   confirmAnswer: true,
   /** When set, a Save into the project's folder fails with this error (`saveProject`). */
   saveError: null as Real.UserError | null,
+  /** The projects "Save changes?" asked about (`askSaveChanges`), and its answer. */
+  saveChangesAsked: [] as string[],
+  saveChangesAnswer: "discard" as Real.SaveChoice,
   /** When set, Save As fails with this error (`saveProjectAsDialog`). */
   saveAsError: null as Real.UserError | null,
   /** Devices reported as plugged in, with their boards (`connectedDevices`). */
@@ -1295,7 +1298,10 @@ export const backend: typeof Real.backend = {
     fake.confirms.push({ title, okLabel, kind });
     return fake.confirmAnswer;
   },
-  askSaveChanges: async () => "discard",
+  askSaveChanges: async (name: string) => {
+    fake.saveChangesAsked.push(name);
+    return fake.saveChangesAnswer;
+  },
   setDocumentState: async (name: string, dirty: boolean) => {
     fake.documentState = { name, dirty };
   },

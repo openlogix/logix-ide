@@ -2025,10 +2025,18 @@
   async function confirmLeave(): Promise<boolean> {
     if (!project || !dirty) return true;
     // With auto save, a saved project's changes are saved, not asked about.
-    if (autoSaveOn && project.dir) return save();
+    // When that save fails, such as when the project's folder was deleted,
+    // ask, so the project can still be left: Save is then Save As, into
+    // another folder (the user's report, 2026-11-24: Close and Open
+    // stopped at the failed save every time).
+    let saveFailed = false;
+    if (autoSaveOn && project.dir) {
+      if (await save()) return true;
+      saveFailed = true;
+    }
     const choice = await backend.askSaveChanges(project.name);
     if (choice === "cancel") return false;
-    if (choice === "save") return save();
+    if (choice === "save") return saveFailed ? saveAs() : save();
     return true;
   }
 

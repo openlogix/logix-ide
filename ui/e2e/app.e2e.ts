@@ -2175,6 +2175,36 @@ test("with auto save, the unsaved mark shows only when a save failed", async ({ 
   await expect(dot).toHaveCount(0);
 });
 
+test("with auto save, a project whose folder is gone can still be closed", async ({ page }) => {
+  type Fake = {
+    saveError: unknown;
+    saveChangesAsked: string[];
+    saveChangesAnswer: string;
+    saved: unknown;
+  };
+  const set = (values: Partial<Fake>) =>
+    page.evaluate((values) => Object.assign((window as unknown as { __fake: Fake }).__fake, values), values);
+  const asked = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.saveChangesAsked.length);
+  await start(page);
+  await menu(page, "save-as");
+  await expect(status(page)).toContainText("Saved");
+  // The folder is deleted: every save into it fails.
+  const gone = { message: "Couldn't save the project.", details: "The project folder /Users/you/blinky no longer exists." };
+  await set({ saveError: gone });
+  await typeAtStart(page, "// a\n");
+  // Close asks, after the save fails, instead of staying put; Cancel stays.
+  await set({ saveChangesAnswer: "cancel" });
+  await menu(page, "close-project");
+  await expect.poll(asked).toBe(1);
+  await expect(tab(page, "main.v").first()).toBeVisible();
+  // Save is Save As, into another folder, and then it closes.
+  await set({ saveChangesAnswer: "save", saved: null });
+  await menu(page, "close-project");
+  await expect.poll(asked).toBe(2);
+  await expect(output(page)).toContainText("Closed the project.");
+  expect(await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.saved)).not.toBeNull();
+});
+
 test("changes other programs make in the project folder show up, without asking", async ({ page }) => {
   type Change = { name: string; text: string | null };
   type Fake = {
