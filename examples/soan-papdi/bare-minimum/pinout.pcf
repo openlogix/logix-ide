@@ -3,7 +3,7 @@
 # sys_clk: 12 MHz clock.
 set_io sys_clk 35
 
-# leds: 8 LEDs (active high).
+# leds: LEDs 0 to 7 (active high).
 set_io leds[0] 31
 set_io leds[1] 32
 set_io leds[2] 34
@@ -12,3 +12,24 @@ set_io leds[4] 37
 set_io leds[5] 44
 set_io leds[6] 45
 set_io leds[7] 46
+
+# status_leds: status LEDs S0 to S3 (active low; S0 to S2 on the RGB LED driver pads).
+set_io status_leds[0] 39
+set_io status_leds[1] 40
+set_io status_leds[2] 41
+set_io status_leds[3] 47
+
+# prog_button: PROG button (its active level isn't known).
+set_io prog_button 2
+
+# switches_a: first 4 switches (active high).
+set_io switches_a[0] 6
+set_io switches_a[1] 4
+set_io switches_a[2] 3
+set_io switches_a[3] 48
+
+# switches_b: other 4 switches (active high).
+set_io switches_b[0] 12
+set_io switches_b[1] 11
+set_io switches_b[2] 10
+set_io switches_b[3] 9

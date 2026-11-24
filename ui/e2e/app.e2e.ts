@@ -98,7 +98,7 @@ test("starts with the start screen, and New / Close Project", async ({ page }) =
   await start.getByRole("button", { name: "New Project" }).click();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(tab(page, "main_tb.v")).toBeVisible();
-  await expect(page.locator(".cm-content")).toContainText("assign uart_tx = 1'b1;");
+  await expect(page.locator(".cm-content")).toContainText("output uart_tx,");
   await expect(output(page)).toContainText(/New project\.\s*Ready\./);
   // Close Project: back to the start screen, with the recent projects.
   await page.evaluate(() => {
@@ -785,7 +785,7 @@ test("opens a board's bare-minimum from the examples", async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(tab(page, "pinout.pcf")).toBeVisible();
   await expect(tab(page, "main_tb.v")).toBeVisible();
-  await expect(page.locator(".cm-content")).toContainText("assign uart_tx = 1'b1;");
+  await expect(page.locator(".cm-content")).toContainText("output uart_tx,");
   await expect(status(page)).toHaveText("Opened bare-minimum for iCESugar v1.5.");
   // Like every command, its output ends with the result, then "Ready.".
   await expect(output(page)).toContainText(

@@ -1,6 +1,6 @@
 {
   "catalog": {
-    "version": "2026.11.19"
+    "version": "2026.11.23"
   },
   "boards": {
     "alchitry-au": {
@@ -67,7 +67,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/alchitry/Alchitry-Labs-V2 AuPin.kt and alchitry.acf"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "N14",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -86,7 +89,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/alchitry/Alchitry-Labs-V2 AuPin.kt and alchitry.acf"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "K13, K12, L14, L13, M16, M14, M12, N16",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -95,12 +101,14 @@
         "part_number": "XC7A35T-1FTG256",
         "size": "35k",
         "nextpnr_device": "xc7a35tftg256-1",
-        "jtag_idcode": "0x0362d093"
+        "jtag_idcode": "0x0362d093",
+        "label": "Xilinx Artix-7 XC7A35T-1FTG256 (35k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -169,7 +177,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/alchitry/Alchitry-Labs-V2 (the same pinout as the Au, ftg256)"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "N14",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -188,7 +199,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/alchitry/Alchitry-Labs-V2 (the same pinout as the Au, ftg256)"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "K13, K12, L14, L13, M16, M14, M12, N16",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -197,12 +211,14 @@
         "part_number": "XC7A100T-1FTG256",
         "size": "100k",
         "nextpnr_device": "xc7a100tftg256-1",
-        "jtag_idcode": "0x03631093"
+        "jtag_idcode": "0x03631093",
+        "label": "Xilinx Artix-7 XC7A100T-1FTG256 (100k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -251,7 +267,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "P7",
-            "mhz": 100.0
+            "mhz": 100.0,
+            "type_label": "Clock",
+            "pins_text": "P7",
+            "notes_text": "100 MHz"
           },
           "leds": {
             "type": "leds",
@@ -265,7 +284,10 @@
               "M12",
               "N14"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "J11, K11, K12, K14, L12, L14, M12, N14",
+            "notes_text": "Active high"
           }
         }
       },
@@ -274,12 +296,14 @@
         "part_number": "ICE40HX8K-CB132",
         "size": "8k",
         "nextpnr_device": "hx8k",
-        "nextpnr_package": "cb132"
+        "nextpnr_package": "cb132",
+        "label": "Lattice iCE40 ICE40HX8K-CB132 (8k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -328,7 +352,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "49",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "49",
+            "notes_text": "12 MHz"
           },
           "leds": {
             "type": "leds",
@@ -342,17 +369,24 @@
               "38",
               "37"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "45, 44, 43, 42, 41, 39, 38, 37",
+            "notes_text": "Active high"
           },
           "uart": {
             "type": "uart",
             "tx": "61",
             "rx": "62",
+            "usb_interface": 1,
             "source": {
               "kind": "maker",
               "ref": "github.com/FPGAwars/Alhambra-II-FPGA examples/picorv32/picosoc/demo.pcf"
             },
-            "user_notes": "The FTDI chip's second channel, USB interface 1, over the board's USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board)."
+            "user_notes": "The FTDI chip's second channel, USB interface 1, over the board's USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board).",
+            "type_label": "UART",
+            "pins_text": "TX 61, RX 62",
+            "notes_text": "The FTDI chip's second channel, USB interface 1, over the board's USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board)."
           }
         }
       },
@@ -361,12 +395,14 @@
         "part_number": "ICE40HX4K-TQ144",
         "size": "8k",
         "nextpnr_device": "hx8k",
-        "nextpnr_package": "tq144:4k"
+        "nextpnr_package": "tq144:4k",
+        "label": "Lattice iCE40 ICE40HX4K-TQ144 (8k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -416,7 +452,10 @@
             "type": "clock",
             "pin": "Y18",
             "mhz": 50.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "Y18",
+            "notes_text": "50 MHz. LVCMOS33"
           },
           "leds_n": {
             "type": "leds",
@@ -427,7 +466,10 @@
               "C20"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "F19, E21, D20, C20",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -436,12 +478,14 @@
         "part_number": "XC7A35T-2FGG484",
         "size": "35k",
         "nextpnr_device": "xc7a35tfgg484-2",
-        "jtag_idcode": "0x0362d093"
+        "jtag_idcode": "0x0362d093",
+        "label": "Xilinx Artix-7 XC7A35T-2FGG484 (35k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -490,7 +534,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "rgb_led": {
             "type": "leds",
@@ -500,6 +547,9 @@
               "41"
             ],
             "active": "low",
+            "type_label": "LEDs",
+            "pins_text": "39, 40, 41",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: bit 0 RGB0, bit 1 RGB1, bit 2 RGB2.",
               "Drive them through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -512,12 +562,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -586,7 +638,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-A7-100-Master.xdc (the same pins as the 35T)"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "E3",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -601,7 +656,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-A7-100-Master.xdc (the same pins as the 35T)"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "H5, J5, T9, T10",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -610,12 +668,14 @@
         "part_number": "XC7A100T-1CSG324",
         "size": "100k",
         "nextpnr_device": "xc7a100tcsg324-1",
-        "jtag_idcode": "0x03631093"
+        "jtag_idcode": "0x03631093",
+        "label": "Xilinx Artix-7 XC7A100T-1CSG324 (100k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -684,7 +744,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-A7-35-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "E3",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -699,18 +762,25 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-A7-35-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "H5, J5, T9, T10",
+            "notes_text": "Active high. LVCMOS33"
           },
           "uart": {
             "type": "uart",
             "tx": "D10",
             "rx": "A9",
+            "usb_interface": 1,
             "io_standard": "LVCMOS33",
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-A7-35-Master.xdc"
             },
-            "user_notes": "The FTDI chip's second channel, USB interface 1, over the micro-USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board)."
+            "user_notes": "The FTDI chip's second channel, USB interface 1, over the micro-USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board).",
+            "type_label": "UART",
+            "pins_text": "TX D10, RX A9",
+            "notes_text": "LVCMOS33. The FTDI chip's second channel, USB interface 1, over the micro-USB cable: computers list two serial ports for the board, and this is the one for interface 1 (interface 0 programs the board)."
           }
         }
       },
@@ -719,12 +789,14 @@
         "part_number": "XC7A35T-1CSG324",
         "size": "35k",
         "nextpnr_device": "xc7a35tcsg324-1",
-        "jtag_idcode": "0x0362d093"
+        "jtag_idcode": "0x0362d093",
+        "label": "Xilinx Artix-7 XC7A35T-1CSG324 (35k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -793,7 +865,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-S7-25-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "F14",
+            "notes_text": "12 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -808,7 +883,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-S7-25-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "E18, F13, E13, H15",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -817,12 +895,14 @@
         "part_number": "XC7S25-1CSGA324",
         "size": "25k",
         "nextpnr_device": "xc7s25csga324-1",
-        "jtag_idcode": "0x037c4093"
+        "jtag_idcode": "0x037c4093",
+        "label": "Xilinx Spartan-7 XC7S25-1CSGA324 (25k)"
       },
       "family": {
         "label": "Xilinx Spartan-7",
         "short_label": "Spartan-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 6,
         "toolchain": "openxc7"
       }
@@ -891,7 +971,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-S7-50-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "F14",
+            "notes_text": "12 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -906,7 +989,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Arty-S7-50-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "E18, F13, E13, H15",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -915,12 +1001,14 @@
         "part_number": "XC7S50-1CSGA324",
         "size": "50k",
         "nextpnr_device": "xc7s50csga324-1",
-        "jtag_idcode": "0x0362f093"
+        "jtag_idcode": "0x0362f093",
+        "label": "Xilinx Spartan-7 XC7S50-1CSGA324 (50k)"
       },
       "family": {
         "label": "Xilinx Spartan-7",
         "short_label": "Spartan-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 6,
         "toolchain": "openxc7"
       }
@@ -969,7 +1057,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "49",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "49",
+            "notes_text": "12 MHz"
           },
           "leds": {
             "type": "leds",
@@ -983,7 +1074,10 @@
               "44",
               "45"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "37, 38, 39, 41, 42, 43, 44, 45",
+            "notes_text": "Active high"
           }
         }
       },
@@ -992,12 +1086,14 @@
         "part_number": "ICE40HX4K-TQ144",
         "size": "8k",
         "nextpnr_device": "hx8k",
-        "nextpnr_package": "tq144:4k"
+        "nextpnr_package": "tq144:4k",
+        "label": "Lattice iCE40 ICE40HX4K-TQ144 (8k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -1062,7 +1158,10 @@
             "type": "clock",
             "pin": "W5",
             "mhz": 100.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "W5",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -1085,7 +1184,10 @@
               "L1"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "U16, E19, U19, V19, W18, U15, U14, V14, V13, V3, W3, U3, P3, N3, P1, L1",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -1094,12 +1196,14 @@
         "part_number": "XC7A35T-1CPG236",
         "size": "35k",
         "nextpnr_device": "xc7a35tcpg236-1",
-        "jtag_idcode": "0x0362d093"
+        "jtag_idcode": "0x0362d093",
+        "label": "Xilinx Artix-7 XC7A35T-1CPG236 (35k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -1149,7 +1253,10 @@
             "type": "clock",
             "pin": "52",
             "mhz": 27.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "52",
+            "notes_text": "27 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -1157,7 +1264,10 @@
               "16"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "16",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -1168,12 +1278,14 @@
         "nextpnr_device": "GW1NR-LV9QN88PC6/I5",
         "nextpnr_family": "GW1N-9C",
         "packer_device": "GW1N-9C",
-        "jtag_idcode": "0x0100481b"
+        "jtag_idcode": "0x0100481b",
+        "label": "Gowin GW1N GW1NR-LV9QN88PC6/I5 (9k)"
       },
       "family": {
         "label": "Gowin GW1N",
         "short_label": "GW1N",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 2,
         "toolchain": "gowin"
       }
@@ -1259,7 +1371,10 @@
             "type": "clock",
             "pin": "B12",
             "mhz": 30.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "B12",
+            "notes_text": "30 MHz. LVCMOS33"
           },
           "leds": {
             "type": "led_matrix",
@@ -1282,7 +1397,10 @@
             "source": {
               "kind": "schematic",
               "ref": "ButterStick r1.0a schematic, sheets IO-LEDS and FPGA bank pins"
-            }
+            },
+            "type_label": "LED matrix",
+            "pins_text": "C13, D12, U2, T3, D13, E13, C16; R T1, G U1, B R1",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -1293,12 +1411,14 @@
         "nextpnr_device": "um5g-85k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "8",
-        "jtag_idcode": "0x81113043"
+        "jtag_idcode": "0x81113043",
+        "label": "Lattice ECP5 LFE5UM5G-85F-8BG381C (85k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -1367,7 +1487,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Cmod-A7-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "L17",
+            "notes_text": "12 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -1380,7 +1503,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Cmod-A7-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "A17, C16",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -1389,12 +1515,14 @@
         "part_number": "XC7A35T-1CPG236",
         "size": "35k",
         "nextpnr_device": "xc7a35tcpg236-1",
-        "jtag_idcode": "0x0362d093"
+        "jtag_idcode": "0x0362d093",
+        "label": "Xilinx Artix-7 XC7A35T-1CPG236 (35k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -1460,7 +1588,10 @@
             "type": "clock",
             "pin": "P3",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P3",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -1468,7 +1599,10 @@
               "U16"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "U16",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -1479,12 +1613,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG381C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -1550,7 +1686,10 @@
             "type": "clock",
             "pin": "P6",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P6",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -1558,7 +1697,10 @@
               "P11"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "P11",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -1569,12 +1711,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG256C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -1640,7 +1784,10 @@
             "type": "clock",
             "pin": "P6",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P6",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -1648,7 +1795,10 @@
               "T6"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "T6",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -1659,12 +1809,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG256C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -1730,7 +1882,10 @@
             "type": "clock",
             "pin": "P6",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P6",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -1738,7 +1893,10 @@
               "T6"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "T6",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -1749,12 +1907,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG256C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -1872,7 +2032,10 @@
             "type": "clock",
             "pin": "P6",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P6",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -1880,7 +2043,10 @@
               "P11"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "P11",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -1891,12 +2057,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG256C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -1961,7 +2129,10 @@
             "type": "clock",
             "pin": "P3",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P3",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -1969,7 +2140,10 @@
               "U16"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "U16",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -1980,12 +2154,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG381C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -2129,7 +2305,10 @@
             "type": "clock",
             "pin": "P3",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P3",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -2137,7 +2316,10 @@
               "L2"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "L2",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -2148,12 +2330,14 @@
         "nextpnr_device": "45k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41112043"
+        "jtag_idcode": "0x41112043",
+        "label": "Lattice ECP5 LFE5U-45F-6BG381C (45k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -2222,7 +2406,10 @@
             "source": {
               "kind": "user",
               "ref": "github.com/wuxx/Colorlight-FPGA-Projects, i9plus v6.1 blinky.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "K4",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -2234,7 +2421,10 @@
             "source": {
               "kind": "user",
               "ref": "github.com/wuxx/Colorlight-FPGA-Projects, i9plus v6.1 blinky.xdc"
-            }
+            },
+            "type_label": "LED",
+            "pins_text": "A18",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -2243,12 +2433,14 @@
         "part_number": "XC7A50T-1FGG484",
         "size": "50k",
         "nextpnr_device": "xc7a50tfgg484-1",
-        "jtag_idcode": "0x0362c093"
+        "jtag_idcode": "0x0362c093",
+        "label": "Xilinx Artix-7 XC7A50T-1FGG484 (50k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -2319,7 +2511,10 @@
                 "type": "setup",
                 "text": "Short jumper JP2: the 12 MHz clock from the board's FTDI chip reaches the FPGA only then."
               }
-            ]
+            ],
+            "type_label": "Clock",
+            "pins_text": "A10",
+            "notes_text": "12 MHz. LVCMOS33. Needs: Short jumper JP2: the 12 MHz clock from the board's FTDI chip reaches the FPGA only then."
           },
           "led": {
             "type": "leds",
@@ -2327,7 +2522,10 @@
               "A13"
             ],
             "active": "low",
-            "io_standard": "LVCMOS25"
+            "io_standard": "LVCMOS25",
+            "type_label": "LED",
+            "pins_text": "A13",
+            "notes_text": "Active low. LVCMOS25"
           }
         }
       },
@@ -2338,12 +2536,14 @@
         "nextpnr_device": "um5g-85k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "8",
-        "jtag_idcode": "0x81113043"
+        "jtag_idcode": "0x81113043",
+        "label": "Lattice ECP5 LFE5UM5G-85F-8BG381C (85k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -2408,7 +2608,10 @@
             "type": "clock",
             "pin": "B9",
             "mhz": 16.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "B9",
+            "notes_text": "16 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -2417,7 +2620,10 @@
               "B2"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "B1, B2",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -2428,12 +2634,14 @@
         "nextpnr_device": "12k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x21111043"
+        "jtag_idcode": "0x21111043",
+        "label": "Lattice ECP5 LFE5U-12F-6BG256C (12k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -2498,7 +2706,10 @@
             "type": "clock",
             "pin": "B9",
             "mhz": 16.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "B9",
+            "notes_text": "16 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -2507,7 +2718,10 @@
               "B2"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "B1, B2",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -2518,12 +2732,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG256C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -2572,14 +2788,20 @@
           "sys_clk": {
             "type": "clock",
             "pin": "94",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "94",
+            "notes_text": "12 MHz"
           },
           "led": {
             "type": "leds",
             "pins": [
               "1"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LED",
+            "pins_text": "1",
+            "notes_text": "Active high"
           }
         }
       },
@@ -2588,12 +2810,14 @@
         "part_number": "ICE40HX4K-TQ144",
         "size": "8k",
         "nextpnr_device": "hx8k",
-        "nextpnr_package": "tq144:4k"
+        "nextpnr_package": "tq144:4k",
+        "label": "Lattice iCE40 ICE40HX4K-TQ144 (8k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -2643,7 +2867,10 @@
             "type": "clock",
             "pin": "52",
             "mhz": 27.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "52",
+            "notes_text": "27 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -2651,7 +2878,10 @@
               "10"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "10",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -2662,12 +2892,14 @@
         "nextpnr_device": "GW1NR-LV9QN88PC6/I5",
         "nextpnr_family": "GW1N-9C",
         "packer_device": "GW1N-9C",
-        "jtag_idcode": "0x0100481b"
+        "jtag_idcode": "0x0100481b",
+        "label": "Gowin GW1N GW1NR-LV9QN88PC6/I5 (9k)"
       },
       "family": {
         "label": "Gowin GW1N",
         "short_label": "GW1N",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 2,
         "toolchain": "gowin"
       }
@@ -2782,7 +3014,10 @@
             "type": "clock",
             "pin": "H2",
             "mhz": 25.0,
-            "io_standard": "LVCMOS25"
+            "io_standard": "LVCMOS25",
+            "type_label": "Clock",
+            "pins_text": "H2",
+            "notes_text": "25 MHz. LVCMOS25"
           },
           "led": {
             "type": "leds",
@@ -2790,7 +3025,10 @@
               "P2"
             ],
             "active": "low",
-            "io_standard": "LVCMOS25"
+            "io_standard": "LVCMOS25",
+            "type_label": "LED",
+            "pins_text": "P2",
+            "notes_text": "Active low. LVCMOS25"
           }
         }
       },
@@ -2801,12 +3039,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG381C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -2864,7 +3104,8 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/im-tomu/fomu-workshop hdl/verilog/blink/blink.v and pcf/fomu-pvt.pcf (af55dff): \"Assign USB pins to 0 so as to disconnect Fomu from the host system\""
-            }
+            },
+            "text": "Drive usb_dp (A1) low: Disconnects the board from the computer's USB, which would otherwise try to talk to a design without a USB stack."
           },
           {
             "type": "drive",
@@ -2877,7 +3118,8 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/im-tomu/fomu-workshop hdl/verilog/blink/blink.v and pcf/fomu-pvt.pcf (af55dff): \"Assign USB pins to 0 so as to disconnect Fomu from the host system\""
-            }
+            },
+            "text": "Drive usb_dn (A2) low: Disconnects the board from the computer's USB, which would otherwise try to talk to a design without a USB stack."
           },
           {
             "type": "drive",
@@ -2890,14 +3132,18 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/im-tomu/fomu-workshop hdl/verilog/blink/blink.v and pcf/fomu-pvt.pcf (af55dff): \"Assign USB pins to 0 so as to disconnect Fomu from the host system\""
-            }
+            },
+            "text": "Drive usb_dp_pu (A4) low: Disconnects the board from the computer's USB, which would otherwise try to talk to a design without a USB stack."
           }
         ],
         "resources": {
           "sys_clk": {
             "type": "clock",
             "pin": "F4",
-            "mhz": 48.0
+            "mhz": 48.0,
+            "type_label": "Clock",
+            "pins_text": "F4",
+            "notes_text": "48 MHz"
           },
           "rgb_led": {
             "type": "rgb_led",
@@ -2905,6 +3151,9 @@
             "green": "C5",
             "blue": "A5",
             "active": "low",
+            "type_label": "RGB LED",
+            "pins_text": "R B5, G C5, B A5",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB1, green RGB2, blue RGB0.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -2917,12 +3166,14 @@
         "part_number": "ICE40UP5K-UWG30",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "uwg30"
+        "nextpnr_package": "uwg30",
+        "label": "Lattice iCE40 ICE40UP5K-UWG30 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -2971,7 +3222,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "rgb_led": {
             "type": "rgb_led",
@@ -2979,6 +3233,9 @@
             "green": "39",
             "blue": "40",
             "active": "low",
+            "type_label": "RGB LED",
+            "pins_text": "R 41, G 39, B 40",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB2, green RGB0, blue RGB1.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -2991,12 +3248,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3045,7 +3304,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "15",
-            "mhz": 25.0
+            "mhz": 25.0,
+            "type_label": "Clock",
+            "pins_text": "15",
+            "notes_text": "25 MHz"
           },
           "leds": {
             "type": "leds",
@@ -3055,7 +3317,10 @@
               "59",
               "60"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "56, 57, 59, 60",
+            "notes_text": "Active high"
           }
         }
       },
@@ -3064,12 +3329,14 @@
         "part_number": "ICE40HX1K-VQ100",
         "size": "1k",
         "nextpnr_device": "hx1k",
-        "nextpnr_package": "vq100"
+        "nextpnr_package": "vq100",
+        "label": "Lattice iCE40 ICE40HX1K-VQ100 (1k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3118,7 +3385,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "J3",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "J3",
+            "notes_text": "12 MHz"
           },
           "leds": {
             "type": "leds",
@@ -3132,7 +3402,10 @@
               "B4",
               "B5"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "C3, B3, C4, C5, A1, A2, B4, B5",
+            "notes_text": "Active high"
           }
         }
       },
@@ -3141,12 +3414,14 @@
         "part_number": "ICE40HX8K-CT256",
         "size": "8k",
         "nextpnr_device": "hx8k",
-        "nextpnr_package": "ct256"
+        "nextpnr_package": "ct256",
+        "label": "Lattice iCE40 ICE40HX8K-CT256 (8k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3195,7 +3470,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "led": {
             "type": "leds",
@@ -3203,6 +3481,9 @@
               "41"
             ],
             "active": "low",
+            "type_label": "LED",
+            "pins_text": "41",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pad RGB2.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -3215,12 +3496,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3269,14 +3552,20 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "led": {
             "type": "leds",
             "pins": [
               "37"
             ],
-            "active": "low"
+            "active": "low",
+            "type_label": "LED",
+            "pins_text": "37",
+            "notes_text": "Active low"
           },
           "pmod_leds": {
             "type": "leds",
@@ -3287,7 +3576,10 @@
               "23",
               "21"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "26, 27, 25, 23, 21",
+            "notes_text": "Active high"
           }
         }
       },
@@ -3296,12 +3588,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3351,14 +3645,20 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "led": {
             "type": "leds",
             "pins": [
               "11"
             ],
-            "active": "low"
+            "active": "low",
+            "type_label": "LED",
+            "pins_text": "11",
+            "notes_text": "Active low"
           }
         }
       },
@@ -3367,12 +3667,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3422,14 +3724,20 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "led": {
             "type": "leds",
             "pins": [
               "25"
             ],
-            "active": "low"
+            "active": "low",
+            "type_label": "LED",
+            "pins_text": "25",
+            "notes_text": "Active low"
           }
         }
       },
@@ -3438,12 +3746,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3492,7 +3802,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "rgb_led": {
             "type": "leds",
@@ -3502,6 +3815,9 @@
               "41"
             ],
             "active": "low",
+            "type_label": "LEDs",
+            "pins_text": "39, 40, 41",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: bit 0 RGB0, bit 1 RGB1, bit 2 RGB2.",
               "Drive them through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -3514,12 +3830,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3586,7 +3904,10 @@
             "type": "clock",
             "pin": "M1",
             "mhz": 50.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "M1",
+            "notes_text": "50 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -3598,7 +3919,10 @@
               "D13"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "E13, D14, E12, C13, D13",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -3609,12 +3933,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG256C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -3663,7 +3989,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "21",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "21",
+            "notes_text": "12 MHz"
           },
           "leds": {
             "type": "leds",
@@ -3674,7 +4003,10 @@
               "96",
               "95"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "99, 98, 97, 96, 95",
+            "notes_text": "Active high"
           }
         }
       },
@@ -3683,12 +4015,14 @@
         "part_number": "ICE40HX1K-TQ144",
         "size": "1k",
         "nextpnr_device": "hx1k",
-        "nextpnr_package": "tq144"
+        "nextpnr_package": "tq144",
+        "label": "Lattice iCE40 ICE40HX1K-TQ144 (1k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3743,20 +4077,29 @@
               "kind": "schematic",
               "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
             },
-            "user_notes": "From the on-board iCELink's 12 MHz clock output."
+            "user_notes": "From the on-board iCELink's 12 MHz clock output.",
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz. From the on-board iCELink's 12 MHz clock output."
           },
           "rgb_led": {
             "type": "rgb_led",
             "red": "40",
-            "green": "41",
-            "blue": "39",
+            "green": "39",
+            "blue": "41",
             "active": "low",
             "source": {
-              "kind": "schematic",
-              "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
+              "kind": "hardware",
+              "ref": "Pin test on a real iCESugar v1.5, 2026-11-22; github.com/wuxx/icesugar/issues/65"
             },
+            "user_notes": "Boards from newer batches swap green and blue from the schematic, as listed here; older ones follow the schematic (blue 39, green 41). If blinky lights blue instead of green, yours is an older one.",
+            "type_label": "RGB LED",
+            "pins_text": "R 40, G 39, B 41",
+            "notes_text": "Active low. Boards from newer batches swap green and blue from the schematic, as listed here; older ones follow the schematic (blue 39, green 41). If blinky lights blue instead of green, yours is an older one.",
             "ai_hints": [
-              "Wired to the FPGA's RGB LED driver pads: red RGB1, green RGB2, blue RGB0.",
+              "Wired to the FPGA's RGB LED driver pads: red RGB1, green RGB0, blue RGB2.",
+              "Newer batches' LED swaps green and blue from the schematic (blue 39, green 41).",
+              "Older boards follow the schematic; the maker plans to return to it (wuxx/icesugar#65).",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
             ]
           },
@@ -3773,7 +4116,10 @@
               "kind": "schematic",
               "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
             },
-            "user_notes": "A 4-way DIP switch with pull-ups, on the same pins as PMOD4."
+            "user_notes": "A 4-way DIP switch with pull-ups, S1 to S4 on pins 18 to 21, the same pins as PMOD4.",
+            "type_label": "Switches",
+            "pins_text": "18, 19, 20, 21",
+            "notes_text": "Active low. A 4-way DIP switch with pull-ups, S1 to S4 on pins 18 to 21, the same pins as PMOD4."
           },
           "uart": {
             "type": "uart",
@@ -3783,7 +4129,10 @@
               "kind": "schematic",
               "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
             },
-            "user_notes": "The on-board iCELink's USB serial port, over the USB-C cable. Also on PMOD1."
+            "user_notes": "The on-board iCELink's USB serial port, over the USB-C cable. Also on PMOD1.",
+            "type_label": "UART",
+            "pins_text": "TX 6, RX 4",
+            "notes_text": "The on-board iCELink's USB serial port, over the USB-C cable. Also on PMOD1."
           },
           "pmod1": {
             "type": "pmod",
@@ -3801,7 +4150,10 @@
               "kind": "schematic",
               "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
             },
-            "user_notes": "Shared: pins 2 and 8 with the UART, pins 1 and 7 with the micro-USB port."
+            "user_notes": "Shared: pins 2 and 8 with the UART, pins 1 and 7 with the micro-USB port.",
+            "type_label": "PMOD",
+            "pins_text": "10, 6, 3, 48, 9, 4, 2, 47",
+            "notes_text": "Shared: pins 2 and 8 with the UART, pins 1 and 7 with the micro-USB port."
           },
           "pmod2": {
             "type": "pmod",
@@ -3818,7 +4170,9 @@
             "source": {
               "kind": "schematic",
               "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
-            }
+            },
+            "type_label": "PMOD",
+            "pins_text": "46, 44, 42, 37, 45, 43, 38, 36"
           },
           "pmod3": {
             "type": "pmod",
@@ -3835,23 +4189,82 @@
             "source": {
               "kind": "schematic",
               "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
-            }
+            },
+            "type_label": "PMOD",
+            "pins_text": "34, 31, 27, 25, 32, 28, 26, 23"
           },
           "pmod4": {
             "type": "header",
-            "pins": [
-              "21",
-              "20",
-              "19",
-              "18",
-              null,
-              null
+            "positions": {
+              "1": {
+                "power": "3.3V"
+              },
+              "2": {
+                "power": "GND"
+              },
+              "3": {
+                "net": "S1"
+              },
+              "4": {
+                "net": "S2"
+              },
+              "5": {
+                "net": "S3"
+              },
+              "6": {
+                "net": "S4"
+              },
+              "7": {
+                "pin": "21"
+              },
+              "8": {
+                "pin": "20"
+              },
+              "9": {
+                "pin": "19"
+              },
+              "10": {
+                "pin": "18"
+              },
+              "11": {
+                "power": "GND"
+              },
+              "12": {
+                "power": "3.3V"
+              }
+            },
+            "grid": [
+              [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6"
+              ],
+              [
+                "12",
+                "11",
+                "10",
+                "9",
+                "8",
+                "7"
+              ]
             ],
             "source": {
-              "kind": "maker",
-              "ref": "github.com/wuxx/icesugar src/common/io.pcf"
+              "kind": "schematic",
+              "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf; MuseLab's iCESugar v1.5 pinout (the grid)"
             },
-            "user_notes": "A 6-pin PMOD: 4 signals, then GND and 3.3 V. Shared with the DIP switches: turn them off to use it."
+            "requires": [
+              {
+                "type": "setup",
+                "text": "Remove PMOD4's 4 jumpers: as shipped, they connect positions 7 to 10 (pins 21 to 18) to the DIP switches."
+              }
+            ],
+            "user_notes": "Positions 3 to 6 are DIP switches S1 to S4, with 4.7k pull-ups; 7 to 10 are FPGA pins 21 to 18, with none.",
+            "type_label": "Header",
+            "pins_text": "1: 3.3V, 2: GND, 3: S1, 4: S2, 5: S3, 6: S4, 7: 21, 8: 20, 9: 19, 10: 18, 11: GND, 12: 3.3V",
+            "notes_text": "Needs: Remove PMOD4's 4 jumpers: as shipped, they connect positions 7 to 10 (pins 21 to 18) to the DIP switches.. Positions 3 to 6 are DIP switches S1 to S4, with 4.7k pull-ups; 7 to 10 are FPGA pins 21 to 18, with none."
           },
           "unclassified": {
             "type": "unclassified",
@@ -3870,6 +4283,8 @@
               "kind": "schematic",
               "ref": "github.com/wuxx/icesugar schematic/iCESugar-v1.5.pdf"
             },
+            "type_label": "Other pins",
+            "pins_text": "9, 10, 11, 12, 13, 14, 15, 16, 17",
             "ai_hints": [
               "SPI flash, a W25Q64 (8 MB): CS 16, SCK 15, FPGA out 14, FPGA in 17, WP 12, HOLD 13.",
               "Micro-USB port data: D+ on 10, D- on 9; 11 drives the 1.5k pull-up on D+."
@@ -3882,12 +4297,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -3937,14 +4354,20 @@
           "sys_clk": {
             "type": "clock",
             "pin": "D1",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "D1",
+            "notes_text": "12 MHz"
           },
           "led": {
             "type": "leds",
             "pins": [
               "B6"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LED",
+            "pins_text": "B6",
+            "notes_text": "Active high"
           }
         }
       },
@@ -3953,12 +4376,14 @@
         "part_number": "ICE40LP1K-CM36",
         "size": "1k",
         "nextpnr_device": "lp1k",
-        "nextpnr_package": "cm36"
+        "nextpnr_package": "cm36",
+        "label": "Lattice iCE40 ICE40LP1K-CM36 (1k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -4023,7 +4448,10 @@
             "type": "clock",
             "pin": "P6",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "P6",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -4031,7 +4459,10 @@
               "A11"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "A11",
+            "notes_text": "Active low. LVCMOS33"
           },
           "uart": {
             "type": "uart",
@@ -4042,7 +4473,10 @@
               "kind": "maker",
               "ref": "github.com/wuxx/icesugar-pro src/uart_tx/top.lpf"
             },
-            "user_notes": "The on-board iCELink's USB serial port, over the USB-C cable."
+            "user_notes": "The on-board iCELink's USB serial port, over the USB-C cable.",
+            "type_label": "UART",
+            "pins_text": "TX B9, RX A9",
+            "notes_text": "LVCMOS33. The on-board iCELink's USB serial port, over the USB-C cable."
           }
         }
       },
@@ -4053,12 +4487,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG256C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -4107,7 +4543,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "21",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "21",
+            "notes_text": "12 MHz"
           },
           "leds": {
             "type": "leds",
@@ -4121,7 +4560,10 @@
               "102",
               "104"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "95, 96, 97, 98, 99, 101, 102, 104",
+            "notes_text": "Active high"
           }
         }
       },
@@ -4130,12 +4572,14 @@
         "part_number": "ICE40HX1K-TQ144",
         "size": "1k",
         "nextpnr_device": "hx1k",
-        "nextpnr_package": "tq144"
+        "nextpnr_package": "tq144",
+        "label": "Lattice iCE40 ICE40HX1K-TQ144 (1k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -4204,7 +4648,10 @@
             "source": {
               "kind": "schematic",
               "ref": "MicroPhase A7-Lite reference manual and schematic R1.1"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "J19",
+            "notes_text": "50 MHz. LVCMOS33"
           },
           "leds_n": {
             "type": "leds",
@@ -4217,7 +4664,10 @@
             "source": {
               "kind": "schematic",
               "ref": "MicroPhase A7-Lite reference manual and schematic R1.1"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "M18, N18",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -4226,12 +4676,14 @@
         "part_number": "XC7A200T-3FBG484",
         "size": "200k",
         "nextpnr_device": "xc7a200tfbg484-3",
-        "jtag_idcode": "0x03636093"
+        "jtag_idcode": "0x03636093",
+        "label": "Xilinx Artix-7 XC7A200T-3FBG484 (200k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -4300,7 +4752,10 @@
             "source": {
               "kind": "maker",
               "ref": "Numato Mimas A7 XDC file (the same pins on revisions V2 and V3)"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "H4",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -4319,7 +4774,10 @@
             "source": {
               "kind": "maker",
               "ref": "Numato Mimas A7 XDC file (the same pins on revisions V2 and V3)"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "K17, J17, L14, L15, L16, K16, M15, M16",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -4328,12 +4786,14 @@
         "part_number": "XC7A50T-1FGG484",
         "size": "50k",
         "nextpnr_device": "xc7a50tfgg484-1",
-        "jtag_idcode": "0x0362c093"
+        "jtag_idcode": "0x0362c093",
+        "label": "Xilinx Artix-7 XC7A50T-1FGG484 (50k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -4398,7 +4858,10 @@
             "type": "clock",
             "pin": "C7",
             "mhz": 100.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "C7",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -4406,7 +4869,10 @@
               "E12"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "E12",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -4417,12 +4883,14 @@
         "nextpnr_device": "45k",
         "nextpnr_package": "CABGA256",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41112043"
+        "jtag_idcode": "0x41112043",
+        "label": "Lattice ECP5 LFE5U-45F-6BG256C (45k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -4491,7 +4959,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Nexys-A7-100T-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "E3",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -4518,7 +4989,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Nexys-A7-100T-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "H17, K15, J13, N14, R18, V17, U17, U16, V16, T15, U14, T16, V15, V14, V12, V11",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -4527,12 +5001,14 @@
         "part_number": "XC7A100T-1CSG324",
         "size": "100k",
         "nextpnr_device": "xc7a100tcsg324-1",
-        "jtag_idcode": "0x03631093"
+        "jtag_idcode": "0x03631093",
+        "label": "Xilinx Artix-7 XC7A100T-1CSG324 (100k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -4601,7 +5077,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Nexys-A7-50T-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "E3",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -4628,7 +5107,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Nexys-A7-50T-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "H17, K15, J13, N14, R18, V17, U17, U16, V16, T15, U14, T16, V15, V14, V12, V11",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -4637,12 +5119,14 @@
         "part_number": "XC7A50T-1CSG324",
         "size": "50k",
         "nextpnr_device": "xc7a50tcsg324-1",
-        "jtag_idcode": "0x0362c093"
+        "jtag_idcode": "0x0362c093",
+        "label": "Xilinx Artix-7 XC7A50T-1CSG324 (50k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -4694,7 +5178,10 @@
             "pins": [
               "2"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LED",
+            "pins_text": "2",
+            "notes_text": "Active high"
           }
         }
       },
@@ -4703,12 +5190,14 @@
         "part_number": "ICE5LP4K-SG48",
         "size": "4k",
         "nextpnr_device": "u4k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE5LP4K-SG48 (4k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -4757,7 +5246,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "led": {
             "type": "leds",
@@ -4765,6 +5257,9 @@
               "41"
             ],
             "active": "low",
+            "type_label": "LED",
+            "pins_text": "41",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pad RGB2.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -4777,12 +5272,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -4833,7 +5330,10 @@
             "type": "clock",
             "pin": "A9",
             "mhz": 48.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "A9",
+            "notes_text": "48 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -4841,7 +5341,10 @@
               "K4"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "K4",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -4852,12 +5355,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CSFBGA285",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6MG285C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -4908,7 +5413,10 @@
             "type": "clock",
             "pin": "A9",
             "mhz": 48.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "A9",
+            "notes_text": "48 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -4916,7 +5424,10 @@
               "K4"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "K4",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -4927,12 +5438,14 @@
         "nextpnr_device": "85k",
         "nextpnr_package": "CSFBGA285",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41113043"
+        "jtag_idcode": "0x41113043",
+        "label": "Lattice ECP5 LFE5U-85F-6MG285C (85k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -4985,6 +5498,9 @@
             "green": "39",
             "blue": "40",
             "active": "low",
+            "type_label": "RGB LED",
+            "pins_text": "R 41, G 39, B 40",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB2, green RGB0, blue RGB1.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -4997,12 +5513,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -5056,7 +5574,10 @@
             "source": {
               "kind": "maker",
               "ref": "LEDs: github.com/Xilinx/PYNQ base.xdc; 125 MHz PL clock on H16: PYNQ-Z1 reference manual"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "H16",
+            "notes_text": "125 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -5071,7 +5592,10 @@
             "source": {
               "kind": "maker",
               "ref": "LEDs: github.com/Xilinx/PYNQ base.xdc; 125 MHz PL clock on H16: PYNQ-Z1 reference manual"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "R14, P14, N16, M14",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -5080,12 +5604,14 @@
         "part_number": "XC7Z020-1CLG400",
         "size": "85k",
         "nextpnr_device": "xc7z020clg400-1",
-        "jtag_idcode": "0x03727093"
+        "jtag_idcode": "0x03727093",
+        "label": "Xilinx Zynq-7000 XC7Z020-1CLG400 (85k)"
       },
       "family": {
         "label": "Xilinx Zynq-7000",
         "short_label": "Zynq-7000",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 7,
         "toolchain": "openxc7"
       }
@@ -5139,7 +5665,10 @@
             "source": {
               "kind": "maker",
               "ref": "LEDs: github.com/Xilinx/PYNQ base.xdc; 125 MHz PL clock on H16: PYNQ-Z2 reference manual"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "H16",
+            "notes_text": "125 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -5154,7 +5683,10 @@
             "source": {
               "kind": "maker",
               "ref": "LEDs: github.com/Xilinx/PYNQ base.xdc; 125 MHz PL clock on H16: PYNQ-Z2 reference manual"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "R14, P14, N16, M14",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -5163,12 +5695,14 @@
         "part_number": "XC7Z020-1CLG400",
         "size": "85k",
         "nextpnr_device": "xc7z020clg400-1",
-        "jtag_idcode": "0x03727093"
+        "jtag_idcode": "0x03727093",
+        "label": "Xilinx Zynq-7000 XC7Z020-1CLG400 (85k)"
       },
       "family": {
         "label": "Xilinx Zynq-7000",
         "short_label": "Zynq-7000",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 7,
         "toolchain": "openxc7"
       }
@@ -5222,7 +5756,10 @@
             "source": {
               "kind": "maker",
               "ref": "QMTECH XC7A75T-100T-200T Core Board V01, Test01_led_key example"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "U22",
+            "notes_text": "50 MHz. LVCMOS33"
           },
           "leds_n": {
             "type": "leds",
@@ -5235,7 +5772,10 @@
             "source": {
               "kind": "maker",
               "ref": "QMTECH XC7A75T-100T-200T Core Board V01, Test01_led_key example"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "T23, R23",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -5244,12 +5784,14 @@
         "part_number": "XC7A100T-1FGG676",
         "size": "100k",
         "nextpnr_device": "xc7a100tfgg676-1",
-        "jtag_idcode": "0x03631093"
+        "jtag_idcode": "0x03631093",
+        "label": "Xilinx Artix-7 XC7A100T-1FGG676 (100k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -5314,7 +5856,10 @@
             "type": "clock",
             "pin": "35",
             "mhz": 24.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "24 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -5322,7 +5867,10 @@
               "18"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "18",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -5332,12 +5880,14 @@
         "size": "1k",
         "nextpnr_device": "GW1N-LV1QN48C6/I5",
         "packer_device": "GW1N-1",
-        "jtag_idcode": "0x0900281b"
+        "jtag_idcode": "0x0900281b",
+        "label": "Gowin GW1N GW1N-LV1QN48C6/I5 (1k)"
       },
       "family": {
         "label": "Gowin GW1N",
         "short_label": "GW1N",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 2,
         "toolchain": "gowin"
       }
@@ -5388,7 +5938,10 @@
             "type": "clock",
             "pin": "47",
             "mhz": 27.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "47",
+            "notes_text": "27 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -5396,7 +5949,10 @@
               "9"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "9",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -5406,12 +5962,14 @@
         "size": "1k",
         "nextpnr_device": "GW1NZ-LV1QN48C6/I5",
         "packer_device": "GW1NZ-1",
-        "jtag_idcode": "0x0100681b"
+        "jtag_idcode": "0x0100681b",
+        "label": "Gowin GW1N GW1NZ-LV1QN48C6/I5 (1k)"
       },
       "family": {
         "label": "Gowin GW1N",
         "short_label": "GW1N",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 2,
         "toolchain": "gowin"
       }
@@ -5461,7 +6019,10 @@
             "type": "clock",
             "pin": "4",
             "mhz": 27.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "4",
+            "notes_text": "27 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -5469,7 +6030,10 @@
               "15"
             ],
             "active": "low",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LED",
+            "pins_text": "15",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -5480,12 +6044,14 @@
         "nextpnr_device": "GW2AR-LV18QN88C8/I7",
         "nextpnr_family": "GW2A-18C",
         "packer_device": "GW2A-18C",
-        "jtag_idcode": "0x0000081b"
+        "jtag_idcode": "0x0000081b",
+        "label": "Gowin GW2A GW2AR-LV18QN88C8/I7 (20k)"
       },
       "family": {
         "label": "Gowin GW2A",
         "short_label": "GW2A",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 3,
         "toolchain": "gowin"
       }
@@ -5535,14 +6101,20 @@
           "sys_clk": {
             "type": "clock",
             "pin": "45",
-            "mhz": 27.0
+            "mhz": 27.0,
+            "type_label": "Clock",
+            "pins_text": "45",
+            "notes_text": "27 MHz"
           },
           "led": {
             "type": "leds",
             "pins": [
               "10"
             ],
-            "active": "low"
+            "active": "low",
+            "type_label": "LED",
+            "pins_text": "10",
+            "notes_text": "Active low"
           }
         }
       },
@@ -5552,12 +6124,14 @@
         "size": "4k",
         "nextpnr_device": "GW1NSR-LV4CQN48PC7/I6",
         "packer_device": "GW1NS-4",
-        "jtag_idcode": "0x0100981b"
+        "jtag_idcode": "0x0100981b",
+        "label": "Gowin GW1N GW1NSR-LV4CQN48PC7/I6 (4k)"
       },
       "family": {
         "label": "Gowin GW1N",
         "short_label": "GW1N",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 2,
         "toolchain": "gowin"
       }
@@ -5608,14 +6182,20 @@
             "type": "clock",
             "pin": "52",
             "mhz": 27.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "52",
+            "notes_text": "27 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
             "pins": [
               "10"
             ],
-            "active": "low"
+            "active": "low",
+            "type_label": "LED",
+            "pins_text": "10",
+            "notes_text": "Active low"
           },
           "uart": {
             "type": "uart",
@@ -5626,7 +6206,10 @@
               "kind": "maker",
               "ref": "github.com/sipeed/TangNano-9K-example uart/src/top.cst"
             },
-            "user_notes": "The on-board BL702's USB serial port, over the USB-C cable."
+            "user_notes": "The on-board BL702's USB serial port, over the USB-C cable.",
+            "type_label": "UART",
+            "pins_text": "TX 17, RX 18",
+            "notes_text": "LVCMOS33. The on-board BL702's USB serial port, over the USB-C cable."
           }
         }
       },
@@ -5637,12 +6220,14 @@
         "nextpnr_device": "GW1NR-LV9QN88PC6/I5",
         "nextpnr_family": "GW1N-9C",
         "packer_device": "GW1N-9C",
-        "jtag_idcode": "0x0100481b"
+        "jtag_idcode": "0x0100481b",
+        "label": "Gowin GW1N GW1NR-LV9QN88PC6/I5 (9k)"
       },
       "family": {
         "label": "Gowin GW1N",
         "short_label": "GW1N",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 2,
         "toolchain": "gowin"
       }
@@ -5693,7 +6278,10 @@
             "type": "clock",
             "pin": "H11",
             "mhz": 27.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "H11",
+            "notes_text": "27 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -5705,7 +6293,10 @@
               "A13",
               "C13"
             ],
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "L16, L14, N14, N16, A13, C13",
+            "notes_text": "LVCMOS33"
           }
         }
       },
@@ -5716,12 +6307,14 @@
         "nextpnr_device": "GW2A-LV18PG256C8/I7",
         "nextpnr_family": "GW2A-18",
         "packer_device": "GW2A-18",
-        "jtag_idcode": "0x0000081b"
+        "jtag_idcode": "0x0000081b",
+        "label": "Gowin GW2A GW2A-LV18PG256C8/I7 (20k)"
       },
       "family": {
         "label": "Gowin GW2A",
         "short_label": "GW2A",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 3,
         "toolchain": "gowin"
       }
@@ -5772,7 +6365,10 @@
             "type": "clock",
             "pin": "H11",
             "mhz": 27.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "H11",
+            "notes_text": "27 MHz. LVCMOS33"
           },
           "pmod_j2": {
             "type": "pmod",
@@ -5790,7 +6386,10 @@
             "source": {
               "kind": "schematic",
               "ref": "Sipeed Tang_Primer_20K_Dock_Lite_3711_Schematic.pdf (rev 1.2, 2024-06-18), connectors J2, J6, J7 and J8 with their FPGA pin labels; the schematic numbers each header's signals 5 to 12, PMOD pins 4 to 1 on the odd side and 10 to 7 on the even side"
-            }
+            },
+            "type_label": "PMOD",
+            "pins_text": "F15, D16, C9, L12, E16, E14, A9, J11",
+            "notes_text": "LVCMOS33"
           },
           "pmod_j6": {
             "type": "pmod",
@@ -5808,7 +6407,10 @@
             "source": {
               "kind": "schematic",
               "ref": "Sipeed Tang_Primer_20K_Dock_Lite_3711_Schematic.pdf (rev 1.2, 2024-06-18), connectors J2, J6, J7 and J8 with their FPGA pin labels; the schematic numbers each header's signals 5 to 12, PMOD pins 4 to 1 on the odd side and 10 to 7 on the even side"
-            }
+            },
+            "type_label": "PMOD",
+            "pins_text": "L8, P7, E10, D11, M6, R7, D10, F10",
+            "notes_text": "LVCMOS33"
           },
           "pmod_j7": {
             "type": "pmod",
@@ -5826,7 +6428,10 @@
             "source": {
               "kind": "schematic",
               "ref": "Sipeed Tang_Primer_20K_Dock_Lite_3711_Schematic.pdf (rev 1.2, 2024-06-18), connectors J2, J6, J7 and J8 with their FPGA pin labels; the schematic numbers each header's signals 5 to 12, PMOD pins 4 to 1 on the odd side and 10 to 7 on the even side"
-            }
+            },
+            "type_label": "PMOD",
+            "pins_text": "T6, T7, T8, T9, P6, R8, P8, P9",
+            "notes_text": "LVCMOS33"
           },
           "pmod_j8": {
             "type": "pmod",
@@ -5844,7 +6449,10 @@
             "source": {
               "kind": "schematic",
               "ref": "Sipeed Tang_Primer_20K_Dock_Lite_3711_Schematic.pdf (rev 1.2, 2024-06-18), connectors J2, J6, J7 and J8 with their FPGA pin labels; the schematic numbers each header's signals 5 to 12, PMOD pins 4 to 1 on the odd side and 10 to 7 on the even side"
-            }
+            },
+            "type_label": "PMOD",
+            "pins_text": "R16, P16, N16, L16, P15, N15, N14, L14",
+            "notes_text": "LVCMOS33"
           }
         }
       },
@@ -5855,12 +6463,14 @@
         "nextpnr_device": "GW2A-LV18PG256C8/I7",
         "nextpnr_family": "GW2A-18",
         "packer_device": "GW2A-18",
-        "jtag_idcode": "0x0000081b"
+        "jtag_idcode": "0x0000081b",
+        "label": "Gowin GW2A GW2A-LV18PG256C8/I7 (20k)"
       },
       "family": {
         "label": "Gowin GW2A",
         "short_label": "GW2A",
         "constraint_extension": "cst",
+        "constraint_comment": "//",
         "order": 3,
         "toolchain": "gowin"
       }
@@ -5910,7 +6520,14 @@
           "sys_clk": {
             "type": "clock",
             "pin": "35",
-            "mhz": 12.0
+            "mhz": 12.0,
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram, https://soanpapdi.org/downloads/Soan-Papdi-Pin-Diagram.pdf, and its pin file in Icestudio (FPGAwars/icestudio, app/resources/boards/Soan-Papdi/pinout.pcf, by the board's makers, December 2025)."
+            },
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "leds": {
             "type": "leds",
@@ -5924,7 +6541,151 @@
               "45",
               "46"
             ],
-            "active": "high"
+            "active": "high",
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram and Icestudio pin file (pins), and https://soanpapdi.org/docs/hardware-overview/ (D7-D0, active high)."
+            },
+            "type_label": "LEDs",
+            "pins_text": "31, 32, 34, 36, 37, 44, 45, 46",
+            "notes_text": "Active high"
+          },
+          "status_leds": {
+            "type": "leds",
+            "pins": [
+              "39",
+              "40",
+              "41",
+              "47"
+            ],
+            "active": "low",
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram and Icestudio pin file (S0-S3 on 39, 40, 41, 47), and https://soanpapdi.org/docs/hardware-overview/ (four white status LEDs S3-S0, active low)."
+            },
+            "type_label": "LEDs",
+            "pins_text": "39, 40, 41, 47",
+            "notes_text": "Active low",
+            "ai_hints": [
+              "S0 to S2 are wired to the FPGA's RGB LED driver pads (RGB0 to RGB2).",
+              "Drive S0 to S2 through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
+            ]
+          },
+          "prog_button": {
+            "type": "buttons",
+            "pins": [
+              "2"
+            ],
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram (PROG on pin 2); its active level isn't given."
+            },
+            "type_label": "Button",
+            "pins_text": "2"
+          },
+          "switches_a": {
+            "type": "switches",
+            "pins": [
+              "6",
+              "4",
+              "3",
+              "48"
+            ],
+            "active": "high",
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram and Icestudio pin file (pins), and https://soanpapdi.org/docs/icetudio-examples/02-switch-led/ (a slide switch that is on reads 1)."
+            },
+            "type_label": "Switches",
+            "pins_text": "6, 4, 3, 48",
+            "notes_text": "Active high"
+          },
+          "switches_b": {
+            "type": "switches",
+            "pins": [
+              "12",
+              "11",
+              "10",
+              "9"
+            ],
+            "active": "high",
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram and Icestudio pin file (pins), and https://soanpapdi.org/docs/icetudio-examples/02-switch-led/ (a slide switch that is on reads 1)."
+            },
+            "type_label": "Switches",
+            "pins_text": "12, 11, 10, 9",
+            "notes_text": "Active high"
+          },
+          "io_header_1": {
+            "type": "header",
+            "positions": {
+              "1": {
+                "pin": "28"
+              },
+              "2": {
+                "pin": "27"
+              },
+              "3": {
+                "pin": "26"
+              },
+              "4": {
+                "pin": "25"
+              },
+              "5": {
+                "pin": "23"
+              },
+              "6": {
+                "power": "3.3V"
+              },
+              "7": {
+                "power": "GND"
+              },
+              "8": {
+                "power": "GND"
+              }
+            },
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram and Icestudio pin file: IO0-IO4, then 3V3, GND, GND. The position numbers are ours, in that order."
+            },
+            "type_label": "Header",
+            "pins_text": "1: 28, 2: 27, 3: 26, 4: 25, 5: 23, 6: 3.3V, 7: GND, 8: GND"
+          },
+          "io_header_2": {
+            "type": "header",
+            "positions": {
+              "1": {
+                "pin": "13"
+              },
+              "2": {
+                "pin": "21"
+              },
+              "3": {
+                "pin": "20"
+              },
+              "4": {
+                "pin": "19"
+              },
+              "5": {
+                "pin": "18"
+              },
+              "6": {
+                "power": "3.3V"
+              },
+              "7": {
+                "power": "GND"
+              },
+              "8": {
+                "power": "GND"
+              }
+            },
+            "source": {
+              "kind": "maker",
+              "ref": "The maker's pin diagram and Icestudio pin file: IO5-IO9, then 3V3, GND, GND. The position numbers are ours, in that order."
+            },
+            "type_label": "Header",
+            "pins_text": "1: 13, 2: 21, 3: 20, 4: 19, 5: 18, 6: 3.3V, 7: GND, 8: GND"
           }
         }
       },
@@ -5933,12 +6694,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -5992,7 +6755,10 @@
             "source": {
               "kind": "maker",
               "ref": "The maker's reply to the Open Logix project, 2026-11-08: 12 MHz external clock on pin 35."
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "35",
+            "notes_text": "12 MHz"
           },
           "rgb_led": {
             "type": "rgb_led",
@@ -6004,6 +6770,9 @@
               "kind": "maker",
               "ref": "The maker's replies to the Open Logix project, 2026-11-08: RGB LED red on 39, green on 40, blue on 41, active low (as pins 39-41, the iCE40 UltraPlus's open-drain RGB outputs, require)."
             },
+            "type_label": "RGB LED",
+            "pins_text": "R 39, G 40, B 41",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB0, green RGB1, blue RGB2.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -6016,12 +6785,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -6070,7 +6841,10 @@
           "sys_clk": {
             "type": "clock",
             "pin": "52",
-            "mhz": 25.0
+            "mhz": 25.0,
+            "type_label": "Clock",
+            "pins_text": "52",
+            "notes_text": "25 MHz"
           },
           "leds": {
             "type": "leds",
@@ -6080,7 +6854,10 @@
               "38",
               "37"
             ],
-            "active": "high"
+            "active": "high",
+            "type_label": "LEDs",
+            "pins_text": "41, 39, 38, 37",
+            "notes_text": "Active high"
           }
         }
       },
@@ -6089,12 +6866,14 @@
         "part_number": "ICE40HX4K-TQ144",
         "size": "8k",
         "nextpnr_device": "hx8k",
-        "nextpnr_package": "tq144:4k"
+        "nextpnr_package": "tq144:4k",
+        "label": "Lattice iCE40 ICE40HX4K-TQ144 (8k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -6153,7 +6932,8 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/ulx3s/ulx3s-examples blinky/blinky.v (c953d25): \"Tie GPIO0, keep board from rebooting\""
-            }
+            },
+            "text": "Drive wifi_gpio0 (L2) high: GPIO0 of the board's ESP32 WiFi module: held low, it makes the ESP32 reset the board."
           }
         ],
         "resources": {
@@ -6161,7 +6941,10 @@
             "type": "clock",
             "pin": "G2",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "G2",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -6176,7 +6959,10 @@
               "H3"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "B2, C2, C1, D2, D1, E2, E1, H3",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -6187,12 +6973,14 @@
         "nextpnr_device": "12k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x21111043"
+        "jtag_idcode": "0x21111043",
+        "label": "Lattice ECP5 LFE5U-12F-6BG381C (12k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -6251,7 +7039,8 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/ulx3s/ulx3s-examples blinky/blinky.v (c953d25): \"Tie GPIO0, keep board from rebooting\""
-            }
+            },
+            "text": "Drive wifi_gpio0 (L2) high: GPIO0 of the board's ESP32 WiFi module: held low, it makes the ESP32 reset the board."
           }
         ],
         "resources": {
@@ -6259,7 +7048,10 @@
             "type": "clock",
             "pin": "G2",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "G2",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -6274,7 +7066,10 @@
               "H3"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "B2, C2, C1, D2, D1, E2, E1, H3",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -6285,12 +7080,14 @@
         "nextpnr_device": "25k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41111043"
+        "jtag_idcode": "0x41111043",
+        "label": "Lattice ECP5 LFE5U-25F-6BG381C (25k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -6349,7 +7146,8 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/ulx3s/ulx3s-examples blinky/blinky.v (c953d25): \"Tie GPIO0, keep board from rebooting\""
-            }
+            },
+            "text": "Drive wifi_gpio0 (L2) high: GPIO0 of the board's ESP32 WiFi module: held low, it makes the ESP32 reset the board."
           }
         ],
         "resources": {
@@ -6357,7 +7155,10 @@
             "type": "clock",
             "pin": "G2",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "G2",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -6372,7 +7173,10 @@
               "H3"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "B2, C2, C1, D2, D1, E2, E1, H3",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -6383,12 +7187,14 @@
         "nextpnr_device": "45k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41112043"
+        "jtag_idcode": "0x41112043",
+        "label": "Lattice ECP5 LFE5U-45F-6BG381C (45k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -6447,7 +7253,8 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/ulx3s/ulx3s-examples blinky/blinky.v (c953d25): \"Tie GPIO0, keep board from rebooting\""
-            }
+            },
+            "text": "Drive wifi_gpio0 (L2) high: GPIO0 of the board's ESP32 WiFi module: held low, it makes the ESP32 reset the board."
           }
         ],
         "resources": {
@@ -6455,7 +7262,10 @@
             "type": "clock",
             "pin": "G2",
             "mhz": 25.0,
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "Clock",
+            "pins_text": "G2",
+            "notes_text": "25 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -6470,7 +7280,10 @@
               "H3"
             ],
             "active": "high",
-            "io_standard": "LVCMOS33"
+            "io_standard": "LVCMOS33",
+            "type_label": "LEDs",
+            "pins_text": "B2, C2, C1, D2, D1, E2, E1, H3",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -6481,12 +7294,14 @@
         "nextpnr_device": "85k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x41113043"
+        "jtag_idcode": "0x41113043",
+        "label": "Lattice ECP5 LFE5U-85F-6BG381C (85k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -6541,7 +7356,10 @@
                 "type": "setup",
                 "text": "Short the OSC jumper (R16): the 12 MHz oscillator reaches this pin only then."
               }
-            ]
+            ],
+            "type_label": "Clock",
+            "pins_text": "20",
+            "notes_text": "12 MHz. Needs: Short the OSC jumper (R16): the 12 MHz oscillator reaches this pin only then."
           },
           "rgb_led": {
             "type": "rgb_led",
@@ -6549,6 +7367,9 @@
             "green": "39",
             "blue": "40",
             "active": "low",
+            "type_label": "RGB LED",
+            "pins_text": "R 41, G 39, B 40",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB2, green RGB0, blue RGB1.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -6561,12 +7382,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -6621,7 +7444,10 @@
                 "type": "setup",
                 "text": "Short the OSC jumper (R16): the 12 MHz oscillator reaches this pin only then."
               }
-            ]
+            ],
+            "type_label": "Clock",
+            "pins_text": "20",
+            "notes_text": "12 MHz. Needs: Short the OSC jumper (R16): the 12 MHz oscillator reaches this pin only then."
           },
           "rgb_led": {
             "type": "rgb_led",
@@ -6629,6 +7455,9 @@
             "green": "39",
             "blue": "40",
             "active": "low",
+            "type_label": "RGB LED",
+            "pins_text": "R 41, G 39, B 40",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB2, green RGB0, blue RGB1.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -6641,12 +7470,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -6696,7 +7527,10 @@
             "type": "clock",
             "pin": "P3",
             "mhz": 100.0,
-            "io_standard": "LVDS"
+            "io_standard": "LVDS",
+            "type_label": "Clock",
+            "pins_text": "P3",
+            "notes_text": "100 MHz. LVDS"
           },
           "led": {
             "type": "leds",
@@ -6704,7 +7538,10 @@
               "E16"
             ],
             "active": "low",
-            "io_standard": "LVCMOS25"
+            "io_standard": "LVCMOS25",
+            "type_label": "LED",
+            "pins_text": "E16",
+            "notes_text": "Active low. LVCMOS25"
           }
         }
       },
@@ -6715,12 +7552,14 @@
         "nextpnr_device": "um-45k",
         "nextpnr_package": "CABGA381",
         "nextpnr_speed": "6",
-        "jtag_idcode": "0x01112043"
+        "jtag_idcode": "0x01112043",
+        "label": "Lattice ECP5 LFE5UM-45F-6BG381C (45k)"
       },
       "family": {
         "label": "Lattice ECP5",
         "short_label": "ECP5",
         "constraint_extension": "lpf",
+        "constraint_comment": "#",
         "order": 1,
         "toolchain": "ecp5"
       }
@@ -6770,7 +7609,10 @@
             "type": "clock",
             "pin": "20",
             "mhz": 12.0,
-            "user_notes": "Boards of the first revision (serial number 20241201_J) have a 25 MHz oscillator here."
+            "user_notes": "Boards of the first revision (serial number 20241201_J) have a 25 MHz oscillator here.",
+            "type_label": "Clock",
+            "pins_text": "20",
+            "notes_text": "12 MHz. Boards of the first revision (serial number 20241201_J) have a 25 MHz oscillator here."
           },
           "rgb_led": {
             "type": "rgb_led",
@@ -6778,6 +7620,9 @@
             "green": "39",
             "blue": "40",
             "active": "low",
+            "type_label": "RGB LED",
+            "pins_text": "R 41, G 39, B 40",
+            "notes_text": "Active low",
             "ai_hints": [
               "Wired to the FPGA's RGB LED driver pads: red RGB2, green RGB0, blue RGB1.",
               "Drive it through SB_RGBA_DRV, the iCE40 UltraPlus's RGB LED driver cell (sink only)."
@@ -6790,12 +7635,14 @@
         "part_number": "ICE40UP5K-SG48",
         "size": "5k",
         "nextpnr_device": "up5k",
-        "nextpnr_package": "sg48"
+        "nextpnr_package": "sg48",
+        "label": "Lattice iCE40 ICE40UP5K-SG48 (5k)"
       },
       "family": {
         "label": "Lattice iCE40",
         "short_label": "iCE40",
         "constraint_extension": "pcf",
+        "constraint_comment": "#",
         "order": 0,
         "toolchain": "ice40"
       }
@@ -6849,7 +7696,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Zedboard-Master.xdc (GCLK, LD0 to LD3)"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "Y9",
+            "notes_text": "100 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -6864,7 +7714,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Zedboard-Master.xdc (GCLK, LD0 to LD3)"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "T22, T21, U22, U21",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -6873,12 +7726,14 @@
         "part_number": "XC7Z020-1CLG484",
         "size": "85k",
         "nextpnr_device": "xc7z020clg484-1",
-        "jtag_idcode": "0x03727093"
+        "jtag_idcode": "0x03727093",
+        "label": "Xilinx Zynq-7000 XC7Z020-1CLG484 (85k)"
       },
       "family": {
         "label": "Xilinx Zynq-7000",
         "short_label": "Zynq-7000",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 7,
         "toolchain": "openxc7"
       }
@@ -6947,7 +7802,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/zxtres/test_carta_ajuste pines_zxtres.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "Y18",
+            "notes_text": "50 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -6959,7 +7817,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/zxtres/test_carta_ajuste pines_zxtres.xdc"
-            }
+            },
+            "type_label": "LED",
+            "pins_text": "H13",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -6968,12 +7829,14 @@
         "part_number": "XC7A35T-2FGG484",
         "size": "35k",
         "nextpnr_device": "xc7a35tfgg484-2",
-        "jtag_idcode": "0x0362d093"
+        "jtag_idcode": "0x0362d093",
+        "label": "Xilinx Artix-7 XC7A35T-2FGG484 (35k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -7042,7 +7905,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/zxtres/test_carta_ajuste pines_zxtres.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "Y18",
+            "notes_text": "50 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -7054,7 +7920,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/zxtres/test_carta_ajuste pines_zxtres.xdc"
-            }
+            },
+            "type_label": "LED",
+            "pins_text": "H13",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -7063,12 +7932,14 @@
         "part_number": "XC7A100T-2FGG484",
         "size": "100k",
         "nextpnr_device": "xc7a100tfgg484-2",
-        "jtag_idcode": "0x03631093"
+        "jtag_idcode": "0x03631093",
+        "label": "Xilinx Artix-7 XC7A100T-2FGG484 (100k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -7137,7 +8008,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/zxtres/test_carta_ajuste pines_zxtres.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "Y18",
+            "notes_text": "50 MHz. LVCMOS33"
           },
           "led": {
             "type": "leds",
@@ -7149,7 +8023,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/zxtres/test_carta_ajuste pines_zxtres.xdc"
-            }
+            },
+            "type_label": "LED",
+            "pins_text": "H13",
+            "notes_text": "Active low. LVCMOS33"
           }
         }
       },
@@ -7158,12 +8035,14 @@
         "part_number": "XC7A200T-2FBG484",
         "size": "200k",
         "nextpnr_device": "xc7a200tfbg484-2",
-        "jtag_idcode": "0x03636093"
+        "jtag_idcode": "0x03636093",
+        "label": "Xilinx Artix-7 XC7A200T-2FBG484 (200k)"
       },
       "family": {
         "label": "Xilinx Artix-7",
         "short_label": "Artix-7",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 5,
         "toolchain": "openxc7"
       }
@@ -7217,7 +8096,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Zybo-Z7-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "K17",
+            "notes_text": "125 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -7232,7 +8114,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Zybo-Z7-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "M14, M15, G14, D18",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -7241,12 +8126,14 @@
         "part_number": "XC7Z010-1CLG400",
         "size": "28k",
         "nextpnr_device": "xc7z010clg400-1",
-        "jtag_idcode": "0x03722093"
+        "jtag_idcode": "0x03722093",
+        "label": "Xilinx Zynq-7000 XC7Z010-1CLG400 (28k)"
       },
       "family": {
         "label": "Xilinx Zynq-7000",
         "short_label": "Zynq-7000",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 7,
         "toolchain": "openxc7"
       }
@@ -7300,7 +8187,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Zybo-Z7-Master.xdc"
-            }
+            },
+            "type_label": "Clock",
+            "pins_text": "K17",
+            "notes_text": "125 MHz. LVCMOS33"
           },
           "leds": {
             "type": "leds",
@@ -7315,7 +8205,10 @@
             "source": {
               "kind": "maker",
               "ref": "github.com/Digilent/digilent-xdc Zybo-Z7-Master.xdc"
-            }
+            },
+            "type_label": "LEDs",
+            "pins_text": "M14, M15, G14, D18",
+            "notes_text": "Active high. LVCMOS33"
           }
         }
       },
@@ -7324,12 +8217,14 @@
         "part_number": "XC7Z020-1CLG400",
         "size": "85k",
         "nextpnr_device": "xc7z020clg400-1",
-        "jtag_idcode": "0x03727093"
+        "jtag_idcode": "0x03727093",
+        "label": "Xilinx Zynq-7000 XC7Z020-1CLG400 (85k)"
       },
       "family": {
         "label": "Xilinx Zynq-7000",
         "short_label": "Zynq-7000",
         "constraint_extension": "xdc",
+        "constraint_comment": "#",
         "order": 7,
         "toolchain": "openxc7"
       }

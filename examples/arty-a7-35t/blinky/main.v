@@ -1,17 +1,29 @@
 // Blinky for the Arty A7-35T: blinks LED 0 about once a second.
+//
+// Upload it to the board and LED 0 turns on and off, proof that the board,
+// the tools and the upload all work.
 
 module main #(
-  parameter N = 27  // Counter width: 2^27 cycles at 100 MHz is about 1.3 s.
+  // The counter's width. Its top bit flips every 2^(N-1) clock cycles, so at
+  // 100 MHz, with N = 27, one blink (on and off) takes about 1.3 seconds.
+  parameter N = 27
 ) (
-  input sys_clk,      // 100 MHz clock.
-  output [3:0] leds   // 4 LEDs, lit when 1.
+  input sys_clk,      // 100 MHz clock
+  output [3:0] leds   // LEDs 0 to 3, lit when 1
 );
 
-  // Counts clock cycles. Its top bit is 1 half the time.
-  reg [N-1:0] counter = 0;
-  always @(posedge sys_clk) counter <= counter + 1'b1;
+  // A free-running counter of clock cycles. It starts at 0, with the LED
+  // off, and wraps around when it's full.
+  reg [N-1:0] counter = {N{1'b0}};
 
-  // LED 0 is lit while the top bit is 1; the others stay off.
-  assign leds = {3'b000, counter[N-1]};
+  always @(posedge sys_clk) begin
+    counter <= counter + 1'b1;
+  end
+
+  // The counter's top bit lights LED 0, so it's on half the time.
+  assign leds[0] = counter[N-1];
+
+  // The other LEDs are held off.
+  assign leds[3:1] = 3'b000;
 
 endmodule

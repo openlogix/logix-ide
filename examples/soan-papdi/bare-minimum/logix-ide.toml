@@ -1,3 +1,4 @@
 # Logix IDE project settings.
 board = "soan-papdi"
 summary = "The board's pins, ready for your design."
+notes = ["The PROG button's pressed level isn't known: if it reads pressed when it's released, invert it."]

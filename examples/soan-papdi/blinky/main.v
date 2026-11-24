@@ -1,17 +1,29 @@
 // Blinky for the Soan-Papdi: blinks LED 0 about once a second.
+//
+// Upload it to the board and LED 0 turns on and off, proof that the board,
+// the tools and the upload all work.
 
 module main #(
-  parameter N = 24  // Counter width: 2^24 cycles at 12 MHz is about 1.4 s.
+  // The counter's width. Its top bit flips every 2^(N-1) clock cycles, so at
+  // 12 MHz, with N = 24, one blink (on and off) takes about 1.4 seconds.
+  parameter N = 24
 ) (
-  input sys_clk,     // 12 MHz clock.
-  output [7:0] leds  // 8 LEDs, lit when 1.
+  input sys_clk,      // 12 MHz clock
+  output [7:0] leds   // LEDs 0 to 7, lit when 1
 );
 
-  // Counts clock cycles. Its top bit is 1 half the time.
-  reg [N-1:0] counter = 0;
-  always @(posedge sys_clk) counter <= counter + 1'b1;
+  // A free-running counter of clock cycles. It starts at 0, with the LED
+  // off, and wraps around when it's full.
+  reg [N-1:0] counter = {N{1'b0}};
 
-  // LED 0 is lit while the top bit is 1; the others stay off.
-  assign leds = {7'b0000000, counter[N-1]};
+  always @(posedge sys_clk) begin
+    counter <= counter + 1'b1;
+  end
+
+  // The counter's top bit lights LED 0, so it's on half the time.
+  assign leds[0] = counter[N-1];
+
+  // The other LEDs are held off.
+  assign leds[7:1] = 7'b0000000;
 
 endmodule
