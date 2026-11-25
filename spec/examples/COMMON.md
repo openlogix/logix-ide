@@ -162,3 +162,8 @@ say how each is made. Colors cycle 1 to 6 down the signal rows, groups
 skipped, as the viewer's own default view colors them, so neighboring
 signals always differ (the user's request, 2026-11-22: one color per group
 made a group's many signals hard to tell apart).
+
+`rgb-fade` has a view for each testbench too (the user's request,
+2026-11-24): the same format, so Simulate opens on the gamma curve, its
+input and output drawn as analog lines (`"analog": true` with `show_as`
+`dec`). Its example file says how each is made.

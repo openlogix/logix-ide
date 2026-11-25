@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "rows": [
+    {
+      "group": "Clock"
+    },
+    {
+      "signal": "main_tb.dut.clk",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "group": "Fade"
+    },
+    {
+      "signal": "main_tb.dut.color",
+      "show_as": "dec",
+      "color": 2
+    },
+    {
+      "signal": "main_tb.dut.rising",
+      "show_as": "bin",
+      "color": 3
+    },
+    {
+      "signal": "main_tb.dut.fade",
+      "show_as": "dec",
+      "analog": true,
+      "color": 4
+    },
+    {
+      "group": "Gamma function"
+    },
+    {
+      "signal": "main_tb.dut.gamma_in",
+      "show_as": "dec",
+      "analog": true,
+      "color": 5
+    },
+    {
+      "signal": "main_tb.dut.gamma_out",
+      "show_as": "dec",
+      "analog": true,
+      "color": 6
+    },
+    {
+      "group": "PWM"
+    },
+    {
+      "signal": "main_tb.dut.color_max",
+      "show_as": "dec",
+      "color": 1
+    },
+    {
+      "signal": "main_tb.dut.duty",
+      "show_as": "dec",
+      "analog": true,
+      "color": 2
+    },
+    {
+      "signal": "main_tb.dut.pwm",
+      "show_as": "dec",
+      "analog": true,
+      "color": 3
+    },
+    {
+      "group": "LED"
+    },
+    {
+      "signal": "main_tb.rgb_led",
+      "show_as": "bin",
+      "expanded": true,
+      "color": 4
+    }
+  ]
+}

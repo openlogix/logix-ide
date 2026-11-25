@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "rows": [
+    {
+      "group": "Clock"
+    },
+    {
+      "signal": "gamma_tb.clk",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "group": "Gamma function"
+    },
+    {
+      "signal": "gamma_tb.gamma_in",
+      "show_as": "dec",
+      "analog": true,
+      "color": 2
+    },
+    {
+      "signal": "gamma_tb.gamma_out",
+      "show_as": "dec",
+      "analog": true,
+      "color": 3
+    },
+    {
+      "group": "Check"
+    },
+    {
+      "signal": "gamma_tb.expected",
+      "show_as": "dec",
+      "color": 4
+    }
+  ]
+}

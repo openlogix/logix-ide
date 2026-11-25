@@ -28,7 +28,20 @@ unchanged from [`rgb-fade/`](rgb-fade/) next to this file: `gamma.v` (the
 module `gamma`, a 256-entry table of 12-bit values, `round(4095 * (i /
 255) ^ 2.5)`, read one clock after its index, which the build puts in one
 block RAM) and its testbench `gamma_tb.v`, which checks every entry
-against the formula. Never edit them for one board.
+against the formula, its input and output named `gamma_in` and
+`gamma_out`, and the testbench's view `gamma_tb.view` (COMMON.md, Waveform
+view): groups "Clock" (`clk`), "Gamma function" (`gamma_in` and `gamma_out`
+as analog lines, so the whole curve shows at once) and "Check" (`expected`
+in decimal). Never edit them for one board.
+
+`main_tb.view` is made per board, the same groups on every board (the
+user's review, 2026-11-25), signals under `main_tb.dut.` unless named
+otherwise: "Clock" (the testbench's clock, or `main_tb.dut.clk` when the
+design makes its own); "Fade" (`color` in decimal, `rising` in binary,
+`fade` as an analog line); "Gamma function" (`gamma_in` and `gamma_out` as
+analog lines); "PWM" (`color_max` in decimal, `duty` and `pwm` as analog
+lines, so the LED's on time shows where `pwm` is below `duty`); "LED"
+(`main_tb.rgb_led` in binary, its bits shown).
 
 ## Ports
 
@@ -49,12 +62,15 @@ the drives (COMMON.md). Nothing else.
   X^2.5 times the power.
 - **PWM:** a 12-bit counter `pwm`, free running; the LED is on while
   `pwm < duty`.
-- **The fade:** a timer counts 0 to `STEP - 1`; at its end, `level`
+- **The fade:** a timer counts 0 to `STEP - 1`; at its end, `fade`
   (11 bits, 0 to 2047) moves one step up while `rising`, and down
   otherwise, turning at 2047; when it falls back to 0 it rises again in
   the next color, `color` 0 red, 1 green, 2 blue, then red again.
-- **The curve:** `gamma` gives `curve` from `level`'s top 8 bits.
-- **The duty:** `curve * color_max / 4096`, `color_max` the color's top.
+- **The gamma function:** its input `gamma_in` is `fade`'s top 8 bits, and
+  the `gamma` module gives its output `gamma_out` one clock later. The
+  names say what they are, since Simulate shows them (the user's review,
+  2026-11-25).
+- **The duty:** `gamma_out * color_max / 4096`, `color_max` the color's top.
 - **The LED:** the color's PWM input is `pwm < duty` for the current color
   and 0 for the others, through the LED driver the board's `ai_hints` name
   (on the iCE40 UltraPlus, `SB_RGBA_DRV` with `CURRENT_MODE("0b1")`, half

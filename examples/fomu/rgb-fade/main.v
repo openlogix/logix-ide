@@ -52,7 +52,7 @@ module main #(
 
   // How far the fade is, from 0 (off) to 2047 (the top), whether it's
   // rising or falling, and the color: 0 red, 1 green, 2 blue.
-  reg [10:0] level = 0;
+  reg [10:0] fade = 0;
   reg        rising = 1;
   reg [ 1:0] color = 0;
 
@@ -62,12 +62,12 @@ module main #(
     // Once every STEP clocks, one step up or down.
     if (step) begin
       if (rising) begin
-        level <= level + 1;
-        if (level == 2046) rising <= 0;
+        fade <= fade + 1;
+        if (fade == 2046) rising <= 0;
       end else begin
-        level <= level - 1;
+        fade <= fade - 1;
         // Off again: rise again, in the next color.
-        if (level == 1) begin
+        if (fade == 1) begin
           rising <= 1;
           color  <= (color == 2) ? 2'd0 : color + 2'd1;
         end
@@ -75,21 +75,23 @@ module main #(
     end
   end
 
-  // The brightness on the gamma curve, from the fade's top 8 bits: 0 to
-  // 4095, ready one clock later.
-  wire [11:0] curve;
+  // The gamma function: its input is the fade's top 8 bits (0 to 255),
+  // its output the brightness on the gamma curve (0 to 4095), one clock
+  // later. Simulate shows both as lines.
+  wire [ 7:0] gamma_in = fade[10:3];
+  wire [11:0] gamma_out;
   gamma gamma_table (
       .clk  (sys_clk),
-      .index(level[10:3]),
-      .value(curve)
+      .index(gamma_in),
+      .value(gamma_out)
   );
 
-  // The color's highest brightness, and the duty: the curve scaled to it,
-  // so at the top it's the color's highest.
+  // The color's highest brightness, and the duty: the gamma function's
+  // output scaled to it, so at the top it's the color's highest.
   wire [11:0] color_max = (color == 0) ? RED_MAX :
                           (color == 1) ? GREEN_MAX : BLUE_MAX;
-  wire [23:0] product = curve * color_max;
-  wire [11:0] duty = product[23:12];  // curve * color_max / 4096
+  wire [23:0] product = gamma_out * color_max;
+  wire [11:0] duty = product[23:12];  // gamma_out * color_max / 4096
 
   // Each color's PWM: on while the counter is below the duty, in the
   // fade's color only.
