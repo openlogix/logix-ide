@@ -28,7 +28,17 @@ unchanged from [`rgb-fade/`](rgb-fade/) next to this file: `gamma.v` (the
 module `gamma`, a 256-entry table of 12-bit values, `round(4095 * (i /
 255) ^ 2.5)`, read one clock after its index, which the build puts in one
 block RAM) and its testbench `gamma_tb.v`, which checks every entry
-against the formula. Never edit them for one board.
+against the formula, and the testbench's view `gamma_tb.view` (COMMON.md,
+Waveform view): the clock, then a group "Gamma table: index in, value out"
+with `index` and `value` as analog lines, so the whole curve shows at once,
+and `expected` in decimal. Never edit them for one board.
+
+`main_tb.view` is made per board, the same rows on every board: the clock
+(the testbench's clock, or `main_tb.dut.clk` when the design makes its
+own), `main_tb.dut.color` in decimal; a group "Gamma: the fade in, the
+brightness out" with `main_tb.dut.gamma_table.index` and
+`main_tb.dut.gamma_table.value` as analog lines; a group "The LED" with
+`main_tb.dut.duty` as an analog line and `main_tb.rgb_led` in binary.
 
 ## Ports
 

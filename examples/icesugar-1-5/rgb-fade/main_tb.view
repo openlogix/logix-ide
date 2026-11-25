@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "rows": [
+    {
+      "signal": "main_tb.sys_clk",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "signal": "main_tb.dut.color",
+      "show_as": "dec",
+      "color": 2
+    },
+    {
+      "group": "Gamma: the fade in, the brightness out"
+    },
+    {
+      "signal": "main_tb.dut.gamma_table.index",
+      "show_as": "dec",
+      "analog": true,
+      "color": 3
+    },
+    {
+      "signal": "main_tb.dut.gamma_table.value",
+      "show_as": "dec",
+      "analog": true,
+      "color": 4
+    },
+    {
+      "group": "The LED"
+    },
+    {
+      "signal": "main_tb.dut.duty",
+      "show_as": "dec",
+      "analog": true,
+      "color": 5
+    },
+    {
+      "signal": "main_tb.rgb_led",
+      "show_as": "bin",
+      "color": 6
+    }
+  ]
+}
