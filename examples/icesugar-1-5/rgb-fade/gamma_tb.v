@@ -1,4 +1,5 @@
-// Testbench for gamma.v: every entry is round(4095 * (index / 255) ^ 2.5),
+// Testbench for gamma.v: for every input, gamma_out is
+// round(4095 * (gamma_in / 255) ^ 2.5),
 // computed here independently.
 
 // Checks that 'actual_val' equals 'expected_val'. On a mismatch, reports
@@ -14,13 +15,14 @@ module gamma_tb;
   reg clk = 0;
   always #5 clk = ~clk;
 
-  reg  [ 7:0] index = 0;
-  wire [11:0] value;
+  // The gamma function's input, and its output one clock later.
+  reg  [ 7:0] gamma_in = 0;
+  wire [11:0] gamma_out;
 
   gamma dut (
       .clk  (clk),
-      .index(index),
-      .value(value)
+      .index(gamma_in),
+      .value(gamma_out)
   );
 
   // Loop index and the expected value.
@@ -31,12 +33,12 @@ module gamma_tb;
     $dumpvars(0, gamma_tb);
 
     for (i = 0; i < 256; i = i + 1) begin
-      index = i;
-      // The value is ready one clock after the index.
+      gamma_in = i;
+      // The output is ready one clock after the input.
       @(posedge clk);
       #1;
       expected = $rtoi(4095.0 * $pow(i / 255.0, 2.5) + 0.5);
-      `EXPECT_EQ(value, expected[11:0])
+      `EXPECT_EQ(gamma_out, expected[11:0])
     end
 
     $display("End of simulation");
