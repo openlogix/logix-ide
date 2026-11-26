@@ -27,7 +27,8 @@ for the agent.
 - **One board, one user at a time.** Logix IDE and the agent each have
   their own Logix Engine, and only one program at a time can open a board's
   serial port. Before the agent uploads to the board or reads its serial
-  port, choose **Disconnect** in Logix IDE's Serial Monitor, and don't
+  port, click **Connected** in Logix IDE's Serial Monitor, so it says
+  **Disconnected**, and don't
   upload from both at once.
 
 ## Setting up the agent

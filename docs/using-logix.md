@@ -349,8 +349,10 @@ shows as it arrives.
   device of, such as one of two adapters that look the same, are under
   **Other serial ports**. The port you choose is remembered for the board,
   and opens by itself next time it's there; choosing the board's own port
-  again goes back to it. **Disconnect** frees the port for another
-  program.
+  again goes back to it.
+- **Connected** or **Disconnected**, next to Baud, says whether the port
+  is open; click it to change that. Disconnecting frees the port for
+  another program.
 - **Lines** work as in a terminal: a line feed starts a new line, and a
   carriage return without one goes back to the line's start: what comes
   next overwrites it in place, and when that new line ends, whatever is

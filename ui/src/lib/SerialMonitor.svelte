@@ -69,11 +69,11 @@
   let lines = $state<SerialLine[]>([]);
   let input = $state("");
   let outEl: HTMLDivElement | undefined = $state();
-  /** What the user closed: nothing reopens it by itself until Connect. */
+  /** What the user closed: nothing reopens it by itself until they connect. */
   let userClosed = $state(false);
   /** The board and speed the last try to open a port was for: tried once
    * each, so a board whose port can't be chosen by itself isn't tried again
-   * and again (only Connect or a choice tries again). */
+   * and again (only connecting or a choice tries again). */
   let triedFor: string | null = null;
 
   /** Whether the output is scrolled to its end (within a few pixels): new
@@ -174,7 +174,7 @@
       // Closed anyway.
     }
     if (chosen) addNote(`Closed ${chosen.port}.`);
-    note = { text: "Closed. Connect opens it again.", warn: false };
+    note = { text: "Disconnected. Click Disconnected to connect again.", warn: false };
   }
 
   async function send(text: string) {
@@ -293,16 +293,21 @@
         {#each BAUDS as b (b)}<option value={String(b)}>{b}</option>{/each}
       </select>
     </label>
-    {#if open}
-      <button onclick={disconnect} title="Close the port, so other programs can open it">Disconnect</button>
-    {:else}
-      <button onclick={() => connect(chosen ?? undefined)} disabled={connecting}
-        >{connecting ? "Connecting…" : "Connect"}</button
-      >
-    {/if}
-    <!-- The port's state in words, not only a colored dot next to Connect and Disconnect (the user's requests, 2026-11-25). -->
-    <span class="state" class:on={open} aria-label="Port state"
-      ><span class="dot"></span>{connecting ? "Opening…" : open ? "Open" : "Closed"}</span
+    <!-- One switch for the connection: it says the state, in words and
+         with its dot, and a click changes it (the user's requests,
+         2026-11-25, in place of a Connect/Disconnect button and a dot). -->
+    <button
+      class="state"
+      class:on={open}
+      role="switch"
+      aria-checked={open}
+      aria-label="Connection"
+      disabled={connecting}
+      title={open
+        ? "Connected: click to disconnect, so other programs can open the port"
+        : "Disconnected: click to connect"}
+      onclick={() => (open ? disconnect() : connect(chosen ?? undefined))}
+      ><span class="dot"></span>{connecting ? "Connecting…" : open ? "Connected" : "Disconnected"}</button
     >
     <span class="spacer"></span>
     <label class="field"
@@ -379,6 +384,9 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    justify-content: center;
+    /* As wide as its longest state, so the bar doesn't move. */
+    min-width: 9.5em;
     color: var(--muted);
   }
   .state.on {
