@@ -54,6 +54,10 @@
   $effect(() => store("logix.serial.ending", ending));
   $effect(() => store("logix.serial.liveKeys", String(liveKeys)));
   $effect(() => store("logix.serial.timestamps", String(timestamps)));
+  /** The port the user chose for a board, such as an external USB to
+   * serial adapter wired to it: opened by itself next time, when it's
+   * there. Per user (a port's name is this computer's), by board ID. */
+  const chosenKey = (b: string | null) => `logix.serial.port.${b ?? ""}`;
 
   let choices = $state<SerialChoice[]>([]);
   /** The port open (or being opened) now. */
@@ -65,11 +69,11 @@
   let lines = $state<SerialLine[]>([]);
   let input = $state("");
   let outEl: HTMLDivElement | undefined = $state();
-  /** What the user closed: nothing reopens it by itself until Connect. */
+  /** What the user closed: nothing reopens it by itself until they connect. */
   let userClosed = $state(false);
   /** The board and speed the last try to open a port was for: tried once
    * each, so a board whose port can't be chosen by itself isn't tried again
-   * and again (only Connect or a choice tries again). */
+   * and again (only connecting or a choice tries again). */
   let triedFor: string | null = null;
 
   /** Whether the output is scrolled to its end (within a few pixels): new
@@ -129,8 +133,10 @@
     userClosed = false;
     try {
       choices = await backend.serialPorts(boardsFolder, boardsSaved, board);
+      const remembered = stored(chosenKey(board), "");
       const pick =
         choice ??
+        choices.find((c) => remembered !== "" && c.port === remembered) ??
         choices.find((c) => c.boardUart) ??
         (choices.length === 1 ? choices[0] : undefined);
       if (!pick) {
@@ -168,7 +174,7 @@
       // Closed anyway.
     }
     if (chosen) addNote(`Closed ${chosen.port}.`);
-    note = { text: "Closed. Connect opens it again.", warn: false };
+    note = { text: "Disconnected. Click Disconnected to connect again.", warn: false };
   }
 
   async function send(text: string) {
@@ -240,15 +246,17 @@
   function choose(e: Event) {
     const port = (e.target as HTMLSelectElement).value;
     const c = choices.find((x) => x.port === port);
-    if (c) connect(c);
+    if (!c) return;
+    // The board's own UART needs no memory: it's opened by itself anyway.
+    store(chosenKey(board), c.boardUart ? "" : c.port);
+    connect(c);
   }
 </script>
 
 <div class="monitor">
   <div class="bar">
     <!-- The port once: a menu when there's a choice, else its name. -->
-    <span class="port" title={open ? "Open" : "Closed"}>
-      <span class="dot" class:on={open}></span>
+    <span class="port">
       {#if choices.length > 1 || (!chosen && choices.length)}
         <!-- Just the port names; the device and interface on hover. -->
         <select
@@ -258,22 +266,23 @@
           onchange={choose}
         >
           {#if !chosen}<option value="" disabled>Choose a port…</option>{/if}
-          {#each choices as c (c.port)}
+          {#each choices.filter((c) => !c.other) as c (c.port)}
             <option value={c.port} title={portTip(c)}>{c.port}</option>
           {/each}
+          {#if choices.some((c) => c.other)}
+            <!-- Ports Logix Engine tied to no device: still the user's to choose. -->
+            <optgroup label="Other serial ports">
+              {#each choices.filter((c) => c.other) as c (c.port)}
+                <option value={c.port} title={portTip(c)}>{c.port}</option>
+              {/each}
+            </optgroup>
+          {/if}
         </select>
       {:else}
         <span title={chosen ? portTip(chosen) : undefined}>{chosen ? chosen.port : "No port"}</span>
       {/if}
     </span>
-    {#if open}
-      <button onclick={disconnect} title="Close the port, so other programs can open it">Disconnect</button>
-    {:else}
-      <button onclick={() => connect(chosen ?? undefined)} disabled={connecting}
-        >{connecting ? "Connecting…" : "Connect"}</button
-      >
-    {/if}
-    <span class="spacer"></span>
+    <!-- The speed next to the port: the two say what is open. -->
     <label class="field"
       >Baud
       <select
@@ -284,6 +293,23 @@
         {#each BAUDS as b (b)}<option value={String(b)}>{b}</option>{/each}
       </select>
     </label>
+    <!-- One switch for the connection: it says the state, in words and
+         with its dot, and a click changes it (the user's requests,
+         2026-11-25, in place of a Connect/Disconnect button and a dot). -->
+    <button
+      class="state"
+      class:on={open}
+      role="switch"
+      aria-checked={open}
+      aria-label="Connection"
+      disabled={connecting}
+      title={open
+        ? "Connected: click to disconnect, so other programs can open the port"
+        : "Disconnected: click to connect"}
+      onclick={() => (open ? disconnect() : connect(chosen ?? undefined))}
+      ><span class="dot"></span>{connecting ? "Connecting…" : open ? "Connected" : "Disconnected"}</button
+    >
+    <span class="spacer"></span>
     <label class="field"
       >Enter sends
       <select aria-label="Line ending" bind:value={ending}>
@@ -354,14 +380,23 @@
     gap: 6px;
     font-weight: 600;
   }
+  .state {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    justify-content: center;
+    /* As wide as its longest state, so the bar doesn't move. */
+    min-width: 9.5em;
+    color: var(--muted);
+  }
+  .state.on {
+    color: var(--status-ok-fg);
+  }
   .dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--muted);
-  }
-  .dot.on {
-    background: var(--status-ok-fg);
+    background: currentColor;
   }
   .field,
   .check {

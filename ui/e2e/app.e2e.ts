@@ -1944,9 +1944,20 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   const monitor = page.getByRole("log", { name: "Serial Monitor output" });
   // Opened by itself: the board's UART, as Logix Engine marks it, with the device.
   await expect(monitor).toContainText("Opened /dev/cu.usbmodem114202 (the iCESugar v1.5, interface 2) at 115200 baud.");
+  // Its state in words, on the switch that changes it.
+  const connection = page.getByRole("switch", { name: "Connection" });
+  await expect(connection).toHaveText("Connected");
+  await expect(connection).toHaveAttribute("aria-checked", "true");
   expect((await fake()).serialOpened).toEqual([
     { port: "/dev/cu.usbmodem114202", baud: 115200, device: "usb:1-1.4.2:1d50:602b:07000001004300413100001056313032a5a5a5a500000000" },
   ]);
+  // A click disconnects, and another connects again.
+  await connection.click();
+  await expect(connection).toHaveText("Disconnected");
+  await expect(page.getByRole("status").filter({ hasText: "Disconnected. Click Disconnected to connect again." })).toBeVisible();
+  await connection.click();
+  await expect(connection).toHaveText("Connected");
+  await expect.poll(async () => (await fake()).serialOpened.length).toBe(2);
   // Said to be the board's, from its data, in the port's hover text.
   await expect(page.locator(".monitor .port span[title]")).toHaveAttribute(
     "title",
@@ -2022,6 +2033,7 @@ test("the Serial Monitor asks for the port when it can't tell, once", async ({ p
   const pick = page.getByRole("combobox", { name: "Serial port" });
   await expect(pick).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Choose the board's serial port." })).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Connection" })).toHaveText("Disconnected");
   // The port shows once: the menu, no name beside it.
   await expect(page.locator(".monitor .port")).not.toContainText("/dev/cu.usbserial-FTATANKC1No port");
   expect((await fake()).serialOpened).toEqual([]);
@@ -2031,6 +2043,52 @@ test("the Serial Monitor asks for the port when it can't tell, once", async ({ p
     "Opened /dev/cu.usbserial-FTATANKC1",
   );
   expect((await fake()).serialOpened.map((o) => o.port)).toEqual(["/dev/cu.usbserial-FTATANKC1"]);
+});
+
+test("the Serial Monitor offers the ports Logix Engine tied to no device, and remembers the one chosen", async ({ page }) => {
+  type Fake = {
+    otherPorts: { port: string; interface: number | null; description: string }[];
+    serialOpened: { port: string; baud: number; device: string | null }[];
+  };
+  const fake = () => page.evaluate(() => (window as unknown as { __fake: Fake }).__fake);
+  // An external USB to serial adapter the engine couldn't tie to a device
+  // (such as one of two lookalike CH340s), beside the iCESugar v1.5.
+  const addAdapter = () =>
+    page.evaluate(() => {
+      (window as unknown as { __fake: Fake }).__fake.otherPorts = [
+        { port: "/dev/cu.wchusbserial-1", interface: 0, description: "A serial port of USB Serial (1a86:7523)" },
+      ];
+    });
+  await start(page);
+  await addAdapter();
+  await menu(page, "serial-monitor");
+  const log = page.getByRole("log", { name: "Serial Monitor output" });
+  // The board's UART opens by itself, as before.
+  await expect(log).toContainText("Opened /dev/cu.usbmodem114202");
+  // The adapter is in the menu, under Other serial ports.
+  const pick = page.getByRole("combobox", { name: "Serial port" });
+  await expect(pick.locator('optgroup[label="Other serial ports"] option')).toHaveText(["/dev/cu.wchusbserial-1"]);
+  await expect(pick.locator("optgroup option")).toHaveAttribute(
+    "title",
+    "A serial port of USB Serial (1a86:7523)\n/dev/cu.wchusbserial-1\nDevice: USB Serial (1a86:7523)\nUSB interface 0",
+  );
+  // Choosing it opens it, without a device.
+  await pick.selectOption("/dev/cu.wchusbserial-1");
+  await expect(log).toContainText("Opened /dev/cu.wchusbserial-1");
+  expect((await fake()).serialOpened.at(-1)).toEqual({ port: "/dev/cu.wchusbserial-1", baud: 115200, device: null });
+  // Next time, for this board, the adapter opens by itself.
+  await start(page);
+  await addAdapter();
+  await menu(page, "serial-monitor");
+  await expect(log).toContainText("Opened /dev/cu.wchusbserial-1");
+  expect((await fake()).serialOpened.map((o) => o.port)).toEqual(["/dev/cu.wchusbserial-1"]);
+  // Choosing the board's UART again forgets it.
+  await pick.selectOption("/dev/cu.usbmodem114202");
+  await expect(log).toContainText("Opened /dev/cu.usbmodem114202");
+  await start(page);
+  await addAdapter();
+  await menu(page, "serial-monitor");
+  await expect(log).toContainText("Opened /dev/cu.usbmodem114202");
 });
 
 test("many files: the tabs scroll by themselves, and All files and Go to File list them, recent first", async ({ page }) => {

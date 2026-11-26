@@ -529,8 +529,8 @@ export interface UsbDevice {
 
 /** A serial port the Serial Monitor can open. */
 export interface SerialChoice {
-  /** The device it's on (Logix Engine's id). */
-  device: string;
+  /** The device it's on (Logix Engine's id); null for a port the engine tied to no device (`other`). */
+  device: string | null;
   /** The device for people, such as "the Alhambra II". */
   who: string;
   /** The device's full name, such as "Alhambra II v1.0A (AlhambraBits, 0403:6010)". */
@@ -544,6 +544,8 @@ export interface SerialChoice {
   role: "uart" | "programmer" | null;
   /** The engine's phrase for people, such as "The Alhambra II's programming port". */
   description: string;
+  /** A USB serial port Logix Engine tied to no device, such as one of two lookalike adapters: listed under "Other serial ports". */
+  other: boolean;
 }
 
 /** What the Serial Monitor's read loop sends. */

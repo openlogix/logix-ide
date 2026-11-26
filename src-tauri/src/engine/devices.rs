@@ -77,6 +77,19 @@ pub struct DevicePort {
     pub description: String,
 }
 
+/// A USB serial port the engine couldn't tie to a listed device (its
+/// `other_serial_ports`), such as one of two lookalike adapters without
+/// serial numbers: still offered in the Serial Monitor, opened without a
+/// device.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OtherSerialPort {
+    pub port: String,
+    pub interface: Option<u8>,
+    /// The engine's phrase for people, such as "A serial port of USB Serial
+    /// (1a86:7523)".
+    pub description: String,
+}
+
 /// The engine's `driver` for a device (Windows and Linux): what the board's
 /// programmer needs (Windows: a driver on a USB interface; Linux: a udev
 /// rule), what the device has now, and whether the programmer can use it
@@ -234,6 +247,8 @@ pub struct DeviceList {
     /// The project's boards folder's problems, when it has any (the devices
     /// are then matched against the catalog's boards only).
     pub custom_boards_problem: Option<super::catalog::BoardsProblem>,
+    /// The USB serial ports the engine tied to no device.
+    pub other_serial_ports: Vec<OtherSerialPort>,
 }
 
 /// The engine's `status`: whether the board asked about is connected
@@ -356,6 +371,21 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
         action: s["action"]["code"].as_str().map(String::from),
     });
     let problem = &result["custom_boards_problem"];
+    let other_serial_ports = result["other_serial_ports"]
+        .as_array()
+        .map(|ports| {
+            ports
+                .iter()
+                .filter_map(|p| {
+                    Some(OtherSerialPort {
+                        port: p["port"].as_str()?.to_string(),
+                        interface: p["interface"].as_u64().and_then(|i| u8::try_from(i).ok()),
+                        description: p["description"].as_str().unwrap_or_default().to_string(),
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
     Ok(DeviceList {
         devices,
         unreachable,
@@ -363,6 +393,7 @@ pub(super) fn parse_devices(result: &Value) -> Result<DeviceList> {
         custom_boards_problem: problem
             .is_object()
             .then(|| super::catalog::BoardsProblem::from_error(problem)),
+        other_serial_ports,
     })
 }
 
@@ -666,6 +697,32 @@ mod tests {
         assert_eq!(list.unreachable[0].boards[0].level, MatchLevel::Weak);
         assert!(parse_devices(&json!({})).is_err());
         assert_eq!(list.status, None);
+    }
+
+    /// The ports the engine tied to no device (its other_serial_ports).
+    #[test]
+    fn reads_the_other_serial_ports() {
+        let list = parse_devices(&json!({
+            "devices": [],
+            "other_serial_ports": [
+                {"port": "/dev/cu.wchusbserial-1", "vid": "1a86", "pid": "7523", "interface": 0,
+                 "description": "A serial port of USB Serial (1a86:7523)"},
+                {"vid": "1a86", "pid": "7523", "description": "no port: skipped"}
+            ]
+        }))
+        .unwrap();
+        assert_eq!(
+            list.other_serial_ports,
+            [OtherSerialPort {
+                port: "/dev/cu.wchusbserial-1".into(),
+                interface: Some(0),
+                description: "A serial port of USB Serial (1a86:7523)".into(),
+            }]
+        );
+        assert!(parse_devices(&json!({"devices": []}))
+            .unwrap()
+            .other_serial_ports
+            .is_empty());
     }
 
     #[test]

@@ -1072,8 +1072,9 @@ pub async fn connected_devices(
 #[serde(rename_all = "camelCase")]
 pub struct SerialChoice {
     /// The device it's on (the engine's id), so the engine pauses it during
-    /// Upload and finds it again after an unplug.
-    pub device: String,
+    /// Upload and finds it again after an unplug. None for a port the
+    /// engine tied to no device (`other`).
+    pub device: Option<String>,
     /// The device for people, such as "the Alhambra II".
     pub who: String,
     /// The device's full name, such as "Alhambra II v1.0A (AlhambraBits,
@@ -1089,6 +1090,10 @@ pub struct SerialChoice {
     /// The engine's phrase for people, such as "The Alhambra II's serial
     /// port", for the hover text.
     pub description: String,
+    /// One of the engine's `other_serial_ports`: a USB serial port it tied
+    /// to no device, such as one of two lookalike adapters, listed under
+    /// "Other serial ports".
+    pub other: bool,
 }
 
 /// The connected devices' serial ports, the selected board's UART first
@@ -1114,7 +1119,7 @@ pub async fn serial_ports(
                 .as_deref()
                 .is_some_and(|b| d.boards.iter().any(|m| m.board == b));
             d.serial_ports.iter().map(move |p| SerialChoice {
-                device: d.id.clone(),
+                device: Some(d.id.clone()),
                 who: d.who.clone(),
                 label: d.label.clone(),
                 port: p.port.clone(),
@@ -1122,12 +1127,40 @@ pub async fn serial_ports(
                 board_uart: is_board && d.serial_port.as_deref() == Some(p.port.as_str()),
                 role: p.role.clone(),
                 description: p.description.clone(),
+                other: false,
             })
         })
         .collect();
-    // The board's UART first, programming ports last (stable: the
-    // engine's order otherwise).
-    choices.sort_by_key(|c| (!c.board_uart, c.role.as_deref() == Some("programmer")));
+    // Then the ports the engine tied to no device, so every USB serial
+    // port can be chosen.
+    choices.extend(list.other_serial_ports.iter().map(|p| {
+        let name = p
+            .description
+            .strip_prefix("A serial port of ")
+            .unwrap_or(&p.description)
+            .to_string();
+        SerialChoice {
+            device: None,
+            who: name.clone(),
+            label: name,
+            port: p.port.clone(),
+            interface: p.interface,
+            board_uart: false,
+            role: None,
+            description: p.description.clone(),
+            other: true,
+        }
+    }));
+    // The board's UART first, then the devices' other ports, their
+    // programming ports, and the other ports last (stable: the engine's
+    // order otherwise).
+    choices.sort_by_key(|c| {
+        (
+            !c.board_uart,
+            c.other,
+            c.role.as_deref() == Some("programmer"),
+        )
+    });
     Ok(choices)
 }
 
