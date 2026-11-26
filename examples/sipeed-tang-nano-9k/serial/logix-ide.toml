@@ -1,3 +1,6 @@
 # Logix IDE project settings.
 board = "sipeed-tang-nano-9k"
 summary = "Echoes what you type over the USB serial port, shows it on the LED, and greets you after 5 seconds of quiet."
+
+[serial]
+baud = 9600

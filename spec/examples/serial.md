@@ -49,7 +49,8 @@ signal), the LED resource if there is one, and the drives. Nothing else.
 
 `main.v` uses `uart_tx` (instance `sender`) and `uart_rx` (instance
 `receiver`), with `CLK_HZ` the clock's frequency in Hz and `BAUD` a
-parameter of `main`, 115200 by default. Its parts, each in a section with
+parameter of `main`, 115200 by default, or the speed the UART's
+`ai_hints` ask for. Its parts, each in a section with
 a heading comment (`// ---- ... ----` style, as the files in `serial/`):
 
 - **Echo:** each received character waits in `echo_char` (`echo_waiting`
@@ -79,7 +80,7 @@ for 5 seconds at 12 MHz"), not computed with `$clog2`, so beginners read a
 plain size.
 
 The top comment says what the example does and how to try it (Tools >
-Serial Monitor, 115200 baud, as in `serial-debug`; a terminal program
+Serial Monitor, at `BAUD`'s default, as in `serial-debug`; a terminal program
 such as PuTTY isn't needed). Then a "Which port" paragraph from the
 UART's `user_notes`, in plain words: when they
 say the computer lists several serial ports for the board (such as an
@@ -190,3 +191,5 @@ in parentheses):
 `summary`: "Echoes what you type over the USB serial port, shows it on the
 LEDs, and greets you after 5 seconds of quiet." With one LED, "on the LED";
 without LEDs, without "shows it on the LEDs,". Notes only as COMMON.md says.
+When `BAUD`'s default isn't 115200, a `[serial]` table with `baud` set to
+it, so the Serial Monitor opens at the design's speed.

@@ -1,3 +1,6 @@
 # Logix IDE project settings.
 board = "sipeed-tang-nano-9k"
 summary = "Watch and set a value inside the design over the USB serial port: a simple debugger."
+
+[serial]
+baud = 9600
