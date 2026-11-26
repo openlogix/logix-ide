@@ -1944,6 +1944,8 @@ test("the Serial Monitor opens the board's serial port, shows what arrives and s
   const monitor = page.getByRole("log", { name: "Serial Monitor output" });
   // Opened by itself: the board's UART, as Logix Engine marks it, with the device.
   await expect(monitor).toContainText("Opened /dev/cu.usbmodem114202 (the iCESugar v1.5, interface 2) at 115200 baud.");
+  // Its state in words beside the port.
+  await expect(page.locator(".monitor .state")).toHaveText("Open");
   expect((await fake()).serialOpened).toEqual([
     { port: "/dev/cu.usbmodem114202", baud: 115200, device: "usb:1-1.4.2:1d50:602b:07000001004300413100001056313032a5a5a5a500000000" },
   ]);
@@ -2022,6 +2024,7 @@ test("the Serial Monitor asks for the port when it can't tell, once", async ({ p
   const pick = page.getByRole("combobox", { name: "Serial port" });
   await expect(pick).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Choose the board's serial port." })).toBeVisible();
+  await expect(page.locator(".monitor .state")).toHaveText("Closed");
   // The port shows once: the menu, no name beside it.
   await expect(page.locator(".monitor .port")).not.toContainText("/dev/cu.usbserial-FTATANKC1No port");
   expect((await fake()).serialOpened).toEqual([]);

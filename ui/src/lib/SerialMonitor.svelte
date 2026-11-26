@@ -256,8 +256,7 @@
 <div class="monitor">
   <div class="bar">
     <!-- The port once: a menu when there's a choice, else its name. -->
-    <span class="port" title={open ? "Open" : "Closed"}>
-      <span class="dot" class:on={open}></span>
+    <span class="port">
       {#if choices.length > 1 || (!chosen && choices.length)}
         <!-- Just the port names; the device and interface on hover. -->
         <select
@@ -301,6 +300,10 @@
         >{connecting ? "Connecting…" : "Connect"}</button
       >
     {/if}
+    <!-- The port's state in words, not only a colored dot next to Connect and Disconnect (the user's requests, 2026-11-25). -->
+    <span class="state" class:on={open} aria-label="Port state"
+      ><span class="dot"></span>{connecting ? "Opening…" : open ? "Open" : "Closed"}</span
+    >
     <span class="spacer"></span>
     <label class="field"
       >Enter sends
@@ -372,14 +375,20 @@
     gap: 6px;
     font-weight: 600;
   }
+  .state {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+  }
+  .state.on {
+    color: var(--status-ok-fg);
+  }
   .dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--muted);
-  }
-  .dot.on {
-    background: var(--status-ok-fg);
+    background: currentColor;
   }
   .field,
   .check {
