@@ -748,12 +748,21 @@ test("shows if the board is connected, and lists recently used boards first", as
   await expect(recent).toHaveText(/^\s*Recently used\s*2\s*$/);
   await expect(page.getByRole("option").nth(0)).toHaveText(/iCEBreaker/);
   await expect(page.getByRole("option").nth(1)).toHaveText(/Arty A7-35T/);
+  // It opens at the current board's entry there, not the one in its family.
+  const active = page.locator('[role="option"].active');
+  await expect(active).toHaveCount(1);
+  await expect(page.getByRole("option").nth(0)).toHaveClass(/active/);
   // It collapses like a family's group.
   const toggle = recent.getByRole("button");
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(page.getByRole("option").first()).not.toHaveText(/iCEBreaker/);
+  // Collapsed, the list opens at the board's entry in its family's group.
+  await page.keyboard.press("Escape");
+  await boardButton(page).click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(active).toHaveText(/iCEBreaker/);
   await toggle.click();
   await expect(page.getByRole("option").first()).toHaveText(/iCEBreaker/);
 });

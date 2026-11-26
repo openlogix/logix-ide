@@ -90,9 +90,12 @@
     const current = boards.find((b) => b.id === value);
     if (current) expandGroup(current.familyLabel);
     await tick();
-    // Start at the current board, in its family's group.
+    // Start at the current board: its entry in "Recently used" when it's
+    // there (and the group is open), else the one in its family's group.
     const here = entries.filter((e) => e.board.id === value);
-    active = (here[here.length - 1] ?? entries[0])?.key ?? null;
+    const recentGroup = groups.findIndex((g) => g.kind === "recent");
+    const inRecent = here.find((e) => e.key.startsWith(`${recentGroup}:`));
+    active = (inRecent ?? here[here.length - 1] ?? entries[0])?.key ?? null;
     input?.focus();
     await tick();
     reveal("center");
