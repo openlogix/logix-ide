@@ -19,8 +19,8 @@
 //
 // Which port: the board's USB chip (a BL702) has two channels, so computers
 // list two serial ports for it. Interface 0 programs the board; use the one
-// for interface 1, usually the second of the two (on macOS the one ending
-// in 1, such as /dev/cu.usbserial-1101). If you see nothing, try the other.
+// for interface 1, usually the second of the two (on Linux usually
+// /dev/ttyUSB1). If you see nothing, try the other.
 
 module main #(
   parameter BAUD = 9_600,            // Serial speed, in bits per second.
