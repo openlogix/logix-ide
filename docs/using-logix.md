@@ -344,7 +344,13 @@ shows as it arrives.
 - **Unplugging** the board closes the port; it opens again when the
   board is back.
 - **Port** chooses another serial port, for a board whose port Logix IDE
-  doesn't know. **Disconnect** frees the port for another program.
+  doesn't know, or an external USB to serial adapter wired to the board.
+  The menu lists every USB serial port: those Logix IDE can't tell the
+  device of, such as one of two adapters that look the same, are under
+  **Other serial ports**. The port you choose is remembered for the board,
+  and opens by itself next time it's there; choosing the board's own port
+  again goes back to it. **Disconnect** frees the port for another
+  program.
 - **Lines** work as in a terminal: a line feed starts a new line, and a
   carriage return without one goes back to the line's start: what comes
   next overwrites it in place, and when that new line ends, whatever is

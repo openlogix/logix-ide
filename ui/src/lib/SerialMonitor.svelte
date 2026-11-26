@@ -54,6 +54,10 @@
   $effect(() => store("logix.serial.ending", ending));
   $effect(() => store("logix.serial.liveKeys", String(liveKeys)));
   $effect(() => store("logix.serial.timestamps", String(timestamps)));
+  /** The port the user chose for a board, such as an external USB to
+   * serial adapter wired to it: opened by itself next time, when it's
+   * there. Per user (a port's name is this computer's), by board ID. */
+  const chosenKey = (b: string | null) => `logix.serial.port.${b ?? ""}`;
 
   let choices = $state<SerialChoice[]>([]);
   /** The port open (or being opened) now. */
@@ -129,8 +133,10 @@
     userClosed = false;
     try {
       choices = await backend.serialPorts(boardsFolder, boardsSaved, board);
+      const remembered = stored(chosenKey(board), "");
       const pick =
         choice ??
+        choices.find((c) => remembered !== "" && c.port === remembered) ??
         choices.find((c) => c.boardUart) ??
         (choices.length === 1 ? choices[0] : undefined);
       if (!pick) {
@@ -240,7 +246,10 @@
   function choose(e: Event) {
     const port = (e.target as HTMLSelectElement).value;
     const c = choices.find((x) => x.port === port);
-    if (c) connect(c);
+    if (!c) return;
+    // The board's own UART needs no memory: it's opened by itself anyway.
+    store(chosenKey(board), c.boardUart ? "" : c.port);
+    connect(c);
   }
 </script>
 
@@ -258,9 +267,17 @@
           onchange={choose}
         >
           {#if !chosen}<option value="" disabled>Choose a port…</option>{/if}
-          {#each choices as c (c.port)}
+          {#each choices.filter((c) => !c.other) as c (c.port)}
             <option value={c.port} title={portTip(c)}>{c.port}</option>
           {/each}
+          {#if choices.some((c) => c.other)}
+            <!-- Ports Logix Engine tied to no device: still the user's to choose. -->
+            <optgroup label="Other serial ports">
+              {#each choices.filter((c) => c.other) as c (c.port)}
+                <option value={c.port} title={portTip(c)}>{c.port}</option>
+              {/each}
+            </optgroup>
+          {/if}
         </select>
       {:else}
         <span title={chosen ? portTip(chosen) : undefined}>{chosen ? chosen.port : "No port"}</span>

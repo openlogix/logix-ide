@@ -352,6 +352,9 @@ const fake = {
     fake.usb = [alhambraDevice];
     fake.uploadDevices = [alhambraDevice];
   },
+  /** USB serial ports Logix Engine tied to no device (its
+   * other_serial_ports), such as two lookalike CH340 adapters. */
+  otherPorts: [] as { port: string; interface: number | null; description: string }[],
   /** The module the last editor right-click menu offered the diagram of. */
   editorMenuModule: null as string | null,
   /** The project and module the last Show Diagram opened its window on. */
@@ -1068,7 +1071,7 @@ export const backend: typeof Real.backend = {
   // UART first, as Logix Engine marks it; the board echoes what's sent.
   serialPorts: async (_folder, _saved, board) =>
     (fake.usb ?? [icesugarDevice]).flatMap((d) =>
-      d.serialPorts.map((p) => ({
+      d.serialPorts.map((p): Real.SerialChoice => ({
         device: d.id,
         who: d.who,
         label: d.label,
@@ -1077,12 +1080,22 @@ export const backend: typeof Real.backend = {
         boardUart: !!board && d.boards.some((b) => b.board === board) && d.serialPort === p.port,
         role: p.role,
         description: p.description,
+        other: false,
       })),
-    ).sort(
-      (a, b) =>
-        Number(b.boardUart) - Number(a.boardUart) ||
-        Number(a.role === "programmer") - Number(b.role === "programmer"),
-    ),
+    )
+      .concat(
+        fake.otherPorts.map((p) => {
+          const name = p.description.replace(/^A serial port of /, "");
+          return { device: null, who: name, label: name, port: p.port, interface: p.interface,
+                   boardUart: false, role: null, description: p.description, other: true };
+        }),
+      )
+      .sort(
+        (a, b) =>
+          Number(b.boardUart) - Number(a.boardUart) ||
+          Number(a.other) - Number(b.other) ||
+          Number(a.role === "programmer") - Number(b.role === "programmer"),
+      ),
   serialOpen: async (port, baud, device) => {
     fake.serialOpened.push({ port, baud, device });
     return `serial-${fake.serialOpened.length}`;
