@@ -283,14 +283,7 @@
         <span title={chosen ? portTip(chosen) : undefined}>{chosen ? chosen.port : "No port"}</span>
       {/if}
     </span>
-    {#if open}
-      <button onclick={disconnect} title="Close the port, so other programs can open it">Disconnect</button>
-    {:else}
-      <button onclick={() => connect(chosen ?? undefined)} disabled={connecting}
-        >{connecting ? "Connecting…" : "Connect"}</button
-      >
-    {/if}
-    <span class="spacer"></span>
+    <!-- The speed next to the port: the two say what is open. -->
     <label class="field"
       >Baud
       <select
@@ -301,6 +294,14 @@
         {#each BAUDS as b (b)}<option value={String(b)}>{b}</option>{/each}
       </select>
     </label>
+    {#if open}
+      <button onclick={disconnect} title="Close the port, so other programs can open it">Disconnect</button>
+    {:else}
+      <button onclick={() => connect(chosen ?? undefined)} disabled={connecting}
+        >{connecting ? "Connecting…" : "Connect"}</button
+      >
+    {/if}
+    <span class="spacer"></span>
     <label class="field"
       >Enter sends
       <select aria-label="Line ending" bind:value={ending}>
