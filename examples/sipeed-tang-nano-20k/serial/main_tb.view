@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "rows": [
+    {
+      "signal": "main_tb.sys_clk",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "group": "Serial lines"
+    },
+    {
+      "signal": "main_tb.uart_rx",
+      "show_as": "bin",
+      "color": 2
+    },
+    {
+      "signal": "main_tb.uart_tx",
+      "show_as": "bin",
+      "color": 3
+    },
+    {
+      "group": "Receiving"
+    },
+    {
+      "signal": "main_tb.dut.rx_valid",
+      "show_as": "bin",
+      "color": 4
+    },
+    {
+      "signal": "main_tb.dut.rx_data",
+      "show_as": "ascii",
+      "color": 5
+    },
+    {
+      "group": "Sending"
+    },
+    {
+      "signal": "main_tb.dut.tx_valid",
+      "show_as": "bin",
+      "color": 6
+    },
+    {
+      "signal": "main_tb.dut.tx_ready",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "signal": "main_tb.dut.tx_data",
+      "show_as": "ascii",
+      "color": 2
+    },
+    {
+      "signal": "main_tb.dut.echo_waiting",
+      "show_as": "bin",
+      "color": 3
+    },
+    {
+      "signal": "main_tb.dut.echo_char",
+      "show_as": "ascii",
+      "color": 4
+    },
+    {
+      "group": "Greeting"
+    },
+    {
+      "signal": "main_tb.dut.quiet_cycles",
+      "show_as": "dec",
+      "color": 5
+    },
+    {
+      "signal": "main_tb.dut.sending_greeting",
+      "show_as": "bin",
+      "color": 6
+    },
+    {
+      "signal": "main_tb.dut.typed",
+      "show_as": "bin",
+      "color": 1
+    },
+    {
+      "signal": "main_tb.dut.char_number",
+      "show_as": "dec",
+      "color": 2
+    },
+    {
+      "signal": "main_tb.dut.greeting_char",
+      "show_as": "ascii",
+      "color": 3
+    },
+    {
+      "group": "LEDs"
+    },
+    {
+      "signal": "main_tb.dut.last_char",
+      "show_as": "ascii",
+      "color": 4
+    },
+    {
+      "signal": "main_tb.led",
+      "show_as": "bin",
+      "color": 5
+    }
+  ]
+}

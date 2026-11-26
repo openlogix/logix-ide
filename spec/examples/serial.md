@@ -150,6 +150,11 @@ in parentheses):
   ending ", lit by a 0." **No LED resource:** no bullet, port, section or
   wire; the testbench's top comment and echo comment say "echoed back" /
   "echoed" without "and shown on the LEDs", and there are no LED checks.
+- **Baud,** when the UART's `ai_hints` set it: `BAUD`'s default, and the
+  try-it line's "(<speed> baud)" adds the hints' reason, rewrapped, such
+  as "(9600 baud: this board's USB chip runs its serial port at 9600 on
+  macOS, whatever speed the computer asks for, so 9600 works
+  everywhere)".
 - **Which port:** the paragraph as in the reference when the UART's
   `user_notes` say the board's USB chip is an FTDI with two channels and
   the UART on interface 1; for another case the notes describe, the same

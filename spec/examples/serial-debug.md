@@ -126,6 +126,7 @@ in parentheses):
   no LED checks; the counter's section is the same.
 - **Comments' line breaks:** a comment whose text changed is rewrapped as
   a paragraph, lines at most 76 characters, "1 Mbit/s" kept together.
+- **Baud:** as `serial`'s.
 - **Which port:** as `serial`'s.
 - **Testbench clock:** as `serial`'s (`CYCLES_PER_BIT`, its comment, the
   half period, the clock's comment, "a bit is 12 clock cycles").
