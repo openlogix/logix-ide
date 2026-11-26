@@ -1132,6 +1132,24 @@ test("Check for Updates shows the progress and what changed", async ({ page }) =
   await expect(output(page).locator(".line", { hasText: "Updated logix-catalog to 2026.11.30." })).toHaveCount(1);
 });
 
+test("examples Check for Updates brings show at once, without a restart", async ({ page }) => {
+  await start(page);
+  const dialog = page.getByRole("dialog", { name: "Examples" });
+  const search = dialog.getByPlaceholder("Search boards and examples");
+  await menu(page, "examples");
+  await search.fill("fresh-from-update");
+  await expect(dialog.getByRole("button", { name: /^fresh-from-update/ })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  type Fake = { updateBringsExample: boolean };
+  await page.evaluate(() => ((window as unknown as { __fake: Fake }).__fake.updateBringsExample = true));
+  await menu(page, "check-for-updates");
+  await expect(status(page)).toContainText("Updated logix-catalog to 2026.11.30.");
+  await menu(page, "examples");
+  await search.fill("fresh-from-update");
+  await expect(dialog.getByRole("button", { name: /^fresh-from-update/ })).toBeVisible();
+});
+
 test("Upload asks which device when several fit the board", async ({ page }) => {
   await start(page);
   await chooseBoard(page, "Alhambra II");

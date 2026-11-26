@@ -503,6 +503,14 @@
     return catalogLoading;
   }
 
+  /** An update changed the board or example lists: load them again, so
+   * new examples and boards show without a restart. */
+  function onListsChanged() {
+    if (!catalogLoading) return; // Not loaded yet: the first load gets the new ones.
+    catalogLoading = null;
+    loadCatalog();
+  }
+
   // ---- Connected devices (the board list's device groups) ----
 
   /** The connected USB devices that fit boards, polled while idle. */
@@ -2538,6 +2546,7 @@
         if (event.kind === "line") logLineEvent(event);
       }),
       backend.onLspClosed(onLspClosed),
+      backend.onListsChanged(onListsChanged),
       backend.onWaveView(onWaveView),
       backend.onWaveOpenSource(onDiagramOpenSource),
       backend.onProjectFilesChanged(onProjectFilesChanged),

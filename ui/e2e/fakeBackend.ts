@@ -330,6 +330,7 @@ const handlers: {
   projectFilesChanged?: (change: { dir: string; names: string[] }) => void;
   diagramOpenSource?: (at: { key: string; file: string; line: number }) => void;
   serial?: (event: Real.SerialEvent) => void;
+  listsChanged?: () => void;
 } = {};
 
 /** Test hooks, reachable from Playwright via `page.evaluate`. */
@@ -461,6 +462,8 @@ const fake = {
   /** Check for Updates waits at 42% while this is set, until finishUpdates(). */
   holdUpdates: false,
   finishUpdates: () => handlers.finishUpdates?.(),
+  /** Check for Updates brings a new example (Alhambra II's fresh-from-update). */
+  updateBringsExample: false,
   /** The Waveforms window saved its view (as the real backend's "wave-view" event). */
   waveView: (view: { key: string; name: string; text: string }) => handlers.waveView?.(view),
   /** A source line asked for in the Waveforms window ("wave-open-source"). */
@@ -486,6 +489,8 @@ let pendingDisk: Real.ProjectChanges = { files: [], settings: null };
 
 /** The engine's logix-catalog in System Info; Check for Updates moves it. */
 let catalogRelease = "2026.11.14";
+/** Examples Check for Updates brought (`fake.updateBringsExample`). */
+const updateExamples: Real.Example[] = [];
 
 /** The board files in `folder`'s boards folder on the fake disk (null without it). */
 function boardsOnDisk(folder: string | null): Record<string, string> | null {
@@ -875,7 +880,7 @@ export const backend: typeof Real.backend = {
   getFpgaFamilies: async () => FPGA_FAMILIES,
 
   getExamples: async () => ({
-    examples: catalog.examples,
+    examples: [...catalog.examples, ...updateExamples],
     hidden: catalog.hidden,
   }),
 
@@ -1146,6 +1151,12 @@ export const backend: typeof Real.backend = {
     if (fake.holdUpdates) await new Promise<void>((resolve) => (handlers.finishUpdates = resolve));
     onProgress({ kind: "progress", message, percent: 100 });
     catalogRelease = "2026.11.30";
+    // As the real one: with new examples (`__fake.updateBringsExample`),
+    // the backend tells the UI to fetch the lists again.
+    if (fake.updateBringsExample) {
+      updateExamples.push({ board: "alhambra-ii", name: "fresh-from-update", summary: "An example the update brought", notes: [] });
+      handlers.listsChanged?.();
+    }
     return ["Updated logix-catalog to 2026.11.30."];
   },
   systemInfo: async () => {
@@ -1217,6 +1228,10 @@ export const backend: typeof Real.backend = {
   lspStop: async () => {},
   onLspMessage: unlisten,
   onLspClosed: unlisten,
+  onListsChanged: async (handler) => {
+    handlers.listsChanged = handler;
+    return () => {};
+  },
   onWaveView: async (handler) => {
     handlers.waveView = handler;
     return () => {};

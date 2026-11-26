@@ -1049,6 +1049,14 @@ export const backend = {
     listen("lsp-closed", () => handler()),
 
   /**
+   * An update (Check for Updates, or the daily check before a task) brought
+   * new examples, a new logix-catalog or a new Logix Engine: fetch the board
+   * and example lists again (getBoards, getExamples).
+   */
+  onListsChanged: (handler: () => void): Promise<UnlistenFn> =>
+    listen("lists-changed", () => handler()),
+
+  /**
    * The connected USB devices, matched to the catalog's boards and those of
    * the boards folder in `folder` (the project's folder, `copySource`;
    * null for none). `saved`: whether the project is saved, which decides
