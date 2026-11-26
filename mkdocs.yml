@@ -82,6 +82,7 @@ nav:
   - Installing: installing.md
   - Tour: tour.md
   - Using Logix IDE: using-logix.md
+  - Custom boards: custom-boards.md
   - Testbenches and simulation: testbenches.md
   - Using an AI agent: ai-agents.md
   - Troubleshooting: troubleshooting.md

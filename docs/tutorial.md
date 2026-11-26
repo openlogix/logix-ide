@@ -28,7 +28,7 @@ every one of the [supported boards](https://www.openlogix.org/logix-catalog/boar
 - **An FPGA board:** one of the [supported boards](https://www.openlogix.org/logix-catalog/boards/), and the USB
   cable that connects it to your computer. You can follow most of this page
   without a board; only the upload needs one. You can also add a board that
-  isn't on the list ([Your own boards](using-logix.md#your-own-boards)), but
+  isn't on the list ([Custom boards](custom-boards.md)), but
   that's outside this tutorial.
 - **An internet connection:** the first time you start Logix IDE.
 
@@ -255,7 +255,7 @@ projects** on the start screen. The projects folder is, by default:
 ## 13. Explore the boards
 
 Open the board list in the toolbar to see the [supported boards](https://www.openlogix.org/logix-catalog/boards/),
-81 so far, and any boards of your own ([Your own boards](using-logix.md#your-own-boards)). The **ⓘ** button next to the list opens the **Board Explorer**, with
+81 so far, and any boards of your own ([Custom boards](custom-boards.md)). The **ⓘ** button next to the list opens the **Board Explorer**, with
 the selected board's facts: its FPGA, what its pins connect to (the clock, LEDs,
 buttons), how it's programmed, and its examples.
 

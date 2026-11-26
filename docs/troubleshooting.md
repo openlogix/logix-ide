@@ -71,7 +71,7 @@ supported. A project for a board that isn't supported yet opens, but
 Verify and Upload ask you to choose another board.
 
 If your board uses one of these programmers, you can add it yourself, in a
-file in your project: see [Your own boards](using-logix.md#your-own-boards).
+file in your project: see [Custom boards](custom-boards.md).
 
 A board that can be programmed through different USB adapters, or into
 flash or RAM, is listed once: choose the adapter or memory next to the

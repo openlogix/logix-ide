@@ -367,49 +367,13 @@ nothing the board sends is missed.
 
 ## Your own boards
 
-A board that isn't in Logix IDE's board list can be added to a project. Add a
-folder named **boards** to the project folder, and in it a file per board,
-named after the board's ID, such as **boards/my-upduino.json**, written
-with any text editor (Logix IDE doesn't edit them).
-**Project > Show Project Folder** opens the folder in Finder (File Explorer on Windows). Since they're
-part of the project, anyone who opens the project gets the same boards.
-Each file describes one board in the same format as the
-[supported boards](https://www.openlogix.org/logix-catalog/boards/), so a supported board can be copied from
-[Logix Catalog](https://github.com/openlogix/logix-catalog) as a file, and a board you
-describe can be contributed to it as is:
-
-```json
-{
-  "$schema": "https://www.openlogix.org/schemas/logix-board-v1.json",
-  "name": "My UPduino",
-  "fpga_id": "ice40up5k-sg48",
-  "variants": [
-    {
-      "selector": {"connection": "usb", "memory": "flash"},
-      "programmer": "iceprog",
-      "args": "-d d:${BUS}/${DEV} ${BITSTREAM}",
-      "usb": {"vid": "0403", "pid": "6014"},
-      "tested": false
-    }
-  ]
-}
-```
-
-The `$schema` line is optional: with it, editors such as VS Code check the
-file and complete its fields as you type. The boards are listed first in
-the board list, under **Custom boards**, and in their FPGA family's group
-too, marked with a small circuit board, and Verify, Upload and the other
-commands use them like any other board; the output says when a command
-uses one. Logix IDE notices when you save a file in your editor. A board with
-the same ID as a board in Logix IDE's list replaces it in this project. The
-format is described in Logix Catalog's
-[model](https://github.com/openlogix/logix-catalog/blob/main/docs/model.md).
-If a file has a mistake, the output lists each one with the file's full
-path, line and column (such as
-`/Users/you/Documents/OpenLogix/IDE/blinky/boards/my-upduino.json:4:3: error: …`),
-the board list's **Custom boards** group says the boards folder has
-problems, and its boards aren't offered until it's fixed. Verify and Upload
-stop, and the status line says the boards folder has problems.
+A board that isn't in Logix IDE's board list can be added to a project as a
+custom board: a file per board in a **boards** folder in the project
+folder, in the same format as the
+[supported boards](https://www.openlogix.org/logix-catalog/boards/).
+Its boards are listed first in the board list, under **Custom boards**, and
+the commands use them like any other board.
+[Custom boards](custom-boards.md) says how to write one, step by step.
 
 ## Help
 
