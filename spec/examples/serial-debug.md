@@ -59,14 +59,15 @@ As the reference: a 16-bit `count` goes up by one at each `tick` (every
 default) or takes the value typed; one `debug` (instance `dbg`, label
 "count", 4 digits, `OVERWRITE` 1, so the value updates in place) prints it
 one cycle after each change and gives the values typed. `BAUD` is a
-parameter of `main`, 115200 by default. The LEDs, if any, show the count's
+parameter of `main`, 115200 by default, or the speed the UART's
+`ai_hints` ask for, as in `serial`. The LEDs, if any, show the count's
 lowest bits.
 
 Counter widths are written as numbers, the smallest that fits, with a
 comment saying why, as in `serial`.
 
 The top comment says what the example does and how to try it (Tools >
-Serial Monitor, 115200 baud), then the "Which port" paragraph, written as
+Serial Monitor, at `BAUD`'s default), then the "Which port" paragraph, written as
 in `serial` (from the UART's `user_notes`), ending "If you see nothing, try
 the other."
 
@@ -138,4 +139,5 @@ As `serial` (its Adding a board): a board that gets `serial` gets
 ## logix-ide.toml
 
 `summary`: "Watch and set a value inside the design over the USB serial
-port: a simple debugger." Notes only as COMMON.md says.
+port: a simple debugger." Notes only as COMMON.md says. A `[serial]`
+table as in `serial`.

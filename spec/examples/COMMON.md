@@ -20,7 +20,7 @@ Project on disk, `logix-ide.toml`):
 | `main.v` | The design, top module `main` |
 | `pinout.<ext>` | The pin file, `<ext>` from the board's family (`constraint_extension`: `pcf`, `lpf`, `cst` or `xdc`) |
 | `main_tb.v` | The testbench |
-| `logix-ide.toml` | `# Logix IDE project settings.`, then `board`, `summary` and optional `notes` (see below) |
+| `logix-ide.toml` | `# Logix IDE project settings.`, then `board`, `summary` and optional `notes` (see below), and a `[serial]` table with `baud` when the example says |
 
 `logix-ide.toml` names the board's default variant by leaving `[variant]`
 out. `summary` is one line saying what the example does on this board,

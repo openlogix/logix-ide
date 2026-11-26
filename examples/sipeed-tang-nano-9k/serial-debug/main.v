@@ -13,10 +13,17 @@
 // That's how to see inside your own design on the real board, and control
 // it: connect a debug module to the value you want to watch and set.
 //
-// To try it: upload it, then open Tools > Serial Monitor (115200 baud).
+// To try it: upload it, then open Tools > Serial Monitor (9600 baud: this
+// board's USB chip runs its serial port at 9600 on macOS, whatever speed
+// the computer asks for, so 9600 works everywhere).
+//
+// Which port: the board's USB chip (a BL702) has two channels, so computers
+// list two serial ports for it. Interface 0 programs the board; use the one
+// for interface 1, usually the second of the two (on macOS the one ending
+// in 1, such as /dev/cu.usbserial-1101). If you see nothing, try the other.
 
 module main #(
-  parameter BAUD = 115_200,          // Serial speed, in bits per second.
+  parameter BAUD = 9_600,            // Serial speed, in bits per second.
   parameter TICK_CYCLES = 13_500_000 // Clock cycles between counts: 0.5 s at 27 MHz.
 ) (
   input sys_clk,      // 27 MHz clock.
