@@ -44,8 +44,9 @@ pub struct AppState {
     /// number: each start gets a new one, so a replaced server's exit isn't
     /// taken for the current one's.
     lsp: tokio::sync::Mutex<Option<(u64, language_server::LanguageServer)>>,
-    /// Board and example lists, fetched once per run (boards from the
-    /// engine, examples built in).
+    /// Board and example lists (boards from the engine, examples from the
+    /// logix-ide-examples package), fetched on first use and again after an
+    /// update changes them (`commands::reload_lists`).
     catalog: tokio::sync::Mutex<Option<Catalog>>,
     /// Whether the open project has unsaved changes (reported by the UI).
     dirty: AtomicBool,

@@ -149,16 +149,20 @@ pub async fn check_for_updates(
             .context("Couldn't start the new Logix Engine.")?;
         *slot = Some(std::sync::Arc::new(started));
     }
-    if !updated.lines.is_empty() {
-        // New examples: the lists are read again on next use.
-        *state.catalog.lock().await = None;
-    }
+    // New examples or a new engine: the board and example lists may differ.
+    let mut lists_changed = updated.engine || !updated.lines.is_empty();
     let mut changes = updated.lines;
     let running = slot.clone().expect("set above");
     drop(slot);
-    // The engine's lines when its packages changed; none when they're up
-    // to date, so the status below is Logix IDE's own, about everything.
-    changes.extend(engine::check_for_updates(&running, log.clone(), progress).await?);
+    // The engine's lines when its packages changed (such as a new
+    // logix-catalog); none when they're up to date, so the status below is
+    // Logix IDE's own, about everything.
+    let engine_changes = engine::check_for_updates(&running, log.clone(), progress).await?;
+    lists_changed |= !engine_changes.is_empty();
+    changes.extend(engine_changes);
+    if lists_changed {
+        reload_lists(&app, &state).await;
+    }
     changes.extend(engine::newer_ide_lines(log).await);
     if changes.is_empty() {
         changes.push("Everything is up to date.".into());
@@ -348,7 +352,18 @@ fn console_events(app: &AppHandle) -> impl Fn(outcome::TaskEvent) + Send + Sync 
 /// Same as `engine_for_task` without the check for a new engine release:
 /// for quick queries (boards, devices, the language server).
 async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>, UserError> {
-    engine_with_check(state, None).await
+    Ok(engine_with_check(state, None).await?.0)
+}
+
+/// After an update brought new examples, a new catalog or a new engine:
+/// the board and example lists are read again on next use, and the UI is
+/// told (`lists-changed`) so it fetches them again, so the new examples and
+/// boards show in this session, without a restart. Called with neither the
+/// engine's nor the catalog's lock held (`catalog` takes the second inside
+/// the first).
+async fn reload_lists(app: &AppHandle, state: &AppState) {
+    *state.catalog.lock().await = None;
+    let _ = app.emit("lists-changed", ());
 }
 
 /// The running engine for an operation (Verify, Upload, Run Tests,
@@ -357,32 +372,40 @@ async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>
 /// names is downloaded and started, with lines in the operation's output
 /// (`log`). Updates apply at the start of an operation, never in the middle.
 async fn engine_for_task(
+    app: &AppHandle,
     state: &AppState,
     log: impl Fn(String) + Send + Sync,
 ) -> Result<std::sync::Arc<engine::Engine>, UserError> {
-    engine_with_check(state, Some(&log)).await
+    let (engine, lists_changed) = engine_with_check(state, Some(&log)).await?;
+    if lists_changed {
+        reload_lists(app, state).await;
+    }
+    Ok(engine)
 }
 
+/// The running engine, after the update check when there's a `log`, and
+/// whether that check brought new examples or a new engine (whose boards
+/// and examples may differ).
 async fn engine_with_check(
     state: &AppState,
     log: Option<&(dyn Fn(String) + Send + Sync)>,
-) -> Result<std::sync::Arc<engine::Engine>, UserError> {
+) -> Result<(std::sync::Arc<engine::Engine>, bool), UserError> {
     let mut slot = state.engine.lock().await;
     let Some(current) = slot.clone() else {
         return Err(anyhow!("The FPGA tools aren't ready yet.").into());
     };
-    let updated = match log {
+    let (updated, lists_changed) = match log {
         Some(log) => match engine::update_if_due(log, false, &|_, _| {}).await {
-            Ok(u) => u.engine,
+            Ok(u) => (u.engine, u.engine || !u.lines.is_empty()),
             Err(e) => {
                 crate::log!("Checking for updates failed: {e:#}");
-                false
+                (false, false)
             }
         },
-        None => false,
+        None => (false, false),
     };
     if !updated && !current.has_stopped() {
-        return Ok(current);
+        return Ok((current, lists_changed));
     }
     // A new release, or it stopped (such as after a crash): start it
     // (again). Its packages are downloaded already, or it downloads what
@@ -397,7 +420,7 @@ async fn engine_with_check(
         .context("Logix Engine stopped, and couldn't start again.")?;
     let started = std::sync::Arc::new(started);
     *slot = Some(started.clone());
-    Ok(started)
+    Ok((started, lists_changed))
 }
 
 /// The board and example lists (fetched on first use): the engine's
@@ -626,7 +649,7 @@ pub async fn run_task(
     };
     let engine = {
         let channel = on_event.clone();
-        engine_for_task(&state, move |line| {
+        engine_for_task(&app, &state, move |line| {
             let _ = channel.send(outcome::TaskEvent::line(line));
         })
         .await?
@@ -1341,7 +1364,7 @@ pub async fn format_file(
         .into());
     }
     let _formatting = state.format.lock().await;
-    let engine = engine_for_task(&state, console_log(&app)).await?;
+    let engine = engine_for_task(&app, &state, console_log(&app)).await?;
     let root = platform::current_implemented()?
         .data_dir()?
         .join("_scratch")
