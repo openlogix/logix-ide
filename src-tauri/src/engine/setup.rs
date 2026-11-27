@@ -291,6 +291,10 @@ pub struct Updated {
     pub engine: bool,
     /// What changed, a line each, such as "Updated logix-ide-examples to 2026.11.13."
     pub lines: Vec<String>,
+    /// The remote config was read now (it was due, or forced): the daily
+    /// check, after which the caller also has the engine check its own
+    /// packages (`check_for_updates`).
+    pub checked: bool,
 }
 
 /// Before an operation: reads the remote config again when it's due (or
@@ -331,7 +335,10 @@ pub async fn update_if_due(
         Err(e) => return Err(e.context(MSG_CONFIG)),
     };
     *LAST_FAILED_CHECK.lock().unwrap() = None;
-    let mut updated = Updated::default();
+    let mut updated = Updated {
+        checked: true,
+        ..Updated::default()
+    };
     updated
         .lines
         .extend(ensure_examples(platform, &layout, &config, &log).await?);
@@ -422,9 +429,11 @@ fn newer_lines(latest: Option<&remote_config::Entry>, own: &str) -> Vec<String> 
     ]
 }
 
-/// Help > Check for Updates, after `update_if_due(.., true)`: asks the
-/// running engine to check its own packages now (`check_updates`), with its
-/// progress, and returns what changed, in the engine's words (its
+/// Help > Check for Updates, after `update_if_due(.., true)`, and the daily
+/// check before an operation: asks the running engine to check its own
+/// packages now (`check_updates`, which reads its remote config again and
+/// is the only call that switches it to new releases), with its progress,
+/// and returns what changed, in the engine's words (its
 /// `summary`: "Updated logix-catalog to 2026.11.30."); none when nothing
 /// did, so Logix IDE's own "Everything is up to date." covers its engine
 /// and examples too.
@@ -476,30 +485,45 @@ fn strings(v: &Value) -> Vec<String> {
         .collect()
 }
 
-/// Lets the started engine download its missing packages (the FPGA tools),
-/// with progress. Always asks the engine (`download_packages`): it reads its
-/// own remote config first when that's due, and downloads only what's
-/// missing, so when everything is there it returns at once.
-pub async fn download_missing<F>(engine: &Engine, emit: F) -> Result<()>
+/// At start, once the engine runs: lets it download its missing packages
+/// (the FPGA tools) and switch to the releases its saved remote config names,
+/// with progress (`check_updates` with `cached_config_ok`: it reads its
+/// remote config again only when the saved one is 24 hours old, so when
+/// everything is there it returns at once). Returns whether it switched a
+/// package to another release, after which the caller reloads what it read from the engine.
+pub async fn check_packages_at_start<F>(engine: &Engine, emit: F) -> Result<bool>
 where
     F: Fn(SetupEvent) + Send + Sync + Clone + 'static,
 {
-    let out = engine
-        .call(
-            "download_packages",
-            json!({}),
-            Some(progress_sink(emit.clone())),
-        )
+    let sink = || Some(progress_sink(emit.clone()));
+    let out = match engine
+        .call("check_updates", json!({"cached_config_ok": true}), sink())
         .await
         .context(MSG_PACKAGES)?
-        .map_err(|e| tool_error("download_packages", &e))
-        .context(MSG_PACKAGES)?;
+    {
+        Ok(out) => out,
+        // An engine from before 2026-11-27 (such as the prod channel's
+        // 2026-11-25) refuses the input: it switches releases by itself, and
+        // `download_packages` does what this call did there. Remove with
+        // config 002, which names a newer engine.
+        Err(e) if e["category"] == "request" => {
+            crate::log!("This engine has no cached_config_ok; using download_packages");
+            engine
+                .call("download_packages", json!({}), sink())
+                .await
+                .context(MSG_PACKAGES)?
+                .map_err(|e| tool_error("download_packages", &e))
+                .context(MSG_PACKAGES)?
+        }
+        Err(e) => return Err(tool_error("check_updates", &e).context(MSG_PACKAGES)),
+    };
     // What it downloaded, in the engine's words ("Downloaded logix-core
     // 2026.11.10."); nothing when everything was there.
     for line in strings(&out["summary"]) {
         emit(SetupEvent::Log { line });
     }
-    Ok(())
+    // A switch to another release (`updates`), not a first download.
+    Ok(out["updates"].as_array().is_some_and(|l| !l.is_empty()))
 }
 
 /// A kind of dependency package: how it's named for people and laid out.
@@ -738,9 +762,10 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(info["platform"], "darwin-arm64");
-        // An unknown package is a tool error, not a failed call.
+        // An unknown input is a tool error, not a failed call (and how
+        // `check_packages_at_start` tells an engine from before 2026-11-27).
         let err = engine
-            .call("download_packages", json!({"packages": ["nope"]}), None)
+            .call("check_updates", json!({"nope": true}), None)
             .await
             .unwrap()
             .unwrap_err();
