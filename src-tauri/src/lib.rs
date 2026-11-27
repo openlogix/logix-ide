@@ -46,7 +46,7 @@ pub struct AppState {
     lsp: tokio::sync::Mutex<Option<(u64, language_server::LanguageServer)>>,
     /// Board and example lists (boards from the engine, examples from the
     /// logix-ide-examples package), fetched on first use and again after an
-    /// update changes them (`commands::reload_lists`).
+    /// update changes them (`commands::reload_from_engine`).
     catalog: tokio::sync::Mutex<Option<Catalog>>,
     /// Whether the open project has unsaved changes (reported by the UI).
     dirty: AtomicBool,

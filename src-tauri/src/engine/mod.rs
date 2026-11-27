@@ -29,8 +29,8 @@ pub use devices::{
 pub use format::format_file;
 pub use info::{hdl_extensions, language_server, ServerCommand};
 pub use setup::{
-    check_for_updates, download_missing, newer_ide_lines, newer_ide_release, start as start_engine,
-    update_if_due,
+    check_for_updates, check_packages_at_start, newer_ide_lines, newer_ide_release,
+    start as start_engine, update_if_due,
 };
 pub use task::{boards_problem_outcome, live_options, run as run_task, TaskInput};
 

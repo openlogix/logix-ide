@@ -161,7 +161,7 @@ pub async fn check_for_updates(
     lists_changed |= !engine_changes.is_empty();
     changes.extend(engine_changes);
     if lists_changed {
-        reload_lists(&app, &state).await;
+        reload_from_engine(&app, &state).await;
     }
     changes.extend(engine::newer_ide_lines(log).await);
     if changes.is_empty() {
@@ -261,7 +261,11 @@ pub async fn setup(
                 }
                 Err(e) => crate::log!("Board list before the download failed: {e:#}"),
             }
-            engine::download_missing(&started, emit).await?;
+            if engine::check_packages_at_start(&started, emit).await? {
+                // It switched to the releases its saved config names, such
+                // as a newer logix-catalog: what was read from it may differ.
+                reload_from_engine(&app, &state).await;
+            }
             anyhow::Ok(started)
         }
         .await;
@@ -355,13 +359,16 @@ async fn ready_engine(state: &AppState) -> Result<std::sync::Arc<engine::Engine>
     Ok(engine_with_check(state, None).await?.0)
 }
 
-/// After an update brought new examples, a new catalog or a new engine:
-/// the board and example lists are read again on next use, and the UI is
-/// told (`lists-changed`) so it fetches them again, so the new examples and
-/// boards show in this session, without a restart. Called with neither the
-/// engine's nor the catalog's lock held (`catalog` takes the second inside
-/// the first).
-async fn reload_lists(app: &AppHandle, state: &AppState) {
+/// After an update brought new examples, new engine packages (only
+/// `check_updates` switches them) or a new engine: what Logix IDE read from
+/// the engine and keeps is read again. Today that's the board and example
+/// lists: read again on next use, and the UI is told (`lists-changed`) so
+/// it fetches them again, so the new examples and boards show in this
+/// session, without a restart. Anything new that Logix IDE keeps from the
+/// engine is dropped here too. The updates it follows run at the start of
+/// an operation, at setup or holding the task lock, never during another
+/// engine task.
+async fn reload_from_engine(app: &AppHandle, state: &AppState) {
     *state.catalog.lock().await = None;
     let _ = app.emit("lists-changed", ());
 }
@@ -370,42 +377,57 @@ async fn reload_lists(app: &AppHandle, state: &AppState) {
 /// Simulate, Show Diagram, Auto Format): first, when Logix IDE's remote
 /// config is due (24 hours), it's read again, and a new engine release it
 /// names is downloaded and started, with lines in the operation's output
-/// (`log`). Updates apply at the start of an operation, never in the middle.
+/// (`log`); then, the daily check, the engine checks its own packages
+/// (`check_updates`), when `engine_check` (no other engine task runs).
+/// Updates apply at the start of an operation, never in the middle.
 async fn engine_for_task(
     app: &AppHandle,
     state: &AppState,
-    log: impl Fn(String) + Send + Sync,
+    log: impl Fn(String) + Send + Sync + Clone + 'static,
+    engine_check: bool,
 ) -> Result<std::sync::Arc<engine::Engine>, UserError> {
-    let (engine, lists_changed) = engine_with_check(state, Some(&log)).await?;
+    let (engine, mut lists_changed, checked) = engine_with_check(state, Some(&log)).await?;
+    if checked && engine_check {
+        // A failure (such as offline) isn't the operation's: it runs on what
+        // the engine has, and the next day's check tries again.
+        match engine::check_for_updates(&engine, log.clone(), |_, _| {}).await {
+            Ok(lines) => {
+                lists_changed |= !lines.is_empty();
+                lines.into_iter().for_each(&log);
+            }
+            Err(e) => crate::log!("The engine's check for updates failed: {e:#}"),
+        }
+    }
     if lists_changed {
-        reload_lists(app, state).await;
+        reload_from_engine(app, state).await;
     }
     Ok(engine)
 }
 
-/// The running engine, after the update check when there's a `log`, and
+/// The running engine, after the update check when there's a `log`,
 /// whether that check brought new examples or a new engine (whose boards
-/// and examples may differ).
+/// and examples may differ), and whether it read the remote config (the
+/// daily check).
 async fn engine_with_check(
     state: &AppState,
     log: Option<&(dyn Fn(String) + Send + Sync)>,
-) -> Result<(std::sync::Arc<engine::Engine>, bool), UserError> {
+) -> Result<(std::sync::Arc<engine::Engine>, bool, bool), UserError> {
     let mut slot = state.engine.lock().await;
     let Some(current) = slot.clone() else {
         return Err(anyhow!("The FPGA tools aren't ready yet.").into());
     };
-    let (updated, lists_changed) = match log {
+    let (updated, lists_changed, checked) = match log {
         Some(log) => match engine::update_if_due(log, false, &|_, _| {}).await {
-            Ok(u) => (u.engine, u.engine || !u.lines.is_empty()),
+            Ok(u) => (u.engine, u.engine || !u.lines.is_empty(), u.checked),
             Err(e) => {
                 crate::log!("Checking for updates failed: {e:#}");
-                (false, false)
+                (false, false, false)
             }
         },
-        None => (false, false),
+        None => (false, false, false),
     };
     if !updated && !current.has_stopped() {
-        return Ok((current, lists_changed));
+        return Ok((current, lists_changed, checked));
     }
     // A new release, or it stopped (such as after a crash): start it
     // (again). Its packages are downloaded already, or it downloads what
@@ -420,7 +442,7 @@ async fn engine_with_check(
         .context("Logix Engine stopped, and couldn't start again.")?;
     let started = std::sync::Arc::new(started);
     *slot = Some(started.clone());
-    Ok((started, lists_changed))
+    Ok((started, lists_changed, checked))
 }
 
 /// The board and example lists (fetched on first use): the engine's
@@ -649,9 +671,14 @@ pub async fn run_task(
     };
     let engine = {
         let channel = on_event.clone();
-        engine_for_task(&app, &state, move |line| {
-            let _ = channel.send(outcome::TaskEvent::line(line));
-        })
+        engine_for_task(
+            &app,
+            &state,
+            move |line| {
+                let _ = channel.send(outcome::TaskEvent::line(line));
+            },
+            true,
+        )
         .await?
     };
     // The boards the project knows: with a custom-boards.json (the file in
@@ -1364,7 +1391,13 @@ pub async fn format_file(
         .into());
     }
     let _formatting = state.format.lock().await;
-    let engine = engine_for_task(&app, &state, console_log(&app)).await?;
+    // Auto Format runs beside a task: the engine checks its packages only
+    // when no task is running, since a switch must never happen during
+    // another call.
+    let engine = {
+        let no_task = state.task.try_lock();
+        engine_for_task(&app, &state, console_log(&app), no_task.is_ok()).await?
+    };
     let root = platform::current_implemented()?
         .data_dir()?
         .join("_scratch")
