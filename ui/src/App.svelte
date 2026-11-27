@@ -1083,7 +1083,9 @@
     old?.disconnect();
     // Stopped on purpose (Settings), or never wanted: nothing to do.
     if (!old || !lspWanted()) return;
-    // Restarted by itself: nothing for the user to do, so the IDE log only.
+    // It stopped by itself, or for the engine's check for updates (which
+    // may switch logix-core, where it runs from): nothing for the user to
+    // do, so the IDE log only.
     sendToLogFile(["The Verible live error checker stopped; restarting it."]);
     setTimeout(startLsp, 2000);
   }
