@@ -157,7 +157,10 @@ pub async fn check_for_updates(
     // The engine's lines when its packages changed (such as a new
     // logix-catalog); none when they're up to date, so the status below is
     // Logix IDE's own, about everything.
-    let engine_changes = engine::check_for_updates(&running, log.clone(), progress).await?;
+    let paused = pause_language_server(&state).await;
+    let engine_changes = engine::check_for_updates(&running, log.clone(), progress).await;
+    resume_language_server(&app, paused);
+    let engine_changes = engine_changes?;
     lists_changed |= !engine_changes.is_empty();
     changes.extend(engine_changes);
     if lists_changed {
@@ -373,6 +376,31 @@ async fn reload_from_engine(app: &AppHandle, state: &AppState) {
     let _ = app.emit("lists-changed", ());
 }
 
+/// Stops Verible's language server, if it runs, before the engine's
+/// `check_updates`, which may switch logix-core to another release and
+/// delete the old one: the server runs from that release's folder (and on
+/// Windows, a running program's folder can't be deleted). Returns whether
+/// it ran, for `resume_language_server`.
+async fn pause_language_server(state: &AppState) -> bool {
+    let taken = state.lsp.lock().await.take();
+    match taken {
+        Some((_, server)) => {
+            server.stop().await;
+            crate::log!("Language server stopped for the engine's check for updates");
+            true
+        }
+        None => false,
+    }
+}
+
+/// After the engine's check: the UI starts the language server again
+/// (`lsp-closed`), from the release the engine now names.
+fn resume_language_server(app: &AppHandle, paused: bool) {
+    if paused {
+        let _ = app.emit("lsp-closed", ());
+    }
+}
+
 /// The running engine for an operation (Verify, Upload, Run Tests,
 /// Simulate, Show Diagram, Auto Format): first, when Logix IDE's remote
 /// config is due (24 hours), it's read again, and a new engine release it
@@ -390,7 +418,10 @@ async fn engine_for_task(
     if checked && engine_check {
         // A failure (such as offline) isn't the operation's: it runs on what
         // the engine has, and the next day's check tries again.
-        match engine::check_for_updates(&engine, log.clone(), |_, _| {}).await {
+        let paused = pause_language_server(state).await;
+        let checked = engine::check_for_updates(&engine, log.clone(), |_, _| {}).await;
+        resume_language_server(app, paused);
+        match checked {
             Ok(lines) => {
                 lists_changed |= !lines.is_empty();
                 lines.into_iter().for_each(&log);

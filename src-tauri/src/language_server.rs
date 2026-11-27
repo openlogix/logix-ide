@@ -15,7 +15,7 @@ use tokio::process::{Child, ChildStdin, Command};
 /// A running language server. Dropping it stops the server.
 pub struct LanguageServer {
     stdin: ChildStdin,
-    _child: Child,
+    child: Child,
 }
 
 impl LanguageServer {
@@ -53,10 +53,14 @@ impl LanguageServer {
             }
             on_exit();
         });
-        Ok(LanguageServer {
-            stdin,
-            _child: child,
-        })
+        Ok(LanguageServer { stdin, child })
+    }
+
+    /// Stops the server and waits until it has exited, so its program's
+    /// files are free (Windows keeps a running program's file from being
+    /// deleted).
+    pub async fn stop(mut self) {
+        let _ = self.child.kill().await;
     }
 
     /// Sends one message (JSON, without headers) to the server.
