@@ -2361,15 +2361,17 @@ test("Debug asks for the nets first, keeps them in debug.toml, and Stop, Upload 
   // The clock isn't offered as a net, and inputs can't be driven.
   await expect(picker).not.toContainText("main.clk");
   await expect(picker.getByLabel("Drive main.count")).toBeVisible();
+  // Nor the top module's outputs: the engine drives internal nets only.
+  await expect(picker.getByLabel("Drive main.led")).toHaveCount(0);
   const go = picker.getByRole("button", { name: "Debug", exact: true });
   await expect(go).toBeDisabled();
-  await picker.getByLabel("Watch main.count").check();
-  await picker.getByLabel("Drive main.led").check();
+  await picker.getByLabel("Watch main.led").check();
+  await picker.getByLabel("Drive main.count").check();
   await go.click();
   await expect(picker).toBeHidden();
   await expect(output(page)).toContainText("Opened the debug session");
   await expect(status(page)).toContainText("Debugger ready");
-  expect((await fake()).updates).toEqual([{ clock: "clk", watch: ["main.count"], drive: ["main.led"] }]);
+  expect((await fake()).updates).toEqual([{ clock: "clk", watch: ["main.led"], drive: ["main.count"] }]);
   // It's an unsaved change of the project, and no tab.
   expect((await fake()).dirty).toBe(true);
   await expect(tab(page, "debug.toml")).toHaveCount(0);
