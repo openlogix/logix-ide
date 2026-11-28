@@ -255,7 +255,7 @@ rest.
 
 In the Debugger window, **Choose nets…** opens the same choice. Click a row's
 name to select it, and drag a Watch or Drive row by its name to move it.
-Right-click a watched name to change its color. The order of the rows, the read
+Right-click a row's name to change its color. The order of the rows, the read
 rate and the chart's span are saved in `debug.toml` too, so the next Debug
 starts with them.
 
