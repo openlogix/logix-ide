@@ -12,8 +12,9 @@ use crate::project::{self, ProjectFile, RESERVED_NAMES};
 
 /// Records which project the folder was prepared for.
 const KEY_FILE: &str = ".logix-build-key";
-/// The engine's output folder, kept between builds.
-const OUTPUT_DIR: &str = "_build";
+/// The engine's output folders, kept between builds: Upload's and
+/// Debug's (`engine::task::DEBUG_BUILD_DIR`).
+const OUTPUT_DIRS: &[&str] = &["_build", crate::engine::DEBUG_BUILD_DIR];
 
 pub struct BuildInput<'a> {
     /// Identifies the project (e.g. its folder). A different key starts
@@ -76,7 +77,7 @@ pub fn prepare(root: &Path, input: &BuildInput) -> Result<PathBuf> {
     for entry in std::fs::read_dir(root)? {
         let entry = entry?;
         let name = entry.file_name();
-        if name == OUTPUT_DIR || name == KEY_FILE {
+        if OUTPUT_DIRS.iter().any(|d| name == *d) || name == KEY_FILE {
             continue;
         }
         let path = entry.path();
@@ -167,9 +168,11 @@ mod tests {
 
         prepare(&root, &input("k1", &two)).unwrap();
         std::fs::create_dir_all(root.join("_build")).unwrap();
+        std::fs::create_dir_all(root.join("_build_debug")).unwrap();
 
         prepare(&root, &input("k1", &one)).unwrap();
         assert!(root.join("_build").exists(), "same project keeps output");
+        assert!(root.join("_build_debug").exists(), "and Debug's output");
         assert!(!root.join("old.v").exists(), "removed files are dropped");
 
         prepare(&root, &input("k2", &one)).unwrap();

@@ -7,6 +7,7 @@
 
 mod catalog;
 mod client;
+pub mod debug;
 mod devices;
 mod format;
 mod info;
@@ -32,7 +33,10 @@ pub use setup::{
     check_for_updates, check_packages_at_start, newer_ide_lines, newer_ide_release,
     start as start_engine, update_if_due,
 };
-pub use task::{boards_problem_outcome, live_options, run as run_task, TaskInput};
+pub use task::{
+    boards_problem_outcome, live_options, run as run_task, TaskInput, DEBUG_BUILD_DIR, DEBUG_FILE,
+    TOP_MODULE,
+};
 
 use client::{Progress, ProgressSink};
 

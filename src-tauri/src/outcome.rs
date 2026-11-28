@@ -21,6 +21,10 @@ pub enum Task {
     /// Board Utilization: build without lint, for the report of the files
     /// as they are now (the engine skips a build that's up to date).
     Report,
+    /// Debug: a debug build (the project's `debug.toml`) into its own
+    /// folder, `_build_debug`, then program the board and open a debug
+    /// session and its panel (the engine's debugger: `docs/debugger.md`).
+    Debug,
 }
 
 /// A testbench that ran.
@@ -72,6 +76,13 @@ pub struct TaskOutcome {
     /// those files' earlier problems with these (a pin file's problems stay
     /// after Run Tests, which never reads it). Empty when no tool ran.
     pub checked_files: Vec<String>,
+    /// For a successful `Debug`: the engine's debug session, which stays
+    /// open until Stop, Upload, another Debug or the panel closes.
+    pub debug_session: Option<String>,
+    /// For a successful `Debug`: the panel's address. Not sent to the UI:
+    /// the backend shows it in the Debugger window.
+    #[serde(skip)]
+    pub debug_url: Option<String>,
 }
 
 /// A device that needs a driver before Upload can program it.

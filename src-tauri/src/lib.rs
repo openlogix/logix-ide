@@ -1,6 +1,8 @@
 mod agent_guide;
 mod build_dir;
 mod commands;
+mod debug_file;
+mod debug_window;
 mod diagram_window;
 mod download;
 mod engine;
@@ -62,6 +64,11 @@ pub struct AppState {
     /// The watch on the open project's folder, while one is open and saved
     /// (`watch.rs`, `commands::watch_project`).
     project_watch: std::sync::Mutex<Option<watch::ProjectWatch>>,
+    /// The open debug session (Project > Debug), while one is: the
+    /// project's key and the engine's session ID. One at a time; Upload,
+    /// Debug, Stop and closing the debug window end it
+    /// (`commands::end_debug`).
+    debug: std::sync::Mutex<Option<(String, String)>>,
 }
 
 #[derive(Clone)]
@@ -135,11 +142,21 @@ pub fn run() {
                     diagram_window::forget(window.label());
                 } else if wave_window::is_wave(window.label()) {
                     wave_window::forget(window.label());
+                } else if window.label().starts_with(debug_window::LABEL_PREFIX) {
+                    // Closing the panel ends its session, which releases
+                    // the driven nets.
+                    let app = window.app_handle().clone();
+                    let label = window.label().to_string();
+                    tauri::async_runtime::spawn(async move {
+                        commands::end_debug_of_window(&app, &label).await;
+                    });
                 } else if window.label() == "main" {
-                    // Diagram and waveform windows close with the main window.
+                    // Diagram, waveform and debug windows close with the
+                    // main window.
                     for w in diagram_window::windows(window.app_handle())
                         .into_iter()
                         .chain(wave_window::windows(window.app_handle()))
+                        .chain(debug_window::windows(window.app_handle()))
                     {
                         let _ = w.close();
                     }
@@ -177,6 +194,10 @@ pub fn run() {
             commands::serial_open,
             commands::serial_write,
             commands::serial_close,
+            commands::debug_config,
+            commands::save_debug_config,
+            commands::list_debug_nets,
+            commands::stop_debug,
             commands::watch_project,
             commands::read_project_changes,
             commands::lsp_start,

@@ -226,6 +226,32 @@ fit, so there's no percentage. **Copy** copies the report as text.
 
 ![The Board Utilization window: the used resources with their descriptions, then the clock](images/board-utilization.png)
 
+## Debug
+
+The **Debug** button (the bug, after Upload) lets you watch and change
+signals inside the design while it runs on the board, without adding any
+code yourself. It builds the design with a small debugger added, programs
+the board and opens the **Debugger** window, which shows the nets you chose
+as the board runs, and lets you set the ones you drive.
+
+The debugger talks to your computer over the board's USB serial port, so
+Debug works on the boards that have one. Debug needs a saved project: it
+keeps its choice of nets in the project's `debug.toml`.
+
+The first time, Debug asks which nets to use: the design's clock, the nets
+to **Watch**, and the nets to **Drive** (set from the Debugger window).
+Your choice is saved in `debug.toml`, and later Debugs use it right away.
+To change it, edit `debug.toml` (its format is in
+[Logix Engine's docs](https://www.openlogix.org/logix-engine/debugger/)).
+
+While the Debugger window is open, Debug again rebuilds, programs the board
+and reconnects. **Stop**, closing the Debugger window, or **Upload** ends
+debugging and releases the nets you drove. The board keeps running the
+design with the debugger until the next Upload.
+
+Debug builds into the project's `_build_debug` folder, so it doesn't slow
+down the next Verify or Upload.
+
 ## Auto Format
 
 **Tools > Auto Format** tidies up the indentation and spacing of

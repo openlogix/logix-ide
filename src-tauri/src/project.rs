@@ -89,7 +89,7 @@ pub fn is_project_file(name: &str) -> bool {
 }
 
 /// Names that belong to the IDE or the build, never project files.
-pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "_build"];
+pub(crate) const RESERVED_NAMES: &[&str] = &[SETTINGS_FILE, "_build", "_build_debug"];
 
 /// The first lines of a new project file.
 const SETTINGS_HEADER: &str = "# Logix IDE project settings.\n";

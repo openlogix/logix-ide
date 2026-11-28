@@ -31,6 +31,8 @@
     type BuildReport,
     type ProjectFile,
     type NewerIde,
+    type DebugConfig,
+    type DebugNet,
   } from "./lib/backend";
   import Editor from "./lib/Editor.svelte";
   import { setHoverEnabled, startLanguageServer } from "./lib/lsp";
@@ -62,6 +64,7 @@
   import BuildReportDialog from "./lib/BuildReport.svelte";
   import DevicePicker from "./lib/DevicePicker.svelte";
   import TestbenchPicker from "./lib/TestbenchPicker.svelte";
+  import NetPicker from "./lib/NetPicker.svelte";
   import {
     loadSimulated,
     saveSimulated,
@@ -1038,6 +1041,7 @@
     simulate: "Simulating",
     diagram: "Preparing the diagram of",
     report: "Building the report of",
+    debug: "Debugging",
   };
 
   // ---- Live errors while typing (Verible's language server) ----
@@ -1333,15 +1337,16 @@
    * offer, from the moment it stops until the answer is taken. */
   let uploadAsking = false;
 
-  async function offerUploadDriver(outcome: TaskOutcome) {
+  async function offerUploadDriver(outcome: TaskOutcome, task: Task) {
     try {
-      await askUploadDriver(outcome);
+      await askUploadDriver(outcome, task);
     } finally {
       uploadAsking = false;
     }
   }
 
-  async function askUploadDriver(outcome: TaskOutcome) {
+  /** `task` is Upload or Debug, which programs the board the same way. */
+  async function askUploadDriver(outcome: TaskOutcome, task: Task) {
     const d = outcome.driverDevice;
     if (!d) return;
     // A No ends Upload's output, which waited for the answer: Logix
@@ -1355,23 +1360,117 @@
     if (outcome.action === CONFIRM_SAME_IDS && outcome.sameIds) {
       const same = outcome.sameIds;
       if (await confirmInApp(confirmContent(same)))
-        runTask("upload", null, d.id, { install: true, allowSameIds: true });
-      else declined(`${same.cancelled} Unplug the other devices, then choose Upload again.`);
+        runTask(task, null, d.id, { install: true, allowSameIds: true });
+      else declined(`${same.cancelled} Unplug the other devices, then choose ${VERB_NOUN[task]} again.`);
       return;
     }
     const ask = d.driver.add;
     if (!ask) return;
     if (await confirmInApp(confirmContent(ask, UNDO_WHERE)))
-      runTask("upload", null, d.id, { install: true, allowSameIds: false });
-    else declined(`${ask.cancelled} Nothing was uploaded: choose Upload again when you're ready.`);
+      runTask(task, null, d.id, { install: true, allowSameIds: false });
+    else declined(`${ask.cancelled} Nothing was uploaded: choose ${VERB_NOUN[task]} again when you're ready.`);
   }
 
-  /** Upload's device picker, while several devices fit the board. */
-  let devicePicker = $state<{ board: string; devices: UsbDevice[] } | null>(null);
+  /** The task's name in messages that ask to choose it again. */
+  const VERB_NOUN: Partial<Record<Task, string>> = { upload: "Upload", debug: "Debug" };
+
+  /** Upload's (or Debug's) device picker, while several devices fit the board. */
+  let devicePicker = $state<{ board: string; devices: UsbDevice[]; task: Task } | null>(null);
 
   function chooseUploadDevice(id: string) {
+    const task = devicePicker?.task ?? "upload";
     devicePicker = null;
-    runTask("upload", null, id);
+    runTask(task, null, id);
+  }
+
+  // ---- Debug (Logix Engine's in-design debugger, docs/debugger.md) ----
+
+  /** Whether a debug session is open (its panel in the Debugger window). */
+  let debugging = $state(false);
+  /** The net picker, while Debug asks which nets to watch and drive. */
+  let netPicker = $state<{ nets: DebugNet[]; config: DebugConfig } | null>(null);
+
+  /**
+   * Debug: a debug build of the nets the project's debug.toml names, Upload,
+   * then the debug panel. With no nets chosen yet, asks first (the net
+   * picker, from Logix Engine's list_nets) and saves the choice in
+   * debug.toml. The file lives in the project folder, so the project must be
+   * saved.
+   */
+  async function startDebug() {
+    if (!project || running) return;
+    if (!ready) {
+      fileError = "The FPGA tools aren't ready yet.";
+      return;
+    }
+    if (!project.board) {
+      fileError = "Select a board first (in the toolbar).";
+      return;
+    }
+    const p = project;
+    if (!p.dir) {
+      fileError = "Save the project first: Debug keeps its choice of nets in the project's debug.toml.";
+      return;
+    }
+    try {
+      const config = await backend.debugConfig(p.dir);
+      if (config.hasNets) {
+        runTask("debug");
+        return;
+      }
+      await pickNets(p, config);
+    } catch (e) {
+      const err = toUserError(e);
+      status = { text: err.message, kind: "error" };
+    }
+  }
+
+  /** Project > Choose Debug Nets…, and Debug's first run: the net picker. */
+  async function pickNets(p: WorkingProject, config: DebugConfig) {
+    if (!p.board) return;
+    const board = p.board;
+    const boardInfo = boards.find((b) => b.id === board) ?? null;
+    const variant = boardInfo ? toStore(boardInfo, p.variant) : p.variant;
+    status = { text: "Reading the design's nets…", kind: "info" };
+    const nets = await backend.listDebugNets(
+      buildKey(p),
+      copySource(p),
+      p.dir,
+      filesForSave(p),
+      board,
+      variant,
+    );
+    if (project !== p) return;
+    status = { text: "Choose the nets to debug.", kind: "info" };
+    netPicker = { nets, config };
+  }
+
+  async function chooseNets(clock: string, watch: string[], drive: string[]) {
+    netPicker = null;
+    const p = project;
+    if (!p?.dir) return;
+    try {
+      await backend.saveDebugConfig(p.dir, clock, watch, drive);
+      runTask("debug");
+    } catch (e) {
+      const err = toUserError(e);
+      status = { text: err.message, kind: "error" };
+    }
+  }
+
+  /** Stop while debugging: ends the session and closes its window. */
+  async function stopDebug() {
+    debugging = false;
+    if (await backend.stopDebug()) {
+      status = { text: "Stopped debugging. The board runs the debug design on its own.", kind: "info" };
+    }
+  }
+
+  /** The Debugger window was closed, which ended its session. */
+  function onDebugEnded() {
+    if (!debugging) return;
+    debugging = false;
+    status = { text: "Stopped debugging (the Debugger window was closed).", kind: "info" };
   }
 
   /**
@@ -1448,6 +1547,10 @@
     const board = project.board;
     /** Upload stopped to ask for the board's driver or udev rule. */
     let askingDriver = false;
+    /** Debug programs the board as Upload does (device, driver). */
+    const programs = task === "upload" || task === "debug";
+    // Upload and Debug end the open debug session (the backend closes it).
+    if (programs) debugging = false;
     const boardInfo = boards.find((b) => b.id === board) ?? null;
     const variant = boardInfo ? toStore(boardInfo, p.variant) : p.variant;
     if (task === "test" && testbenches(p).length === 0) {
@@ -1494,14 +1597,14 @@
         filesForSave(p),
         board,
         variant,
-        task === "upload" ? device : null,
+        programs ? device : null,
         (event) => {
           if (event.kind === "line") logLineEvent(event);
           else if (event.kind === "status")
             status = { text: event.text ?? runningText(task), kind: "info" };
           else taskStep = { message: event.message, percent: event.percent };
         },
-        task === "upload" ? driver : NO_DRIVER,
+        programs ? driver : NO_DRIVER,
       );
       taskStep = null;
       if (project !== p) return; // Another project was opened meanwhile.
@@ -1509,7 +1612,7 @@
       // The report is always the last build's: a failed or stopped build
       // has none, so the previous one's goes (Upload's report is its
       // build's, even when programming fails).
-      if (task === "build" || task === "upload" || task === "report") {
+      if (task === "build" || programs || task === "report") {
         buildReport = null;
         buildReportOpen = false;
       }
@@ -1520,7 +1623,7 @@
         buildReport = { report: outcome.report, title: `${p.name} · ${boardName} · ${when}` };
         if (task === "report" && outcome.ok) buildReportOpen = true;
       }
-      if (task === "upload" && needsDriver(outcome)) {
+      if (programs && needsDriver(outcome)) {
         // Not a failure: Upload goes on once the user agrees to the driver
         // or udev rule (asked once this run is over, so Upload can run
         // again). The answer ends the output (offerUploadDriver), so no
@@ -1531,15 +1634,16 @@
         status = { text: `The board needs ${needs} first.`, kind: "info" };
         askingDriver = true;
         uploadAsking = true;
-        setTimeout(() => offerUploadDriver(outcome), 0);
+        setTimeout(() => offerUploadDriver(outcome, task), 0);
         return;
       }
-      if (task === "upload" && needsDeviceChoice(outcome)) {
+      if (programs && needsDeviceChoice(outcome)) {
         // Not a failure: Upload goes on once the user picks a device.
-        devicePicker = { board, devices: outcome.devices };
+        devicePicker = { board, devices: outcome.devices, task };
         status = { text: "Choose the device to upload to.", kind: "info" };
         return;
       }
+      if (task === "debug") debugging = outcome.ok && !!outcome.debugSession;
       showCommandProblems(outcome.diagnostics, outcome.checkedFiles);
       if (!outcome.ok && !outcome.cancelled) showOutput("error");
       status = {
@@ -2127,7 +2231,10 @@
 
   /** Stops the running build, upload, test or simulation. */
   async function stopTask() {
-    if (!running) return;
+    if (!running) {
+      if (debugging) await stopDebug();
+      return;
+    }
     status = { text: "Stopping…", kind: "info" };
     await backend.cancelTask();
   }
@@ -2364,6 +2471,10 @@
       autoFormat();
       return;
     }
+    if (id === "debug") {
+      startDebug();
+      return;
+    }
     if (id === "toggle-output") {
       setConsoleVisible(!consoleVisible);
       return;
@@ -2452,6 +2563,7 @@
         MenuId,
         | "verify"
         | "upload"
+        | "debug"
         | "run-tests"
         | "simulate"
         | "auto-format"
@@ -2550,6 +2662,7 @@
       backend.onLspClosed(onLspClosed),
       backend.onListsChanged(onListsChanged),
       backend.onWaveView(onWaveView),
+      backend.onDebugEnded(onDebugEnded),
       backend.onWaveOpenSource(onDiagramOpenSource),
       backend.onProjectFilesChanged(onProjectFilesChanged),
       backend.onDiagramOpenSource(onDiagramOpenSource),
@@ -2704,6 +2817,19 @@
   />
 {/if}
 
+{#if netPicker}
+  <NetPicker
+    nets={netPicker.nets}
+    config={netPicker.config}
+    onChoose={chooseNets}
+    onClose={() => {
+      netPicker = null;
+      status = { text: "Debug was cancelled: no nets were chosen.", kind: "info" };
+      logDone();
+    }}
+  />
+{/if}
+
 {#if devicePicker}
   <DevicePicker
     boardName={boardName(devicePicker.board)}
@@ -2801,6 +2927,15 @@
       disabled={!canRun}
       onclick={() => runTask("upload")}><Icon name="upload" /></button
     >
+    <button
+      title={debugging
+        ? "Debug: build, program the board and debug again (a session is open)"
+        : "Debug: build with the debugger, program the board and watch and drive nets"}
+      class:busy={running === "debug"}
+      class:on={debugging && running !== "debug"}
+      disabled={!canRun}
+      onclick={startDebug}><Icon name="debug" /></button
+    >
     <span class="toolbar-gap"></span>
     <button
       title="Run tests: run all the testbenches"
@@ -2816,8 +2951,10 @@
     >
     <button
       class="secondary"
-      title="Stop: stop the running build, upload, test or simulation"
-      disabled={!running}
+      title={running || !debugging
+        ? "Stop: stop the running build, upload, test or simulation"
+        : "Stop: stop debugging"}
+      disabled={!running && !debugging}
       onclick={stopTask}><Icon name="stop" size={14} /></button
     >
     <BoardPicker
@@ -3730,6 +3867,10 @@
   .toolbar button.busy {
     opacity: 1;
     box-shadow: 0 0 0 2px var(--toolbar-fg);
+  }
+  /* Debug while its session is open (the Debugger window shows it). */
+  .toolbar button.on {
+    box-shadow: 0 0 0 2px var(--toolbar-fg) inset;
   }
   /* A problem in the file: a red circle or yellow triangle with "!" after
      its name (not a colored line, which read like the selected tab's). */

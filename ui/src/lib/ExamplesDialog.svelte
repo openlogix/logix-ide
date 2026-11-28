@@ -198,6 +198,13 @@
     moveTo(target, BOARD_SELECT);
   }
 
+  // Project options have no search field to take the focus: the dialog
+  // takes it, so keys (Enter, arrows) don't reach the toolbar button that
+  // opened it (the board button, which would open its list again).
+  function focusDialog(node: HTMLElement) {
+    if (onlyBoard) node.focus();
+  }
+
   // Scroll the initially selected board into view.
   function scrollIntoViewIfSelected(node: HTMLElement, selected: boolean) {
     if (selected) node.scrollIntoView({ block: "center" });
@@ -215,6 +222,7 @@
     aria-modal="true"
     aria-label="Examples"
     tabindex="-1"
+    use:focusDialog
     onclick={(e) => e.stopPropagation()}
   >
     <header>
