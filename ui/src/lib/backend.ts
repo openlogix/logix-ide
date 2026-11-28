@@ -323,6 +323,11 @@ export interface DebugNet {
   width: number;
   /** "input", "output" or "inout" for a port of main; "internal" otherwise. */
   kind: string;
+  /** Whether the debug file may watch it, and drive it. */
+  can_watch: boolean;
+  can_drive: boolean;
+  /** Why it can't be watched or driven, when either is false. */
+  why_not?: string;
 }
 
 export interface Diagnostic {
