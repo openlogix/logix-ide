@@ -718,6 +718,7 @@ export type MenuId =
   | "verify"
   | "upload"
   | "debug"
+  | "debug-nets"
   | "run-tests"
   | "simulate"
   | "auto-format"

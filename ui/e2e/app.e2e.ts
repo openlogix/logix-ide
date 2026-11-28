@@ -2396,4 +2396,17 @@ test("Debug asks for the nets first, keeps them in debug.toml, and Stop, Upload 
   await expect(status(page)).toContainText("Upload succeeded");
   expect((await fake()).session).toBeNull();
   await expect(page.getByTitle(/^Stop:/)).toBeDisabled();
+  // Project > Choose Debug Nets…: the picker again, the current choice
+  // ticked; the new one goes into debug.toml and Debug runs.
+  await menu(page, "debug-nets");
+  await expect(picker).toBeVisible();
+  await expect(picker.getByLabel("Clock")).toHaveValue("clk");
+  await expect(picker.getByLabel("Watch main.led")).toBeChecked();
+  await expect(picker.getByLabel("Drive main.count")).toBeChecked();
+  await picker.getByLabel("Drive main.count").uncheck();
+  await picker.getByLabel("Watch main.count").check();
+  await go.click();
+  await expect(picker).toBeHidden();
+  await expect(status(page)).toContainText("Debugger ready");
+  expect((await fake()).updates.at(-1)).toEqual({ clock: "clk", watch: ["main.count", "main.led"], drive: [] });
 });

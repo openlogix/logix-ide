@@ -242,8 +242,13 @@ The first time, Debug asks which nets to use: the design's clock, the nets
 to **Watch**, and the nets to **Drive** (set from the Debugger window;
 only nets inside the design, not its top module's ports).
 Your choice goes into `debug.toml`, and later Debugs use it right away.
-To change it, edit `debug.toml` in another editor (its format is in
-[Logix Engine's docs](https://www.openlogix.org/logix-engine/debugger/)).
+To change it, choose **Project > Choose Debug Nets…**: it opens the same
+choice with your current nets ticked, then debugs with the new ones.
+`debug.toml` can do more than this choice (several nets in one entry,
+names, formats, triggers); for that, edit it in another editor (its format
+is in [Logix Engine's docs](https://www.openlogix.org/logix-engine/debugger/)):
+the choice changes only the clock and the single-net entries, and keeps the
+rest.
 
 While the Debugger window is open, Debug again rebuilds, programs the board
 and reconnects. **Stop**, closing the Debugger window, or **Upload** ends

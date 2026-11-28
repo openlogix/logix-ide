@@ -27,6 +27,9 @@ pub const UPLOAD: &str = "upload";
 /// Project > Debug: a debug build, Upload, then the debug panel
 /// (`commands.rs`, `run_task`; Logix Engine's docs/debugger.md).
 pub const DEBUG: &str = "debug";
+/// Project > Choose Debug Nets…: the net picker again, with debug.toml's
+/// choice ticked, to change it (the UI's `pickNets`).
+pub const DEBUG_NETS: &str = "debug-nets";
 pub const RUN_TESTS: &str = "run-tests";
 pub const AUTO_FORMAT: &str = "auto-format";
 pub const TOGGLE_OUTPUT: &str = "toggle-output";
@@ -110,6 +113,7 @@ pub const NEEDS_PROJECT: &[&str] = &[
     VERIFY,
     UPLOAD,
     DEBUG,
+    DEBUG_NETS,
     RUN_TESTS,
     SIMULATE,
     SHOW_DIAGRAM,
@@ -399,6 +403,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         .item(&item(VERIFY, "Verify", "CmdOrCtrl+R")?)
         .item(&item(UPLOAD, "Upload", "CmdOrCtrl+U")?)
         .item(&item(DEBUG, "Debug", NO_KEY)?)
+        .item(&item(DEBUG_NETS, "Choose Debug Nets…", NO_KEY)?)
         .separator()
         .item(&item(RUN_TESTS, "Run Tests", "CmdOrCtrl+Shift+T")?)
         .item(&item(SIMULATE, "Simulate", NO_KEY)?)
@@ -544,11 +549,11 @@ pub fn on_event<R: Runtime>(app: &AppHandle<R>, id: &str) {
             }
         }
         NEW | CLOSE_PROJECT | OPEN | SAVE | SAVE_AS | NEW_FILE | EXAMPLES | VERIFY | UPLOAD
-        | DEBUG | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER | COPY_PATH
-        | STOP | SHOW_DIAGRAM | DEVICES | SERIAL_MONITOR | SETTINGS | GO_TO_DEFINITION
-        | GO_TO_FILE | TOGGLE_COMMENT | SELECT_ALL | OUTPUT_SELECT_ALL | CLEAR_OUTPUT
-        | RUN_THIS_TEST | SIMULATE_THIS_TEST | SHOW_MODULE_DIAGRAM | BOARD_EXPLORER
-        | SYSTEM_INFO | CHECK_UPDATES | BUILD_REPORT => {
+        | DEBUG | DEBUG_NETS | RUN_TESTS | AUTO_FORMAT | TOGGLE_OUTPUT | SIMULATE | SHOW_FOLDER
+        | COPY_PATH | STOP | SHOW_DIAGRAM | DEVICES | SERIAL_MONITOR | SETTINGS
+        | GO_TO_DEFINITION | GO_TO_FILE | TOGGLE_COMMENT | SELECT_ALL | OUTPUT_SELECT_ALL
+        | CLEAR_OUTPUT | RUN_THIS_TEST | SIMULATE_THIS_TEST | SHOW_MODULE_DIAGRAM
+        | BOARD_EXPLORER | SYSTEM_INFO | CHECK_UPDATES | BUILD_REPORT => {
             if shows_in_main(id) {
                 bring_main_forward(app);
             }
@@ -967,7 +972,15 @@ mod tests {
             project: true,
             ..Default::default()
         };
-        for id in [SAVE, VERIFY, UPLOAD, DEBUG, SHOW_DIAGRAM, NEW_FILE] {
+        for id in [
+            SAVE,
+            VERIFY,
+            UPLOAD,
+            DEBUG,
+            DEBUG_NETS,
+            SHOW_DIAGRAM,
+            NEW_FILE,
+        ] {
             assert!(is_enabled(id, &pins), "{id}");
         }
         for id in [

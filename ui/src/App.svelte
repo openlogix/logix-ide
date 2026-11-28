@@ -1398,7 +1398,7 @@
    * debug.toml, a project file held in memory like the sources (saved with
    * the project), so an unsaved project can debug too.
    */
-  async function startDebug() {
+  async function startDebug(choose = false) {
     if (!project || running) return;
     if (!ready) {
       fileError = "The FPGA tools aren't ready yet.";
@@ -1411,7 +1411,7 @@
     const p = project;
     try {
       const config = await backend.debugConfig(findFile(p, DEBUG_FILE)?.text ?? null);
-      if (config.hasNets) {
+      if (config.hasNets && !choose) {
         runTask("debug");
         return;
       }
@@ -1422,7 +1422,16 @@
     }
   }
 
-  /** Project > Choose Debug Nets…, and Debug's first run: the net picker. */
+  /**
+   * Project > Choose Debug Nets…: the net picker again, with debug.toml's
+   * clock and nets ticked; its choice rewrites only those (names, formats
+   * and comments stay), then Debug runs.
+   */
+  function chooseDebugNets() {
+    startDebug(true);
+  }
+
+  /** Choose Debug Nets…, and Debug's first run: the net picker. */
   async function pickNets(p: WorkingProject, config: DebugConfig) {
     if (!p.board) return;
     const board = p.board;
@@ -2477,6 +2486,10 @@
       startDebug();
       return;
     }
+    if (id === "debug-nets") {
+      chooseDebugNets();
+      return;
+    }
     if (id === "toggle-output") {
       setConsoleVisible(!consoleVisible);
       return;
@@ -2566,6 +2579,7 @@
         | "verify"
         | "upload"
         | "debug"
+        | "debug-nets"
         | "run-tests"
         | "simulate"
         | "auto-format"
@@ -2936,7 +2950,7 @@
       class:busy={running === "debug"}
       class:on={debugging && running !== "debug"}
       disabled={!canRun}
-      onclick={startDebug}><Icon name="debug" /></button
+      onclick={() => startDebug()}><Icon name="debug" /></button
     >
     <span class="toolbar-gap"></span>
     <button

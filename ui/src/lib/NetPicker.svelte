@@ -1,5 +1,6 @@
 <!-- Debug: choose the nets to watch and drive, the first time a project is
-     debugged (no nets in its debug.toml). The nets are Logix Engine's
+     debugged (no nets in its debug.toml), and from Project > Choose Debug
+     Nets…, with the file's choice ticked. The nets are Logix Engine's
      list_nets; the choice is saved in debug.toml (debug_file.rs), which
      keeps whatever else the file says. -->
 <script lang="ts">
@@ -95,8 +96,8 @@
     <div class="body">
       <p class="muted">
         Watch shows a net's value in the Debugger window; Drive lets you set
-        it from there. Debug saves your choice in the project's debug.toml,
-        where you can change it later.
+        it from there. Debug saves your choice in the project's debug.toml;
+        to change it later, choose Project &gt; Choose Debug Nets….
       </p>
       {#if nets.length === 0}
         <p>The design has no named nets to debug.</p>
