@@ -118,9 +118,26 @@ export function isLayout(name: string): boolean {
   return /\.view$/i.test(name);
 }
 
-/** The files shown as tabs (and in the editor): all but the waveform views. */
+/**
+ * The debug file (`debug.toml`): the nets Debug watches and drives. Like
+ * the waveform views, held and saved with the project but not a tab: the
+ * net picker writes it, and people may edit it outside Logix IDE.
+ */
+export const DEBUG_FILE = "debug.toml";
+
+/** Whether a project file is the debug file. */
+export function isDebugFile(name: string): boolean {
+  return name.toLowerCase() === DEBUG_FILE;
+}
+
+/** Whether a project file isn't a tab: a waveform view or the debug file. */
+export function isHidden(name: string): boolean {
+  return isLayout(name) || isDebugFile(name);
+}
+
+/** The files shown as tabs (and in the editor): all but the waveform views and the debug file. */
 export function tabFiles<F extends { name: string }>(files: F[]): F[] {
-  return files.filter((f) => !isLayout(f.name));
+  return files.filter((f) => !isHidden(f.name));
 }
 
 export function findFile(p: WorkingProject, name: string): OpenFile | undefined {

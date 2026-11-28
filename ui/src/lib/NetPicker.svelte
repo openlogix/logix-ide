@@ -1,5 +1,6 @@
 <!-- Debug: choose the nets to watch and drive, the first time a project is
-     debugged (no nets in its debug.toml). The nets are Logix Engine's
+     debugged (no nets in its debug.toml), and from Project > Choose Debug
+     Nets…, with the file's choice ticked. The nets are Logix Engine's
      list_nets; the choice is saved in debug.toml (debug_file.rs), which
      keeps whatever else the file says. -->
 <script lang="ts">
@@ -44,9 +45,11 @@
   // svelte-ignore state_referenced_locally
   let drive = $state(new Set(config.drive));
 
-  /** Nets a debug file can drive: not the design's inputs or the clock. */
+  /** Nets a debug file can drive: internal nets only, since version 1 of
+   *  Logix Engine's debug file can't drive a port of the top module (its
+   *  `docs/debugger.md`; the engine refuses it at build time). */
   function drivable(n: DebugNet): boolean {
-    return n.kind === "internal" || n.kind === "output";
+    return n.kind === "internal";
   }
 
   function toggle(set: Set<string>, path: string): Set<string> {
@@ -61,7 +64,7 @@
 
   function choose() {
     const keep = (s: Set<string>) => nets.map((n) => n.path).filter((p) => s.has(p));
-    onChoose(clock, keep(watch), keep(drive));
+    onChoose(clock, keep(watch), keep(drive).filter((p) => nets.some((n) => n.path === p && drivable(n))));
   }
 
   function onKey(e: KeyboardEvent) {
@@ -93,8 +96,8 @@
     <div class="body">
       <p class="muted">
         Watch shows a net's value in the Debugger window; Drive lets you set
-        it from there. Debug saves your choice in the project's debug.toml,
-        where you can change it later.
+        it from there. Debug saves your choice in the project's debug.toml;
+        to change it later, choose Project &gt; Choose Debug Nets….
       </p>
       {#if nets.length === 0}
         <p>The design has no named nets to debug.</p>

@@ -454,8 +454,8 @@ const fake = {
     { path: "main.count", width: 24, kind: "internal" },
     { path: "main.led", width: 1, kind: "output" },
   ] as Real.DebugNet[],
-  /** The debug.toml files on the fake disk, by project folder: the picker's part. */
-  debugFiles: {} as Record<string, { clock: string; watch: string[]; drive: string[] }>,
+  /** Each choice of the net picker, as `updateDebugConfig` wrote it into debug.toml. */
+  debugUpdates: [] as { clock: string; watch: string[]; drive: string[] }[],
   /** The debug session the last Debug opened, until Stop, Upload or the window closes. */
   debugSession: null as string | null,
   /** How often Stop ended a debug session (`stopDebug`). */
@@ -1248,14 +1248,20 @@ export const backend: typeof Real.backend = {
   },
   cancelTask: async () => false,
 
-  debugConfig: async (dir) => {
-    const f = dir ? fake.debugFiles[dir] : undefined;
-    return f
-      ? { exists: true, ...f, hasNets: f.watch.length + f.drive.length > 0 }
-      : { exists: false, clock: "", watch: [], drive: [], hasNets: false };
+  // debug.toml's text, in memory like the other project files: the fake
+  // writes and reads only its clock and single-net entries.
+  debugConfig: async (text) => {
+    if (text == null) return { exists: false, clock: "", watch: [], drive: [], hasNets: false };
+    const clock = /^clock = "(.*)"$/m.exec(text)?.[1] ?? "";
+    const nets = (kind: string) => [...text.matchAll(new RegExp(`\\[\\[${kind}\\]\\]\\nnet = "(.*)"`, "g"))].map((m) => m[1]);
+    const watch = nets("watch");
+    const drive = nets("drive");
+    return { exists: true, clock, watch, drive, hasNets: watch.length + drive.length > 0 };
   },
-  saveDebugConfig: async (dir, clock, watch, drive) => {
-    fake.debugFiles[dir] = { clock, watch, drive };
+  updateDebugConfig: async (_text, clock, watch, drive) => {
+    fake.debugUpdates.push({ clock, watch, drive });
+    const entries = (kind: string, nets: string[]) => nets.map((n) => `\n[[${kind}]]\nnet = "${n}"\n`).join("");
+    return `#:schema https://www.openlogix.org/schemas/logix-debug-v1.json\nclock = "${clock}"\n${entries("watch", watch)}${entries("drive", drive)}`;
   },
   listDebugNets: async () => fake.debugNets,
   stopDebug: async () => {

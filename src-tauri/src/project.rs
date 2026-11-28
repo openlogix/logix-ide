@@ -82,10 +82,19 @@ pub fn is_layout(name: &str) -> bool {
         .is_some_and(|e| e.eq_ignore_ascii_case("view"))
 }
 
-/// Whether a file in the project folder is a project file: a tab's, or a
-/// waveform view.
+/// The debug file, `debug.toml`: the nets Debug watches and drives
+/// (`debug_file`). A project file like the waveform views (loaded, held
+/// in memory, saved with the project, copied into builds), so Debug works
+/// in an unsaved project too; not a tab: the net picker writes it, and
+/// people may edit it outside Logix IDE.
+pub fn is_debug_file(name: &str) -> bool {
+    name.eq_ignore_ascii_case(crate::engine::DEBUG_FILE)
+}
+
+/// Whether a file in the project folder is a project file: a tab's, a
+/// waveform view, or the debug file.
 pub fn is_project_file(name: &str) -> bool {
-    is_editable(name) || is_layout(name)
+    is_editable(name) || is_layout(name) || is_debug_file(name)
 }
 
 /// Names that belong to the IDE or the build, never project files.
@@ -1456,6 +1465,9 @@ mod tests {
         assert!(!is_editable("main_tb.view"));
         assert!(check_new_file_name("main_tb.view", &[]).is_err());
         assert!(!is_project_file("main_tb.gtkw"));
+        // So is the debug file.
+        assert!(is_project_file("debug.toml") && !is_editable("debug.toml"));
+        assert!(!is_project_file("other.toml"));
         assert!(check_new_file_name("mine.json", &[]).is_err());
         let tmp = tempfile::tempdir().unwrap();
         assert_eq!(custom_boards_folder(tmp.path()), None);

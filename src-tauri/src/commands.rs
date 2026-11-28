@@ -1421,31 +1421,24 @@ fn project_name(project_dir: Option<&str>) -> String {
 // Debug (Project > Debug; the run is `run_task` with Task::Debug)
 // ---------------------------------------------------------------------------
 
-/// The project's debug file (`debug.toml` in its folder), as far as the
-/// net picker needs it. An unsaved project has none.
+/// The project's debug file (`debug.toml`, its text in memory, or none),
+/// as far as the net picker needs it.
 #[tauri::command]
-pub async fn debug_config(
-    project_dir: Option<String>,
-) -> Result<debug_file::DebugConfig, UserError> {
-    let Some(dir) = project_dir else {
-        return Ok(debug_file::DebugConfig::default());
-    };
-    Ok(blocking(move || debug_file::read(Path::new(&dir)).map_err(|e| anyhow!(e))).await??)
+pub fn debug_config(text: Option<String>) -> Result<debug_file::DebugConfig, UserError> {
+    Ok(debug_file::read(text.as_deref()).map_err(|e| anyhow!(e))?)
 }
 
-/// Saves the net picker's choice in the project's `debug.toml`, keeping
-/// the rest of the file.
+/// The project's `debug.toml` with the net picker's choice written in,
+/// keeping the rest of the file (a new file from none). The UI takes it in
+/// as an edit, saved with the project.
 #[tauri::command]
-pub async fn save_debug_config(
-    project_dir: String,
+pub fn update_debug_config(
+    text: Option<String>,
     clock: String,
     watch: Vec<String>,
     drive: Vec<String>,
-) -> Result<(), UserError> {
-    Ok(blocking(move || {
-        debug_file::save(Path::new(&project_dir), &clock, &watch, &drive).map_err(|e| anyhow!(e))
-    })
-    .await??)
+) -> Result<String, UserError> {
+    Ok(debug_file::update(text.as_deref(), &clock, &watch, &drive).map_err(|e| anyhow!(e))?)
 }
 
 /// The design's nets for the net picker (Logix Engine's `list_nets`), from

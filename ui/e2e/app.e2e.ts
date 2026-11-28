@@ -2340,47 +2340,49 @@ test("changes other programs make in the project folder show up, without asking"
   await expect(boardButton(page)).toContainText("iCESugar v1.5");
 });
 
-test("Debug asks for the nets first, saves them in debug.toml, and Stop, Upload or closing its window end it", async ({ page }) => {
+test("Debug asks for the nets first, keeps them in debug.toml, and Stop, Upload or closing its window end it", async ({ page }) => {
   type Fake = {
-    debugFiles: Record<string, { clock: string; watch: string[]; drive: string[] }>;
+    debugUpdates: { clock: string; watch: string[]; drive: string[] }[];
+    documentState?: { dirty: boolean };
     debugSession: string | null;
     debugStops: number;
     debugEnded: () => void;
   };
   const fake = () => page.evaluate(() => {
     const f = (window as unknown as { __fake: Fake }).__fake;
-    return { files: f.debugFiles, session: f.debugSession, stops: f.debugStops };
+    return { updates: f.debugUpdates, session: f.debugSession, stops: f.debugStops, dirty: f.documentState?.dirty };
   });
   await start(page);
-  // debug.toml lives in the project folder, so the project must be saved.
-  await menu(page, "debug");
-  await expect(page.getByText(/Save the project first/)).toBeVisible();
-  await menu(page, "save-as");
-  await expect(status(page)).toContainText("Saved");
-  // No nets chosen yet: the net picker, from list_nets.
+  // debug.toml is an in-memory project file, so an unsaved project can
+  // debug too. No nets chosen yet: the net picker, from list_nets.
   await page.getByTitle(/^Debug: build with the debugger/).click();
   const picker = page.getByRole("dialog", { name: "Choose the Nets to Debug" });
   await expect(picker.getByLabel("Clock")).toHaveValue("clk");
   // The clock isn't offered as a net, and inputs can't be driven.
   await expect(picker).not.toContainText("main.clk");
   await expect(picker.getByLabel("Drive main.count")).toBeVisible();
+  // Nor the top module's outputs: the engine drives internal nets only.
+  await expect(picker.getByLabel("Drive main.led")).toHaveCount(0);
   const go = picker.getByRole("button", { name: "Debug", exact: true });
   await expect(go).toBeDisabled();
-  await picker.getByLabel("Watch main.count").check();
-  await picker.getByLabel("Drive main.led").check();
+  await picker.getByLabel("Watch main.led").check();
+  await picker.getByLabel("Drive main.count").check();
   await go.click();
   await expect(picker).toBeHidden();
   await expect(output(page)).toContainText("Opened the debug session");
   await expect(status(page)).toContainText("Debugger ready");
-  const saved = Object.values((await fake()).files);
-  expect(saved).toEqual([{ clock: "clk", watch: ["main.count"], drive: ["main.led"] }]);
+  expect((await fake()).updates).toEqual([{ clock: "clk", watch: ["main.led"], drive: ["main.count"] }]);
+  // It's an unsaved change of the project, and no tab.
+  expect((await fake()).dirty).toBe(true);
+  await expect(tab(page, "debug.toml")).toHaveCount(0);
   expect((await fake()).session).toBe("fake-session");
   // Stop ends the session.
   await page.getByTitle("Stop: stop debugging").click();
   await expect(status(page)).toContainText("Stopped debugging");
   expect((await fake()).stops).toBe(1);
   await expect(page.getByTitle(/^Stop:/)).toBeDisabled();
-  // Nets chosen: Debug runs at once. Closing its window ends it.
+  // Nets chosen (read back from the in-memory debug.toml): Debug runs at
+  // once. Closing its window ends it.
   await menu(page, "debug");
   await expect(status(page)).toContainText("Debugger ready");
   await expect(picker).toBeHidden();
@@ -2394,4 +2396,17 @@ test("Debug asks for the nets first, saves them in debug.toml, and Stop, Upload 
   await expect(status(page)).toContainText("Upload succeeded");
   expect((await fake()).session).toBeNull();
   await expect(page.getByTitle(/^Stop:/)).toBeDisabled();
+  // Project > Choose Debug Nets…: the picker again, the current choice
+  // ticked; the new one goes into debug.toml and Debug runs.
+  await menu(page, "debug-nets");
+  await expect(picker).toBeVisible();
+  await expect(picker.getByLabel("Clock")).toHaveValue("clk");
+  await expect(picker.getByLabel("Watch main.led")).toBeChecked();
+  await expect(picker.getByLabel("Drive main.count")).toBeChecked();
+  await picker.getByLabel("Drive main.count").uncheck();
+  await picker.getByLabel("Watch main.count").check();
+  await go.click();
+  await expect(picker).toBeHidden();
+  await expect(status(page)).toContainText("Debugger ready");
+  expect((await fake()).updates.at(-1)).toEqual({ clock: "clk", watch: ["main.count", "main.led"], drive: [] });
 });

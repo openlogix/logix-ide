@@ -96,7 +96,8 @@
     filesForSave,
     changedFiles,
     applyDiskChanges,
-    isLayout,
+    isHidden,
+    DEBUG_FILE,
     findFile,
     tabFiles,
     moduleAt,
@@ -1394,10 +1395,10 @@
    * Debug: a debug build of the nets the project's debug.toml names, Upload,
    * then the debug panel. With no nets chosen yet, asks first (the net
    * picker, from Logix Engine's list_nets) and saves the choice in
-   * debug.toml. The file lives in the project folder, so the project must be
-   * saved.
+   * debug.toml, a project file held in memory like the sources (saved with
+   * the project), so an unsaved project can debug too.
    */
-  async function startDebug() {
+  async function startDebug(choose = false) {
     if (!project || running) return;
     if (!ready) {
       fileError = "The FPGA tools aren't ready yet.";
@@ -1408,13 +1409,9 @@
       return;
     }
     const p = project;
-    if (!p.dir) {
-      fileError = "Save the project first: Debug keeps its choice of nets in the project's debug.toml.";
-      return;
-    }
     try {
-      const config = await backend.debugConfig(p.dir);
-      if (config.hasNets) {
+      const config = await backend.debugConfig(findFile(p, DEBUG_FILE)?.text ?? null);
+      if (config.hasNets && !choose) {
         runTask("debug");
         return;
       }
@@ -1425,7 +1422,16 @@
     }
   }
 
-  /** Project > Choose Debug Nets…, and Debug's first run: the net picker. */
+  /**
+   * Project > Choose Debug Nets…: the net picker again, with debug.toml's
+   * clock and nets ticked; its choice rewrites only those (names, formats
+   * and comments stay), then Debug runs.
+   */
+  function chooseDebugNets() {
+    startDebug(true);
+  }
+
+  /** Choose Debug Nets…, and Debug's first run: the net picker. */
   async function pickNets(p: WorkingProject, config: DebugConfig) {
     if (!p.board) return;
     const board = p.board;
@@ -1448,9 +1454,14 @@
   async function chooseNets(clock: string, watch: string[], drive: string[]) {
     netPicker = null;
     const p = project;
-    if (!p?.dir) return;
+    if (!p) return;
     try {
-      await backend.saveDebugConfig(p.dir, clock, watch, drive);
+      const old = findFile(p, DEBUG_FILE);
+      const text = await backend.updateDebugConfig(old?.text ?? null, clock, watch, drive);
+      if (project !== p) return;
+      // An edit like any other, saved with the project (auto save, or Save Project).
+      if (old) old.text = text;
+      else addFile(p, DEBUG_FILE, text);
       runTask("debug");
     } catch (e) {
       const err = toUserError(e);
@@ -2373,14 +2384,14 @@
     if (project !== p || p.dir !== change.dir) return;
     const result = applyDiskChanges(p, disk.files);
     for (const r of result.reloaded) {
-      if (!isLayout(r.name)) editor?.replaceText(r.name, r.text);
+      if (!isHidden(r.name)) editor?.replaceText(r.name, r.text);
       forgetProblems(r.name);
     }
     for (const a of result.added) {
-      if (!isLayout(a.name)) editor?.add(a.name, a.text);
+      if (!isHidden(a.name)) editor?.add(a.name, a.text);
     }
     for (const name of result.removed) {
-      if (!isLayout(name)) editor?.remove(name);
+      if (!isHidden(name)) editor?.remove(name);
       forgetProblems(name);
       fileHistory = renamed(fileHistory, name, null);
       if (activeFile === name) selectFile(mainFile(p));
@@ -2475,6 +2486,10 @@
       startDebug();
       return;
     }
+    if (id === "debug-nets") {
+      chooseDebugNets();
+      return;
+    }
     if (id === "toggle-output") {
       setConsoleVisible(!consoleVisible);
       return;
@@ -2564,6 +2579,7 @@
         | "verify"
         | "upload"
         | "debug"
+        | "debug-nets"
         | "run-tests"
         | "simulate"
         | "auto-format"
@@ -2934,7 +2950,7 @@
       class:busy={running === "debug"}
       class:on={debugging && running !== "debug"}
       disabled={!canRun}
-      onclick={startDebug}><Icon name="debug" /></button
+      onclick={() => startDebug()}><Icon name="debug" /></button
     >
     <span class="toolbar-gap"></span>
     <button
