@@ -32,6 +32,7 @@
     type ProjectFile,
     type NewerIde,
     type DebugConfig,
+    type DebugLayout,
     type DebugNet,
   } from "./lib/backend";
   import Editor from "./lib/Editor.svelte";
@@ -1477,6 +1478,29 @@
     }
   }
 
+  /** The Debugger window's "Choose nets…": the net picker, here. */
+  function onDebugChooseNets(key: string) {
+    if (project && buildKey(project) === key) chooseDebugNets();
+  }
+
+  /**
+   * The Debugger window's layout (rows dragged, read rate, chart span):
+   * written into debug.toml as an edit, saved with the project. It takes
+   * effect at the next Debug, whose build reads the file.
+   */
+  async function onDebugLayout(event: { key: string; layout: DebugLayout }) {
+    const p = project;
+    if (!p || buildKey(p) !== event.key) return;
+    const f = findFile(p, DEBUG_FILE);
+    if (!f) return;
+    try {
+      const text = await backend.updateDebugLayout(f.text, event.layout);
+      if (text != null && project === p) f.text = text;
+    } catch (e) {
+      status = { text: toUserError(e).message, kind: "error" };
+    }
+  }
+
   /** The Debugger window was closed, which ended its session. */
   function onDebugEnded() {
     if (!debugging) return;
@@ -2679,6 +2703,8 @@
       backend.onListsChanged(onListsChanged),
       backend.onWaveView(onWaveView),
       backend.onDebugEnded(onDebugEnded),
+      backend.onDebugChooseNets(onDebugChooseNets),
+      backend.onDebugLayout(onDebugLayout),
       backend.onWaveOpenSource(onDiagramOpenSource),
       backend.onProjectFilesChanged(onProjectFilesChanged),
       backend.onDiagramOpenSource(onDiagramOpenSource),

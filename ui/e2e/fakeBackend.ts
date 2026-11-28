@@ -327,6 +327,8 @@ const handlers: {
   finishUpdates?: () => void;
   waveView?: (view: { key: string; name: string; text: string }) => void;
   debugEnded?: () => void;
+  debugChooseNets?: (key: string) => void;
+  debugLayout?: (event: { key: string; layout: Real.DebugLayout }) => void;
   waveOpenSource?: (at: { key: string; file: string; line: number }) => void;
   projectFilesChanged?: (change: { dir: string; names: string[] }) => void;
   diagramOpenSource?: (at: { key: string; file: string; line: number }) => void;
@@ -457,6 +459,12 @@ const fake = {
   ] as Real.DebugNet[],
   /** Each choice of the net picker, as `updateDebugConfig` wrote it into debug.toml. */
   debugUpdates: [] as { clock: string; watch: string[]; drive: string[] }[],
+  /** Each Debugger window layout written into debug.toml (`updateDebugLayout`). */
+  debugLayouts: [] as Real.DebugLayout[],
+  /** The Debugger window's "Choose nets…" (the backend's "debug-choose-nets"), for the project's key. */
+  debugChooseNets: (key: string) => handlers.debugChooseNets?.(key),
+  /** The Debugger window's layout changed (the backend's "debug-layout"). */
+  debugLayout: (event: { key: string; layout: Real.DebugLayout }) => handlers.debugLayout?.(event),
   /** The debug session the last Debug opened, until Stop, Upload or the window closes. */
   debugSession: null as string | null,
   /** How often Stop ended a debug session (`stopDebug`). */
@@ -1270,6 +1278,18 @@ export const backend: typeof Real.backend = {
     fake.debugSession = null;
     if (was) fake.debugStops++;
     return was;
+  },
+  updateDebugLayout: async (text, layout) => {
+    fake.debugLayouts.push(layout);
+    return text.includes("[panel]") ? null : `${text}\n[panel]\nrefresh_ms = ${layout.refreshMs}\n`;
+  },
+  onDebugChooseNets: async (handler) => {
+    handlers.debugChooseNets = handler;
+    return () => {};
+  },
+  onDebugLayout: async (handler) => {
+    handlers.debugLayout = handler;
+    return () => {};
   },
   onDebugEnded: async (handler) => {
     handlers.debugEnded = () => {

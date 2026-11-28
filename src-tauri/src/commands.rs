@@ -1441,6 +1441,25 @@ pub fn update_debug_config(
     Ok(debug_file::update(text.as_deref(), &clock, &watch, &drive).map_err(|e| anyhow!(e))?)
 }
 
+/// The project's `debug.toml` with the Debugger window's layout written in
+/// (its rows' order, read rate and chart span; `debug_window`'s
+/// `debug-layout` event), or null when that changes nothing. The UI takes
+/// it in as an edit, saved with the project.
+#[tauri::command]
+pub fn update_debug_layout(
+    text: String,
+    layout: debug_window::DebugLayout,
+) -> Result<Option<String>, UserError> {
+    Ok(debug_file::set_layout(
+        &text,
+        &layout.watch,
+        &layout.drive,
+        layout.refresh_ms,
+        layout.window_s,
+    )
+    .map_err(|e| anyhow!(e))?)
+}
+
 /// The design's nets for the net picker (Logix Engine's `list_nets`), from
 /// the project's current, possibly unsaved, files.
 #[tauri::command]

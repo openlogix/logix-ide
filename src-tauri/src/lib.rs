@@ -196,6 +196,7 @@ pub fn run() {
             commands::serial_close,
             commands::debug_config,
             commands::update_debug_config,
+            commands::update_debug_layout,
             commands::list_debug_nets,
             commands::stop_debug,
             commands::watch_project,

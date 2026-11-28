@@ -8,6 +8,9 @@
 //! rewrites only the parts it owns (`clock`, a missing `uplink`, the
 //! `[[watch]]` and `[[drive]]` entries), with `toml_edit`, so the user's
 //! comments and other settings (triggers, counters, formats, names) stay.
+//! The Debugger window's layout (its rows dragged into a new order, its
+//! read rate and chart span) is written the same way (`set_layout`): it
+//! reorders the entries, as they are, and sets `[panel]`.
 
 use serde::Serialize;
 use toml_edit::{value, ArrayOfTables, DocumentMut, InlineTable, Item, Table};
@@ -133,6 +136,74 @@ fn set_nets(doc: &mut DocumentMut, key: &str, chosen: &[String]) {
     }
 }
 
+/// The project's debug file with the Debugger window's layout written in:
+/// the `[[watch]]` and `[[drive]]` entries in the panel's order (by their
+/// `name`, else their net; entries it didn't list keep their place after
+/// the listed ones), each kept as it is, and `[panel]`'s `refresh_ms` and
+/// `window_s` (the read rate and the chart span). None when nothing
+/// changes, so an unchanged layout isn't an edit.
+pub fn set_layout(
+    old: &str,
+    watch: &[String],
+    drive: &[String],
+    refresh_ms: Option<u32>,
+    window_s: Option<u32>,
+) -> Result<Option<String>, String> {
+    let mut doc: DocumentMut = old
+        .parse()
+        .map_err(|e| format!("{DEBUG_FILE} isn't valid TOML: {e}"))?;
+    reorder(&mut doc, "watch", watch);
+    reorder(&mut doc, "drive", drive);
+    for (key, v) in [("refresh_ms", refresh_ms), ("window_s", window_s)] {
+        let Some(v) = v else { continue };
+        if !doc.contains_table("panel") {
+            doc["panel"] = Item::Table(Table::new());
+        }
+        let panel = &mut doc["panel"];
+        if panel.get(key).and_then(Item::as_integer) != Some(i64::from(v)) {
+            panel[key] = value(i64::from(v));
+        }
+    }
+    let text = doc.to_string();
+    Ok((text != old).then_some(text))
+}
+
+/// The name the panel shows an entry by: its `name`, else its net.
+fn entry_name(t: &Table) -> Option<&str> {
+    t.get("name")
+        .and_then(Item::as_str)
+        .or_else(|| t.get("net").and_then(Item::as_str))
+}
+
+/// Puts the entries of `key` in the order of `names`.
+fn reorder(doc: &mut DocumentMut, key: &str, names: &[String]) {
+    let Some(arr) = doc.get(key).and_then(Item::as_array_of_tables) else {
+        return;
+    };
+    let tables: Vec<Table> = arr.iter().cloned().collect();
+    let rank = |t: &Table| {
+        entry_name(t)
+            .and_then(|n| names.iter().position(|x| x == n))
+            .unwrap_or(names.len())
+    };
+    let mut order: Vec<usize> = (0..tables.len()).collect();
+    // Stable: unlisted entries keep their order, after the listed ones.
+    order.sort_by_key(|&i| rank(&tables[i]));
+    if order.iter().enumerate().all(|(i, &j)| i == j) {
+        return;
+    }
+    // toml_edit writes tables by their place in the document, so the
+    // entries trade places: each takes the place of the one it replaces.
+    let places: Vec<Option<isize>> = tables.iter().map(Table::position).collect();
+    let mut out = ArrayOfTables::new();
+    for (place, i) in places.into_iter().zip(order) {
+        let mut t = tables[i].clone();
+        t.set_position(place);
+        out.push(t);
+    }
+    doc[key] = Item::ArrayOfTables(out);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -187,5 +258,80 @@ mod tests {
     #[test]
     fn bad_toml_is_an_error() {
         assert!(parse("clock = ").is_err());
+    }
+
+    const LAID_OUT: &str = r#"#:schema https://www.openlogix.org/schemas/logix-debug-v1.json
+clock = "main.clk"
+
+# The counter.
+[[watch]]
+net = "main.count"
+format = "hex"
+
+[[watch]]
+name = "LED"
+net = "main.led"
+
+[[watch]]
+net = "main.btn"
+
+[[drive]]
+net = "main.a"
+
+[[drive]]
+net = "main.b"
+"#;
+
+    #[test]
+    fn the_layout_reorders_the_entries_as_they_are() {
+        let text = set_layout(
+            LAID_OUT,
+            &s(&["LED", "main.count"]),
+            &s(&["main.b", "main.a"]),
+            None,
+            None,
+        )
+        .unwrap()
+        .unwrap();
+        let cfg = parse(&text).unwrap();
+        assert_eq!(cfg.watch, s(&["main.led", "main.count", "main.btn"]));
+        assert_eq!(cfg.drive, s(&["main.b", "main.a"]));
+        assert!(text.contains("# The counter.\n[[watch]]\nnet = \"main.count\"\nformat = \"hex\""));
+        assert!(text.contains("name = \"LED\""));
+        assert!(!text.contains("[panel]"));
+    }
+
+    #[test]
+    fn the_layout_sets_the_rate_and_span() {
+        let text = set_layout(LAID_OUT, &[], &[], Some(500), Some(30))
+            .unwrap()
+            .unwrap();
+        assert!(
+            text.contains("[panel]\nrefresh_ms = 500\nwindow_s = 30\n"),
+            "{text}"
+        );
+        // The order didn't change.
+        assert_eq!(
+            parse(&text).unwrap().watch,
+            s(&["main.count", "main.led", "main.btn"])
+        );
+        // The same again changes nothing.
+        assert_eq!(
+            set_layout(&text, &[], &[], Some(500), Some(30)).unwrap(),
+            None
+        );
+        let text = set_layout(&text, &[], &[], Some(250), None)
+            .unwrap()
+            .unwrap();
+        assert!(text.contains("refresh_ms = 250\nwindow_s = 30"), "{text}");
+    }
+
+    #[test]
+    fn an_unchanged_layout_is_no_edit() {
+        let names = s(&["main.count", "LED", "main.btn"]);
+        assert_eq!(
+            set_layout(LAID_OUT, &names, &s(&["main.a"]), None, None).unwrap(),
+            None
+        );
     }
 }
