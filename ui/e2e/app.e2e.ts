@@ -2362,7 +2362,13 @@ test("Debug asks for the nets first, keeps them in debug.toml, and Stop, Upload 
   await expect(picker).not.toContainText("main.clk");
   await expect(picker.getByLabel("Drive main.count")).toBeVisible();
   // Nor the top module's outputs: the engine drives internal nets only.
-  await expect(picker.getByLabel("Drive main.led")).toHaveCount(0);
+  // What can't be chosen is grayed out, and its cell says why.
+  await expect(picker.getByLabel("Drive main.led")).toBeDisabled();
+  await expect(picker.getByTitle(/^It is a port of the top module/)).toHaveCount(1);
+  // A net only the FPGA's pin may take can be neither watched nor driven.
+  await expect(picker.getByLabel("Watch main.rgb")).toBeDisabled();
+  await expect(picker.getByLabel("Drive main.rgb")).toBeDisabled();
+  await expect(picker.getByTitle(/RGB0PWM \(main\.count\)/)).toHaveCount(2);
   const go = picker.getByRole("button", { name: "Debug", exact: true });
   await expect(go).toBeDisabled();
   await picker.getByLabel("Watch main.led").check();

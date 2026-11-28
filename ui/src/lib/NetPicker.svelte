@@ -45,12 +45,10 @@
   // svelte-ignore state_referenced_locally
   let drive = $state(new Set(config.drive));
 
-  /** Nets a debug file can drive: internal nets only, since version 1 of
-   *  Logix Engine's debug file can't drive a port of the top module (its
-   *  `docs/debugger.md`; the engine refuses it at build time). */
-  function drivable(n: DebugNet): boolean {
-    return n.kind === "internal";
-  }
+  /** What a debug file may do with each net comes from list_nets
+   *  (`can_watch`, `can_drive`, `why_not`): Logix Engine knows, and refuses
+   *  the rest at build time (its `docs/debugger.md`). Every net is listed,
+   *  and what it can't do is grayed out, with why as its hover text. */
 
   function toggle(set: Set<string>, path: string): Set<string> {
     const next = new Set(set);
@@ -63,8 +61,13 @@
   const chosen = $derived(watch.size + drive.size > 0);
 
   function choose() {
-    const keep = (s: Set<string>) => nets.map((n) => n.path).filter((p) => s.has(p));
-    onChoose(clock, keep(watch), keep(drive).filter((p) => nets.some((n) => n.path === p && drivable(n))));
+    const keep = (s: Set<string>, can: (n: DebugNet) => boolean) =>
+      nets.filter((n) => s.has(n.path) && can(n)).map((n) => n.path);
+    onChoose(
+      clock,
+      keep(watch, (n) => n.can_watch),
+      keep(drive, (n) => n.can_drive),
+    );
   }
 
   function onKey(e: KeyboardEvent) {
@@ -119,23 +122,24 @@
               <tr>
                 <td class="name">{n.path}<span class="kind">{n.kind}</span></td>
                 <td>{n.width}</td>
-                <td>
+                <!-- The title is on the cell: a disabled checkbox shows none. -->
+                <td title={n.can_watch ? undefined : n.why_not}>
                   <input
                     type="checkbox"
                     aria-label={`Watch ${n.path}`}
-                    checked={watch.has(n.path)}
+                    disabled={!n.can_watch}
+                    checked={n.can_watch && watch.has(n.path)}
                     onchange={() => (watch = toggle(watch, n.path))}
                   />
                 </td>
-                <td>
-                  {#if drivable(n)}
-                    <input
-                      type="checkbox"
-                      aria-label={`Drive ${n.path}`}
-                      checked={drive.has(n.path)}
-                      onchange={() => (drive = toggle(drive, n.path))}
-                    />
-                  {/if}
+                <td title={n.can_drive ? undefined : n.why_not}>
+                  <input
+                    type="checkbox"
+                    aria-label={`Drive ${n.path}`}
+                    disabled={!n.can_drive}
+                    checked={n.can_drive && drive.has(n.path)}
+                    onchange={() => (drive = toggle(drive, n.path))}
+                  />
                 </td>
               </tr>
             {/each}
@@ -253,5 +257,8 @@
   .muted {
     color: var(--muted);
     font-size: 12px;
+  }
+  input:disabled {
+    opacity: 0.35;
   }
 </style>

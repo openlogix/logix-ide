@@ -450,9 +450,10 @@ const fake = {
   customBoardsOnDisk: {} as Record<string, Record<string, string>>,
   /** The design's nets, as Logix Engine's list_nets gives them (`listDebugNets`). */
   debugNets: [
-    { path: "main.clk", width: 1, kind: "input" },
-    { path: "main.count", width: 24, kind: "internal" },
-    { path: "main.led", width: 1, kind: "output" },
+    { path: "main.clk", width: 1, kind: "input", can_watch: true, can_drive: false, why_not: "It is a port of the top module: debug files can watch it, but drive internal nets only." },
+    { path: "main.count", width: 24, kind: "internal", can_watch: true, can_drive: true },
+    { path: "main.led", width: 1, kind: "output", can_watch: true, can_drive: false, why_not: "It is a port of the top module: debug files can watch it, but drive internal nets only." },
+    { path: "main.rgb", width: 3, kind: "internal", can_watch: false, can_drive: false, why_not: "It is wired to SB_RGBA_DRV's RGB0, the RGB LED driver's output, which only its pin may take: watch or drive the driver's input, RGB0PWM (main.count), instead." },
   ] as Real.DebugNet[],
   /** Each choice of the net picker, as `updateDebugConfig` wrote it into debug.toml. */
   debugUpdates: [] as { clock: string; watch: string[]; drive: string[] }[],

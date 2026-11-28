@@ -20,6 +20,33 @@ pub struct Net {
     /// input, output or inout for a port of the top module; internal
     /// otherwise.
     pub kind: String,
+    /// Whether a debug file may watch it. Logix Engine releases before
+    /// 2026-11-28 don't say (None until `list_nets` fills it in).
+    #[serde(default)]
+    pub can_watch: Option<bool>,
+    /// Whether a debug file may drive it (the same).
+    #[serde(default)]
+    pub can_drive: Option<bool>,
+    /// Why it can't be watched or driven, when either is false.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub why_not: Option<String>,
+}
+
+impl Net {
+    /// Fills in what an older engine doesn't say, as its rules were: any
+    /// net can be watched, and only internal nets driven.
+    fn with_defaults(mut self) -> Self {
+        self.can_watch.get_or_insert(true);
+        let internal = self.kind == "internal";
+        self.can_drive.get_or_insert(internal);
+        if !internal && self.why_not.is_none() && self.can_drive == Some(false) {
+            self.why_not = Some(
+                "It is a port of the top module: debug files can watch it, but drive internal nets only."
+                    .into(),
+            );
+        }
+        self
+    }
 }
 
 async fn call(engine: &Engine, tool: &str, args: Value) -> Result<Value> {
@@ -52,11 +79,51 @@ pub async fn list_nets(
         }),
     )
     .await?;
-    Ok(serde_json::from_value(result["nets"].clone())?)
+    let nets: Vec<Net> = serde_json::from_value(result["nets"].clone())?;
+    Ok(nets.into_iter().map(Net::with_defaults).collect())
 }
 
 /// Ends a debug session: the engine releases its driven nets and its port.
 pub async fn close(engine: &Engine, session: &str) -> Result<()> {
     call(engine, "close_debug", json!({ "session": session })).await?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn older_engines_get_the_old_rule() {
+        let nets: Vec<Net> = serde_json::from_value(json!([
+            {"path": "main.led", "width": 1, "kind": "output"},
+            {"path": "main.count", "width": 8, "kind": "internal"},
+        ]))
+        .unwrap();
+        let nets: Vec<Net> = nets.into_iter().map(Net::with_defaults).collect();
+        assert_eq!(nets[0].can_watch, Some(true));
+        assert_eq!(nets[0].can_drive, Some(false));
+        assert!(nets[0]
+            .why_not
+            .as_deref()
+            .unwrap()
+            .contains("port of the top module"));
+        assert_eq!(
+            (nets[1].can_watch, nets[1].can_drive),
+            (Some(true), Some(true))
+        );
+        assert_eq!(nets[1].why_not, None);
+    }
+
+    #[test]
+    fn what_the_engine_says_is_kept() {
+        let net: Net = serde_json::from_value(json!({
+            "path": "main.rgb", "width": 3, "kind": "internal",
+            "can_watch": false, "can_drive": false, "why_not": "Pin only."
+        }))
+        .unwrap();
+        let net = net.with_defaults();
+        assert_eq!((net.can_watch, net.can_drive), (Some(false), Some(false)));
+        assert_eq!(net.why_not.as_deref(), Some("Pin only."));
+    }
 }

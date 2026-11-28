@@ -240,7 +240,10 @@ the project's `debug.toml`, saved with the project's other files.
 
 The first time, Debug asks which nets to use: the design's clock, the nets
 to **Watch**, and the nets to **Drive** (set from the Debugger window;
-only nets inside the design, not its top module's ports).
+only nets inside the design, not its top module's ports). What a net
+can't be used for is grayed out; hold the pointer over it to see why. A
+net that only the FPGA's pin may take, such as an RGB LED driver's output,
+can be neither watched nor driven: choose the driver's input instead.
 Your choice goes into `debug.toml`, and later Debugs use it right away.
 To change it, choose **Project > Choose Debug Nets…**: it opens the same
 choice with your current nets ticked, then debugs with the new ones.
