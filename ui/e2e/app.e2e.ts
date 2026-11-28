@@ -2415,4 +2415,29 @@ test("Debug asks for the nets first, keeps them in debug.toml, and Stop, Upload 
   await expect(picker).toBeHidden();
   await expect(status(page)).toContainText("Debugger ready");
   expect((await fake()).updates.at(-1)).toEqual({ clock: "clk", watch: ["main.count", "main.led"], drive: [] });
+  // The Debugger window's layout (rows dragged, read rate, chart span)
+  // goes into debug.toml; another project's is ignored.
+  type Layout = { watch: string[]; drive: string[]; refreshMs: number | null; windowS: number | null };
+  const layout = { watch: ["main.led", "main.count"], drive: [], refreshMs: 500, windowS: 30 };
+  const send = (key: string | null) =>
+    page.evaluate(
+      ([key, layout]) => {
+        const f = (window as unknown as {
+          __fake: { lastRun: { key: string }; debugLayout: (e: { key: string; layout: Layout }) => void };
+        }).__fake;
+        f.debugLayout({ key: (key as string | null) ?? f.lastRun.key, layout: layout as Layout });
+      },
+      [key, layout] as const,
+    );
+  const layouts = () => page.evaluate(() => (window as unknown as { __fake: { debugLayouts: Layout[] } }).__fake.debugLayouts);
+  await send("another project");
+  await send(null);
+  await expect.poll(layouts).toEqual([layout]);
+  // Its "Choose nets…": the picker, in the main window.
+  await page.evaluate(() => {
+    const f = (window as unknown as { __fake: { lastRun: { key: string }; debugChooseNets: (key: string) => void } }).__fake;
+    f.debugChooseNets(f.lastRun.key);
+  });
+  await expect(picker).toBeVisible();
+  await expect(picker.getByLabel("Watch main.count")).toBeChecked();
 });

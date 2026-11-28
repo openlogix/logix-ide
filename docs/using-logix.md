@@ -253,6 +253,12 @@ is in [Logix Engine's docs](https://www.openlogix.org/logix-engine/debugger/)):
 the choice changes only the clock and the single-net entries, and keeps the
 rest.
 
+In the Debugger window, **Choose nets…** opens the same choice. Click a row's
+name to select it, and drag a Watch or Drive row by its name to move it.
+Right-click a row's name to change its color. The order of the rows, the read
+rate and the chart's span are saved in `debug.toml` too, so the next Debug
+starts with them.
+
 While the Debugger window is open, Debug again rebuilds, programs the board
 and reconnects. **Stop**, closing the Debugger window, or **Upload** ends
 debugging and releases the nets you drove. The board keeps running the

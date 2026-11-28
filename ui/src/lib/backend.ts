@@ -303,6 +303,14 @@ export interface Example {
 export type Task = "build" | "upload" | "test" | "simulate" | "diagram" | "report" | "debug";
 
 /** What the net picker needs from the project's debug.toml (`debug_config`). */
+/** The Debugger window's layout: its rows' names in order (an entry's name, else its net), read rate and chart span. */
+export interface DebugLayout {
+  watch: string[];
+  drive: string[];
+  refreshMs: number | null;
+  windowS: number | null;
+}
+
 export interface DebugConfig {
   /** Whether the project has a debug.toml. */
   exists: boolean;
@@ -1182,6 +1190,10 @@ export const backend = {
   updateDebugConfig: (text: string | null, clock: string, watch: string[], drive: string[]): Promise<string> =>
     invoke<string>("update_debug_config", { text, clock, watch, drive }),
 
+  /** The project's debug.toml with the Debugger window's layout written in (row order, read rate, chart span), or null when nothing changes. */
+  updateDebugLayout: (text: string, layout: DebugLayout): Promise<string | null> =>
+    invoke<string | null>("update_debug_layout", { text, layout }),
+
   /** The design's nets, for the net picker (Logix Engine's list_nets), from the current files. */
   listDebugNets: (
     key: string,
@@ -1198,6 +1210,14 @@ export const backend = {
 
   /** The Debugger window was closed, which ended its session. */
   onDebugEnded: (handler: () => void): Promise<UnlistenFn> => listen("debug-ended", () => handler()),
+
+  /** The Debugger window's "Choose nets…": the project's key. */
+  onDebugChooseNets: (handler: (key: string) => void): Promise<UnlistenFn> =>
+    listen<string>("debug-choose-nets", (e) => handler(e.payload)),
+
+  /** The Debugger window's layout changed (rows dragged, read rate, chart span), for debug.toml. */
+  onDebugLayout: (handler: (event: { key: string; layout: DebugLayout }) => void): Promise<UnlistenFn> =>
+    listen<{ key: string; layout: DebugLayout }>("debug-layout", (e) => handler(e.payload)),
 
   /** File > Open Recent: the folder of the project to open. */
   onOpenRecent: (handler: (dir: string) => void): Promise<UnlistenFn> =>
