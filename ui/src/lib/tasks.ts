@@ -1,5 +1,5 @@
 import type { Diagnostic, Task, TaskOutcome } from "./backend";
-import { BOARDS_FOLDER_NAME, isBoardFile } from "./workingProject";
+import { BOARDS_FOLDER_NAME, isBoardFile, isHidden } from "./workingProject";
 
 const VERB: Record<Task, { running: string; done: string; noun: string }> = {
   build: { running: "Building…", done: "Build succeeded", noun: "Build" },
@@ -65,6 +65,13 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
   // above: repeated here it read twice (the user's choice, 2026-11-07).
   // One without a location (such as "No Alhambra II is connected. …")
   // shows only here.
+  // So is one in a file that isn't a tab (debug.toml, a waveform view):
+  // the editor can't show it there, so the status gives it in full, such
+  // as "Debug failed: debug.toml:4: Two watch entries are named …".
+  const hidden = isHidden(file.split(/[\\/]/).pop() ?? "");
+  if (hidden && first.line) {
+    return `${VERB[task].noun} failed: ${location(first)}: ${first.message}`;
+  }
   const located = Boolean(first.file && first.line);
   // A failing testbench is still simulated: its waveform shows the problem.
   if (task === "simulate" && outcome.testbenches.length > 0) {

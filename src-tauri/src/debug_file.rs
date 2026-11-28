@@ -1,14 +1,13 @@
 //! The project's debug file, `debug.toml`: the nets Debug watches and drives.
 //!
-//! The file in the project folder is the only copy (no settings, no JSON
-//! copy). Logix Engine reads it in a debug build (`build`'s `debug_file`) and
+//! A project file held in memory like the sources (`project::is_debug_file`),
+//! so these work on its text. Logix Engine reads it in a debug build
+//! (`build`'s `debug_file`, from the build folder's copy) and
 //! owns its format (its `docs/debugger.md`, schema `logix-debug-v1.json`).
 //! The IDE reads it here to know which nets are chosen, and its net picker
 //! rewrites only the parts it owns (`clock`, a missing `uplink`, the
 //! `[[watch]]` and `[[drive]]` entries), with `toml_edit`, so the user's
 //! comments and other settings (triggers, counters, formats, names) stay.
-
-use std::path::Path;
 
 use serde::Serialize;
 use toml_edit::{value, ArrayOfTables, DocumentMut, InlineTable, Item, Table};
@@ -35,15 +34,9 @@ pub struct DebugConfig {
     pub has_nets: bool,
 }
 
-/// Reads the project's debug file; a missing file is an empty config.
-pub fn read(dir: &Path) -> Result<DebugConfig, String> {
-    let path = dir.join(DEBUG_FILE);
-    let text = match std::fs::read_to_string(&path) {
-        Ok(t) => t,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(DebugConfig::default()),
-        Err(e) => return Err(format!("Can't read {DEBUG_FILE}: {e}")),
-    };
-    parse(&text)
+/// Reads the project's debug file; none is an empty config.
+pub fn read(text: Option<&str>) -> Result<DebugConfig, String> {
+    text.map_or_else(|| Ok(DebugConfig::default()), parse)
 }
 
 fn parse(text: &str) -> Result<DebugConfig, String> {
@@ -75,20 +68,9 @@ fn parse(text: &str) -> Result<DebugConfig, String> {
     })
 }
 
-/// Writes the picker's choice into the project's debug file, keeping the
-/// rest of it.
-pub fn save(dir: &Path, clock: &str, watch: &[String], drive: &[String]) -> Result<(), String> {
-    let path = dir.join(DEBUG_FILE);
-    let old = match std::fs::read_to_string(&path) {
-        Ok(t) => Some(t),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-        Err(e) => return Err(format!("Can't read {DEBUG_FILE}: {e}")),
-    };
-    let text = update(old.as_deref(), clock, watch, drive)?;
-    std::fs::write(&path, text).map_err(|e| format!("Can't save {DEBUG_FILE}: {e}"))
-}
-
-fn update(
+/// The project's debug file with the picker's choice written in, keeping
+/// the rest of it; a new file when there's none.
+pub fn update(
     old: Option<&str>,
     clock: &str,
     watch: &[String],
@@ -196,10 +178,9 @@ mod tests {
 
     #[test]
     fn a_missing_file_is_empty() {
-        let dir = tempfile::tempdir().unwrap();
-        assert_eq!(read(dir.path()).unwrap(), DebugConfig::default());
-        save(dir.path(), "clk", &s(&["main.x"]), &[]).unwrap();
-        let c = read(dir.path()).unwrap();
+        assert_eq!(read(None).unwrap(), DebugConfig::default());
+        let text = update(None, "clk", &s(&["main.x"]), &[]).unwrap();
+        let c = read(Some(&text)).unwrap();
         assert!(c.exists && c.has_nets);
     }
 

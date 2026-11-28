@@ -173,4 +173,10 @@ describe("stopped tasks", () => {
       }),
     ).toBe("Upload stopped.");
   });
+  it("gives an error in a file that isn't a tab in full", () => {
+    const err = { severity: "error" as const, file: "debug.toml", line: 4, column: null, message: "Two watch entries are named \"a\"." };
+    expect(
+      outcomeText("debug", { ok: false, diagnostics: [err], report: null, cancelled: false, testbenches: [], seconds: 1, action: null, devices: [], driverDevice: null, sameIds: null, checkedFiles: [] }),
+    ).toBe('Debug failed: debug.toml:4: Two watch entries are named "a".');
+  });
 });

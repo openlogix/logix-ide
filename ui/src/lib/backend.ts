@@ -1169,13 +1169,12 @@ export const backend = {
   /** Stops the running build, upload, test or simulation. */
   cancelTask: (): Promise<boolean> => invoke<boolean>("cancel_task"),
 
-  /** The project's debug.toml, as far as the net picker needs it (empty for an unsaved project). */
-  debugConfig: (projectDir: string | null): Promise<DebugConfig> =>
-    invoke<DebugConfig>("debug_config", { projectDir }),
+  /** The project's debug.toml (its text in memory, or null for none), as far as the net picker needs it. */
+  debugConfig: (text: string | null): Promise<DebugConfig> => invoke<DebugConfig>("debug_config", { text }),
 
-  /** Saves the net picker's choice in the project's debug.toml, keeping the rest of it. */
-  saveDebugConfig: (projectDir: string, clock: string, watch: string[], drive: string[]): Promise<void> =>
-    invoke<void>("save_debug_config", { projectDir, clock, watch, drive }),
+  /** The project's debug.toml with the net picker's choice written in, keeping the rest of it (a new file from null). */
+  updateDebugConfig: (text: string | null, clock: string, watch: string[], drive: string[]): Promise<string> =>
+    invoke<string>("update_debug_config", { text, clock, watch, drive }),
 
   /** The design's nets, for the net picker (Logix Engine's list_nets), from the current files. */
   listDebugNets: (

@@ -235,13 +235,13 @@ the board and opens the **Debugger** window, which shows the nets you chose
 as the board runs, and lets you set the ones you drive.
 
 The debugger talks to your computer over the board's USB serial port, so
-Debug works on the boards that have one. Debug needs a saved project: it
-keeps its choice of nets in the project's `debug.toml`.
+Debug works on the boards that have one. It keeps its choice of nets in
+the project's `debug.toml`, saved with the project's other files.
 
 The first time, Debug asks which nets to use: the design's clock, the nets
 to **Watch**, and the nets to **Drive** (set from the Debugger window).
-Your choice is saved in `debug.toml`, and later Debugs use it right away.
-To change it, edit `debug.toml` (its format is in
+Your choice goes into `debug.toml`, and later Debugs use it right away.
+To change it, edit `debug.toml` in another editor (its format is in
 [Logix Engine's docs](https://www.openlogix.org/logix-engine/debugger/)).
 
 While the Debugger window is open, Debug again rebuilds, programs the board

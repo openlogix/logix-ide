@@ -96,7 +96,8 @@
     filesForSave,
     changedFiles,
     applyDiskChanges,
-    isLayout,
+    isHidden,
+    DEBUG_FILE,
     findFile,
     tabFiles,
     moduleAt,
@@ -1394,8 +1395,8 @@
    * Debug: a debug build of the nets the project's debug.toml names, Upload,
    * then the debug panel. With no nets chosen yet, asks first (the net
    * picker, from Logix Engine's list_nets) and saves the choice in
-   * debug.toml. The file lives in the project folder, so the project must be
-   * saved.
+   * debug.toml, a project file held in memory like the sources (saved with
+   * the project), so an unsaved project can debug too.
    */
   async function startDebug() {
     if (!project || running) return;
@@ -1408,12 +1409,8 @@
       return;
     }
     const p = project;
-    if (!p.dir) {
-      fileError = "Save the project first: Debug keeps its choice of nets in the project's debug.toml.";
-      return;
-    }
     try {
-      const config = await backend.debugConfig(p.dir);
+      const config = await backend.debugConfig(findFile(p, DEBUG_FILE)?.text ?? null);
       if (config.hasNets) {
         runTask("debug");
         return;
@@ -1448,9 +1445,14 @@
   async function chooseNets(clock: string, watch: string[], drive: string[]) {
     netPicker = null;
     const p = project;
-    if (!p?.dir) return;
+    if (!p) return;
     try {
-      await backend.saveDebugConfig(p.dir, clock, watch, drive);
+      const old = findFile(p, DEBUG_FILE);
+      const text = await backend.updateDebugConfig(old?.text ?? null, clock, watch, drive);
+      if (project !== p) return;
+      // An edit like any other, saved with the project (auto save, or Save Project).
+      if (old) old.text = text;
+      else addFile(p, DEBUG_FILE, text);
       runTask("debug");
     } catch (e) {
       const err = toUserError(e);
@@ -2373,14 +2375,14 @@
     if (project !== p || p.dir !== change.dir) return;
     const result = applyDiskChanges(p, disk.files);
     for (const r of result.reloaded) {
-      if (!isLayout(r.name)) editor?.replaceText(r.name, r.text);
+      if (!isHidden(r.name)) editor?.replaceText(r.name, r.text);
       forgetProblems(r.name);
     }
     for (const a of result.added) {
-      if (!isLayout(a.name)) editor?.add(a.name, a.text);
+      if (!isHidden(a.name)) editor?.add(a.name, a.text);
     }
     for (const name of result.removed) {
-      if (!isLayout(name)) editor?.remove(name);
+      if (!isHidden(name)) editor?.remove(name);
       forgetProblems(name);
       fileHistory = renamed(fileHistory, name, null);
       if (activeFile === name) selectFile(mainFile(p));
