@@ -253,8 +253,9 @@ is in [Logix Engine's docs](https://www.openlogix.org/logix-engine/debugger/)):
 the choice changes only the clock and the single-net entries, and keeps the
 rest.
 
-In the Debugger window, **Choose nets…** opens the same choice. Drag a
-Watch or Drive row by its name to move it. The order of the rows, the read
+In the Debugger window, **Choose nets…** opens the same choice. Click a row's
+name to select it, and drag a Watch or Drive row by its name to move it.
+Right-click a watched name to change its color. The order of the rows, the read
 rate and the chart's span are saved in `debug.toml` too, so the next Debug
 starts with them.
 
