@@ -17,7 +17,10 @@ use crate::examples;
 use crate::outcome;
 use crate::project::{self, ProjectFile};
 use crate::setup_events::{SetupEvent, SetupStage};
-use crate::{build_dir, diagram_window, newer, platform, settings, wave_window, AppState, Catalog};
+use crate::{
+    build_dir, debug_file, debug_window, diagram_window, newer, platform, settings, wave_window,
+    AppState, Catalog,
+};
 
 /// An error for the UI: `message` is short plain language for the user,
 /// `details` is the full technical chain for the console.
@@ -700,6 +703,12 @@ pub async fn run_task(
     let Ok(_running) = state.task.try_lock() else {
         return Err(anyhow!("A build or upload is already running.").into());
     };
+    // Upload and Debug program the board, so they end the open debug
+    // session first (its driven nets are released). Upload also closes its
+    // window; Debug shows its new session there.
+    if matches!(task, outcome::Task::Upload | outcome::Task::Debug) {
+        end_debug(&app, &state, task == outcome::Task::Upload).await;
+    }
     let engine = {
         let channel = on_event.clone();
         engine_for_task(
@@ -817,6 +826,33 @@ pub async fn run_task(
         .context("Couldn't run Logix Engine.");
     *state.task_cancel.lock().unwrap() = None;
     let mut outcome = result?;
+    // Debug: the debug window shows the engine's panel for the new session.
+    if task == outcome::Task::Debug {
+        let shown = match (outcome.debug_session.clone(), outcome.debug_url.take()) {
+            (Some(session), Some(url)) => {
+                *state.debug.lock().unwrap() = Some((key_kept.clone(), session));
+                let name = project_name(project_dir_kept.as_deref());
+                on_main_thread(&app, {
+                    let (app, key) = (app.clone(), key_kept.clone());
+                    move || {
+                        debug_window::show(&app, &key, &format!("Logix Debugger · {name}"), &url)
+                    }
+                })
+                .await
+            }
+            _ => {
+                let (app2, key) = (app.clone(), key_kept.clone());
+                on_main_thread(&app, move || {
+                    debug_window::close(&app2, &key);
+                    Ok::<(), tauri::Error>(())
+                })
+                .await
+            }
+        };
+        if let Some(Err(e)) = shown {
+            return Err(anyhow!("Couldn't show the debugger: {e}").into());
+        }
+    }
     // Simulate: the waveform window shows the engine's viewer page,
     // reloaded in place when it's open (R6).
     if let Some(page) = outcome.wave_page.take() {
@@ -1370,6 +1406,130 @@ pub async fn serial_close(state: State<'_, AppState>) -> Result<(), UserError> {
     }
     crate::log!("Serial Monitor: closed {session}");
     Ok(())
+}
+
+/// The project's name for window titles: its folder's, or "New project".
+fn project_name(project_dir: Option<&str>) -> String {
+    project_dir
+        .and_then(|d| Path::new(d).file_name())
+        .map_or("New project".to_string(), |n| {
+            n.to_string_lossy().into_owned()
+        })
+}
+
+// ---------------------------------------------------------------------------
+// Debug (Project > Debug; the run is `run_task` with Task::Debug)
+// ---------------------------------------------------------------------------
+
+/// The project's debug file (`debug.toml` in its folder), as far as the
+/// net picker needs it. An unsaved project has none.
+#[tauri::command]
+pub async fn debug_config(
+    project_dir: Option<String>,
+) -> Result<debug_file::DebugConfig, UserError> {
+    let Some(dir) = project_dir else {
+        return Ok(debug_file::DebugConfig::default());
+    };
+    Ok(blocking(move || debug_file::read(Path::new(&dir)).map_err(|e| anyhow!(e))).await??)
+}
+
+/// Saves the net picker's choice in the project's `debug.toml`, keeping
+/// the rest of the file.
+#[tauri::command]
+pub async fn save_debug_config(
+    project_dir: String,
+    clock: String,
+    watch: Vec<String>,
+    drive: Vec<String>,
+) -> Result<(), UserError> {
+    Ok(blocking(move || {
+        debug_file::save(Path::new(&project_dir), &clock, &watch, &drive).map_err(|e| anyhow!(e))
+    })
+    .await??)
+}
+
+/// The design's nets for the net picker (Logix Engine's `list_nets`), from
+/// the project's current, possibly unsaved, files.
+#[tauri::command]
+pub async fn list_debug_nets(
+    state: State<'_, AppState>,
+    key: String,
+    source_dir: Option<String>,
+    project_dir: Option<String>,
+    files: Vec<ProjectFile>,
+    board: String,
+    variant: engine::Variant,
+) -> Result<Vec<engine::debug::Net>, UserError> {
+    let engine = ready_engine(&state).await?;
+    let boards_file = boards_file(source_dir.as_deref(), project_dir.is_some());
+    let root = platform::current_implemented()?
+        .data_dir()?
+        .join("_scratch")
+        .join("nets");
+    let names: Vec<String> = files.iter().map(|f| f.name.clone()).collect();
+    let dir = blocking(move || {
+        build_dir::prepare(
+            &root,
+            &build_dir::BuildInput {
+                key: &key,
+                source_dir: source_dir.as_deref().map(Path::new),
+                files: &files,
+            },
+        )
+        .context("Couldn't prepare the design's files.")
+    })
+    .await??;
+    Ok(engine::debug::list_nets(
+        &engine,
+        &board,
+        &variant,
+        boards_file.as_ref(),
+        &dir,
+        &names,
+    )
+    .await
+    .context("Couldn't list the design's nets.")?)
+}
+
+/// Ends the debug session (Stop, or the debug window's close).
+#[tauri::command]
+pub async fn stop_debug(app: AppHandle, state: State<'_, AppState>) -> Result<bool, UserError> {
+    Ok(end_debug(&app, &state, true).await)
+}
+
+/// Ends the open debug session, if any, and with `close_window` closes its
+/// window. Returns whether one was open.
+async fn end_debug(app: &AppHandle, state: &AppState, close_window: bool) -> bool {
+    let Some((key, session)) = state.debug.lock().unwrap().take() else {
+        return false;
+    };
+    if close_window {
+        let app2 = app.clone();
+        let k = key.clone();
+        on_main_thread(app, move || debug_window::close(&app2, &k)).await;
+    }
+    if let Ok(engine) = ready_engine(state).await {
+        if let Err(e) = engine::debug::close(&engine, &session).await {
+            crate::log!("Debug: couldn't close {session}: {e:#}");
+        }
+    }
+    crate::log!("Debug: closed {session}");
+    true
+}
+
+/// A debug window was closed: ends its session, if it's the open one.
+pub async fn end_debug_of_window(app: &AppHandle, label: &str) {
+    let state = app.state::<AppState>();
+    let ours = state
+        .debug
+        .lock()
+        .unwrap()
+        .as_ref()
+        .is_some_and(|(key, _)| debug_window::label(key) == label);
+    if ours {
+        end_debug(app, &state, false).await;
+        let _ = app.emit("debug-ended", ());
+    }
 }
 
 /// Whether Verify lints (Settings > "Show lint warnings on Verify").

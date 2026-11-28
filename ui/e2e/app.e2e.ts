@@ -634,6 +634,8 @@ test("changing the board offers project options: the current project first", asy
   const main = dialog.locator("footer .primary");
   await expect(main).toHaveText("Choose an Option");
   await expect(main).toBeDisabled();
+  // The dialog has the focus (not the board button that opened it).
+  await expect(dialog).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(dialog).toBeVisible();
   await current.click();
@@ -2336,4 +2338,60 @@ test("changes other programs make in the project folder show up, without asking"
   // It chooses another board in logix-ide.toml: the toolbar follows.
   await disk([], { board: "icesugar-1-5", variant: {}, serialBaud: null });
   await expect(boardButton(page)).toContainText("iCESugar v1.5");
+});
+
+test("Debug asks for the nets first, saves them in debug.toml, and Stop, Upload or closing its window end it", async ({ page }) => {
+  type Fake = {
+    debugFiles: Record<string, { clock: string; watch: string[]; drive: string[] }>;
+    debugSession: string | null;
+    debugStops: number;
+    debugEnded: () => void;
+  };
+  const fake = () => page.evaluate(() => {
+    const f = (window as unknown as { __fake: Fake }).__fake;
+    return { files: f.debugFiles, session: f.debugSession, stops: f.debugStops };
+  });
+  await start(page);
+  // debug.toml lives in the project folder, so the project must be saved.
+  await menu(page, "debug");
+  await expect(page.getByText(/Save the project first/)).toBeVisible();
+  await menu(page, "save-as");
+  await expect(status(page)).toContainText("Saved");
+  // No nets chosen yet: the net picker, from list_nets.
+  await page.getByTitle(/^Debug: build with the debugger/).click();
+  const picker = page.getByRole("dialog", { name: "Choose the Nets to Debug" });
+  await expect(picker.getByLabel("Clock")).toHaveValue("clk");
+  // The clock isn't offered as a net, and inputs can't be driven.
+  await expect(picker).not.toContainText("main.clk");
+  await expect(picker.getByLabel("Drive main.count")).toBeVisible();
+  const go = picker.getByRole("button", { name: "Debug", exact: true });
+  await expect(go).toBeDisabled();
+  await picker.getByLabel("Watch main.count").check();
+  await picker.getByLabel("Drive main.led").check();
+  await go.click();
+  await expect(picker).toBeHidden();
+  await expect(output(page)).toContainText("Opened the debug session");
+  await expect(status(page)).toContainText("Debugger ready");
+  const saved = Object.values((await fake()).files);
+  expect(saved).toEqual([{ clock: "clk", watch: ["main.count"], drive: ["main.led"] }]);
+  expect((await fake()).session).toBe("fake-session");
+  // Stop ends the session.
+  await page.getByTitle("Stop: stop debugging").click();
+  await expect(status(page)).toContainText("Stopped debugging");
+  expect((await fake()).stops).toBe(1);
+  await expect(page.getByTitle(/^Stop:/)).toBeDisabled();
+  // Nets chosen: Debug runs at once. Closing its window ends it.
+  await menu(page, "debug");
+  await expect(status(page)).toContainText("Debugger ready");
+  await expect(picker).toBeHidden();
+  await page.evaluate(() => (window as unknown as { __fake: Fake }).__fake.debugEnded());
+  await expect(status(page)).toContainText("the Debugger window was closed");
+  // Upload ends an open session too.
+  await menu(page, "debug");
+  await expect(status(page)).toContainText("Debugger ready");
+  await expect(page.getByTitle("Stop: stop debugging")).toBeEnabled();
+  await menu(page, "upload");
+  await expect(status(page)).toContainText("Upload succeeded");
+  expect((await fake()).session).toBeNull();
+  await expect(page.getByTitle(/^Stop:/)).toBeDisabled();
 });

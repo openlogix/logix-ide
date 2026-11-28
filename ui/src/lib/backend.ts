@@ -299,7 +299,31 @@ export interface Example {
 }
 
 /** "report" is Board Utilization: a build without lint, then the report. */
-export type Task = "build" | "upload" | "test" | "simulate" | "diagram" | "report";
+/** "debug" is Debug: a debug build (the project's debug.toml), Upload, then the debug panel. */
+export type Task = "build" | "upload" | "test" | "simulate" | "diagram" | "report" | "debug";
+
+/** What the net picker needs from the project's debug.toml (`debug_config`). */
+export interface DebugConfig {
+  /** Whether the project has a debug.toml. */
+  exists: boolean;
+  /** The clock net, empty when unset. */
+  clock: string;
+  /** The watched and driven nets, by path (entries with one net). */
+  watch: string[];
+  drive: string[];
+  /** Whether any net is chosen at all (a net list included). */
+  hasNets: boolean;
+}
+
+/** A net of the design, from Logix Engine's list_nets. */
+export interface DebugNet {
+  /** Its path from the top module, such as "main.count". */
+  path: string;
+  /** Its width in bits. */
+  width: number;
+  /** "input", "output" or "inout" for a port of main; "internal" otherwise. */
+  kind: string;
+}
 
 export interface Diagnostic {
   severity: "error" | "warning";
@@ -375,6 +399,12 @@ export interface TaskOutcome {
    * no tool ran.
    */
   checkedFiles: string[];
+  /**
+   * For a successful "debug": Logix Engine's debug session, open until
+   * Stop, Upload, another Debug or the Debugger window closes. The
+   * backend shows its panel in the Debugger window.
+   */
+  debugSession?: string | null;
 }
 
 /** For Upload (Windows and Linux): install the board's driver or udev rule first, which the user agreed to. */
@@ -687,6 +717,7 @@ export type MenuId =
   | "examples"
   | "verify"
   | "upload"
+  | "debug"
   | "run-tests"
   | "simulate"
   | "auto-format"
@@ -1137,6 +1168,31 @@ export const backend = {
 
   /** Stops the running build, upload, test or simulation. */
   cancelTask: (): Promise<boolean> => invoke<boolean>("cancel_task"),
+
+  /** The project's debug.toml, as far as the net picker needs it (empty for an unsaved project). */
+  debugConfig: (projectDir: string | null): Promise<DebugConfig> =>
+    invoke<DebugConfig>("debug_config", { projectDir }),
+
+  /** Saves the net picker's choice in the project's debug.toml, keeping the rest of it. */
+  saveDebugConfig: (projectDir: string, clock: string, watch: string[], drive: string[]): Promise<void> =>
+    invoke<void>("save_debug_config", { projectDir, clock, watch, drive }),
+
+  /** The design's nets, for the net picker (Logix Engine's list_nets), from the current files. */
+  listDebugNets: (
+    key: string,
+    sourceDir: string | null,
+    projectDir: string | null,
+    files: ProjectFile[],
+    board: string,
+    variant: Variant,
+  ): Promise<DebugNet[]> =>
+    invoke<DebugNet[]>("list_debug_nets", { key, sourceDir, projectDir, files, board, variant }),
+
+  /** Ends the debug session (Stop) and closes its window. True if one was open. */
+  stopDebug: (): Promise<boolean> => invoke<boolean>("stop_debug"),
+
+  /** The Debugger window was closed, which ended its session. */
+  onDebugEnded: (handler: () => void): Promise<UnlistenFn> => listen("debug-ended", () => handler()),
 
   /** File > Open Recent: the folder of the project to open. */
   onOpenRecent: (handler: (dir: string) => void): Promise<UnlistenFn> =>

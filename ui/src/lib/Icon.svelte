@@ -3,6 +3,7 @@
   export type IconName =
     | "verify"
     | "upload"
+    | "debug"
     | "test"
     | "simulate"
     | "stop"
@@ -36,6 +37,12 @@
     <!-- Arrow to the right -->
     <line x1="5" y1="12" x2="19" y2="12" />
     <polyline points="13 6 19 12 13 18" />
+  {:else if name === "debug"}
+    <!-- A bug -->
+    <rect x="8" y="7" width="8" height="13" rx="4" />
+    <path d="M9.5 7a2.5 2.5 0 0 1 5 0" />
+    <line x1="12" y1="11" x2="12" y2="20" />
+    <path d="M8 11H4M8 15H3M8 18.5H4.5M16 11h4M16 15h5M16 18.5h3.5" />
   {:else if name === "test"}
     <!-- Lab flask -->
     <path d="M9 3h6" />

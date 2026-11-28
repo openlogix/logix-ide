@@ -200,7 +200,7 @@ const plain = (line: string): Line => ({ kind: "line", line });
  * file for builds.
  */
 function checkedFiles(files: ProjectFile[], task: string): string[] {
-  const builds = task === "build" || task === "upload" || task === "report";
+  const builds = task === "build" || task === "upload" || task === "report" || task === "debug";
   const tests = task === "test" || task === "simulate";
   return files
     .map((f) => f.name)
@@ -326,6 +326,7 @@ const handlers: {
   finishSetup?: () => void;
   finishUpdates?: () => void;
   waveView?: (view: { key: string; name: string; text: string }) => void;
+  debugEnded?: () => void;
   waveOpenSource?: (at: { key: string; file: string; line: number }) => void;
   projectFilesChanged?: (change: { dir: string; names: string[] }) => void;
   diagramOpenSource?: (at: { key: string; file: string; line: number }) => void;
@@ -447,6 +448,18 @@ const fake = {
    * simulate an edit).
    */
   customBoardsOnDisk: {} as Record<string, Record<string, string>>,
+  /** The design's nets, as Logix Engine's list_nets gives them (`listDebugNets`). */
+  debugNets: [
+    { path: "main.clk", width: 1, kind: "input" },
+    { path: "main.count", width: 24, kind: "internal" },
+    { path: "main.led", width: 1, kind: "output" },
+  ] as Real.DebugNet[],
+  /** The debug.toml files on the fake disk, by project folder: the picker's part. */
+  debugFiles: {} as Record<string, { clock: string; watch: string[]; drive: string[] }>,
+  /** The debug session the last Debug opened, until Stop, Upload or the window closes. */
+  debugSession: null as string | null,
+  /** How often Stop ended a debug session (`stopDebug`). */
+  debugStops: 0,
   /** The folder whose boards folder the last task run used (`runTask`). */
   taskBoardsFolder: null as string | null,
   /** The folder whose boards folder the last connected-devices scan used. */
@@ -466,6 +479,8 @@ const fake = {
   updateBringsExample: false,
   /** The Waveforms window saved its view (as the real backend's "wave-view" event). */
   waveView: (view: { key: string; name: string; text: string }) => handlers.waveView?.(view),
+  /** The Debugger window was closed (the backend's "debug-ended"). */
+  debugEnded: () => handlers.debugEnded?.(),
   /** A source line asked for in the Waveforms window ("wave-open-source"). */
   waveOpenSource: (at: { key: string; file: string; line: number }) => handlers.waveOpenSource?.(at),
   /** The folder Logix IDE watches (`watchProject`), or null. */
@@ -905,6 +920,8 @@ export const backend: typeof Real.backend = {
     fake.taskVariant = variant;
     fake.taskBoardsFolder = sourceDir;
     fake.lastRun = { key, task, target };
+    // As the backend: Upload and Debug end the open debug session.
+    if (task === "upload" || task === "debug") fake.debugSession = null;
     // As the IDE's backend: a file with problems stops the task, its
     // problems in the console at line and column.
     const own = fakeProjectBoards(boardsOnDisk(sourceDir), sourceDir, _projectDir != null);
@@ -936,19 +953,22 @@ export const backend: typeof Real.backend = {
     const phase = {
       build: "Synthesizing",
       upload: "Synthesizing",
+      debug: "Synthesizing",
       test: "Running main_tb.v",
       simulate: "Running main_tb.v",
       diagram: "Preparing the diagram",
       report: "Synthesizing",
     }[task];
-    const phases = task === "build" || task === "upload" || task === "report";
+    const phases = task === "build" || task === "upload" || task === "report" || task === "debug";
+    // Debug programs the board as Upload does.
+    const programs = task === "upload" || task === "debug";
     onEvent({ kind: "progress", message: phase, percent: null });
     for (const line of lines) {
       onEvent(line);
       await pause(5);
     }
     const fits = fake.uploadDevices ?? [icesugarDevice];
-    if (phases && task === "upload" && outcome.ok && !device && fits.length > 1) {
+    if (phases && programs && outcome.ok && !device && fits.length > 1) {
       // The engine's list_devices for the build found several devices:
       // its status says so.
       const name = BOARDS.find((b) => b.id === board)?.description ?? board;
@@ -966,7 +986,7 @@ export const backend: typeof Real.backend = {
     // runs again with the driver to install (Logix Engine's install_driver).
     let uploadId = device ?? fits[0].id;
     const needsDriver = fake.uploadDriver && !fake.uploadDriver.ready ? fake.uploadDriver : null;
-    if (phases && task === "upload" && outcome.ok && needsDriver) {
+    if (phases && programs && outcome.ok && needsDriver) {
       const picked = fits.find((d) => d.id === uploadId) ?? fits[0];
       const label = picked.label;
       const who = engineWho(label, picked.boards.map((b) => b.board), board);
@@ -996,7 +1016,7 @@ export const backend: typeof Real.backend = {
       onLine(udev ? `Added a udev rule for ${who}.` : `Installed the WinUSB driver for ${who}.`);
       onEvent({ kind: "status", text: null });
     }
-    if (phases && task === "upload" && outcome.ok) {
+    if (phases && programs && outcome.ok) {
       fake.uploadedDevice = uploadId;
       // The engine's messages (program_board), for the board's memory.
       const info = [...own.boards, ...BOARDS].find((b) => b.id === board);
@@ -1020,6 +1040,13 @@ export const backend: typeof Real.backend = {
           memory === "RAM" ? "is lost" : "stays"
         } when the board is powered off.`,
       );
+    }
+    if (task === "debug" && outcome.ok) {
+      // The backend opens the session and shows its panel (open_debug,
+      // open_debug_panel) in the Debugger window.
+      onLine("Opened the debug session on the board's UART.");
+      fake.debugSession = "fake-session";
+      outcome.debugSession = fake.debugSession;
     }
     return outcome;
   },
@@ -1220,6 +1247,30 @@ export const backend: typeof Real.backend = {
     return `'${dir}'`; // as the real one quotes a path with a space
   },
   cancelTask: async () => false,
+
+  debugConfig: async (dir) => {
+    const f = dir ? fake.debugFiles[dir] : undefined;
+    return f
+      ? { exists: true, ...f, hasNets: f.watch.length + f.drive.length > 0 }
+      : { exists: false, clock: "", watch: [], drive: [], hasNets: false };
+  },
+  saveDebugConfig: async (dir, clock, watch, drive) => {
+    fake.debugFiles[dir] = { clock, watch, drive };
+  },
+  listDebugNets: async () => fake.debugNets,
+  stopDebug: async () => {
+    const was = fake.debugSession != null;
+    fake.debugSession = null;
+    if (was) fake.debugStops++;
+    return was;
+  },
+  onDebugEnded: async (handler) => {
+    handlers.debugEnded = () => {
+      fake.debugSession = null;
+      handler();
+    };
+    return () => {};
+  },
 
   // No language server in the fake: it never answers, so the UI quietly
   // runs without live errors in these tests and screenshots.

@@ -22,7 +22,7 @@ use crate::outcome::{
 use crate::project;
 
 /// The design's top module: always main (see CLAUDE.md, Project on disk).
-const TOP_MODULE: &str = "main";
+pub const TOP_MODULE: &str = "main";
 
 /// Shown when the project has no pin file.
 pub const NO_CONSTRAINT_FILE: &str = "The project has no pin file (e.g. pinout.pcf) for the board. Start a new project with the board selected, or open one of the board's examples.";
@@ -33,6 +33,15 @@ const UDEV_RULE: &str = "udev-rule";
 
 /// Upload's outcome action when several devices fit the board.
 pub const SELECT_DEVICE: &str = "select_device";
+
+/// The serial port Debug talks to: the board's UART (the engine's
+/// `serial_port`) of the device programmed.
+fn debug_port(list: &super::DeviceList, id: &str) -> Option<String> {
+    list.devices
+        .iter()
+        .find(|d| d.id == id)
+        .and_then(|d| d.serial_port.clone())
+}
 
 /// Upload's device from the devices that fit the build: the only one, or
 /// else the error to report (as the engine's errors look, with the
@@ -147,10 +156,27 @@ pub fn build_folder(source_folder: &Path) -> PathBuf {
     source_folder.join("_build")
 }
 
+/// Debug's build folder, next to `_build`: a debug build has the debugger
+/// in it, so it never replaces Upload's build (and both stay up to date).
+pub const DEBUG_BUILD_DIR: &str = "_build_debug";
+
+/// The project's debug file, which Debug builds with (the engine's
+/// `debug_file`; `crate::debug_file` reads and writes it).
+pub const DEBUG_FILE: &str = "debug.toml";
+
+/// The engine's build folder for `task`.
+fn task_build_folder(task: Task, source_folder: &Path) -> PathBuf {
+    if task == Task::Debug {
+        source_folder.join(DEBUG_BUILD_DIR)
+    } else {
+        build_folder(source_folder)
+    }
+}
+
 /// The design files: Verilog and SystemVerilog sources (Logix Engine's
 /// `hdl_extensions` `source`, `formats`), without testbenches and include
 /// files (the engine finds those itself).
-fn design_files(files: &[String]) -> Vec<String> {
+pub(super) fn design_files(files: &[String]) -> Vec<String> {
     let formats = crate::formats::current();
     files
         .iter()
@@ -185,6 +211,8 @@ pub fn boards_problem_outcome(problem: &super::catalog::BoardsProblem) -> TaskOu
         same_ids: None,
         wave_page: None,
         checked_files: Vec::new(),
+        debug_session: None,
+        debug_url: None,
     }
 }
 
@@ -204,6 +232,8 @@ fn new_outcome() -> TaskOutcome {
         same_ids: None,
         wave_page: None,
         checked_files: Vec::new(),
+        debug_session: None,
+        debug_url: None,
     }
 }
 
@@ -228,12 +258,12 @@ where
         custom_boards_folder: super::boards_fields(input.custom_boards).0,
         display_paths: super::boards_fields(input.custom_boards).1,
         folder: input.source_folder.to_string_lossy().into_owned(),
-        build_folder: build_folder(input.source_folder),
+        build_folder: task_build_folder(task, input.source_folder),
         board: input.board.to_string(),
     };
     let mut outcome = new_outcome();
     let finished = match task {
-        Task::Build | Task::Upload | Task::Report => {
+        Task::Build | Task::Upload | Task::Report | Task::Debug => {
             let finished = runner.build(task, input, &mut outcome).await?;
             if finished && outcome.ok && task == Task::Build && input.redraw_diagram {
                 // The open Diagram window shows the design as just
@@ -325,6 +355,7 @@ where
                     "constraint_file": constraint_file,
                     "build_folder": self.build_folder(),
                     "lint": task == Task::Build && input.lint,
+                    "debug_file": (task == Task::Debug).then_some(DEBUG_FILE),
                 }),
             )
             .await?;
@@ -341,7 +372,7 @@ where
             Err(e) => self.failed(outcome, &e),
         }
 
-        if task == Task::Upload && outcome.ok {
+        if matches!(task, Task::Upload | Task::Debug) && outcome.ok {
             let (mut device, list) = match self.choose_device(input.device, outcome).await? {
                 Choice::Device(id, list) => (id, list),
                 Choice::Stop => return Ok(true),
@@ -421,9 +452,70 @@ where
             match result {
                 Ok(_) => {}
                 Err(e) if is_cancelled(&e) => return Ok(false),
-                Err(e) => self.failed(outcome, &e),
+                Err(e) => {
+                    self.failed(outcome, &e);
+                    return Ok(true);
+                }
+            }
+            if task == Task::Debug {
+                let port = debug_port(&list, &device);
+                return self.open_debug(port, &device, outcome).await;
             }
         }
+        Ok(true)
+    }
+
+    /// Debug, once the board is programmed: opens the engine's debug
+    /// session on the board's UART (the debugger's uplink) and asks for its
+    /// panel's address, which the backend shows in the Debugger window.
+    async fn open_debug(
+        &self,
+        port: Option<String>,
+        device: &str,
+        outcome: &mut TaskOutcome,
+    ) -> Result<bool> {
+        let Some(port) = port else {
+            let message = "Logix Engine can't tell which serial port is the board's UART, so the debugger can't reach it. Check the board's USB cable, then try Debug again.";
+            self.failed(outcome, &json!({"category": "setup", "message": message}));
+            return Ok(true);
+        };
+        let opened = self
+            .call(
+                "open_debug",
+                json!({"build_folder": self.build_folder(), "port": port, "device": device}),
+            )
+            .await?;
+        let session = match opened {
+            Ok(v) => v["session"].as_str().unwrap_or_default().to_string(),
+            Err(e) if is_cancelled(&e) => return Ok(false),
+            Err(e) => {
+                self.failed(outcome, &e);
+                return Ok(true);
+            }
+        };
+        // The panel's address only (open false): the IDE shows it itself.
+        let panel = self
+            .call(
+                "open_debug_panel",
+                json!({"session": session, "open": false}),
+            )
+            .await?;
+        match panel {
+            Ok(v) => {
+                outcome.debug_url = v["url"].as_str().map(String::from);
+                self.line(format!("Debugging on {port}."));
+            }
+            Err(e) => {
+                // No panel, no way to use the session: close it.
+                self.failed(outcome, &e);
+                let _ = self
+                    .engine
+                    .call("close_debug", json!({"session": session}), None)
+                    .await;
+                return Ok(true);
+            }
+        }
+        outcome.debug_session = Some(session);
         Ok(true)
     }
 
@@ -1104,6 +1196,8 @@ mod tests {
             same_ids: None,
             wave_page: None,
             checked_files: Vec::new(),
+            debug_session: None,
+            debug_url: None,
         };
         let lines = Mutex::new(Vec::new());
         let e = json!({

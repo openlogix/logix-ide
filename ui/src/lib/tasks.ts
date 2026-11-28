@@ -5,6 +5,7 @@ const VERB: Record<Task, { running: string; done: string; noun: string }> = {
   build: { running: "Building…", done: "Build succeeded", noun: "Build" },
   report: { running: "Building the report…", done: "Build succeeded", noun: "Build" },
   upload: { running: "Uploading…", done: "Upload succeeded", noun: "Upload" },
+  debug: { running: "Starting the debugger…", done: "Debugger ready", noun: "Debug" },
   test: { running: "Running tests…", done: "Tests passed", noun: "Test" },
   simulate: {
     running: "Simulating…",
@@ -44,6 +45,9 @@ export function outcomeText(task: Task, outcome: TaskOutcome): string {
       return `${VERB.simulate.done} in ${time}. The Waveforms window shows the signals.`;
     }
     if (task === "diagram") return `${VERB.diagram.done} in ${time}.`;
+    if (task === "debug") {
+      return `${VERB.debug.done} in ${time}${w}. The Debugger window shows the nets.`;
+    }
     // The engine's one-line report, as it words it ("Uses 0.4% of …").
     const summary = outcome.report?.summaryLine ?? "";
     return `${VERB[task].done} in ${time}${w}.${summary ? ` ${summary}` : ""}`;
